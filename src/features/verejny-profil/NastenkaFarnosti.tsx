@@ -45,7 +45,8 @@ import { useDarcovia, sucetDarov, relCas, nastavCiste, SumyDarcovKontext, Sektor
 import { useOmsoveOkno, suhrnHlavnej, menaOkna } from "@/lib/omsoveOkno";
 import { nacitajZbierkyStranky, zbierkyStrankyZPamate, useZmenyZbierok, cielCislo, type SpustenaZbierka } from "@/lib/novaZbierka";
 import { useKalendar, kostolKal, omseDna, polozkyDna, druhPolozky, minuty, iso, dvt, nazovOmse, nedelneOmse, rozsahTyzdna } from "@/lib/kalendarFarnosti";
-import { prihovor, useZmenyPrihovoru, naZivo, onlineOmse, onlineVDen } from "@/lib/prihovor";
+import { prihovory, odkazyVidei, useZmenyPrihovoru, naZivo, onlineOmse, onlineVDen, type Prihovor } from "@/lib/prihovor";
+import { PrihovorVelky, StarsiePrihovory, OdkazyVidei, ZvukPas } from "./VypocujSi";
 import { odFarnikov, useOdFarnikov, useCerstveOdFarnikov, prepniVPolozke, vyprsal, pocetSus, type PolozkaFarnika, type PoleReakcie } from "@/lib/odFarnikov";
 import { reakcieF, prepniReakciuF, useReakcieF, useCerstveReakcieF, type PoleReakcieF } from "@/lib/reakcieFarnosti";
 import { vlastnePrispevky, vlastnePrispevkyVsetky, type VieraFeedItem } from "@/features/viera/mock";
@@ -205,7 +206,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   const [upoz, setUpoz] = useState<CielUpozorneni | null>(null); // KARTA 63 1a
   const [cas, setCas] = useState(terazD);
   useEffect(() => { const t = window.setInterval(() => setCas(terazD()), 60000); return () => window.clearInterval(t); }, []);
-  const [prihOn, setPrihOn] = useState(false);
+  const [prihOn, setPrihOn] = useState<Prihovor | null>(null); // OPRAVY 269: ktorý príhovor hrá
   const [onasOtv, setOnasOtv] = useState(false); // OPRAVY 221: príhovor jedna veta + viac
   const { okno: zvOkno } = useOmsoveOkno(strankaId), zvNedela = zvOkno.nedela;
   const zvN = useZvoncek(strankaId); // OPRAVY 260: názov, text, fotky, sumy a ukončenie zo Správy zvončekovej zbierky
@@ -234,7 +235,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   const cover = profil?.cover?.src && ziveObr(profil.cover.src) ? profil.cover.src : "";
   const logo = !profil?.bezLoga && profil?.logo ? profil.logo : null;
   const inic = (profil?.bezLoga && profil.inicialy?.trim().toUpperCase()) || iniciy(meno);
-  const p = prihovor(strankaId);
+  const PL = prihovory(strankaId), p = PL[0] ?? null, VO = odkazyVidei(strankaId); // OPRAVY 269: viac príhovorov, odkazy na videá
   const zivoT = VJ.omse ? naZivo(strankaId, cas) : null, zivoUrl = onlineOmse(strankaId).url.trim();
   // KARTA 60 §3: vzťah k tejto farnosti — domovská · sledovaná · cudzia
   const jeHl = MF.domovska === strankaId, jeSl = !jeHl && MF.sled.includes(strankaId);
@@ -452,7 +453,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   const maKal = maOmse || [0, 1].some((o) => miestaF.some((m) => plagatTyzdna(kostolKal(strankaId, m.id), VJ, o, SLF.omsa).some((d) => d.o.length > 0)));
   const prispela = usePrispela(strankaId);
   const maZbierky = hlOn || zvOn || zbFar.length + zbIne.length + piny.length + prispela.length > 0;
-  const prazdna = !(!!onas || maZbierky || maPrid || !!p || prosby.length || maSpom || maTes || pomoz.length || oznVer.length || ozAll.length || maKal || maUrad);
+  const prazdna = !(!!onas || maZbierky || maPrid || !!p || VO.length > 0 || prosby.length || maSpom || maTes || pomoz.length || oznVer.length || ozAll.length || maKal || maUrad);
   // ---------- titulka: tlačidlo Moja farnosť / Sledovať ----------
   // Martin (odpovede 13. 10.): mobil a tablet — dlaždica „Omše a kalendár“ s dnešnými časmi vedľa Moja farnosť; PC nie
   const dniKal = maKal && !pc ? [...plagatTyzdna(kk, VJ, 0, SLF.omsa), ...plagatTyzdna(kk, VJ, 1, SLF.omsa)] : [];
@@ -591,8 +592,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   const uhS = maUH(uh) ? DNI_UH.map((dn, i) => { const c = casyUH(uh, i); return c.length ? `${dn} ${c.map(textCasu).join(", ")}` : ""; }).find(Boolean) : "";
   const S = {
     ozn: suhrn(poc(ozAll.length, "oznam", "oznamy", "oznamov"), (ozAll.find((o) => o.zm) ?? ozAll[0])?.t),
-    vypN: p ? suhrn("Príhovor farára", `pridaný ${dd(p.cas)}`) : "",
-    vypK: suhrn(p && "Príhovor farára", zivoT ? "naživo" : dalsiaOnline && `${p ? "aj online" : "Online"} omša ${dalsiaOnline}`),
+    vypN: p ? suhrn("Príhovor farára", `pridaný ${dd(p.cas)}`) : VO.length ? poc(VO.length, "video", "videá", "videí") : "",
+    vypK: suhrn(p ? "Príhovor farára" : VO.length > 0 && poc(VO.length, "video", "videá", "videí"), zivoT ? "naživo" : dalsiaOnline && `${p ? "aj online" : "Online"} omša ${dalsiaOnline}`),
     mod: suhrn(poc(prosby.length, "prosba", "prosby", "prosieb"), modliN > 0 && `${modliN} sa modlí`),
     pom: suhrn(poc(pomoz.length, "prosba o pomoc", "prosby o pomoc", "prosieb o pomoc"), pom1?.dat && `${den(zIso(pom1.dat))} ${dm(zIso(pom1.dat))}`),
     prid: suhrn(udalosti.length > 0 && poc(udalosti.length, "akcia", "akcie", "akcií"), ud1 && `najbližšie ${ud1.t}${ud1.dat ? ` ${dm(zIso(ud1.dat))}` : ""}`, alba.length > 0 && poc(alba.length, "album fotiek", "albumy fotiek", "albumov fotiek")),
@@ -661,17 +662,16 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   </>);
   // --- Vypočuj si (príhovor + online omša); mobil zbalené na jeden riadok ---
   const vypObsah = <>
-    {p && <button type="button" onClick={() => setPrihOn(true)} style={{ display: "flex", gap: k3 ? 24 : 14, alignItems: "center", flexWrap: k3 ? "nowrap" : "wrap", padding: 16, borderRadius: 22, background: KARTA, border: "none", cursor: "pointer", color: INK, fontFamily: "inherit", textAlign: "left" }}>
-      <span style={{ flex: "none", width: k3 ? 260 : "100%", aspectRatio: "16 / 9", borderRadius: 14, background: "#14110B", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ width: 58, height: 58, borderRadius: "50%", background: "rgba(255,255,255,.92)", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ width: 0, height: 0, borderLeft: "18px solid #14110B", borderTop: "11px solid transparent", borderBottom: "11px solid transparent", marginLeft: 5 }} /></span></span>
-      <span style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}><span style={{ fontSize: 13.5, fontWeight: 800, letterSpacing: ".12em", color: INK3 }}>PRÍHOVOR FARÁRA · PRIDANÝ {dd(p.cas)}</span><b style={{ fontSize: k3 ? 26 : 21, letterSpacing: "-.02em" }}>Príhovor farára</b><span style={{ fontSize: 16, color: INK3 }}>Ťuknite a prehrá sa na celú obrazovku.</span></span>
-    </button>}
+    {p && <PrihovorVelky p={p} onPrehraj={setPrihOn} vedla={k3} velkyNadpis={k3} />}
+    <StarsiePrihovory l={PL.slice(1)} onPrehraj={setPrihOn} />
+    <OdkazyVidei o={VO} />
     {zivoUrl && (dalsiaOnline || zivoT) && <a href={zivoUrl} target="_blank" rel="noopener noreferrer" style={{ display: "flex", gap: k3 ? 20 : 12, alignItems: "center", flexWrap: "wrap", padding: "16px 18px", borderRadius: 20, background: "color-mix(in srgb,#B3261E 10%,var(--nf-karta))", border: "1px solid color-mix(in srgb,#B3261E 35%,transparent)", color: INK, textDecoration: "none" }}>
       <span style={{ flex: "none", minHeight: 40, padding: "0 14px", borderRadius: 20, background: "#B3261E", color: "#fff", fontSize: 14.5, fontWeight: 800, display: "flex", alignItems: "center", gap: 8 }}><span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", background: "#fff" }} />{zivoT ? "NAŽIVO" : "ONLINE"}</span>
       <span style={{ flex: "1 1 200px", minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 18 }}>{zivoT ?? "Omša online"}{!zivoT && dalsiaOnline ? ` · ${dalsiaOnline}` : ""}</b><span style={{ fontSize: 14.5, color: INK3 }}>{oz.url ? "Keď beží, ukáže sa NAŽIVO aj hore na titulke." : ""}</span></span>
       <span style={{ fontSize: 15, fontWeight: 800, color: "var(--nf-gInk)" }}>Pozrieť ›</span>
     </a>}
   </>;
-  const maVyp = !!p || !!(zivoUrl && (dalsiaOnline || zivoT));
+  const maVyp = !!p || VO.length > 0 || !!(zivoUrl && (dalsiaOnline || zivoT));
   const kVyp = maVyp && sekcia("vyp", "Vypočuj si", S.vypK, vypObsah);
   // --- Modli sa s nami ---
   const kModli = prosby.length > 0 && sekcia("mod", "Modli sa s nami", S.mod, <>
@@ -958,10 +958,9 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   const zoznamY = (ref: RefObject<HTMLDivElement>, deti: ReactNode, vo2: boolean) => (
     <div ref={ref} className="md-pas" style={{ ...(vo2 && !mob ? { flex: "1 1 0", minHeight: 220 } : { maxHeight: mob ? 340 : 460 }), display: "flex", flexDirection: "column", gap: 8, overflowY: "auto", scrollSnapType: "y mandatory", scrollbarWidth: "none", overscrollBehaviorY: "contain" }}>{deti}</div>);
   const mVyp = <>
-    {p && <button type="button" onClick={() => setPrihOn(true)} style={{ border: "none", padding: 0, background: "transparent", color: INK, fontFamily: "inherit", textAlign: "left", cursor: "pointer", display: "flex", flexDirection: "column", gap: 12 }}>
-      <span style={{ width: "100%", aspectRatio: "16 / 9", borderRadius: mob ? 14 : 20, background: "#0E100C", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(255,255,255,.92)", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ width: 0, height: 0, borderLeft: "20px solid #14110B", borderTop: "12px solid transparent", borderBottom: "12px solid transparent", marginLeft: 6 }} /></span></span>
-      <span style={{ display: "flex", flexDirection: "column", gap: 4 }}><span style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".12em", color: INK3 }}>PRÍHOVOR FARÁRA · PRIDANÝ {dd(p.cas)}</span><b style={{ fontSize: mob ? 18 : 22, letterSpacing: "-.015em" }}>Príhovor farára</b></span>
-    </button>}
+    {p && <PrihovorVelky p={p} onPrehraj={setPrihOn} vedla={!mob} />}
+    <StarsiePrihovory l={PL.slice(1)} onPrehraj={setPrihOn} />
+    <OdkazyVidei o={VO} />
     {zivoUrl && (dalsiaOnline || zivoT) && <a href={zivoUrl} target="_blank" rel="noopener noreferrer" style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap", padding: "14px 16px", borderRadius: 18, background: KARTA, border: "1.5px solid color-mix(in srgb,#B3261E 45%,transparent)", color: INK, textDecoration: "none" }}>
       <span style={{ flex: "none", minHeight: 36, padding: "0 12px", borderRadius: 18, background: "#B3261E", color: "#fff", fontSize: 13.5, fontWeight: 800, letterSpacing: ".04em", display: "flex", alignItems: "center", gap: 7 }}><span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", background: "#fff" }} />{zivoT ? "NAŽIVO" : "ONLINE"}</span>
       <b style={{ flex: "1 1 160px", minWidth: 0, fontSize: 16.5 }}>{zivoT ?? `Omša online${dalsiaOnline ? ` · ${dalsiaOnline}` : ""}`}</b>
@@ -1175,7 +1174,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
     { id: "ozn", t: "Oznamy farnosti", suhrn: S.ozn, ma: ozAll.length > 0, riadky: () => ozAll.map((x) => { const kde = miestaF.length > 1 && x.mi ? x.mi.map((id) => miestaF.find((m) => m.id === id)?.nazov).filter(Boolean).join(" · ") : ""; return kRiadok({ key: x.id, d: new Date(x.ms || cas.getTime()), pod: x.zm ? "ZMENA" : x.chip, podFarba: x.zm ? CERVENA : INK3, t: x.t, txt: x.txt,
       extra: <>{kde && <span style={{ alignSelf: "flex-start", padding: "3px 10px", borderRadius: 8, background: "var(--nf-gSoft)", color: "var(--nf-gInk)", fontSize: 14.5, fontWeight: 800 }}>{kde}</span>}{galOdkaz(x.t, x.gal)}</> }); }) },
     { id: "vyp", t: "Vypočuj si", suhrn: S.vypK, ma: maVyp, riadky: () => <>
-      {p && kRiadok({ key: "prih", t: "Príhovor farára", txt: `Pridaný ${dd(p.cas)}`, akcia: <button type="button" onClick={() => setPrihOn(true)} style={tlacR(false, true)}>Prehrať</button> })}
+      {PL.map((x, i) => kRiadok({ key: x.id, t: i ? `Príhovor · ${dd(x.cas)}` : "Príhovor farára", txt: `${i ? "" : `Pridaný ${dd(x.cas)} · `}${x.zvuk ? "len zvuk" : "video"} · ${Math.round(x.sek)} s`, akcia: <button type="button" onClick={() => setPrihOn(x)} style={tlacR(false, !i)}>Prehrať</button> }))}
+      {VO.map((o) => kRiadok({ key: o.id, t: o.nazov, txt: "Video mimo appky", akcia: <a href={o.url} target="_blank" rel="noopener noreferrer" style={{ ...tlacR(false, false), textDecoration: "none", display: "flex", alignItems: "center" }}>Pozrieť ›</a> }))}
       {zivoUrl && (dalsiaOnline || zivoT) && kRiadok({ key: "online", t: zivoT ? `Naživo · omša ${zivoT}` : `Omša online · ${dalsiaOnline}`, akcia: <a href={zivoUrl} target="_blank" rel="noopener noreferrer" style={{ ...tlacR(false, false), textDecoration: "none", display: "flex", alignItems: "center" }}>Pozrieť ›</a> })}
     </> },
     { id: "prid", t: "Príď a zaži s nami", suhrn: S.prid, ma: maPrid, riadky: () => <>
@@ -1324,10 +1324,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
           : { position: "absolute", top: 24, left: PAD_X, minHeight: 48, padding: "0 18px", border: "none", borderRadius: 14, background: "rgba(255,255,255,.92)", color: "#14110B", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" }}>{nahlad ? "‹ Späť do Správy" : "‹ Späť"}</button>}
         {zivoT && zivoUrl && <a href={zivoUrl} target="_blank" rel="noopener noreferrer" style={{ position: "absolute", top: 24, right: PAD_X, minHeight: 48, padding: "0 18px", borderRadius: 24, background: "#B3261E", color: "#fff", textDecoration: "none", display: "flex", alignItems: "center", gap: 10, fontSize: 15.5, fontWeight: 800, letterSpacing: ".04em" }}><span style={{ width: 9, height: 9, borderRadius: "50%", background: "#fff" }} />NAŽIVO · omša {zivoT} · Pozrieť ›</a>}
         <div style={{ display: "flex", alignItems: "flex-end", gap: "clamp(14px,2vw,24px)", flexWrap: "wrap" }}>
-          {p ? <button type="button" onClick={() => setPrihOn(true)} aria-label="Príhovor farára · prehrať" style={{ flex: "none", width: "clamp(76px,7vw,100px)", height: "clamp(76px,7vw,100px)", borderRadius: "50%", padding: 4, border: "none", background: "conic-gradient(#C9A24A,#4B7A35,#C9A24A)", cursor: "pointer" }}>
-            <span style={{ width: "100%", height: "100%", borderRadius: "50%", background: "#14110B", border: "3px solid #fff", display: "flex", alignItems: "center", justifyContent: "center", boxSizing: "border-box" }}><span style={{ width: 0, height: 0, borderLeft: "18px solid #fff", borderTop: "11px solid transparent", borderBottom: "11px solid transparent", marginLeft: 5 }} /></span>
-          </button>
-            : logo ? <img src={logo} alt="Logo" style={{ flex: "none", width: "clamp(76px,7vw,100px)", height: "clamp(76px,7vw,100px)", borderRadius: profil?.tvar === "kruh" ? "50%" : 26, objectFit: "cover", background: "#fff" }} />
+          {/* OPRAVY 269: play pri logu preč — príhovor len v bloku Vypočuj si */}
+          {logo ? <img src={logo} alt="Logo" style={{ flex: "none", width: "clamp(76px,7vw,100px)", height: "clamp(76px,7vw,100px)", borderRadius: profil?.tvar === "kruh" ? "50%" : 26, objectFit: "cover", background: "#fff" }} />
             : <span style={{ flex: "none", width: "clamp(76px,7vw,100px)", height: "clamp(76px,7vw,100px)", borderRadius: 26, background: "#fff", color: "#14110B", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "clamp(26px,2.6vw,34px)", fontWeight: 800 }}>{inic}</span>}
           <span style={{ flex: "1 1 320px", minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}><b style={{ fontSize: "clamp(30px,4.4vw,60px)", lineHeight: 1, letterSpacing: "-.04em", color: "#fff", textWrap: "balance" } as CSSProperties}>{meno}</b><span style={{ fontSize: "clamp(15px,1.4vw,19px)", color: "#E8E1D3" }}>Farnosť</span></span>
           {pc && sledBtn}
@@ -1393,12 +1391,11 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
       </>)}
 
       {/* ---------- Vypočuj si ---------- */}
-      {p && blokN("vyp", "Vypočuj si", "Krátky príhovor farára.", S.vypN, <>
-        <div style={{ flex: "999 1 520px", minWidth: 0 }}>
-          <button type="button" onClick={() => setPrihOn(true)} style={{ width: "100%", textAlign: "left", display: "flex", flexWrap: "wrap", gap: "20px 24px", alignItems: "center", padding: 16, borderRadius: 24, background: KARTA, border: "none", cursor: "pointer", color: INK, fontFamily: "inherit" }}>
-            <span style={{ position: "relative", flex: "0 1 360px", minWidth: 220, aspectRatio: "16 / 9", borderRadius: 16, background: INK, display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ width: 68, height: 68, borderRadius: "50%", background: "rgba(255,255,255,.92)", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ width: 0, height: 0, borderLeft: "20px solid #14110B", borderTop: "13px solid transparent", borderBottom: "13px solid transparent", marginLeft: 6 }} /></span></span>
-            <span style={{ flex: "1 1 240px", display: "flex", flexDirection: "column", gap: 8 }}><span style={kicker()}>PRÍHOVOR FARÁRA · PRIDANÝ {dd(p.cas)}</span><b style={{ fontSize: "clamp(22px,2.2vw,30px)", lineHeight: 1.15, letterSpacing: "-.02em" }}>Príhovor farára</b><span style={{ fontSize: 16, color: INK3 }}>Ťuknite a prehrá sa na celú obrazovku.</span></span>
-          </button>
+      {(p || VO.length > 0) && blokN("vyp", "Vypočuj si", "Krátky príhovor farára.", S.vypN, <>
+        <div style={{ flex: "999 1 520px", minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+          {p && <PrihovorVelky p={p} onPrehraj={setPrihOn} vedla={siroka} velkyNadpis />}
+          <StarsiePrihovory l={PL.slice(1)} onPrehraj={setPrihOn} />
+          <OdkazyVidei o={VO} />
         </div>
       </>)}
 
@@ -1535,13 +1532,15 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
       </>}
 
       {/* ---------- celé obrazovky ---------- */}
-      {prihOn && p && createPortal(
+      {prihOn && createPortal(
         <div role="dialog" aria-modal="true" aria-label="Príhovor farára" style={{ position: "fixed", inset: 0, zIndex: 1100, background: "#000", display: "flex", flexDirection: "column" }}>
           <div style={{ flex: "none", padding: "calc(14px + env(safe-area-inset-top, 0px)) 16px 10px", display: "flex", alignItems: "center", gap: 12 }}>
             <b style={{ flex: 1, fontSize: 17, color: "#fff" }}>Príhovor farára</b>
-            <button type="button" onClick={() => setPrihOn(false)} autoFocus style={{ minHeight: 52, padding: "0 20px", border: "none", borderRadius: 14, background: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 17, fontWeight: 800, color: "#111" }}>× Zavrieť</button>
+            <button type="button" onClick={() => setPrihOn(null)} autoFocus style={{ minHeight: 52, padding: "0 20px", border: "none", borderRadius: 14, background: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 17, fontWeight: 800, color: "#111" }}>× Zavrieť</button>
           </div>
-          <video src={p.src} controls playsInline autoPlay style={{ flex: 1, minHeight: 0, width: "100%", background: "#000", objectFit: "contain" }} />
+          {prihOn.zvuk
+            ? <div style={{ flex: 1, minHeight: 0, display: "flex", alignItems: "center", padding: 16 }}><ZvukPas p={prihOn} /></div>
+            : <video src={prihOn.src} controls playsInline autoPlay style={{ flex: 1, minHeight: 0, width: "100%", background: "#000", objectFit: "contain" }} />}
         </div>, document.body)}
       {velke && <CelaObrazovka label="Na celú obrazovku" onZavri={() => setVelke(null)}>
         <VelkyObrazok v={velke} vz={vz} />

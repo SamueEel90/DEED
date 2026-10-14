@@ -1,6 +1,7 @@
 // ============================================================
-// KARTA 57 C.7 — Príhovor farára (Iskra): jedno krátke video do 45 s na stránke farnosti.
-// Len na stránke farnosti (krúžok hore), nie vo feede Iskier. Video ide do Storage (nahrajSubory,
+// KARTA 57 C.7 — Príhovor farára (Iskra): krátke video do 45 s na stránke farnosti.
+// OPRAVY 269: video alebo len zvuk, viac príhovorov (oblasť „prihovory"), odkazy na videá inde; len v bloku Vypočuj si.
+// Nie vo feede Iskier. Video ide do Storage (nahrajSubory,
 // priečinok „prihovor"); bez DB/session ostane len v tejto relácii (mock).
 // Stav = KV oblasť „prihovor" (zrkadlo naboz_stav).
 // KARTA 57 C.8 · OPRAVY 177 — Online omše: odkaz a pravidlá vysielania (oblasť „online", rules: [{ wd, d, t, kazdy }]).
@@ -12,41 +13,89 @@ import { nahrajSubory } from "./uploadFoto";
 import { DNI_K, dvt, iso, kostolKal, minuty, omseDna, type KodOmse } from "./kalendarFarnosti";
 
 export const PRIHOVOR_MAX_S = 45;
-export interface Prihovor { src: string; sek: number; cas: number; /** len v tejto relácii (bez Storage) */ lokalne?: boolean }
+/** OPRAVY 269: príhovor je krátke video alebo len zvuk; viac príhovorov, najnovší prvý */
+export interface Prihovor { id: string; src: string; sek: number; cas: number; zvuk?: boolean; /** len v tejto relácii (bez Storage) */ lokalne?: boolean }
+/** OPRAVY 269: odkaz na video inde (YouTube, Facebook, iné) — otvorí sa mimo appky */
+export interface OdkazVidea { id: string; url: string; nazov: string; cas: number }
+interface StavPrihovorov { l: Prihovor[]; odkazy: OdkazVidea[] }
 
 let verzia = 0;
 const posl = new Set<() => void>();
 const zmena = () => { verzia++; posl.forEach((f) => f()); };
 export const useZmenyPrihovoru = () => useSyncExternalStore((f) => { posl.add(f); return () => { posl.delete(f); }; }, () => verzia);
-const relacia = new Map<string, Prihovor>();
+/** príhovory bez Storage (mock) — len v tejto relácii */
+const relacia = new Map<string, Prihovor[]>();
 
-export function prihovor(id: string): Prihovor | null {
-  const r = relacia.get(id);
-  if (r) return r;
-  const p = nacitajStav<Prihovor | null>("prihovor", id, null);
-  return p && !p.lokalne && /^https:\/\//.test(p.src) ? p : null;
+const OBLAST = "prihovory";
+function stav(id: string): StavPrihovorov {
+  const z = nacitajStav<Partial<StavPrihovorov> | null>(OBLAST, id, null);
+  if (z) return { l: Array.isArray(z.l) ? z.l : [], odkazy: Array.isArray(z.odkazy) ? z.odkazy : [] };
+  // starší zápis: jeden príhovor v oblasti „prihovor"
+  const s = nacitajStav<Omit<Prihovor, "id"> | null>("prihovor", id, null);
+  return { l: s && !s.lokalne && /^https:\/\//.test(s.src) ? [{ ...s, id: `p${s.cas}` }] : [], odkazy: [] };
 }
-const dlzka = (src: string) => new Promise<number>((ok) => { const v = document.createElement("video"); v.preload = "metadata"; v.onloadedmetadata = () => ok(v.duration || 0); v.onerror = () => ok(-1); v.src = src; });
+const uloz = (id: string, s: StavPrihovorov) => { ulozStav(OBLAST, id, s); zmena(); };
 
-/** nahrá video príhovoru; vráti chybu ako text alebo null */
-export async function nahrajPrihovor(id: string, f: File): Promise<string | null> {
-  if (!f.type.startsWith("video/")) return "Vyberte video.";
+/** všetky príhovory, najnovší prvý */
+export function prihovory(id: string): Prihovor[] {
+  const l = [...(relacia.get(id) ?? []), ...stav(id).l.filter((p) => !p.lokalne && /^https:\/\//.test(p.src))];
+  return l.sort((a, b) => b.cas - a.cas);
+}
+/** najnovší príhovor */
+export const prihovor = (id: string): Prihovor | null => prihovory(id)[0] ?? null;
+export const odkazyVidei = (id: string): OdkazVidea[] => [...stav(id).odkazy].sort((a, b) => b.cas - a.cas);
+
+const dlzka = (src: string, zvuk: boolean) => new Promise<number>((ok) => { const v = document.createElement(zvuk ? "audio" : "video"); v.preload = "metadata"; v.onloadedmetadata = () => ok(Number.isFinite(v.duration) ? v.duration : 0); v.onerror = () => ok(-1); v.src = src; });
+
+/** nahrá príhovor (video alebo len zvuk); vráti chybu ako text alebo null */
+export async function nahrajPrihovor(id: string, f: File | Blob, zvuk = false, sekZnama?: number): Promise<string | null> {
+  const typ = f.type || "";
+  if (zvuk ? !typ.startsWith("audio/") && !typ.startsWith("video/") : !typ.startsWith("video/")) return zvuk ? "Vyberte zvukový záznam." : "Vyberte video.";
   const lok = URL.createObjectURL(f);
-  const s = await dlzka(lok);
-  if (s < 0) { URL.revokeObjectURL(lok); return "Toto video sa nedá otvoriť. Skúste iný súbor."; }
-  if (s > PRIHOVOR_MAX_S + 0.5) { URL.revokeObjectURL(lok); return `Video má ${Math.round(s)} s. Najviac je ${PRIHOVOR_MAX_S} sekúnd, skráťte ho v telefóne a skúste znova.`; }
-  const [u] = await nahrajSubory([f], "prihovor");
-  const p: Prihovor = u?.url ? { src: u.url, sek: s, cas: Date.now() } : { src: lok, sek: s, cas: Date.now(), lokalne: true };
-  if (u?.url) URL.revokeObjectURL(lok);
-  relacia.set(id, p);
-  if (!p.lokalne) ulozStav("prihovor", id, p);
-  zmena();
+  const s = sekZnama ?? await dlzka(lok, zvuk);
+  if (s < 0) { URL.revokeObjectURL(lok); return zvuk ? "Tento záznam sa nedá otvoriť. Skúste iný súbor." : "Toto video sa nedá otvoriť. Skúste iný súbor."; }
+  if (s > PRIHOVOR_MAX_S + 0.5) { URL.revokeObjectURL(lok); return `${zvuk ? "Záznam" : "Video"} má ${Math.round(s)} s. Najviac je ${PRIHOVOR_MAX_S} sekúnd, skráťte ho v telefóne a skúste znova.`; }
+  const subor = f instanceof File ? f : new File([f], `prihovor.${/ogg/.test(typ) ? "ogg" : /mp4|aac|m4a/.test(typ) ? "m4a" : "webm"}`, { type: typ });
+  const [u] = await nahrajSubory([subor], "prihovor");
+  const cas = Date.now(), pid = `p${cas}`;
+  if (u?.url) {
+    URL.revokeObjectURL(lok);
+    const st = stav(id);
+    uloz(id, { ...st, l: [{ id: pid, src: u.url, sek: s, cas, zvuk: zvuk || undefined }, ...st.l] });
+  } else {
+    relacia.set(id, [{ id: pid, src: lok, sek: s, cas, zvuk: zvuk || undefined, lokalne: true }, ...(relacia.get(id) ?? [])]);
+    zmena();
+  }
   return null;
 }
-export function zmazPrihovor(id: string) {
-  const r = relacia.get(id);
-  if (r?.lokalne) URL.revokeObjectURL(r.src);
-  relacia.delete(id); ulozStav("prihovor", id, null); zmena();
+/** zmaže príhovory (po jednom aj hromadne) */
+export function zmazPrihovory(id: string, ids: string[]) {
+  const r = relacia.get(id) ?? [];
+  r.filter((p) => ids.includes(p.id)).forEach((p) => URL.revokeObjectURL(p.src));
+  relacia.set(id, r.filter((p) => !ids.includes(p.id)));
+  const st = stav(id);
+  uloz(id, { ...st, l: st.l.filter((p) => !ids.includes(p.id)) });
+}
+export const zmazPrihovor = (id: string, pid: string) => zmazPrihovory(id, [pid]);
+
+/** pridá odkaz na video inde */
+export function pridajOdkazVidea(id: string, url: string, nazov: string) {
+  const st = stav(id);
+  uloz(id, { ...st, odkazy: [{ id: `o${Date.now()}`, url: url.trim(), nazov: nazov.trim(), cas: Date.now() }, ...st.odkazy] });
+}
+export function zmazOdkazyVidei(id: string, ids: string[]) {
+  const st = stav(id);
+  uloz(id, { ...st, odkazy: st.odkazy.filter((o) => !ids.includes(o.id)) });
+}
+/** služba a náhľad odkazu (náhľad len keď ho služba dá bez prihlásenia — YouTube) */
+export function sluzbaOdkazu(url: string): { sluzba: string; nahlad?: string } {
+  const u = url.trim();
+  const yt = u.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|live\/|embed\/)|youtu\.be\/)([\w-]{11})/i);
+  if (yt) return { sluzba: "YouTube", nahlad: `https://img.youtube.com/vi/${yt[1]}/hqdefault.jpg` };
+  if (/youtube\.com|youtu\.be/i.test(u)) return { sluzba: "YouTube" };
+  if (/facebook\.com|fb\.watch/i.test(u)) return { sluzba: "Facebook" };
+  if (/vimeo\.com/i.test(u)) return { sluzba: "Vimeo" };
+  return { sluzba: "Video" };
 }
 
 // ---------------- Online omše (OPRAVY 177) ----------------

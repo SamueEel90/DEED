@@ -1,10 +1,11 @@
 // ============================================================
-// KARTA 57 C.7 — Príhovor farára · Iskra a C.8 · OPRAVY 177 Online omše — obe v Oznamoch hore (Online pod Príhovorom).
+// KARTA 57 C.7 — Príhovor farára · Iskra (OPRAVY 269: video alebo len zvuk, viac príhovorov, odkazy na videá) a C.8 · OPRAVY 177 Online omše — obe v Oznamoch hore (Online pod Príhovorom).
 // Obe karty sa dajú zbaliť ⌃ ⌄, po načítaní sú zbalené (jeden riadok so zhrnutím). Na mobile popis pod nadpisom na celú šírku.
 // ============================================================
-import { useState, type CSSProperties, type ReactNode } from "react";
-import { PRIHOVOR_MAX_S, nahrajPrihovor, prihovor, zmazPrihovor, useZmenyPrihovoru, onlineOmse, ulozOnline, odkazOk, omseNaDen, pravidloPlati, textPravidla, type PravidloOnline } from "@/lib/prihovor";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { PRIHOVOR_MAX_S, nahrajPrihovor, prihovory, odkazyVidei, zmazPrihovor, zmazPrihovory, pridajOdkazVidea, zmazOdkazyVidei, sluzbaOdkazu, useZmenyPrihovoru, onlineOmse, ulozOnline, odkazOk, omseNaDen, pravidloPlati, textPravidla, type PravidloOnline } from "@/lib/prihovor";
 import { useKalendar, dniTyzdna, dvt, iso, DNI_K } from "@/lib/kalendarFarnosti";
+import { useHromadnyVyber, TlacidloVyberu, ListaVyberu, PolickoVyberu, PasVyberu } from "@/components/HromadnyVyber";
 
 const karta: CSSProperties = { borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)" };
 /** OPRAVY 177: zbaliteľná karta — zbalená = jeden riadok so zhrnutím */
@@ -27,43 +28,128 @@ function Zbalitelna({ label, ikona, nadpis, popis, zhrnutie, mobil, children }: 
 }
 
 const casT = (ms: number) => { const d = new Date(ms); return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()} o ${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`; };
+const tlMale: CSSProperties = { minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1.5px solid var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--gInk)", boxShadow: "none" };
+const poleS: CSSProperties = { height: 50, padding: "0 14px", borderRadius: 12, background: "var(--field)", border: "1px solid var(--cardBd)", fontFamily: "inherit", fontSize: 15, color: "var(--ink)", outline: "none", width: "100%", boxSizing: "border-box" };
+
+/** OPRAVY 269: nahrať zvuk priamo v appke (mikrofón), najviac 45 s — zastaví sa samo */
+function NahravanieZvuku({ onHotovo, onChyba, zakazane }: { onHotovo: (b: Blob, sek: number) => void; onChyba: (t: string) => void; zakazane: boolean }) {
+  const [sek, setSek] = useState<number | null>(null);
+  const rec = useRef<MediaRecorder | null>(null);
+  const tm = useRef<number | undefined>(undefined);
+  useEffect(() => () => { window.clearInterval(tm.current); rec.current?.stream.getTracks().forEach((t) => t.stop()); }, []);
+  const stop = () => { window.clearInterval(tm.current); if (rec.current?.state === "recording") rec.current.stop(); };
+  const start = async () => {
+    if (typeof MediaRecorder === "undefined" || !navigator.mediaDevices?.getUserMedia) { onChyba("Tento prehliadač nevie nahrávať. Nahrajte zvuk v telefóne a vyberte súbor."); return; }
+    let st: MediaStream;
+    try { st = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch { onChyba("Mikrofón nie je povolený. Povoľte ho v nastaveniach prehliadača."); return; }
+    const r = new MediaRecorder(st), kusy: Blob[] = [], od = Date.now();
+    r.ondataavailable = (e) => { if (e.data.size) kusy.push(e.data); };
+    r.onstop = () => { st.getTracks().forEach((t) => t.stop()); setSek(null); const d = Math.min(PRIHOVOR_MAX_S, (Date.now() - od) / 1000); if (kusy.length) onHotovo(new Blob(kusy, { type: r.mimeType || "audio/webm" }), d); };
+    rec.current = r; r.start(); setSek(0);
+    tm.current = window.setInterval(() => { const d = Math.floor((Date.now() - od) / 1000); setSek(d); if (d >= PRIHOVOR_MAX_S) stop(); }, 250);
+  };
+  return sek === null
+    ? <button type="button" disabled={zakazane} onClick={() => void start()} style={{ ...tlMale, minHeight: 60, flex: 1, minWidth: 180, border: "none", background: "#4B7A35", color: "#fff", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, opacity: zakazane ? 0.6 : 1 }}><b style={{ fontSize: 15.5 }}>Nahrať teraz</b><span style={{ fontSize: 12.5, fontWeight: 600, opacity: 0.9 }}>mikrofón, najviac {PRIHOVOR_MAX_S} s</span></button>
+    : <button type="button" onClick={stop} style={{ ...tlMale, minHeight: 60, flex: 1, minWidth: 180, border: "none", background: "#A34A2A", color: "#fff" }}>Zastaviť · {sek} / {PRIHOVOR_MAX_S} s</button>;
+}
 
 export function PrihovorKarta({ strankaId, mobil }: { strankaId: string; mobil: boolean }) {
   useZmenyPrihovoru();
-  const p = prihovor(strankaId);
+  const L = prihovory(strankaId), O = odkazyVidei(strankaId);
   const [nahrava, setNahrava] = useState(false);
   const [chyba, setChyba] = useState("");
-  const vyber = async (f?: File | null) => {
+  const [nove, setNove] = useState<null | "vyber" | "video" | "zvuk">(null);
+  const [odkazOtv, setOdkazOtv] = useState(false);
+  const [url, setUrl] = useState(""); const [nazov, setNazov] = useState("");
+  const hv = useHromadnyVyber();
+  const vyber = async (f: File | Blob | null | undefined, zvuk: boolean, sek?: number) => {
     if (!f) return;
     setChyba(""); setNahrava(true);
-    const e = await nahrajPrihovor(strankaId, f);
-    setNahrava(false); if (e) setChyba(e);
+    const e = await nahrajPrihovor(strankaId, f, zvuk, sek);
+    setNahrava(false); if (e) setChyba(e); else setNove(null);
   };
   const tl = (zelene: boolean): CSSProperties => ({ flex: 1, minWidth: mobil ? 0 : 200, minHeight: 60, padding: "8px 14px", borderRadius: 14, border: zelene ? "none" : "2px dashed var(--gBd)", background: zelene ? "#4B7A35" : "transparent", color: zelene ? "#fff" : "var(--gInk)", cursor: nahrava ? "default" : "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, textAlign: "center", fontFamily: "inherit", opacity: nahrava ? 0.6 : 1 });
+  const p = L[0];
   const ikona = (
     <span aria-hidden="true" style={{ flex: "none", width: mobil ? 44 : 56, height: mobil ? 44 : 56, borderRadius: "50%", padding: 3, background: p ? "conic-gradient(#C9A24A,#4B7A35,#C9A24A)" : "transparent", border: p ? "none" : "2.5px solid #C9A24A", boxSizing: "border-box" }}>
       <span style={{ display: "flex", width: "100%", height: "100%", borderRadius: "50%", background: "#1D211B", alignItems: "center", justifyContent: "center" }}>{p && <span style={{ width: 0, height: 0, borderLeft: "12px solid #fff", borderTop: "8px solid transparent", borderBottom: "8px solid transparent", marginLeft: 3 }} />}</span>
     </span>);
+  const urlOk = odkazOk(url);
+  const pridajOdkaz = () => { if (!urlOk || !nazov.trim()) return; pridajOdkazVidea(strankaId, url, nazov); setUrl(""); setNazov(""); setOdkazOtv(false); };
+  const pocetT = (n: number) => (n === 1 ? "1 príhovor" : n < 5 ? `${n} príhovory` : `${n} príhovorov`);
   return (
-    <Zbalitelna label="Príhovor farára" ikona={ikona} nadpis="Príhovor farára · Iskra" mobil={mobil}
-      popis={`Krátke video do ${PRIHOVOR_MAX_S} s: príhovor, prianie k sviatku. Ukáže sa len na stránke farnosti, hore v krúžku.`}
-      zhrnutie={p ? `Príhovor je na stránke · ${Math.round(p.sek)} s` : "Zatiaľ bez príhovoru"}>
-      {p ? <>
-        <video src={p.src} controls playsInline preload="metadata" style={{ display: "block", width: "100%", maxWidth: 360, maxHeight: 420, borderRadius: 14, background: "#000", alignSelf: mobil ? "center" : "flex-start" }} />
-        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-          <span style={{ flex: 1, minWidth: 180, display: "flex", flexDirection: "column", gap: 2 }}>
-            <b style={{ fontSize: 15, color: "var(--gInk)" }}>Príhovor je na stránke ✓</b>
-            <span style={{ fontSize: 13, color: "var(--ink3)" }}>{Math.round(p.sek)} s · {casT(p.cas)}{p.lokalne ? " · len v tejto relácii" : ""}</span>
-          </span>
-          <button type="button" onClick={() => zmazPrihovor(strankaId)} style={{ minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1.5px solid var(--cRed)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--cRed)", boxShadow: "none" }}>Odstrániť</button>
+    <Zbalitelna label="Príhovor farára" ikona={ikona} nadpis="Príhovor farára · Vypočuj si" mobil={mobil}
+      popis={`Krátke video alebo len zvuk do ${PRIHOVOR_MAX_S} s: príhovor, prianie k sviatku. Na stránke farnosti v bloku Vypočuj si, najnovší hore. Dlhšie videá pridajte ako odkaz.`}
+      zhrnutie={L.length ? `${pocetT(L.length)} na stránke · najnovší ${Math.round(p!.sek)} s` : O.length ? `${O.length} ${O.length === 1 ? "odkaz" : O.length < 5 ? "odkazy" : "odkazov"} na video` : "Zatiaľ bez príhovoru"}>
+      {/* pridať príhovor: Video · Len zvuk */}
+      {nove === null && <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <button type="button" onClick={() => { setNove("vyber"); setChyba(""); }} style={{ ...tlMale, border: "none", background: "#4B7A35", color: "#fff" }}>+ Pridať príhovor</button>
+        <button type="button" onClick={() => setOdkazOtv((o) => !o)} aria-expanded={odkazOtv} style={tlMale}>+ Pridať odkaz na video</button>
+      </div>}
+      {nove === "vyber" && <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <span style={{ fontSize: 14.5, fontWeight: 800 }}>Čo pridáte?</span>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <button type="button" onClick={() => setNove("video")} style={tl(true)}><b style={{ fontSize: 15.5 }}>Video</b><span style={{ fontSize: 12.5, opacity: 0.9 }}>najviac {PRIHOVOR_MAX_S} s</span></button>
+          <button type="button" onClick={() => setNove("zvuk")} style={tl(true)}><b style={{ fontSize: 15.5 }}>Len zvuk</b><span style={{ fontSize: 12.5, opacity: 0.9 }}>bez obrazu, najviac {PRIHOVOR_MAX_S} s</span></button>
         </div>
-      </> : <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <label style={tl(true)}><b style={{ fontSize: 15.5 }}>{nahrava ? "Nahráva sa…" : "Natočiť teraz"}</b><span style={{ fontSize: 12.5, opacity: 0.9 }}>otvorí sa kamera</span>
-          <input type="file" accept="video/*" capture="user" disabled={nahrava} onChange={(e) => { void vyber(e.target.files?.[0]); e.currentTarget.value = ""; }} style={{ display: "none" }} /></label>
-        <label style={tl(false)}><b style={{ fontSize: 15.5 }}>Vybrať z telefónu</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>už natočené video</span>
-          <input type="file" accept="video/*" disabled={nahrava} onChange={(e) => { void vyber(e.target.files?.[0]); e.currentTarget.value = ""; }} style={{ display: "none" }} /></label>
+        <button type="button" onClick={() => setNove(null)} style={{ ...tlMale, alignSelf: "flex-start", border: "1px solid var(--cardBd)", color: "var(--ink2)" }}>Zrušiť</button>
+      </div>}
+      {nove === "video" && <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <label style={tl(true)}><b style={{ fontSize: 15.5 }}>{nahrava ? "Nahráva sa…" : "Natočiť teraz"}</b><span style={{ fontSize: 12.5, opacity: 0.9 }}>otvorí sa kamera</span>
+            <input type="file" accept="video/*" capture="user" disabled={nahrava} onChange={(e) => { void vyber(e.target.files?.[0], false); e.currentTarget.value = ""; }} style={{ display: "none" }} /></label>
+          <label style={tl(false)}><b style={{ fontSize: 15.5 }}>Vybrať z telefónu</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>už natočené video</span>
+            <input type="file" accept="video/*" disabled={nahrava} onChange={(e) => { void vyber(e.target.files?.[0], false); e.currentTarget.value = ""; }} style={{ display: "none" }} /></label>
+        </div>
+        <button type="button" disabled={nahrava} onClick={() => setNove(null)} style={{ ...tlMale, alignSelf: "flex-start", border: "1px solid var(--cardBd)", color: "var(--ink2)" }}>Zrušiť</button>
+      </div>}
+      {nove === "zvuk" && <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <NahravanieZvuku zakazane={nahrava} onHotovo={(b, sek) => void vyber(b, true, sek)} onChyba={setChyba} />
+          <label style={tl(false)}><b style={{ fontSize: 15.5 }}>{nahrava ? "Nahráva sa…" : "Vybrať súbor"}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>záznam z telefónu</span>
+            <input type="file" accept="audio/*" disabled={nahrava} onChange={(e) => { void vyber(e.target.files?.[0], true); e.currentTarget.value = ""; }} style={{ display: "none" }} /></label>
+        </div>
+        <button type="button" disabled={nahrava} onClick={() => setNove(null)} style={{ ...tlMale, alignSelf: "flex-start", border: "1px solid var(--cardBd)", color: "var(--ink2)" }}>Zrušiť</button>
       </div>}
       {chyba && <span role="alert" style={{ fontSize: 13.5, fontWeight: 700, color: "#A34A2A" }}>{chyba}</span>}
+      {/* odkaz na video inde */}
+      {odkazOtv && nove === null && <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 14, borderRadius: 14, background: "var(--panel)", border: "1px solid var(--cardBd)" }}>
+        <b style={{ fontSize: 15 }}>Odkaz na video (YouTube, Facebook, iné)</b>
+        <input value={url} onChange={(e) => setUrl(e.target.value.slice(0, 300))} inputMode="url" placeholder="https://youtube.com/watch?v=…" aria-label="Adresa videa" style={poleS} />
+        {!!url.trim() && !urlOk && <span role="alert" style={{ fontSize: 12.5, fontWeight: 700, color: "var(--cRed)" }}>Odkaz musí začínať https://</span>}
+        <input value={nazov} onChange={(e) => setNazov(e.target.value.slice(0, 80))} placeholder="Názov, napríklad: Kázeň na Veľkú noc" aria-label="Názov videa" style={poleS} />
+        <span style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <button type="button" disabled={!urlOk || !nazov.trim()} onClick={pridajOdkaz} style={{ ...tlMale, border: "none", background: urlOk && nazov.trim() ? "#4B7A35" : "var(--track)", color: "#fff", cursor: urlOk && nazov.trim() ? "pointer" : "default" }}>Pridať odkaz</button>
+          <button type="button" onClick={() => setOdkazOtv(false)} style={{ ...tlMale, border: "1px solid var(--cardBd)", color: "var(--ink2)" }}>Zrušiť</button>
+        </span>
+        <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Na stránke sa ukáže riadok s názvom a Pozrieť ›. Video sa otvorí mimo appky.</span>
+      </div>}
+      {/* zoznam príhovorov — mazanie po jednom aj hromadne (263) */}
+      {L.length > 0 && <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}><b style={{ flex: 1, fontSize: 15 }}>Na stránke · {pocetT(L.length)}</b>{L.length > 1 && <TlacidloVyberu v={hv} />}</div>
+        <ListaVyberu v={hv} polozky={L.map((x) => ({ id: x.id, cas: x.cas }))} />
+        {L.map((x, i) => { const on = hv.vyb.has(x.id); return (
+          <div key={x.id} onClick={hv.zap ? () => hv.prepni(x.id) : undefined} style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", padding: "8px 0", borderTop: "1px solid var(--cardBd)", cursor: hv.zap ? "pointer" : "default" }}>
+            {hv.zap && <PolickoVyberu on={on} />}
+            <span style={{ flex: "1 1 200px", minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+              <b style={{ fontSize: 15 }}>{x.zvuk ? "Len zvuk" : "Video"} · {Math.round(x.sek)} s{i === 0 ? " · najnovší" : ""}</b>
+              <span style={{ fontSize: 13, color: "var(--ink3)" }}>{casT(x.cas)}{x.lokalne ? " · len v tejto relácii" : ""}</span>
+            </span>
+            {!hv.zap && (x.zvuk
+              ? <audio src={x.src} controls preload="metadata" style={{ flex: "1 1 220px", maxWidth: 320, height: 44 }} />
+              : <video src={x.src} controls playsInline preload="metadata" style={{ flex: "none", width: 120, height: 68, borderRadius: 8, background: "#000" }} />)}
+            {!hv.zap && <button type="button" onClick={() => zmazPrihovor(strankaId, x.id)} style={{ minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1.5px solid var(--cRed)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--cRed)", boxShadow: "none" }}>Odstrániť</button>}
+          </div>); })}
+        <PasVyberu v={hv} dolu={mobil ? 104 : 12} pocet={pocetT} onZmaz={(ids) => { zmazPrihovory(strankaId, ids); return ids.length === 1 ? "Príhovor je zmazaný ✓" : `Zmazané: ${pocetT(ids.length)} ✓`; }} />
+      </div>}
+      {O.length > 0 && <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <b style={{ fontSize: 15 }}>Odkazy na videá</b>
+        {O.map((o) => (
+          <div key={o.id} style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", padding: "8px 0", borderTop: "1px solid var(--cardBd)" }}>
+            <span style={{ flex: "1 1 200px", minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15, overflowWrap: "anywhere" }}>{o.nazov}</b><span style={{ fontSize: 13, color: "var(--ink3)", overflowWrap: "anywhere" }}>{sluzbaOdkazu(o.url).sluzba} · {o.url}</span></span>
+            <button type="button" onClick={() => zmazOdkazyVidei(strankaId, [o.id])} style={{ minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1.5px solid var(--cRed)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--cRed)", boxShadow: "none" }}>Odstrániť</button>
+          </div>))}
+      </div>}
     </Zbalitelna>);
 }
 
