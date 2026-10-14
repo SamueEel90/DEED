@@ -1,6 +1,6 @@
 // ============================================================
 // DEED · Notifikácie — Supabase repozitár (Fáza E)
-// Číta `notifikacia` (broadcast: ucet_id IS NULL) → mapuje na Notifikacia
+// Číta `notifikacia` (broadcast + vlastné podľa RLS) → mapuje na Notifikacia
 // (ikona→ic, cas timestamptz→relatívny text). Realtime subscribe je v hooks.ts
 // (useNotifikacieRealtime) — na INSERT invaliduje query a zoznam sa obnoví.
 // ============================================================
@@ -45,12 +45,11 @@ function naNotifikaciu(r: any): Notifikacia {
 export const notifikacieSupabase = {
   async list(): Promise<Notifikacia[]> {
     if (!supabase) return [];
-    // broadcast oznámenia (ucet_id NULL); najnovšie hore. Per-user cielenie
-    // pribudne s Auth (Fáza 5) — vtedy sa pridá filter na ucet_id používateľa.
+    // broadcast (ucet_id NULL) + moje (upozornenia z farností, platby …); najnovšie hore.
+    // Filter robí RLS (0055: ucet_id is null or = moj_ucet()).
     const { data, error } = await supabase
       .from("notifikacia")
       .select("*")
-      .is("ucet_id", null)
       .order("cas", { ascending: false })
       .limit(50);
     if (error) throw error;

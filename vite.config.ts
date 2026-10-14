@@ -51,6 +51,8 @@ export default defineConfig({
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
+        // KARTA 63: web push upozornení z farností (public/push-sw.js)
+        importScripts: ['push-sw.js'],
         runtimeCaching: [
           {
             // content fotky (Unsplash) — cache-first s limitom, offline feed má obrázky
