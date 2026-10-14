@@ -141,6 +141,23 @@ const pocetLudi = (n: number) => `${n} ${n === 1 ? "človek" : n >= 2 && n <= 4 
 
 /** KARTA 57 C.1: mazanie len podržaním (1,5 s) */
 
+/** OPRAVY 284 (4): oznámenie zo zrušeného formulára farnosti → návrh pre Editor oznámení (meno, rod, dátumy, rozlúčka, fotka, text).
+ *  Čo sa nedá preniesť, ostane prázdne — editor sa nikdy neotvorí celý prázdny. */
+function navrhZoStarych(x: VieraFeedItem): PayloadEditora | undefined {
+  const st = stitokOznamu(x), sm = x.smutocny, u = x.oz?.u, volba = x.oz?.volba;
+  const bez = (t?: string) => (t ?? "").replace(/^[^·]*·\s*/, "").trim();
+  const meno = u?.meno || sm?.meno || bez(x.nazov);
+  if (st === "PARTE" || u?.druh === "parte" || sm) {
+    const z = u ? u.zena === true : false;
+    return { verzia: 1, stav: "koncept", typ: "parte", sablona: `${z ? "z" : "m"}${((volba?.v ?? 0) % 8) + 1}`, pohlavie: z ? "z" : "m", foto: u?.foto ?? sm?.foto ?? null,
+      polia: { meno, rod: u?.rod || sm?.rodena || "", nar: u?.nar || sm?.datumNar || "", umr: u?.umr || sm?.datumUmr || "", rd: u?.kedyD || sm?.rozluckaDatum || "", rc: u?.kedyC || sm?.rozluckaCas || "", rm: u?.kde || sm?.rozluckaMiesto || "", pod: u?.kto || "" } } as unknown as PayloadEditora;
+  }
+  if (st === "SVADBA" || u?.druh === "svadba") { const [a, b] = meno.split(/\s*(?:&| a )\s*/); return { verzia: 1, stav: "koncept", typ: "svadba", foto: u?.foto ?? null,
+    polia: { sNev: a ?? "", sZen: b ?? "", sD: u?.kedyD || x.datum || "", sC: u?.kedyC || "", sM: u?.kde || "" } } as unknown as PayloadEditora; }
+  if (st === "JUBILEUM" || st === "BLAHOŽELANIE" || u) return { verzia: 1, stav: "koncept", typ: "blahozelanie", foto: u?.foto ?? null, polia: { bMeno: meno, bD: u?.kedyD || "", bText: u?.text || "" } } as unknown as PayloadEditora;
+  return undefined;
+}
+
 export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, toast, hore }: { strankaId: string; meno: string; /** uložený profil (Farský úrad, logo) — náhľad verejnej stránky */ profil: ProfilStranky | null; mobil: boolean;
   /** KARTA 57 C.6: telefón — po výbere druhu ponuka zmizne, náhľad prilepený hore */ tel?: boolean; toast: (m: string) => void;
   /** + Pridať oznam (hlavička PC, zelené + na mobile) — otvorí formulár */ hore?: number }) {
@@ -383,11 +400,12 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     setPlagat(x.plagat && o.dr === 1 ? f[0] : undefined);
     setMedia((!x.plagat && o.dr !== 2) || (x.plagat && o.dr === 2) ? [...(o.dr === 1 && x.video ? [{ id: terazMs() - 1, typ: "video" as const, src: x.video }] : []), ...f.map((src, i) => ({ id: terazMs() + i, typ: "foto" as const, src, ...(x.popisy?.[i] ? { popis: x.popisy[i] } : {}) }))] : []);
     setEdit(x.id); setHotovo(null); setVyb(true); setFormOn(true); setOtv(null); setPozri(null);
-    if (o.dr === 2 && o.osp === 0 && (o.ed || (x.oz && x.smutocny?.editor))) setJubOtv(true); // OPRAVY 271 · 272: oznámenie z Editora sa upravuje rovno v ňom
+    if (o.dr === 2 && o.osp === 0) setJubOtv(true); // OPRAVY 271 · 272: oznámenie z Editora sa upravuje rovno v ňom
     window.setTimeout(() => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 30);
   };
   const upravovany = edit ? zoznam.find((x) => x.id === edit) : undefined;
-  const upravovanyEd = upravovany?.oz?.ed ?? (upravovany?.oz ? upravovany.smutocny?.editor : undefined); // OPRAVY 273: parte má návrh v smutocny.editor
+  const upravovanyEd = upravovany?.oz?.ed ?? (upravovany?.oz ? upravovany.smutocny?.editor : undefined) // OPRAVY 273: parte má návrh v smutocny.editor
+    ?? (upravovany && !upravovany.plagat ? navrhZoStarych(upravovany) : undefined); // OPRAVY 284 (4): starý formulár → údaje do Editora
   const ED_TYP: TypEditora[] = ["parte", "svadba", "blahozelanie", "blahozelanie"];
   const edTyp = ED_TYP[odr] ?? "blahozelanie";
   const jubCfg = { typ: edTyp, sektor: "viera" as const, rezim: "plny" as const, podpis: edTyp === "blahozelanie" ? "Blahoželá farnosť" : undefined,
