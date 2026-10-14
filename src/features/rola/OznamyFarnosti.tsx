@@ -23,6 +23,7 @@ import { Plagat, prazdneUdaje, prvaVolba, chybaOznamu, popisOznamu, type DruhOzn
 import { zmenKostol, CAS_OK, pekny, type KalKostol } from "@/lib/kalendarFarnosti";
 import { stitokOznamu } from "./OmseKalendar";
 import { NahladNastenky } from "./NahladNastenky";
+import { VyberKostola, platnyKostol, idKostola, INE_MIESTO } from "./VyberKostola";
 import { PrihovorKarta, OnlineOmseKarta } from "./PrihovorKarta";
 import type { ProfilStranky } from "@/lib/profilStranky";
 import { useQrObrazok } from "@/lib/qrObrazok";
@@ -66,6 +67,7 @@ export interface NastavenieOznamu {
   /** BLOK C 235: jubileum z Editora oznámení (Blahoželanie) — Upraviť ho otvorí v editore */ ed?: PayloadEditora;
   /** KARTA 62: Kde platí — id miest; bez poľa = všetky miesta */ mi?: string[];
   /** KARTA 62: kostol (miesto), v ktorého kalendári je udalosť; bez poľa = hlavný „0“ */ kk?: string;
+  /** OPRAVY 287: Celá farnosť „*“ alebo Iné miesto „~“ (pri Inom mieste je miesto v `miesto`) */ kdeV?: "*" | "~";
   /** KARTA 63: farár zvolil Upozorniť sledujúcich (server pošle do zvončeka a push) */ upoz?: boolean;
 }
 const RIADKY = 12;
@@ -218,7 +220,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   // OPRAVY 271: jubileum sa na mobile otvára rovno v editore na celú obrazovku
   // OPRAVY 272: oznámenie (parte, svadba, jubileum, iné) = Editor oznámení na celú obrazovku, PC aj mobil
   const zmenOdr = (i: number) => { setOdr(i); const d = ODRUHY[i][1]; setU(prazdneUdaje(d)); setVolba(prvaVolba(d)); if (osp === 0) setJubOtv(true); };
-  const vycisti = () => { setJubOtv(false); setN(""); setTxt(""); setTxtKey((k) => k + 1); setPlati(0); setUsp(0); setDat(""); setCas(""); setMiesto(""); setMedia([]); setPlagat(undefined); setPozv(0); setLimit(""); setOsp(0); zmenOdr(0); setKde(null); setKdeU(""); setUpozV(null); setEdit(null); };
+  const vycisti = () => { setJubOtv(false); setN(""); setTxt(""); setTxtKey((k) => k + 1); setPlati(0); setUsp(0); setDat(""); setCas(""); setMiesto(""); setMedia([]); setPlagat(undefined); setPozv(0); setLimit(""); setOsp(0); zmenOdr(0); setKde(null); setOzIne(false); setKdeU(""); setUpozV(null); setEdit(null); };
   const novy = () => { vycisti(); setHotovo(null); setVyb(false); };
   const zavriForm = () => { vycisti(); setHotovo(null); setVyb(false); setFormOn(false); setKonRozh(false); };
   const vyberDruh = (i: Druh) => { setDr(i); setHotovo(null); setVyb(true); };
@@ -235,7 +237,9 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   const viacMiest = miestaF.length > 1;
   const [kde, setKde] = useState<string[] | null>(null);
   const [kdeU, setKdeU] = useState("");
-  const kdeId = miestaF.some((m) => m.id === kdeU) ? kdeU : miestaF[0]?.id ?? "0";
+  // OPRAVY 287: udalosť — Celá farnosť · kostol · Iné miesto; oznam — Celá farnosť · kostoly · Iné miesto
+  const kdeV = platnyKostol(kdeU, miestaF), kdeK = idKostola(kdeV), kdeId = kdeK ?? "0";
+  const [ozIne, setOzIne] = useState(false);
   // KARTA 63 1c: Upozorniť sledujúcich — predvolené podľa Nastavenia upozornení (1d), pri úprave „Úpravy už zverejneného“
   const predvUpoz = useNastavenieUpoz(strankaId);
   const [upozV, setUpozV] = useState<boolean | null>(null);
@@ -245,7 +249,8 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     if (ODRUHY[odr][1] === "parte" && u.zena == null) ch.push("Muž alebo Žena");
   } else if (!n.trim()) ch.push("nadpis");
   if (dr === 1) { if (!dat) ch.push("dátum"); if (!CAS_OK(cas)) ch.push("čas"); }
-  if (dr === 0 && viacMiest && kde && !kde.length) ch.push("kde platí");
+  if (dr === 0 && viacMiest && !ozIne && kde && !kde.length) ch.push("kde platí");
+  if (((dr === 1 && kdeV === INE_MIESTO) || (dr === 0 && ozIne)) && !miesto.trim()) ch.push("miesto");
   // OPRAVY 212: pri vlastnom oznámení (parte, svadba, jubileum, iné) je prvá fotka z galérie titulná
   const fotkyG = media.filter((m) => m.typ === "foto");
   if (dr === 2 && osp === 1 && !fotkyG.length) ch.push(ine ? "plagát alebo fotka" : "plagát");
@@ -288,14 +293,14 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   const upoz = upozV ?? predvUpoz(edit ? "upravy" : dr === 1 ? "udalost" : dr === 2 && odruh === "parte" ? "parte" : "oznam");
   // ---- OPRAVY 271: rozpísaný oznam / udalosť / oznámenie ostane na zariadení, kým sa nezverejní alebo nezahodí ----
   const KON = `oznam.${strankaId}`;
-  type KonOz = { dr: Druh; n: string; txt: string; plati: number; usp: 0 | 1; dat: string; cas: string; miesto: string; media: MediumZbierky[]; plagat?: string; pozv: number; limit: string; odr: number; osp: 0 | 1; u: UdajeOznamu; volba: VolbaSablony; kde: string[] | null; kdeU: string };
+  type KonOz = { dr: Druh; n: string; txt: string; plati: number; usp: 0 | 1; dat: string; cas: string; miesto: string; media: MediumZbierky[]; plagat?: string; pozv: number; limit: string; odr: number; osp: 0 | 1; u: UdajeOznamu; volba: VolbaSablony; kde: string[] | null; ozIne?: boolean; kdeU: string };
   const [konRozh, setKonRozh] = useState(false); // „Máte rozpísané“ už rozhodnuté (Pokračovať / Zahodiť)
   const kon = formOn && !edit && !hotovo && !konRozh ? nacitajKoncept<KonOz>(KON) : null;
   const maObsah = !!(n.trim() || cistyText(txt).trim() || media.length || dat || cas || miesto.trim() || plagat || u.meno.trim());
-  useUkladajKoncept<KonOz>(KON, { dr, n, txt, plati, usp, dat, cas, miesto, media, plagat, pozv, limit, odr, osp, u, volba, kde, kdeU }, formOn && !edit && !hotovo && !kon && maObsah && !jub);
+  useUkladajKoncept<KonOz>(KON, { dr, n, txt, plati, usp, dat, cas, miesto, media, plagat, pozv, limit, odr, osp, u, volba, kde, kdeU, ozIne }, formOn && !edit && !hotovo && !kon && maObsah && !jub);
   const pokracuj = (k: KonOz) => {
     setDr(k.dr); setN(k.n); setTxt(k.txt); setTxtKey((x) => x + 1); setPlati(k.plati); setUsp(k.usp); setDat(k.dat); setCas(k.cas); setMiesto(k.miesto); setMedia(k.media ?? []); setPlagat(k.plagat);
-    setPozv(k.pozv); setLimit(k.limit); setOdr(k.odr); setOsp(k.osp); setU(k.u); setVolba(k.volba); setKde(k.kde); setKdeU(k.kdeU); setVyb(true); setKonRozh(true);
+    setPozv(k.pozv); setLimit(k.limit); setOdr(k.odr); setOsp(k.osp); setU(k.u); setVolba(k.volba); setKde(k.kde); setKdeU(k.kdeU); setOzIne(!!k.ozIne); setVyb(true); setKonRozh(true);
   };
   const zahod = () => { zmazKoncept(KON); if (jub) setJubKon(null); vycisti(); setVyb(false); setKonRozh(true); };
   const zverejni = async () => {
@@ -303,7 +308,8 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     const povodny = edit ? zoznam.find((x) => x.id === edit) : undefined;
     const teraz = terazMs(), id = povodny?.id ?? `naboz-${teraz}`;
     const oz: NastavenieOznamu = { dr, n: n.trim(), txt, plati, usp, dat, cas, miesto, pozv: dr !== 2 ? pozv : 0, limit: pozv === 2 ? limit : "", odr, osp, u: sablona ? u : undefined, volba: sablona ? volba : undefined, kal: povodny?.oz?.kal,
-      mi: dr === 0 && viacMiest && kde && kde.length < miestaF.length ? kde : dr === 1 && viacMiest ? [kdeId] : undefined, kk: dr === 1 && kdeId !== "0" ? kdeId : undefined, upoz };
+      mi: dr === 0 && viacMiest && !ozIne && kde && kde.length < miestaF.length ? kde : dr === 1 && viacMiest && kdeK ? [kdeK] : undefined, kk: dr === 1 && kdeK ? kdeK : undefined,
+      kdeV: dr === 1 && !kdeK ? kdeV as "*" | "~" : dr === 0 && ozIne ? "~" : undefined, upoz };
     const zaklad = { id, comp: "data" as const, typ: "skutok" as const, modul: "charity" as const, kat: "Komunita" as const, skore: 6, typSituacie: "normal" as const, dni: 0, podpora: 0, farnostId: strankaId, cirkev: "", komunita: meno, overena: true, vytvorene: povodny?.vytvorene ?? teraz, af: povodny ? povodny.af : autorJa };
     let it: VieraFeedItem;
     let kalendar = false;
@@ -393,7 +399,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       pozv: x.pozvanie ? (x.pozvanie.zavazne ? 2 : 1) : x.rsvp ? (x.udalost?.zavazne ? 2 : 1) : 0, limit: x.pozvanie?.limit ? String(x.pozvanie.limit) : "",
       odr: st === "SVADBA" ? 1 : st === "JUBILEUM" ? 2 : st === "PARTE" ? 0 : INE, osp: x.plagat ? 1 : 0, u: x.smutocny?.sablona?.u, volba: x.smutocny?.sablona?.volba };
     setDr(o.dr); setN(o.n); setTxt(/<[a-z]/i.test(o.txt) ? o.txt : o.txt.split("\n").map((r) => `<p>${r.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</p>`).join("")); setTxtKey((k) => k + 1);
-    setPlati(o.plati); setUsp(o.usp); setDat(o.dat); setCas(o.cas); setMiesto(o.miesto); setPozv(o.pozv); setLimit(o.limit); setOdr(o.odr); setOsp(o.osp); setKde(o.dr === 0 ? o.mi ?? null : null); setKdeU(o.kk ?? ""); setUpozV(null);
+    setPlati(o.plati); setUsp(o.usp); setDat(o.dat); setCas(o.cas); setMiesto(o.miesto); setPozv(o.pozv); setLimit(o.limit); setOdr(o.odr); setOsp(o.osp); setKde(o.dr === 0 ? o.mi ?? null : null); setKdeU(o.kdeV ?? o.kk ?? "0"); setOzIne(o.dr === 0 && o.kdeV === "~"); setUpozV(null);
     const d = ODRUHY[o.odr]?.[1] ?? "parte";
     setU(o.u ?? prazdneUdaje(d)); setVolba(o.volba ?? prvaVolba(d));
     const f = x.fotky ?? [];
@@ -462,11 +468,11 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     {dr === 1 && <div style={{ display: "grid", gridTemplateColumns: mobil ? "1fr" : "repeat(3,minmax(0,1fr))", gap: 10 }}>
       <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ ...lbl, fontSize: 14 }}>Dátum</span><input type="date" value={dat} onChange={(e) => setDat(e.target.value)} aria-label="Dátum" style={pole} /></label>
       <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ ...lbl, fontSize: 14 }}>Čas</span><CasPole value={cas} onCommit={setCas} onChyba={setCasZly} placeholder="napr. 15:00" label="Čas" style={pole} /></label>
-      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ ...lbl, fontSize: 14 }}>Miesto</span><input value={miesto} onChange={(e) => setMiesto(e.target.value.slice(0, 60))} placeholder="napr. pred kostolom" aria-label="Miesto" style={pole} /></label>
+      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ ...lbl, fontSize: 14 }}>Miesto{kdeV === INE_MIESTO ? " *" : ""}</span><input value={miesto} onChange={(e) => setMiesto(e.target.value.slice(0, 60))} placeholder={kdeV === INE_MIESTO ? "napr. refektár gymnázia" : "napr. pred kostolom"} aria-label="Miesto" style={pole} /></label>
       {casZly && <span role="alert" style={{ gridColumn: "1 / -1", fontSize: 12.5, fontWeight: 700, color: "var(--cRed)" }}>Takýto čas neexistuje. Píšte hodiny:minúty, napríklad 15:00.</span>}
     </div>}
-    {dr === 1 && viacMiest && <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ ...lbl, fontSize: 14 }}>Kostol</span>
-      <select value={kdeId} onChange={(e) => setKdeU(e.target.value)} aria-label="Kostol" style={{ ...pole, fontWeight: 700 }}>{miestaF.map((m) => <option key={m.id} value={m.id}>{m.nazov}</option>)}</select></label>}
+    {dr === 1 && <VyberKostola miesta={miestaF} value={kdeV} onChange={setKdeU} style={pole} lblStyl={{ ...lbl, fontSize: 14 }} />}
+    {dr === 1 && kdeV === INE_MIESTO && <span style={{ fontSize: 13, color: "var(--ink3)", marginTop: -6 }}>Miesto je povinné. Na stránke sa ukáže namiesto kostola.</span>}
     {dr === 0 && <><TextOznamu key={`t${txtKey}`} value={txt} onChange={setTxt} />
       <GaleriaEditor media={media} onMedia={setMedia} ph={mobil} bezVidea nadpis="Fotky · nepovinné" dovetok=" Prvá fotka je titulná, ostatné sa ukážu po ťuknutí." /></>}
     {dr === 1 && usp === 0 && <><TextOznamu key={`u${txtKey}`} value={txt} onChange={setTxt} />
@@ -474,12 +480,15 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     {dr === 1 && usp === 1 && <><PlagatPole src={plagat} onSrc={setPlagat} toast={toast} popis="ťuknite a vyberte obrázok, alebo ho sem pretiahnite · na výšku, JPG alebo PNG" />
       <TextOznamu key={`p${txtKey}`} value={txt} onChange={setTxt} label="Krátky popis" popis="Nepovinné. Napríklad čo si vziať so sebou." /></>}
     {jub && !ramSprava && <button type="button" onClick={() => setJubOtv(true)} style={{ minHeight: 56, border: "none", borderRadius: 14, background: "#4B7A35", cursor: "pointer", fontFamily: "inherit", fontSize: 16.5, fontWeight: 800, color: "#fff", boxShadow: "none" }}>{jubKon?.typ === edTyp || edit ? "Pokračovať v Editore oznámení ›" : "Otvoriť Editor oznámení ›"}</button>}
-    {dr === 0 && viacMiest && <div role="group" aria-label="Kde platí" style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={lbl}>Kde platí</span>
-      {miestaF.map((m) => { const on = !kde || kde.includes(m.id); return (
-        <button key={m.id} type="button" role="checkbox" aria-checked={on} onClick={() => setKde((k) => { const l = k ?? miestaF.map((y) => y.id); const n2 = on ? l.filter((y) => y !== m.id) : [...l, m.id]; return n2.length === miestaF.length ? null : n2; })}
-          style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 50, padding: "0 14px", borderRadius: 12, border: `1.5px solid ${on ? "var(--green)" : "var(--cardBd)"}`, background: "var(--card)", fontFamily: "inherit", fontSize: 15.5, fontWeight: 700, color: "var(--ink)", cursor: "pointer", textAlign: "left", boxShadow: "none" }}>
-          <span aria-hidden style={{ width: 24, height: 24, flex: "none", borderRadius: 7, background: on ? "#4B7A35" : "transparent", border: on ? "none" : "1.5px solid var(--cardBd)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>{on ? "✓" : ""}</span>{m.nazov}</button>); })}
-      <span style={{ fontSize: 13, color: "var(--ink3)" }}>Predvolené všetky. Napíšete raz, ukáže sa na stránke farnosti aj na podstránkach zaškrtnutých kostolov.</span></div>}
+    {dr === 0 && <div role="group" aria-label="Kde platí" style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={lbl}>Kde platí</span>
+      {/* OPRAVY 287: Celá farnosť · kostoly · Iné miesto */}
+      {(() => { const on = !ozIne && (!kde || !viacMiest); return <button type="button" role="checkbox" aria-checked={on} onClick={() => { setOzIne(false); setKde(null); }} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 50, padding: "0 14px", borderRadius: 12, border: `1.5px solid ${on ? "var(--green)" : "var(--cardBd)"}`, background: "var(--card)", fontFamily: "inherit", fontSize: 15.5, fontWeight: 700, color: "var(--ink)", cursor: "pointer", textAlign: "left", boxShadow: "none" }}><span aria-hidden style={{ width: 24, height: 24, flex: "none", borderRadius: 7, background: on ? "#4B7A35" : "transparent", border: on ? "none" : "1.5px solid var(--cardBd)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>{on ? "✓" : ""}</span>Celá farnosť</button>; })()}
+      {viacMiest && miestaF.map((m) => { const on = !ozIne && !!kde && kde.includes(m.id); return (
+        <button key={m.id} type="button" role="checkbox" aria-checked={on} onClick={() => { setOzIne(false); setKde((k) => { const l = k ?? []; const n2 = on ? l.filter((y) => y !== m.id) : [...l, m.id]; return n2.length === 0 || n2.length === miestaF.length ? null : n2; }); }}
+          style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 50, padding: "0 14px", borderRadius: 12, border: `1.5px solid ${on ? "var(--green)" : "var(--cardBd)"}`, background: "var(--card)", fontFamily: "inherit", fontSize: 15.5, fontWeight: 700, color: "var(--ink)", cursor: "pointer", textAlign: "left", boxShadow: "none" }}><span aria-hidden style={{ width: 24, height: 24, flex: "none", borderRadius: 7, background: on ? "#4B7A35" : "transparent", border: on ? "none" : "1.5px solid var(--cardBd)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>{on ? "✓" : ""}</span>{m.nazov}</button>); })}
+      {(() => { const on = ozIne; return <button type="button" role="checkbox" aria-checked={on} onClick={() => { setOzIne(true); setKde(null); }} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 50, padding: "0 14px", borderRadius: 12, border: `1.5px solid ${on ? "var(--green)" : "var(--cardBd)"}`, background: "var(--card)", fontFamily: "inherit", fontSize: 15.5, fontWeight: 700, color: "var(--ink)", cursor: "pointer", textAlign: "left", boxShadow: "none" }}><span aria-hidden style={{ width: 24, height: 24, flex: "none", borderRadius: 7, background: on ? "#4B7A35" : "transparent", border: on ? "none" : "1.5px solid var(--cardBd)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>{on ? "✓" : ""}</span>Iné miesto</button>; })()}
+      {ozIne && <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ ...lbl, fontSize: 14 }}>Miesto *</span><input value={miesto} onChange={(e) => setMiesto(e.target.value.slice(0, 60))} placeholder="napr. refektár gymnázia" aria-label="Miesto" style={pole} /></label>}
+      <span style={{ fontSize: 13, color: "var(--ink3)" }}>{ozIne ? "Na stránke sa ukáže miesto namiesto kostola." : viacMiest ? "Celá farnosť: ukáže sa všetkým. Kostol: aj na jeho podstránke." : "Celá farnosť: ukáže sa všetkým."}</span></div>}
     {dr === 0 && <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={lbl}>Platí do</span>
       <Segment label="Platí do" vol={PLATI.map(([t], i) => [i, t] as [number, string])} cur={plati} set={setPlati} />
       <span style={{ fontSize: 13, color: "var(--ink3)" }}>Potom oznam sám zmizne. Zmazať ho môžete aj skôr.</span></div>}
@@ -490,7 +499,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
         <input inputMode="numeric" value={limit} onChange={(e) => setLimit(e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="bez limitu" aria-label="Koľko ľudí najviac" style={{ ...pole, width: 140, height: 46 }} /></label>}
     </div>}
     {/* KARTA 63: aj pri oznámení z Editora (parte, svadba, jubileum) */}
-    {<UpozornitSledujucich strankaId={strankaId} blok={blokUpoz} miesta={dr === 0 && viacMiest && kde && kde.length < miestaF.length ? kde : dr === 1 && viacMiest ? [kdeId] : undefined} value={upoz} onChange={setUpozV} />}
+    {<UpozornitSledujucich strankaId={strankaId} blok={blokUpoz} miesta={dr === 0 && viacMiest && !ozIne && kde && kde.length < miestaF.length ? kde : dr === 1 && viacMiest && kdeK ? [kdeK] : undefined} value={upoz} onChange={setUpozV} />}
     {!edit && (jub ? !!jubKon : maObsah) && <ZahoditRozpisane onZahodit={zahod} />}
     {!ramSprava && potvrdenie}
   </>;

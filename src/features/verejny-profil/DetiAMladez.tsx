@@ -3,6 +3,8 @@
 // Karty ako Oznamy: dátumový štvorec (tábor = viacdňový, plná modrá), druh · kedy, názov, miesto · text, Prídem + počet.
 // Tábor: „Prihlásiť dieťa" (prihlasuje rodič) a „voľných N". Mená detí verejne nikdy, len počet. Prázdny blok sa neukáže.
 // ============================================================
+import { kdeNaStranke } from "@/features/rola/VyberKostola";
+import { useMiesta } from "@/lib/miestaFarnosti";
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { useStretnutia, skoncilo, jeTabor } from "@/lib/detiMladez";
 import { reakcieF, prepniReakciuF, useReakcieF } from "@/lib/reakcieFarnosti";
@@ -20,6 +22,7 @@ export type RiadokDeti = { id: string; dat?: Date; kedy: string; t: string; txt:
 export function DetiAMladezBlok({ strankaId, blokStyl, lavy, kto, mojeMeno, reg, riadok }: { strankaId: string; blokStyl: CSSProperties; lavy: ReactNode; kto: string; mojeMeno: string; reg: boolean; riadok?: (r: RiadokDeti) => ReactNode }) {
   useReakcieF();
   const [gal, setGal] = useState<{ t: string; m: MediumGalerie[] } | null>(null); // OPRAVY 270: ťuk na fotku = prehliadač
+  const miestaF = useMiesta(strankaId); // OPRAVY 287: Iné miesto, inak kostol
   const L = useStretnutia(strankaId).filter((s) => !skoncilo(s)).sort((a, b) => a.dat.localeCompare(b.dat));
   if (!L.length) return null;
   return (
@@ -32,7 +35,7 @@ export function DetiAMladezBlok({ strankaId, blokStyl, lavy, kto, mojeMeno, reg,
           const t = plne ? "Plné · ďakujeme" : ja ? (tab ? "Prihlásené ✓ · zrušiť" : zav ? "Prihlásený ✓ · zrušiť" : "Prídem ✓ · zrušiť") : tab && zav ? "Prihlásiť dieťa" : zav ? "Prihlásiť sa" : "Prídem";
           const poc = tab && s.limit ? `voľných ${Math.max(0, s.limit - l.length)}` : l.length ? (zav ? `prihlásených ${l.length}` : `príde ${l.length}`) : s.limit ? `miesta: ${s.limit}` : "";
           const foto = s.fotky?.[0], txt = cistyText(s.txt).trim();
-          if (riadok) return riadok({ id: s.id, dat: s.dat ? zIso(s.dat) : undefined, kedy: kedyStretnutia(s), t: s.t, txt: [s.kde, txt].filter(Boolean).join(" · "), poc, fotky: s.fotky ?? [], popisy: s.popisy,
+          if (riadok) return riadok({ id: s.id, dat: s.dat ? zIso(s.dat) : undefined, kedy: kedyStretnutia(s), t: s.t, txt: [kdeNaStranke(s.kostol, s.kde, miestaF), txt].filter(Boolean).join(" · "), poc, fotky: s.fotky ?? [], popisy: s.popisy,
             tlac: s.pz > 0 ? <button type="button" aria-pressed={ja} disabled={plne} onClick={() => { if (zav && !ja && !reg) { toast("Prihlásiť sa menom môžu len registrovaní v DEED+."); return; } prepniReakciuF(strankaId, s.id, "ucast", kto, mojeMeno); }}
               style={{ minHeight: 48, padding: "0 18px", borderRadius: 12, cursor: plne ? "default" : "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, whiteSpace: "nowrap", border: ja ? "2px solid var(--nf-zelena)" : "2px solid var(--nf-plne)", background: plne ? "var(--nf-vyp)" : ja ? "var(--nf-gSoft)" : "var(--nf-plne)", color: plne ? "var(--nf-ink2)" : ja ? "var(--nf-gInk)" : "var(--nf-plneInk)" }}>{t}</button> : null });
           return (
@@ -43,7 +46,7 @@ export function DetiAMladezBlok({ strankaId, blokStyl, lavy, kto, mojeMeno, reg,
                 <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
                   <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--nf-gInk)" }}>{`${s.druh} · ${kedyStretnutia(s)}`.toLocaleUpperCase("sk-SK")}</span>
                   <b style={{ fontSize: 18, lineHeight: 1.3, color: "var(--nf-ink)" }}>{s.t}</b>
-                  {s.kde && <span style={{ fontSize: 15.5, lineHeight: 1.5, color: "var(--nf-ink2)" }}>{s.kde}</span>}
+                  {kdeNaStranke(s.kostol, s.kde, miestaF) && <span style={{ fontSize: 15.5, lineHeight: 1.5, color: "var(--nf-ink2)" }}>{kdeNaStranke(s.kostol, s.kde, miestaF)}</span>}
                   {txt && <Viac text={s.txt} velkost={15.5} />}
                   {s.pz > 0 && <span style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", paddingTop: 4 }}>
                     <button type="button" aria-pressed={ja} disabled={plne} onClick={() => { if (zav && !ja && !reg) { toast("Prihlásiť sa menom môžu len registrovaní v DEED+."); return; } prepniReakciuF(strankaId, s.id, "ucast", kto, mojeMeno); }}

@@ -12,6 +12,7 @@ export const DRUHY_BRIGADY = ["Brigáda", "Služba pri omši", "Iná pomoc"] as 
 export type DruhBrigady = (typeof DRUHY_BRIGADY)[number];
 export interface Brigada {
   id: string; druh: DruhBrigady; t: string; dat: string; cas: string; kde: string;
+  /** OPRAVY 287: Celá farnosť „*“ · id kostola · Iné miesto „~“ (bez = celá farnosť) */ kostol?: string;
   /** text (HTML z TextovePolia) */ txt: string; txt2?: string;
   foto?: string;
   /** Pozvať ľudí: 0 bez prihlásenia · 1 nezáväzne (Prídem pomôcť) · 2 záväzne (Prihlásiť sa) */ pz: 0 | 1 | 2;

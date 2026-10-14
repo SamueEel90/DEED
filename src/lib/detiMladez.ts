@@ -11,6 +11,7 @@ export const DRUHY_STRETNUTIA = ["Stretko", "Miništranti", "Spevokol", "Tábor"
 export type DruhStretnutia = (typeof DRUHY_STRETNUTIA)[number];
 export interface Stretnutie {
   id: string; druh: DruhStretnutia; t: string; dat: string; /** tábor: posledný deň */ datDo?: string; cas: string; kde: string;
+  /** OPRAVY 287: Celá farnosť „*“ · id kostola · Iné miesto „~“ (bez = celá farnosť) */ kostol?: string;
   /** text (HTML z TextovePolia) */ txt: string;
   /** OPRAVY 212: fotky z GaleriaEditor (prvá titulná) + popisy */ fotky?: string[]; popisy?: string[];
   /** 0 bez prihlásenia · 1 Prídem · 2 záväzne (tábor: Prihlásiť dieťa) */ pz: 0 | 1 | 2;

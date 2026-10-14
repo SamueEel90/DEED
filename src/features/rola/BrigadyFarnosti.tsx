@@ -3,6 +3,8 @@
 // + Vytvoriť brigádu → formulár na mieste (hore „‹ Späť na zoznam brigád“), vedľa živý náhľad karty bloku Pomôž.
 // Zoznam: koľko príde, mená, Upraviť, Podržte · zmazať. Po termíne „SKONČILA · na stránke už nie je“.
 // ============================================================
+import { useMiesta } from "@/lib/miestaFarnosti";
+import { VyberKostola, platnyKostol, kdeNaStranke, INE_MIESTO } from "./VyberKostola";
 import { useAutorZaMna } from "@/lib/autorFarnosti";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useBrigady, ulozBrigadu, zmazBrigadu, skoncila, DRUHY_BRIGADY, type Brigada } from "@/lib/brigady";
@@ -27,7 +29,7 @@ const kick: CSSProperties = { fontSize: 12.5, fontWeight: 800, letterSpacing: ".
 const hlaskaSt: CSSProperties = { padding: "10px 14px", borderRadius: 12, background: "var(--gSoft)", border: `1.5px solid ${ZELENA}`, fontSize: 14, fontWeight: 700, color: "var(--gInk)" };
 const obrys: CSSProperties = { minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1.5px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" };
 const teraz = () => Date.now();
-type Form = { druh: number; t: string; dat: string; cas: string; kde: string; txt: string; txt2: string; media: MediumZbierky[]; pz: 0 | 1 | 2; lim: string };
+type Form = { druh: number; t: string; dat: string; cas: string; kde: string; /** OPRAVY 287 */ ko?: string; txt: string; txt2: string; media: MediumZbierky[]; pz: 0 | 1 | 2; lim: string };
 const prazdny = (): Form => ({ druh: 0, t: "", dat: "", cas: "", kde: "", txt: "", txt2: "", media: [], pz: 2, lim: "" });
 export const kedyBrigady = (dat: string, cas: string) => { const d = dat ? new Date(`${dat}T12:00:00`) : null; return [d ? `${DNI[d.getDay()]} ${d.getDate()}. ${d.getMonth() + 1}.` : "", cas].filter(Boolean).join(" · "); };
 
@@ -53,6 +55,7 @@ export function BrigadyFarnosti({ strankaId, mobil }: { strankaId: string; mobil
   const [upozV, setUpozV] = useState<boolean | null>(null);
   useReakcieF(); useCerstveReakcieF(strankaId);
   const L = useBrigady(strankaId);
+  const miestaF = useMiesta(strankaId); // OPRAVY 287
   const autorJa = useAutorZaMna(strankaId);
   const [on, setOn] = useState(false);
   const [edit, setEdit] = useState<string | null>(null);
@@ -73,10 +76,11 @@ export function BrigadyFarnosti({ strankaId, mobil }: { strankaId: string; mobil
 
   const otvor = (b?: Brigada) => {
     setEdit(b?.id ?? null);
-    setFf(b ? { druh: Math.max(0, DRUHY_BRIGADY.indexOf(b.druh)), t: b.t, dat: b.dat, cas: b.cas, kde: b.kde, txt: b.txt, txt2: b.txt2 ?? "", media: b.foto ? [{ id: 1, typ: "foto", src: b.foto }] : [], pz: b.pz, lim: b.limit ? String(b.limit) : "" } : prazdny());
+    setFf(b ? { druh: Math.max(0, DRUHY_BRIGADY.indexOf(b.druh)), t: b.t, dat: b.dat, cas: b.cas, kde: b.kde, ko: b.kostol, txt: b.txt, txt2: b.txt2 ?? "", media: b.foto ? [{ id: 1, typ: "foto", src: b.foto }] : [], pz: b.pz, lim: b.limit ? String(b.limit) : "" } : prazdny());
     setKluc((k) => k + 1); setOn(true);
   };
-  const ch = [!f.t.trim() && "názov", !f.dat && "dátum", !f.cas && "čas"].filter(Boolean) as string[];
+  const ko = platnyKostol(f.ko, miestaF);
+  const ch = [!f.t.trim() && "názov", !f.dat && "dátum", !f.cas && "čas", ko === INE_MIESTO && !f.kde.trim() && "miesto"].filter(Boolean) as string[];
   const kedy = kedyBrigady(f.dat, f.cas);
   const foto = f.media.find((m) => m.typ === "foto")?.src;
   // KARTA 63 1c: Upozorniť sledujúcich (predvolené: Udalosť, brigáda, stretnutie · pri úprave Úpravy už zverejneného)
@@ -84,7 +88,7 @@ export function BrigadyFarnosti({ strankaId, mobil }: { strankaId: string; mobil
   const zverejni = () => {
     if (ch.length) return;
     const st = edit ? L.find((x) => x.id === edit) : undefined;
-    const b: Brigada = { id: edit ?? `br${teraz().toString(36)}`, druh: DRUHY_BRIGADY[f.druh], t: f.t.trim(), dat: f.dat, cas: f.cas, kde: f.kde.trim(), txt: f.txt, txt2: f.txt2 || undefined,
+    const b: Brigada = { id: edit ?? `br${teraz().toString(36)}`, druh: DRUHY_BRIGADY[f.druh], t: f.t.trim(), dat: f.dat, cas: f.cas, kde: f.kde.trim(), kostol: ko, txt: f.txt, txt2: f.txt2 || undefined,
       foto, pz: f.pz, limit: f.pz === 2 ? parseInt(f.lim, 10) || 0 : 0, vytvorena: st?.vytvorena ?? new Date().toISOString(), af: st ? st.af : autorJa, upoz };
     if (!edit) zmazKoncept(KON);
     void ulozBrigadu(strankaId, b).then(() => { setOn(false); setEdit(null); setUpozV(null); hlas(`${edit ? "Zmeny sú uložené ✓" : "Zverejnené ✓"} ${b.t} je na stránke v bloku Pomôž.`); });
@@ -99,7 +103,7 @@ export function BrigadyFarnosti({ strankaId, mobil }: { strankaId: string; mobil
           <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".12em", color: "#5B5D53" }}>{`${DRUHY_BRIGADY[f.druh]}${kedy ? ` · ${kedy}` : ""}`.toUpperCase()}</span>
           <b style={{ fontSize: 20, lineHeight: 1.25 }}>{f.t.trim() || "Názov brigády"}</b>
           {cistyText(f.txt).trim() && <span style={{ fontSize: 15.5, lineHeight: 1.5, color: "#4A4C43" }}>{cistyText(f.txt).trim()}</span>}
-          <span style={{ fontSize: 14.5, color: "#5B5D53" }}>{f.kde.trim() || "miesto"}</span>
+          <span style={{ fontSize: 14.5, color: "#5B5D53" }}>{kdeNaStranke(ko, f.kde, miestaF) || "miesto"}</span>
           {f.pz > 0 && <span style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <span style={{ minHeight: 44, padding: "0 16px", borderRadius: 13, background: "#14110B", color: "#fff", fontSize: 15, fontWeight: 800, display: "flex", alignItems: "center" }}>{f.pz === 2 ? "Prihlásiť sa" : "Prídem pomôcť"}</span>
             {f.pz === 2 && f.lim && <span style={{ fontSize: 15, fontWeight: 700 }}>miesta: {f.lim}</span>}
@@ -118,7 +122,8 @@ export function BrigadyFarnosti({ strankaId, mobil }: { strankaId: string; mobil
             <label style={lab}>Dátum<input type="date" value={f.dat} onChange={(e) => setF({ dat: e.target.value })} style={pole} /></label>
             <label style={lab}>Čas<CasPole value={f.cas} onCommit={(v) => setF({ cas: v })} label="Čas brigády" placeholder="napr. 9:00" style={pole} /></label>
           </div>
-          <label style={lab}>Miesto<input value={f.kde} onChange={(e) => setF({ kde: e.target.value.slice(0, 60) })} placeholder="napr. Fara" style={pole} /></label>
+          <VyberKostola miesta={miestaF} value={ko} onChange={(v) => setF({ ko: v })} style={pole} lblStyl={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink2)" }} />
+          <label style={lab}>{ko === INE_MIESTO ? "Miesto *" : "Miesto"}<input value={f.kde} onChange={(e) => setF({ kde: e.target.value.slice(0, 60) })} placeholder={ko === INE_MIESTO ? "napr. hora Butkov" : "napr. Fara"} style={pole} /></label>
           <TextovePolia key={kluc} popis={f.txt} popis2={f.txt2} onPopis={(h) => setF({ txt: h })} onPopis2={(h) => setF({ txt2: h })} ph={mobil}
             popisHlavneho="Čo sa bude robiť a čo si vziať. Najviac 12 riadkov." placeholder="napr. Hrabanie lístia a orezanie kríkov. Rukavice a náradie máme." />
           <GaleriaEditor media={f.media} onMedia={(m) => setF({ media: m.slice(0, 1) })} ph={mobil} max={1} bezVidea nadpis="Fotka — nepovinné" dovetok="" />

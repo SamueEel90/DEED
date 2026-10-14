@@ -3,6 +3,8 @@
 // + Vytvoriť stretnutie → modul udalosti + čipy druhu (Stretko · Miništranti · Spevokol · Tábor · Iné), fotky cez GaleriaEditor (OPRAVY 212).
 // Zoznam: prihlásení s menami (mená vidí len farár a koordinátor), Upraviť, Podržte · zmazať. Pri tábore prihlasuje rodič.
 // ============================================================
+import { useMiesta } from "@/lib/miestaFarnosti";
+import { VyberKostola, platnyKostol, kdeNaStranke, INE_MIESTO } from "./VyberKostola";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useStretnutia, ulozStretnutie, zmazStretnutie, skoncilo, DRUHY_STRETNUTIA, type Stretnutie } from "@/lib/detiMladez";
 import { reakcieF, useReakcieF, useCerstveReakcieF } from "@/lib/reakcieFarnosti";
@@ -26,7 +28,7 @@ const kick: CSSProperties = { fontSize: 12.5, fontWeight: 800, letterSpacing: ".
 const hlaskaSt: CSSProperties = { padding: "10px 14px", borderRadius: 12, background: "var(--gSoft)", border: `1.5px solid ${ZELENA}`, fontSize: 14, fontWeight: 700, color: "var(--gInk)" };
 const obrys: CSSProperties = { minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1.5px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" };
 const teraz = () => Date.now();
-type Form = { druh: number; t: string; dat: string; datDo: string; cas: string; kde: string; txt: string; media: MediumZbierky[]; pz: 0 | 1 | 2; lim: string };
+type Form = { druh: number; t: string; dat: string; datDo: string; cas: string; kde: string; /** OPRAVY 287 */ ko?: string; txt: string; media: MediumZbierky[]; pz: 0 | 1 | 2; lim: string };
 const prazdny = (): Form => ({ druh: 0, t: "", dat: "", datDo: "", cas: "", kde: "", txt: "", media: [], pz: 1, lim: "" });
 const kedyBrigady = (dat: string, cas: string) => { const d = dat ? new Date(`${dat}T12:00:00`) : null; return [d ? `${DNI[d.getDay()]} ${d.getDate()}. ${d.getMonth() + 1}.` : "", cas].filter(Boolean).join(" · "); };
 
@@ -58,6 +60,7 @@ export function DetiMladezFarnosti({ strankaId, mobil }: { strankaId: string; mo
   const [upozV, setUpozV] = useState<boolean | null>(null);
   useReakcieF(); useCerstveReakcieF(strankaId);
   const L = useStretnutia(strankaId);
+  const miestaF = useMiesta(strankaId); // OPRAVY 287
   const [on, setOn] = useState(false);
   const [edit, setEdit] = useState<string | null>(null);
   const [f, setFf] = useState<Form>(prazdny);
@@ -77,11 +80,12 @@ export function DetiMladezFarnosti({ strankaId, mobil }: { strankaId: string; mo
 
   const otvor = (b?: Stretnutie) => {
     setEdit(b?.id ?? null);
-    setFf(b ? { druh: Math.max(0, DRUHY_STRETNUTIA.indexOf(b.druh)), t: b.t, dat: b.dat, datDo: b.datDo ?? "", cas: b.cas, kde: b.kde, txt: b.txt, media: (b.fotky ?? []).map((src, i) => ({ id: i + 1, typ: "foto" as const, src, ...(b.popisy?.[i] ? { popis: b.popisy[i] } : {}) })), pz: b.pz, lim: b.limit ? String(b.limit) : "" } : prazdny());
+    setFf(b ? { druh: Math.max(0, DRUHY_STRETNUTIA.indexOf(b.druh)), t: b.t, dat: b.dat, datDo: b.datDo ?? "", cas: b.cas, kde: b.kde, ko: b.kostol, txt: b.txt, media: (b.fotky ?? []).map((src, i) => ({ id: i + 1, typ: "foto" as const, src, ...(b.popisy?.[i] ? { popis: b.popisy[i] } : {}) })), pz: b.pz, lim: b.limit ? String(b.limit) : "" } : prazdny());
     setKluc((k) => k + 1); setOn(true);
   };
   const tabor = DRUHY_STRETNUTIA[f.druh] === "Tábor";
-  const ch = [!f.t.trim() && "názov", !f.dat && "dátum", tabor && !f.datDo && "posledný deň", !tabor && !f.cas && "čas"].filter(Boolean) as string[];
+  const ko = platnyKostol(f.ko, miestaF);
+  const ch = [!f.t.trim() && "názov", !f.dat && "dátum", tabor && !f.datDo && "posledný deň", !tabor && !f.cas && "čas", ko === INE_MIESTO && !f.kde.trim() && "miesto"].filter(Boolean) as string[];
   const kedy = kedyStretnutia({ dat: f.dat, datDo: tabor ? f.datDo : "", cas: f.cas });
   const fotky = f.media.filter((m) => m.typ === "foto"), foto = fotky[0]?.src;
   // KARTA 63 1c: Upozorniť sledujúcich (predvolené: Udalosť, brigáda, stretnutie · pri úprave Úpravy už zverejneného)
@@ -89,7 +93,7 @@ export function DetiMladezFarnosti({ strankaId, mobil }: { strankaId: string; mo
   const zverejni = () => {
     if (ch.length) return;
     const st = edit ? L.find((x) => x.id === edit) : undefined;
-    const b: Stretnutie = { id: edit ?? `dm${teraz().toString(36)}`, druh: DRUHY_STRETNUTIA[f.druh], t: f.t.trim(), dat: f.dat, datDo: tabor && f.datDo ? f.datDo : undefined, cas: f.cas, kde: f.kde.trim(), txt: f.txt,
+    const b: Stretnutie = { id: edit ?? `dm${teraz().toString(36)}`, druh: DRUHY_STRETNUTIA[f.druh], t: f.t.trim(), dat: f.dat, datDo: tabor && f.datDo ? f.datDo : undefined, cas: f.cas, kde: f.kde.trim(), kostol: ko, txt: f.txt,
       fotky: fotky.length ? fotky.map((m) => m.src) : undefined, popisy: fotky.some((m) => m.popis) ? fotky.map((m) => m.popis ?? "") : undefined,
       pz: f.pz, limit: f.pz === 2 ? parseInt(f.lim, 10) || 0 : 0, vytvorena: st?.vytvorena ?? new Date().toISOString(), upoz };
     if (!edit) zmazKoncept(KON);
@@ -105,7 +109,7 @@ export function DetiMladezFarnosti({ strankaId, mobil }: { strankaId: string; mo
           <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".12em", color: "#5B5D53" }}>{`${DRUHY_STRETNUTIA[f.druh]}${kedy ? ` · ${kedy}` : ""}`.toUpperCase()}</span>
           <b style={{ fontSize: 20, lineHeight: 1.25 }}>{f.t.trim() || "Názov stretnutia"}</b>
           {cistyText(f.txt).trim() && <span style={{ fontSize: 15.5, lineHeight: 1.5, color: "#4A4C43" }}>{cistyText(f.txt).trim()}</span>}
-          <span style={{ fontSize: 14.5, color: "#5B5D53" }}>{f.kde.trim() || "miesto"}</span>
+          <span style={{ fontSize: 14.5, color: "#5B5D53" }}>{kdeNaStranke(ko, f.kde, miestaF) || "miesto"}</span>
           {f.pz > 0 && <span style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <span style={{ minHeight: 44, padding: "0 16px", borderRadius: 13, background: "#14110B", color: "#fff", fontSize: 15, fontWeight: 800, display: "flex", alignItems: "center" }}>{tabor && f.pz === 2 ? "Prihlásiť dieťa" : f.pz === 2 ? "Prihlásiť sa" : "Prídem"}</span>
             {f.pz === 2 && f.lim && <span style={{ fontSize: 15, fontWeight: 700 }}>miesta: {f.lim}</span>}
@@ -125,7 +129,8 @@ export function DetiMladezFarnosti({ strankaId, mobil }: { strankaId: string; mo
             {tabor ? <label style={lab}>Posledný deň<input type="date" value={f.datDo} min={f.dat || undefined} onChange={(e) => setF({ datDo: e.target.value })} style={pole} /></label>
               : <label style={lab}>Čas<CasPole value={f.cas} onCommit={(v) => setF({ cas: v })} label="Čas stretnutia" placeholder="napr. 17:00" style={pole} /></label>}
           </div>
-          <label style={lab}>Miesto<input value={f.kde} onChange={(e) => setF({ kde: e.target.value.slice(0, 60) })} placeholder="napr. Fara" style={pole} /></label>
+          <VyberKostola miesta={miestaF} value={ko} onChange={(v) => setF({ ko: v })} style={pole} lblStyl={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink2)" }} />
+          <label style={lab}>{ko === INE_MIESTO ? "Miesto *" : "Miesto"}<input value={f.kde} onChange={(e) => setF({ kde: e.target.value.slice(0, 60) })} placeholder={ko === INE_MIESTO ? "napr. hora Butkov" : "napr. Fara"} style={pole} /></label>
           {tabor && <span style={{ fontSize: 13, color: "var(--ink3)" }}>Pri tábore prihlasuje rodič. Na stránke bude tlačidlo Prihlásiť dieťa a počet voľných miest.</span>}
           <TextovePolia key={kluc} popis={f.txt} popis2="" onPopis={(h) => setF({ txt: h })} onPopis2={() => undefined} ph={mobil}
             popisHlavneho="Čo sa bude robiť. Najviac 12 riadkov." placeholder="napr. Hry, rozhovor a pizza." />
