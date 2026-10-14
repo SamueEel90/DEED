@@ -115,6 +115,8 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const [oznamyHore, setOznamyHore] = useState(0); // KARTA 56G §2: + Pridať → Oznam otvorí Oznamy hore
   const [kartaOtv, setKartaOtv] = useState(true);
   const [zmazana, setZmazana] = useState(false); // KARTA 56D §5: hláška po zmazaní hlavnej zbierky, na mieste v Zbierkach
+  // OPRAVY 267: ukončená hlavná zbierka ostáva v Archíve (názov, kedy, koľko sa vyzbieralo)
+  const [archivH, setArchivH] = useState<{ nazov: string; koniec: string; suma: number }[]>(() => nacitajStav("hlavnaArchiv", strankaId, []));
   // KARTA 56D §6: výber druhu zbierky, „najprv hlavná", hláška po spustení a otvorená zbierka
   const [zbVyber, setZbVyber] = useState(false);
   const [pinVyber, setPinVyber] = useState(false); // OPRAVY 187: výber zbierky iného subjektu
@@ -386,15 +388,23 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   };
   // KARTA 57 A.8: archív — ukončené a zrušené v jednom zbalenom riadku, pri každej dátum a čas ukončenia (čas servera)
   const archiv = dalsie.filter(vArchive);
-  const archivKarta = archiv.length > 0 && (
+  const archivN = archiv.length + archivH.length;
+  const archivKarta = archivN > 0 && (
     <div style={{ flex: "none", display: "flex", flexDirection: "column", gap: 8 }}>
       <button type="button" onClick={() => setArchOtv((o) => !o)} aria-expanded={archOtv} style={{ minHeight: 64, padding: "10px 16px", borderRadius: 18, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" }}>
         <Ik d="M3 5h18v4H3zM5 9v10h14V9M10 13h4" s={20} c="var(--acc)" />
-        <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15.5 }}>Archív · {archiv.length} {archiv.length === 1 ? "zbierka" : archiv.length < 5 ? "zbierky" : "zbierok"}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>ukončené a zrušené · všetko sa uchováva, kedykoľvek dohľadáte</span></span>
+        <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15.5 }}>Archív · {archivN} {archivN === 1 ? "zbierka" : archivN < 5 ? "zbierky" : "zbierok"}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>ukončené a zrušené · všetko sa uchováva, kedykoľvek dohľadáte</span></span>
         <span aria-hidden="true" style={{ fontSize: 18, color: "var(--ink3)", transform: `rotate(${archOtv ? 180 : 0}deg)`, transition: "transform .2s ease" }}>⌄</span>
       </button>
       {archOtv && <div style={{ display: "flex", flexDirection: "column", borderRadius: 18, border: "1px solid var(--cardBd)", background: "var(--card)", padding: "4px 16px" }}>
-        {archiv.map((z, i) => { const rod = !!z.farnost && z.farnost.druh !== "farnost", otv = rodOtv === z.id; const [chip] = stitokZbierkyF(z); return (
+        {archivH.map((h, i) => (
+          <div key={`h${i}`} style={{ minHeight: 60, padding: "10px 0", borderTop: i ? "1px solid var(--cardBd)" : "none", display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+              <b style={{ fontSize: 15 }}>{h.nazov}</b>
+              <span style={{ fontSize: 13, color: "var(--ink3)" }}>{["hlavná zbierka · ukončená", casKonca(h.koniec), `vyzbierané ${eur(h.suma)}`].filter(Boolean).join(" · ")}</span>
+            </span>
+          </div>))}
+        {archiv.map((z, i0) => { const i = i0 + archivH.length; const rod = !!z.farnost && z.farnost.druh !== "farnost", otv = rodOtv === z.id; const [chip] = stitokZbierkyF(z); return (
           <button key={z.id} type="button" onClick={() => { if (rod) { setRodOtv(otv ? null : z.id); return; } sprava(""); setZbOtv(z.id); go("zbierka"); }} aria-expanded={rod ? otv : undefined}
             style={{ minHeight: 60, padding: "10px 0", border: "none", borderTop: i ? "1px solid var(--cardBd)" : "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" }}>
             <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
@@ -443,19 +453,26 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
         <button type="button" onClick={() => setZbBlok(false)} style={{ height: 50, padding: "0 18px", borderRadius: 14, border: "1px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--ink2)", boxShadow: "none" }}>Zavrieť</button>
       </div>
     </div>}
-    {zmazana && !hlavna && sprava2("Hlavná zbierka je zmazaná. Novú pridáte ťuknutím nižšie.", () => setZmazana(false), false)}
-    <span style={mobil ? { ...kicker, letterSpacing: ".07em", padding: "4px 2px 0" } : kicker}>HLAVNÁ ZBIERKA · JEDEN ÚČET</span>
-    {bezi && hlavnaRiadok}
+    {/* OPRAVY 267: zelená hláška na mieste + ďalší krok; ukončená je v Archíve */}
+    {zmazana && !hlavna && <div role="status" style={{ flex: "none", borderRadius: 18, background: "var(--gSoft)", border: "2px solid var(--green)", padding: "14px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
+      <b style={{ fontSize: 16.5, color: "var(--gInk)" }}>Hlavná zbierka je ukončená ✓</b>
+      <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Nájdete ju nižšie v Archíve. Ďalší krok: pridajte novú hlavnú zbierku, všetky ďalšie zbierky farnosti posielajú peniaze na jej účet.</span>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <button type="button" onClick={() => { setZmazana(false); go("hlavna"); }} style={{ minHeight: 50, padding: "0 20px", border: "none", borderRadius: 14, background: "var(--green)", cursor: "pointer", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, color: "#fff", boxShadow: "none" }}>Pridať novú hlavnú zbierku ›</button>
+        <button type="button" onClick={() => setZmazana(false)} style={{ minHeight: 50, padding: "0 18px", borderRadius: 14, border: "1px solid var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--gInk)", boxShadow: "none" }}>Rozumiem</button>
+      </div>
+    </div>}
+    {(bezi || !zmazana) && <span style={mobil ? { ...kicker, letterSpacing: ".07em", padding: "4px 2px 0" } : kicker}>HLAVNÁ ZBIERKA · JEDEN ÚČET</span>}
+    {bezi ? hlavnaRiadok : !zmazana && pridatHlavnu}
     {bezi && <>
       <span style={mobil ? { ...kicker, letterSpacing: ".07em", padding: "4px 2px 0" } : kicker}>ZVONČEKOVÁ ZBIERKA</span>
       {oknoKarta}
     </>}
-    {dalsie.length > 0 && <>
+    {dalsie.some((z) => !vArchive(z)) && <>
       <span style={mobil ? { ...kicker, letterSpacing: ".07em", padding: "8px 2px 0" } : { ...kicker, paddingTop: 8 }}>ĎALŠIE ZBIERKY</span>
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{dalsie.filter((z) => !vArchive(z)).map(dalsieRiadok)}</div>
-      {archivKarta}
     </>}
-    {!bezi && pridatHlavnu}
+    {archivKarta}
     <PripnuteZoznam strankaId={strankaId} mobil={mobil} hlas={(t) => setNoveOk(t)} />
     </>}
   </>;
@@ -579,7 +596,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const novaEl = <NovaZbierka strankaId={strankaId} pozicia="charita" tier={4} nazov={meno} inicialy={meno.split(/\s+/).map((w) => w[0] ?? "").join("").slice(0, 2).toUpperCase()} mobil={mobil} tablet={tablet} stit="silver"
     onMojeZbierky={() => go("zbierky")} farnost={{ ucet: hlavnyUcet, onSpustena: (z) => { go("zbierky"); setNoveOk(`Zbierka „${z.nazov}“ beží. Nájdete ju nižšie v Ďalších zbierkach.`); } }} />;
   const hlavnaSprava = <SpravaCentralnej strankaId={strankaId} nazov={meno} hlavnyUcet={hlavnyUcet} tier={4} mobil={mobil} toast={toast}
-    onZbierky={() => setSub("zbierky")} farnost={{ ostatneBezia, onZmazana: () => { setZmazana(true); go("zbierky"); }, onHotovo: () => go("prehlad") }} />;
+    onZbierky={() => setSub("zbierky")} farnost={{ ostatneBezia, onZmazana: () => { const n = [{ nazov: nazovHlavnej(hlavna), koniec: new Date().toISOString(), suma: hlavnySuhrn.suma }, ...archivH]; setArchivH(n); ulozStav("hlavnaArchiv", strankaId, n); setZmazana(true); go("zbierky"); }, onHotovo: () => go("prehlad") }} />;
   const obsah: Record<Sub, ReactNode> = { prehlad, zbierky, omse, oznamy, veriaci, ludia, filialky, penazenka, nastroje, profil, nahlad, hlavna: hlavnaSprava, zbierka: zbierkaEl, nova: novaEl, nast: nastavenia, n: nObr,
     zvoncek: <SpravaZvoncek strankaId={strankaId} mobil={mobil} toast={toast} onSpat={() => go("zbierky")} /> };
 
