@@ -3,19 +3,22 @@
 // Zdroj dáva kontext: SpravaFarnosti = galéria farnosti, FarnikPridava = moje fotky. Bez kontextu sa tlačidlo neukáže.
 import { createContext, useContext, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
+import { PanelVerejnychFotiek, klucFotky } from "./VerejneFotky";
+import { ulozFotku, type VerejnaFotka } from "@/lib/verejneFotky";
 
 export interface ZdrojFotiek {
   /** text tlačidla */ tlacidlo: string;
   /** nadpis okna */ nadpis: string;
   /** keď ešte nič nie je */ prazdne: string;
   fotky: () => string[];
+  /** bod 254: druhá záložka Verejné fotky (fotobanky) — len Správa stránky */ verejne?: boolean;
 }
 export const ZdrojFotiekKontext = createContext<ZdrojFotiek | null>(null);
 export const useZdrojFotiek = () => useContext(ZdrojFotiekKontext);
 
 export const zdrojFarnosti = (fotky: () => string[]): ZdrojFotiek => ({
   tlacidlo: "Vybrať z galérie farnosti ›", nadpis: "Galéria farnosti",
-  prazdne: "Farnosť zatiaľ nemá nahraté žiadne fotky. Fotky z profilu, oznamov, zbierok, brigád a stretnutí sa tu ukážu samé.", fotky,
+  prazdne: "Farnosť zatiaľ nemá nahraté žiadne fotky. Fotky z profilu, oznamov, zbierok, brigád a stretnutí sa tu ukážu samé.", fotky, verejne: true,
 });
 export const zdrojMoje = (fotky: () => string[]): ZdrojFotiek => ({
   tlacidlo: "Vybrať z mojich fotiek", nadpis: "Moje fotky",
@@ -42,7 +45,12 @@ export function TlacidloGalerie({ zdroj, vybrane, zostava, onVyber, style }: {
 function OknoGalerie({ zdroj, vybrane, zostava, onZavri, onVyber }: { zdroj: ZdrojFotiek; vybrane: string[]; zostava: number; onZavri: () => void; onVyber: (l: string[]) => void }) {
   const fotky = useMemo(() => zdroj.fotky(), [zdroj]);
   const [vyb, setVyb] = useState<string[]>([]);
+  const [vybV, setVybV] = useState<VerejnaFotka[]>([]); // bod 254: vybrané verejné fotky (uložia sa pri Pridať)
+  const [tab, setTab] = useState<"moje" | "verejne">("moje");
+  const [uklada, setUklada] = useState(false);
+  const [chybaUl, setChybaUl] = useState("");
   const [plne, setPlne] = useState(false);
+  const spolu = vyb.length + vybV.length;
   const uz = useMemo(() => new Set(vybrane), [vybrane]);
   const [uzke, setUzke] = useState(() => window.innerWidth < 700);
   useEffect(() => {
@@ -54,8 +62,24 @@ function OknoGalerie({ zdroj, vybrane, zostava, onZavri, onVyber }: { zdroj: Zdr
   const tukni = (src: string) => {
     if (uz.has(src)) return;
     if (vyb.includes(src)) { setVyb(vyb.filter((x) => x !== src)); setPlne(false); return; }
-    if (vyb.length >= zostava) { setPlne(true); return; }
+    if (spolu >= zostava) { setPlne(true); return; }
     setVyb([...vyb, src]);
+  };
+  const tukniV = (f: VerejnaFotka) => {
+    const k = klucFotky(f);
+    if (vybV.some((x) => klucFotky(x) === k)) { setVybV(vybV.filter((x) => klucFotky(x) !== k)); setPlne(false); return; }
+    if (spolu >= zostava) { setPlne(true); return; }
+    setVybV([...vybV, f]);
+  };
+  // Pridať: verejné fotky najprv uloží server k nám (Unsplash ostane ich adresa), potom idú ďalej ako bežné
+  const pridaj = async () => {
+    if (!vybV.length) { onVyber(vyb); return; }
+    setUklada(true); setChybaUl("");
+    try {
+      const ulozene: string[] = [];
+      for (const f of vybV) ulozene.push((await ulozFotku(f)).url);
+      onVyber([...vyb, ...ulozene]);
+    } catch (e) { setChybaUl((e as Error).message); setUklada(false); }
   };
   const tl: CSSProperties = { height: 52, padding: "0 20px", borderRadius: 14, border: "none", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" };
   return createPortal(
@@ -66,11 +90,15 @@ function OknoGalerie({ zdroj, vybrane, zostava, onZavri, onVyber }: { zdroj: Zdr
           <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
             <b style={{ fontSize: 18 }}>{zdroj.nadpis}</b>
             <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--ink3)" }}>Ťuknite na fotky, ktoré chcete pridať. Môžete aj viac naraz, najviac {fotiek(zostava)}.</span>
+            {zdroj.verejne && <div role="tablist" aria-label="Zdroj fotiek" style={{ display: "flex", gap: 4, padding: 4, marginTop: 8, borderRadius: 12, background: "var(--btn)", alignSelf: "flex-start" }}>
+              {([["moje", zdroj.nadpis], ["verejne", "Verejné fotky"]] as const).map(([k, n]) => <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
+                style={{ minHeight: 40, padding: "0 14px", border: "none", borderRadius: 9, background: tab === k ? "var(--seg, var(--card))" : "transparent", color: tab === k ? "var(--ink)" : "var(--ink3)", fontFamily: "inherit", fontSize: 14, fontWeight: tab === k ? 800 : 700, cursor: "pointer", boxShadow: "none" }}>{n}</button>)}
+            </div>}
           </div>
           <button type="button" onClick={onZavri} aria-label="Zavrieť" style={{ flex: "none", width: 44, height: 44, borderRadius: "50%", border: "none", background: "var(--btn)", color: "var(--ink)", cursor: "pointer", fontSize: 22, lineHeight: 1 }}>×</button>
         </div>
         <div style={{ flex: 1, overflowY: "auto", padding: "6px 20px 16px" }}>
-          {fotky.length === 0
+          {tab === "verejne" ? <PanelVerejnychFotiek uzke={uzke} vyb={vybV.map(klucFotky)} onTukni={tukniV} /> : fotky.length === 0
             ? <p style={{ margin: "18px 0", fontSize: 15, lineHeight: 1.5, color: "var(--ink2)" }}>{zdroj.prazdne}</p>
             : <div style={{ display: "grid", gridTemplateColumns: `repeat(${uzke ? 3 : 4}, minmax(0,1fr))`, gap: 8 }}>
               {fotky.map((src, i) => {
@@ -84,11 +112,12 @@ function OknoGalerie({ zdroj, vybrane, zostava, onZavri, onVyber }: { zdroj: Zdr
                   </button>);
               })}
             </div>}
+          {chybaUl && <p role="alert" style={{ margin: "12px 0 0", fontSize: 13.5, fontWeight: 700, color: "#A34A2A" }}>{chybaUl}</p>}
           {plne && <p role="alert" style={{ margin: "12px 0 0", fontSize: 13.5, fontWeight: 700, color: "#A34A2A" }}>Viac sa nezmestí. Najprv zrušte inú vybranú fotku.</p>}
         </div>
         <div style={{ padding: "12px 20px calc(12px + env(safe-area-inset-bottom))", borderTop: "1px solid var(--cardBd)", display: "flex", gap: 10, justifyContent: "flex-end" }}>
           <button type="button" onClick={onZavri} style={{ ...tl, background: "var(--btn)", color: "var(--ink)" }}>Zrušiť</button>
-          <button type="button" onClick={() => onVyber(vyb)} disabled={!vyb.length} style={{ ...tl, flex: uzke ? 1 : undefined, background: "var(--green)", color: "#fff", opacity: vyb.length ? 1 : 0.45, cursor: vyb.length ? "pointer" : "default" }}>{vyb.length ? `Pridať ${fotiek(vyb.length)}` : "Pridať"}</button>
+          <button type="button" onClick={() => void pridaj()} disabled={!spolu || uklada} style={{ ...tl, flex: uzke ? 1 : undefined, background: "var(--green)", color: "#fff", opacity: spolu && !uklada ? 1 : 0.45, cursor: spolu && !uklada ? "pointer" : "default" }}>{uklada ? "Ukladám…" : spolu ? `Pridať ${fotiek(spolu)}` : "Pridať"}</button>
         </div>
       </div>
     </div>, document.body);
