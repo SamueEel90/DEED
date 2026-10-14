@@ -61,7 +61,7 @@ export function NaseKostolyBlok({ strankaId, miesta, siroka, pc, onMiesto, styl,
     </div>);
 }
 
-function KartaMiesta({ m, k, siroka, onTap }: { m: Miesto; k: KalKostol; siroka: boolean; onTap: () => void }) {
+export function KartaMiesta({ m, k, siroka, onTap }: { m: Miesto; k: KalKostol; siroka: boolean; onTap: () => void }) {
   const f = titulna(m), om = najblizsiaOmsa(k);
   return (
     <button type="button" onClick={onTap} aria-label={`${m.nazov} · viac o kostole`}

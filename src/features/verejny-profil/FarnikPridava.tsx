@@ -244,6 +244,15 @@ export function OdFarnikov({ strankaId, novy, pad, fab }: { strankaId: string; n
     </section>);
 }
 
+// KARTA 65 · Moderné: na PC je + na konci lišty blokov (plávajúce sa skryje), na mobile 58 px ako v appke
+export type FabRezim = "" | "lista" | "maly";
+let fabR: FabRezim = "";
+const fabP = new Set<() => void>();
+export function nastavFabRezim(r: FabRezim) { if (fabR === r) return; fabR = r; fabP.forEach((f) => f()); }
+const useFabRezim = () => useSyncExternalStore((f) => { fabP.add(f); return () => { fabP.delete(f); }; }, () => fabR);
+/** otvorí hárok + Pridať (zelené + v lište Moderného) */
+export const otvorPridanie = () => window.dispatchEvent(new Event("deed:farnik-pridaj"));
+
 /** je tlačidlo + Pridať zapnuté (farár povolil a aspoň 1 druh) */
 export function fabZapnuty(strankaId: string): boolean {
   const s = nacitajSmie(strankaId);
@@ -263,6 +272,8 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   const povol = DRUHY_FARNIKA.filter((d) => smie(sm, d.k));
   const pop = self.poplatok || 0;
   const [sheet, setSheet] = useState(false);
+  const fabRez = useFabRezim();
+  useEffect(() => { const f = () => setSheet(true); window.addEventListener("deed:farnik-pridaj", f); return () => window.removeEventListener("deed:farnik-pridaj", f); }, []);
   const [galOtv, setGalOtv] = useState(false); // OPRAVY 212: galéria pri svadbe a jubileu
   const [k, setK] = useState<DruhFarnika | null>(null);
   const [edId, setEdId] = useState<string | null>(null);
@@ -391,8 +402,9 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     setHotovo(it.id); setEdToast(true); window.clearTimeout(tm.current); tm.current = window.setTimeout(() => setEdToast(false), 2500);
   };
 
-  const fab = !k && (
-    <button type="button" onClick={() => setSheet(true)} aria-label="Pridať na stránku farnosti" style={{ position: "fixed", right: vpravo, bottom: mobil ? 96 + 16 : 28, zIndex: 150, width: 68, height: 68, padding: 0, border: "none", borderRadius: "50%", background: ZELENA, color: "#fff", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 10px 24px rgba(30,40,20,.35)" }}>
+  const fabS = fabRez === "maly" ? 58 : 68;
+  const fab = !k && fabRez !== "lista" && (
+    <button type="button" onClick={() => setSheet(true)} aria-label="Pridať na stránku farnosti" style={{ position: "fixed", right: vpravo, bottom: mobil ? 96 + 16 : 28, zIndex: 150, width: fabS, height: fabS, padding: 0, border: "none", borderRadius: "50%", background: ZELENA, color: "#fff", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 10px 24px rgba(30,40,20,.35)" }}>
       <span aria-hidden="true" style={{ position: "relative", width: 26, height: 26, flex: "none" }}>
         <span style={{ position: "absolute", left: 11, top: 0, width: 4, height: 26, borderRadius: 2, background: "#fff" }} />
         <span style={{ position: "absolute", top: 11, left: 0, width: 26, height: 4, borderRadius: 2, background: "#fff" }} />

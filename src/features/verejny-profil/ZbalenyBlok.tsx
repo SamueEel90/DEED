@@ -26,9 +26,10 @@ function posuvac(el: HTMLElement): HTMLElement {
 
 const SIPKA = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>;
 
-export function ZbalenyBlok({ blok, nadpis, suhrn, otvoreny, onPrepni, kronika, styl, children }: {
+export function ZbalenyBlok({ blok, nadpis, suhrn, otvoreny, onPrepni, kronika, ikona, sipkaBg, styl, children }: {
   blok: string; nadpis: ReactNode; suhrn: string; otvoreny: boolean; onPrepni: () => void;
-  /** Kronika: šípka 40 px na karte; Nástenka: 44 px s rámom */ kronika?: boolean; styl: CSSProperties; children: ReactNode;
+  /** Kronika a Moderné: šípka 40 px na karte; Nástenka: 44 px s rámom */ kronika?: boolean;
+  /** KARTA 65 Moderné: ikona bloku vľavo od nadpisu, pozadie šípky */ ikona?: ReactNode; sipkaBg?: string; styl: CSSProperties; children: ReactNode;
 }) {
   const ref = useRef<HTMLElement>(null);
   const zbal = () => {
@@ -45,12 +46,13 @@ export function ZbalenyBlok({ blok, nadpis, suhrn, otvoreny, onPrepni, kronika, 
   return (
     <section ref={ref} data-blok={blok} style={{ display: "flex", flexDirection: "column", scrollMarginTop: 16, minWidth: 0, ...styl }}>
       <button type="button" aria-expanded={otvoreny} onClick={onPrepni}
-        style={{ display: "flex", alignItems: "center", gap: kronika ? 12 : 14, minHeight: kronika ? 52 : 56, padding: 0, border: "none", background: "transparent", color: "var(--nf-ink)", fontFamily: "inherit", textAlign: "left", cursor: "pointer", boxShadow: "none" }}>
-        <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: kronika ? 6 : 5 }}>
+        style={{ display: "flex", alignItems: "center", gap: kronika ? 12 : 14, minHeight: ikona ? 48 : kronika ? 52 : 56, padding: 0, border: "none", background: "transparent", color: "var(--nf-ink)", fontFamily: "inherit", textAlign: "left", cursor: "pointer", boxShadow: "none" }}>
+        {ikona}
+        <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: ikona ? 2 : kronika ? 6 : 5 }}>
           {nadpis}
           {suhrn && <span style={{ fontSize: kronika ? 13.5 : 15, fontWeight: 400, color: "var(--nf-ink3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{suhrn}</span>}
         </span>
-        <span aria-hidden="true" style={{ flex: "none", width: s, height: s, boxSizing: "border-box", borderRadius: "50%", background: kronika ? "var(--nf-karta)" : "transparent", border: kronika ? "none" : "1.5px solid var(--nf-linka)", color: "var(--nf-ink)", display: "flex", alignItems: "center", justifyContent: "center", transform: `rotate(${otvoreny ? 180 : 0}deg)`, transition: "transform .2s ease" }}>{SIPKA}</span>
+        <span aria-hidden="true" style={{ flex: "none", width: s, height: s, boxSizing: "border-box", borderRadius: "50%", background: sipkaBg ?? (kronika ? "var(--nf-karta)" : "transparent"), border: kronika ? "none" : "1.5px solid var(--nf-linka)", color: "var(--nf-ink)", display: "flex", alignItems: "center", justifyContent: "center", transform: `rotate(${otvoreny ? 180 : 0}deg)`, transition: "transform .2s ease" }}>{SIPKA}</span>
       </button>
       {otvoreny && <>
         {children}
