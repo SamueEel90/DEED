@@ -10,7 +10,7 @@ import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
 import { useKalendar } from "@/lib/kalendarFarnosti";
 import { cenaMiest, predplatne, stavPredplatneho } from "@/lib/predplatneFarnosti";
-import { DRUHY_MIESTA, nazovDruhu, prazdneMiesto, riadokCeny, ulozMiesto, useMiesta, zamrazMiesto, stavPlatcu, odpovedPlatcu, platimSam, LEHOTA_PLATCU_DNI, type Miesto } from "@/lib/miestaFarnosti";
+import { DRUHY_MIESTA, nazovDruhu, prazdneMiesto, riadokCeny, doplatokMiesta, ulozMiesto, useMiesta, zamrazMiesto, stavPlatcu, odpovedPlatcu, platimSam, LEHOTA_PLATCU_DNI, type Miesto } from "@/lib/miestaFarnosti";
 import { RamFormulara, MateRozpisane, ZahoditRozpisane, useRamPisania } from "@/components/RamPisania";
 import { nacitajKoncept, zmazKoncept, useUkladajKoncept } from "@/lib/koncept";
 import { useHromadnyVyber, TlacidloVyberu, ListaVyberu, PolickoVyberu, PasVyberu } from "@/components/HromadnyVyber";
@@ -70,7 +70,8 @@ export function KostolyMiesta({ strankaId, mobil, onOmse }: { strankaId: string;
 
   if (f) {
     const n = aktivne.length + (novy || zamrz ? 1 : 0);
-    const cena = novy || zamrz ? riadokCeny(n, aktivne.length, skusobne) : `Cena sa nemení, ${cenaMiest(aktivne.length)} € mesačne.`;
+    // OPRAVY 281: doplatok, nie celková suma; pri úprave pridaného kostola veta nie je (nič sa nedopláca)
+    const dopl = novy || zamrz ? doplatokMiesta(n, aktivne.length, skusobne) : null;
     const rocne = (novy || zamrz) && !skusobne && p.rocne ? " Pri ročnom predplatnom príde faktúra na pomernú časť do konca predplateného roka." : "";
     const platcaT = novy && platca ? ` Predplatné za vás platí ${platca}: miesto sa ukáže po jeho potvrdení. Ak do ${LEHOTA_PLATCU_DNI} dní neodpovie, žiadosť sa zruší a dostanete správu.` : "";
     const omse = omsiTyzdenne(f.id);
@@ -93,7 +94,11 @@ export function KostolyMiesta({ strankaId, mobil, onOmse }: { strankaId: string;
           <input value={f.popis} onChange={(e) => setF({ ...f, popis: e.target.value.slice(0, 140) })} placeholder="napr. Spätá so stredovekým mestským špitálom." style={pole} /></label>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={lbl}>História <span style={pozn}>· nepovinné, na podstránku</span></span>
           <TextovePolia key={f.id} popis={f.historia} popis2="" onPopis={(h) => setF({ ...f, historia: h })} onPopis2={() => undefined} ph={mobil} popisHlavneho="Krátka história kostola. Ukáže sa na jeho podstránke." placeholder="napr. Kostol bol postavený v roku 1909…" /></div>
-        <span style={{ padding: "12px 14px", borderRadius: 12, background: "var(--goldBg)", fontSize: 14, fontWeight: 700, lineHeight: 1.45 }}>{cena}{rocne}{platcaT}</span>
+        {(dopl || platcaT) && <span style={{ padding: "12px 14px", borderRadius: 12, background: "var(--goldBg)", display: "flex", flexDirection: "column", gap: 4, lineHeight: 1.45 }}>
+          {dopl && <b style={{ fontSize: 15 }}>{dopl[0]}</b>}
+          {dopl && <span style={{ fontSize: 13, color: "var(--ink2)" }}>{dopl[1]}.{rocne}</span>}
+          {platcaT && <span style={{ fontSize: 13.5, fontWeight: 700 }}>{platcaT.trim()}</span>}
+        </span>}
         {novy && maObsah && <ZahoditRozpisane onZahodit={zahod} />}
     </>;
     const odobrat = <>
