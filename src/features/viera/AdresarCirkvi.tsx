@@ -31,7 +31,7 @@ function Drz({ ms, children, onHotovo, styl, plnenie = "rgba(163,74,42,.18)" }: 
   const zacni = () => { setDrz(true); window.clearTimeout(tm.current); tm.current = window.setTimeout(() => { setDrz(false); onHotovo(); }, ms); };
   const pusti = () => { window.clearTimeout(tm.current); setDrz(false); };
   return (
-    <button type="button" onPointerDown={(e) => { e.preventDefault(); zacni(); }} onPointerUp={pusti} onPointerLeave={pusti} onPointerCancel={pusti} onContextMenu={(e) => e.preventDefault()}
+    <button type="button" onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); zacni(); }} onPointerUp={pusti} onPointerCancel={pusti} onContextMenu={(e) => e.preventDefault()}
       onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !e.repeat) { e.preventDefault(); zacni(); } }} onKeyUp={(e) => { if (e.key === "Enter" || e.key === " ") pusti(); }}
       style={{ position: "relative", overflow: "hidden", cursor: "pointer", fontFamily: "inherit", touchAction: "none", userSelect: "none", ...styl }}>
       <span style={{ position: "absolute", inset: 0, background: plnenie, transformOrigin: "0 50%", transform: `scaleX(${drz ? 1 : 0})`, transition: `transform ${drz ? ms / 1000 : 0.2}s linear` }} />

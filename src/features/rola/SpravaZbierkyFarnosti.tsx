@@ -145,7 +145,7 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat, menoSt
       <section key="ukoncit" style={kartaK}>
         <span style={nadpisK}>Ukončiť zbierku</span>
         <span style={textK}>Zbierka sa zastaví a dary sem prestanú chodiť. Počítadlo ostane na profile viditeľné aj po ukončení. Vrátiť to späť sa nedá.</span>
-        <button type="button" onPointerDown={(e) => { e.preventDefault(); zacni(); }} onPointerUp={pusti} onPointerLeave={pusti} onPointerCancel={pusti} onContextMenu={(e) => e.preventDefault()}
+        <button type="button" onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); zacni(); }} onPointerUp={pusti} onPointerCancel={pusti} onContextMenu={(e) => e.preventDefault()}
           onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !e.repeat) { e.preventDefault(); zacni(); } }} onKeyUp={(e) => { if (e.key === "Enter" || e.key === " ") pusti(); }}
           style={{ position: "relative", height: 58, border: "none", borderRadius: 16, background: "#7A3A2C", overflow: "hidden", cursor: "pointer", touchAction: "none", userSelect: "none", fontFamily: "inherit" } as CSSProperties}>
           <span style={{ position: "absolute", inset: 0, background: "#A34A2A", transformOrigin: "0 50%", transform: `scaleX(${drz ? 1 : 0})`, transition: `transform ${drz ? "1.5s" : ".2s"} linear` }} />

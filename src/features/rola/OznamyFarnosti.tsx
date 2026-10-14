@@ -29,6 +29,8 @@ import { useAutorZaMna } from "@/lib/autorFarnosti";
 import { odkazQrStranky } from "@/features/verejny-profil/otvor";
 import { EditorOznameni, type EditorApi, type PayloadEditora } from "@/components/EditorOznameni";
 import { RamPisania } from "@/components/RamPisania";
+import { PodrzZmaz, useHromadnyVyber, TlacidloVyberu, ListaVyberu, OznacitSkupinu, PolickoVyberu, PasVyberu } from "@/components/HromadnyVyber";
+export { PodrzZmaz };
 import { zapisEditora, zapisZPayloadu } from "@/lib/editorStat";
 import { useMiesta } from "@/lib/miestaFarnosti";
 import { UpozornitSledujucich, NastavenieUpozorneni } from "./UpozornitSledujucich";
@@ -136,20 +138,6 @@ const fmtDatum = (iso: string) => { if (!iso) return ""; const [y, m, d] = iso.s
 const pocetLudi = (n: number) => `${n} ${n === 1 ? "človek" : n >= 2 && n <= 4 ? "ľudia" : "ľudí"}`;
 
 /** KARTA 57 C.1: mazanie len podržaním (1,5 s) */
-export function PodrzZmaz({ onZmaz, label = "Podržte a zmažte" }: { onZmaz: () => void; label?: string }) {
-  const [drz, setDrz] = useState(false);
-  const t = useRef<number | undefined>(undefined);
-  useEffect(() => () => window.clearTimeout(t.current), []);
-  const start = () => { setDrz(true); window.clearTimeout(t.current); t.current = window.setTimeout(() => { setDrz(false); onZmaz(); }, 1500); };
-  const stop = () => { window.clearTimeout(t.current); setDrz(false); };
-  return (
-    <button type="button" onPointerDown={start} onPointerUp={stop} onPointerLeave={stop} onPointerCancel={stop} onContextMenu={(e) => e.preventDefault()}
-      onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !drz) { e.preventDefault(); start(); } }} onKeyUp={stop}
-      style={{ position: "relative", overflow: "hidden", minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1.5px solid var(--cRed)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--cRed)", boxShadow: "none", touchAction: "none", userSelect: "none" }}>
-      <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "var(--cRedBg)", opacity: 0.35, transformOrigin: "0 50%", transform: `scaleX(${drz ? 1 : 0})`, transition: drz ? "transform 1.5s linear" : "transform .2s ease" }} />
-      <span style={{ position: "relative" }}>{drz ? "Držte…" : label}</span>
-    </button>);
-}
 
 export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, toast, hore }: { strankaId: string; meno: string; /** uložený profil (Farský úrad, logo) — náhľad verejnej stránky */ profil: ProfilStranky | null; mobil: boolean;
   /** KARTA 57 C.6: telefón — po výbere druhu ponuka zmizne, náhľad prilepený hore */ tel?: boolean; toast: (m: string) => void;
@@ -477,15 +465,23 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     ["UDALOSTI", (x) => stitokOznamu(x) === "UDALOSŤ"],
     ["OZNÁMENIA", (x) => !["OZNAM", "ZMENA OMŠE", "UDALOSŤ"].includes(stitokOznamu(x))],
   ];
+  // OPRAVY 263: zmazanie jedného aj hromadne (kalendár udalosti sa vyčistí)
+  const zmazOznam = (x: VieraFeedItem) => {
+    zmazPrispevok(strankaId, x.id);
+    if (x.oz?.kal) { const kal = x.oz.kal; zmenKostol(strankaId, x.oz.kk ?? "0", (k) => ({ ...k, extra: Object.fromEntries(Object.entries(k.extra).map(([d, l]) => [d, l.filter((y) => y.id !== kal)]).filter(([, l]) => l.length)) })); }
+    if (edit === x.id) vycisti();
+  };
+  const hv = useHromadnyVyber();
   const riadok = (x: VieraFeedItem, i: number) => {
-    const st = stitokOznamu(x), zm = st === "ZMENA OMŠE", o = otv === x.id, tx = textRiadku(x);
+    const st = stitokOznamu(x), zm = st === "ZMENA OMŠE", o = otv === x.id && !hv.zap, tx = textRiadku(x), on = hv.vyb.has(x.id);
     const editor = !!x.smutocny?.editor; // parte z Editora oznámení sa upravuje v Pohrebe, tu len maže
     return (
       <div key={x.id} style={{ borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
-        <button type="button" onClick={() => { setOtv(o ? null : x.id); setPozri(null); }} aria-expanded={o} style={{ width: "100%", minHeight: 60, padding: "8px 0", border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" }}>
+        <button type="button" onClick={() => { if (hv.zap) { hv.prepni(x.id); return; } setOtv(o ? null : x.id); setPozri(null); }} aria-expanded={hv.zap ? undefined : o} aria-pressed={hv.zap ? on : undefined} style={{ width: "100%", minHeight: 60, padding: "8px 0", border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" }}>
+          {hv.zap && <PolickoVyberu on={on} />}
           <span style={{ flex: "none", padding: "3px 9px", borderRadius: 8, background: zm ? "var(--goldBg)" : "var(--gSoft)", border: `1px solid ${zm ? ZLATA : "var(--gBd)"}`, fontSize: 11.5, fontWeight: 800, color: zm ? "var(--ink)" : "var(--gInk)", whiteSpace: "nowrap" }}>{st}</span>
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 14.5 }}>{x.nazov}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{meta(x)}</span></span>
-          <span aria-hidden="true" style={{ flex: "none", fontSize: 18, color: "var(--ink3)" }}>{o ? "⌃" : "⌄"}</span>
+          {!hv.zap && <span aria-hidden="true" style={{ flex: "none", fontSize: 18, color: "var(--ink3)" }}>{o ? "⌃" : "⌄"}</span>}
         </button>
         {o && <div style={{ padding: "0 0 14px", display: "flex", flexDirection: "column", gap: 10 }}>
           {tx && <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)", whiteSpace: "pre-line" }}>{tx}</span>}
@@ -493,8 +489,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {!zm && !editor && <button type="button" onClick={() => upravit(x)} style={{ minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--btn)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)", boxShadow: "none" }}>Upraviť</button>}
             <button type="button" onClick={() => setPozri(pozri === x.id ? null : x.id)} aria-expanded={pozri === x.id} style={{ minHeight: 44, padding: "0 14px", borderRadius: 12, border: "1.5px solid var(--gBd)", background: pozri === x.id ? "var(--gSoft)" : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--gInk)", boxShadow: "none" }}>Ako to vidia ľudia ›</button>
-            <PodrzZmaz onZmaz={() => { zmazPrispevok(strankaId, x.id); if (x.oz?.kal) { const kal = x.oz.kal; zmenKostol(strankaId, x.oz.kk ?? "0", (k) => ({ ...k, extra: Object.fromEntries(Object.entries(k.extra).map(([d, l]) => [d, l.filter((y) => y.id !== kal)]).filter(([, l]) => l.length)) })); }
-              if (edit === x.id) vycisti(); setOtv(null); setPozri(null); obnov((y) => y + 1); toast(`„${x.nazov ?? ""}“ je zmazané.`); }} />
+            <PodrzZmaz onZmaz={() => { zmazOznam(x); setOtv(null); setPozri(null); obnov((y) => y + 1); toast(`„${x.nazov ?? ""}“ je zmazané.`); }} />
           </div>
           {pozri === x.id && <div style={{ maxWidth: 460 }}>{nahladZverejneneho(x)}</div>}
         </div>}
@@ -502,13 +497,16 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   };
   const sprava = (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}><b style={{ fontSize: 18 }}>Správa oznamov a udalostí</b>{zoznam.length > 0 && <span style={{ fontSize: 13, color: "var(--ink3)" }}>{zoznam.length} zverejnené · ťuknite na riadok</span>}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}><b style={{ fontSize: 18 }}>Správa oznamov a udalostí</b>{zoznam.length > 0 && <span style={{ flex: 1, fontSize: 13, color: "var(--ink3)" }}>{zoznam.length} zverejnené · ťuknite na riadok</span>}{zoznam.length > 1 && <TlacidloVyberu v={hv} />}</div>
+      <ListaVyberu v={hv} polozky={zoznam.map((x) => ({ id: x.id, cas: x.vytvorene ?? 0 }))} />
       {zoznam.length ? SKUPINY.map(([nad, fn]) => { const l = zoznam.filter(fn); return l.length > 0 && (
         <div key={nad} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)", padding: "4px 2px 0" }}>{nad} · {l.length}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span style={{ flex: 1, fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)", padding: "4px 2px 0" }}>{nad} · {l.length}</span><OznacitSkupinu v={hv} ids={l.map((x) => x.id)} /></div>
           <section style={{ ...karta, padding: mobil ? "4px 14px" : "6px 20px" }}>{l.map(riadok)}</section>
         </div>); })
         : <section style={{ ...karta, padding: "14px 20px", fontSize: 14.5, color: "var(--ink3)" }}>Zatiaľ nič. Ťuknite na + Pridať oznam.</section>}
+      <PasVyberu v={hv} dolu={mobil ? 104 : 12} pocet={(n) => (n === 1 ? "1 položka" : n < 5 ? `${n} položky` : `${n} položiek`)}
+        onZmaz={(ids) => { zoznam.filter((x) => ids.includes(x.id)).forEach(zmazOznam); setOtv(null); setPozri(null); obnov((y) => y + 1); return `${ids.length === 1 ? "1 položka je zmazaná" : ids.length < 5 ? `${ids.length} položky sú zmazané` : `${ids.length} položiek je zmazaných`} ✓`; }} />
     </div>);
 
   const pravy: ReactNode = <>

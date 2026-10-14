@@ -228,7 +228,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
           </button>))}
       </div>
       {mozeSpustit ? <>
-        <button type="button" onPointerDown={(e) => { e.preventDefault(); spZacni(); }} onPointerUp={spPusti} onPointerLeave={spPusti} onPointerCancel={spPusti} onContextMenu={(e) => e.preventDefault()}
+        <button type="button" onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); spZacni(); }} onPointerUp={spPusti} onPointerCancel={spPusti} onContextMenu={(e) => e.preventDefault()}
           onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !e.repeat) { e.preventDefault(); spZacni(); } }} onKeyUp={(e) => { if (e.key === "Enter" || e.key === " ") spPusti(); }}
           style={{ position: "relative", height: 60, border: "none", borderRadius: 16, background: "#3F6E2A", overflow: "hidden", cursor: "pointer", touchAction: "none", userSelect: "none", fontFamily: "inherit" } as CSSProperties}>
           <span style={{ position: "absolute", inset: 0, background: "#6E9F4E", transformOrigin: "0 50%", transform: `scaleX(${spDrz ? 1 : 0})`, transition: `transform ${spDrz ? "1.5s" : ".2s"} linear` }} />
@@ -390,7 +390,7 @@ function ZavrietHarok({ mobil, sektor, farnost, mesacne, onPotvrd, onZavri }: { 
           <span>· <b style={{ color: "var(--ink)" }}>{mesacne}</b> pravidelných darcov dostane správu, ich mesačný dar sa zastaví{sektor ? " a ponúkneme im presun na centrálnu" : ""}.</span>
           <span>· Vyzbierané peniaze ostávajú na účte, nič sa nevracia.</span>
         </div>
-        <button type="button" aria-disabled={dovod == null} onPointerDown={zacni} onPointerUp={pusti} onPointerLeave={pusti} onPointerCancel={pusti}
+        <button type="button" aria-disabled={dovod == null} onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); zacni(); }} onPointerUp={pusti} onPointerCancel={pusti}
           onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !e.repeat) { e.preventDefault(); zacni(); } }} onKeyUp={(e) => { if (e.key === "Enter" || e.key === " ") pusti(); }} onContextMenu={(e) => e.preventDefault()}
           style={{ position: "relative", height: 58, border: "none", borderRadius: 16, background: "#7A3A2C", overflow: "hidden", cursor: dovod == null ? "default" : "pointer", touchAction: "none", userSelect: "none", opacity: dovod == null ? 0.45 : 1, fontFamily: "inherit" } as CSSProperties}>
           <span style={{ position: "absolute", inset: 0, background: "#A34A2A", transformOrigin: "0 50%", transform: `scaleX(${drz ? 1 : 0})`, transition: `transform ${drz ? "1.5s" : ".2s"} linear` }} />

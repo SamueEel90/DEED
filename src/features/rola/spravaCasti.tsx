@@ -91,7 +91,7 @@ export function useZmenaSum(sada: number, sadaE: number, eurc: boolean, uloz: (p
     {zmenene && <div style={{ padding: 14, borderRadius: 14, background: "var(--goldBg)", border: "1.5px solid var(--goldBd)", display: "flex", flexDirection: "column", gap: 10 }}>
       <b style={{ fontSize: 15 }}>Zmena ešte nie je uložená</b>
       <span style={{ fontSize: 13.5, lineHeight: 1.45, color: "var(--ink2)" }}>{`Doteraz: ${SADY[sada]?.[0] ?? ""}${eurc ? ` · ${SADY_EURC[sadaE]?.[0] ?? ""} EURC` : ""}  →  nové: ${SADY[nova.sada]?.[0] ?? ""}${eurc ? ` · ${SADY_EURC[nova.sadaE]?.[0] ?? ""} EURC` : ""}`}</span>
-      <button type="button" onPointerDown={(e) => { e.preventDefault(); zacni(); }} onPointerUp={pusti} onPointerLeave={pusti} onPointerCancel={pusti} onContextMenu={(e) => e.preventDefault()}
+      <button type="button" onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); zacni(); }} onPointerUp={pusti} onPointerCancel={pusti} onContextMenu={(e) => e.preventDefault()}
         onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !e.repeat) { e.preventDefault(); zacni(); } }} onKeyUp={(e) => { if (e.key === "Enter" || e.key === " ") pusti(); }}
         style={{ position: "relative", overflow: "hidden", minHeight: 52, border: "none", borderRadius: 14, background: "#2F5E1F", cursor: "pointer", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, color: "#fff", touchAction: "none", userSelect: "none" } as CSSProperties}>
         <span style={{ position: "absolute", inset: 0, background: "#4B7A35", transformOrigin: "left", transform: `scaleX(${drz ? 1 : 0})`, transition: drz ? "transform 1.5s linear" : "transform .2s" }} />

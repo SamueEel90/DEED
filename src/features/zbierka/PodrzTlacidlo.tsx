@@ -23,12 +23,12 @@ export default function PodrzTlacidlo({ label, onConfirm, farba = 'zelena', disa
 
   return (
     <button
-      onPointerDown={down} onPointerUp={up} onPointerLeave={up} onPointerCancel={up}
+      onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); down(); }} onPointerUp={up} onPointerCancel={up}
       onClick={() => { if (p.current === 0) { onHint?.(); buzz(4); } }}
       onContextMenu={(e) => e.preventDefault()}
       disabled={disabled}
-      style={{ position: 'relative', overflow: 'hidden', width: '100%', height: 54, borderRadius: 16, border: 'none', color: '#fff', fontSize: 16.5, fontWeight: 800,
-        background: farba === 'zlata' ? 'var(--goldGrad)' : 'var(--gGrad)', fontVariantNumeric: 'tabular-nums', touchAction: 'manipulation', userSelect: 'none',
+      style={{ position: 'relative', overflow: 'hidden', width: '100%', minHeight: 56, borderRadius: 16, border: 'none', color: '#fff', fontSize: 16.5, fontWeight: 800,
+        background: farba === 'zlata' ? 'var(--goldGrad)' : 'var(--gGrad)', fontVariantNumeric: 'tabular-nums', touchAction: 'none', userSelect: 'none',
         transform: `scale(${pressed ? 0.98 : 1})`, transition: 'transform .15s ease', opacity: disabled ? 0.45 : 1 }}>
       <span ref={fill} style={{ position: 'absolute', inset: 0, background: farba === 'zlata' ? '#6B5214' : '#2F5620', transformOrigin: '0 50%', transform: 'scaleX(0)' }} />
       <span style={{ position: 'relative' }}>{label}</span>

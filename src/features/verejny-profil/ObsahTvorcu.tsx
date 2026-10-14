@@ -94,7 +94,7 @@ export function NakupPanel({ cena, drzText, onHotovo, onZrus }: { cena: number; 
             <b style={{ fontSize: 14 }}>{t}</b><span style={{ fontSize: 11, color: "var(--ink3)" }}>{s}</span></button>;
         })}
       </div>
-      <button type="button" onPointerDown={zacni} onPointerUp={pusti} onPointerLeave={pusti} onPointerCancel={pusti}
+      <button type="button" onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); zacni(); }} onPointerUp={pusti} onPointerCancel={pusti}
         onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !e.repeat) { e.preventDefault(); zacni(); } }} onKeyUp={(e) => { if (e.key === "Enter" || e.key === " ") pusti(); }}
         onContextMenu={(e) => e.preventDefault()}
         style={{ position: "relative", height: 56, border: "none", borderRadius: 16, background: "#2F5E3A", overflow: "hidden", cursor: "pointer", touchAction: "none", userSelect: "none", WebkitUserSelect: "none", boxShadow: "none", fontFamily: "inherit" } as CSSProperties}>

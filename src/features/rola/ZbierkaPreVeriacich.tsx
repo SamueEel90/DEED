@@ -488,7 +488,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
         <b style={{ fontSize: 17, color: "var(--gInk)" }}>{T.kto} potvrdil rozdelenie ✓</b>
         <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink)" }}>{velke(rozdelenieT)}. Posledný krok: zapečaťte zbierku. Potom sa spustí a rozdelenie sa už nedá zmeniť.</span>
 {ucetOk ? <>
-                <button type="button" onPointerDown={(e) => { e.preventDefault(); zacni(); }} onPointerUp={pusti} onPointerLeave={pusti} onPointerCancel={pusti} onContextMenu={(e) => e.preventDefault()}
+                <button type="button" onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); zacni(); }} onPointerUp={pusti} onPointerCancel={pusti} onContextMenu={(e) => e.preventDefault()}
           onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !e.repeat) { e.preventDefault(); zacni(); } }} onKeyUp={(e) => { if (e.key === "Enter" || e.key === " ") pusti(); }}
           style={{ position: "relative", height: 58, border: "none", borderRadius: 16, background: "#3F6E2A", overflow: "hidden", cursor: "pointer", touchAction: "none", userSelect: "none", fontFamily: "inherit" } as CSSProperties}>
           <span style={{ position: "absolute", inset: 0, background: "#6E9F4E", transformOrigin: "0 50%", transform: `scaleX(${drz ? 1 : 0})`, transition: `transform ${drz ? "1.5s" : ".2s"} linear` }} />

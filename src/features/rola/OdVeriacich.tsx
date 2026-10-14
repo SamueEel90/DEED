@@ -8,7 +8,8 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { nacitajSelfAdd, ulozSelfAdd } from "@/features/viera/UserOznamy";
 import { DRUHY_FARNIKA, CEZ_EDITOR, nacitajSmie, ulozSmie, smie, odFarnikov, upravOdFarnika, zmazOdFarnika, zmazOdFarnikov, nastavenieOdVeriacich, ulozNastavenieOdVeriacich, useOdFarnikov, useCerstveOdFarnikov, pocetNahl, pocetSus, vyprsal, type DruhFarnika, type PolozkaFarnika } from "@/lib/odFarnikov";
 import { otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
-import { PodrzZmaz, TextOznamu } from "./OznamyFarnosti";
+import { TextOznamu } from "./OznamyFarnosti";
+import { PodrzZmaz, useHromadnyVyber, TlacidloVyberu, ListaVyberu, OznacitSkupinu, PolickoVyberu, PasVyberu } from "@/components/HromadnyVyber";
 import { cistyText } from "./obsahZbierky";
 import { UmyslyFarara } from "./UmyslyFarara";
 
@@ -17,7 +18,6 @@ const POPLATKY = [0, 1, 2, 5];
 const SKUPINY: [string, DruhFarnika[]][] = [
   ["PROSBY O MODLITBU", ["modlitba"]], ["UDALOSTI", ["udalost"]], ["KRÁTKE OZNAMY", ["oznam"]], ["FOTKY Z AKCIÍ", ["fotky"]], ["OZNÁMENIA · PARTE, SVADBY, JUBILEÁ", ["parte", "svadba", "ine"]],
 ];
-const DEN = 864e5;
 const terazMs = () => Date.now();
 const druhT = (k: DruhFarnika) => (DRUHY_FARNIKA.find((d) => d.k === k)?.t ?? "").toLocaleUpperCase("sk-SK");
 const kedy = (cas: number) => { const d = new Date(cas); return `${d.getDate()}. ${d.getMonth() + 1}.`; };
@@ -65,16 +65,14 @@ export function OdVeriacich({ strankaId, meno, mobil, toast }: { strankaId: stri
   // D.5: farár otvoril Od veriacich → nové príspevky a úmysly sú videné
   useEffect(() => { ulozNastavenieOdVeriacich(strankaId, { videne: terazMs() }); }, [strankaId]);
   const [otv, setOtv] = useState<string | null>(null);
-  const [selM, setSelM] = useState(false);
-  const [vyb, setVyb] = useState<Set<string>>(() => new Set());
+  // OPRAVY 263: ten istý hromadný výber ako v Správe oznamov
+  const hv = useHromadnyVyber(), selM = hv.zap, vyb = hv.vyb;
   const [nastOtv, setNastOtv] = useState(false);
   const [self, setSelf] = useState(() => nacitajSelfAdd(strankaId));
   const smieF = nacitajSmie(strankaId);
   const zmenSelf = (p: Partial<typeof self>) => { const n = { ...self, ...p }; setSelf(n); ulozSelfAdd(strankaId, n); };
-  const prepniVyb = (id: string) => setVyb((v) => { const n = new Set(v); if (n.has(id)) n.delete(id); else n.add(id); return n; });
-  const pridajVyb = (ids: string[]) => setVyb((v) => new Set([...v, ...ids]));
+  const prepniVyb = hv.prepni;
 
-  const tlMale = (aktiv = false): CSSProperties => ({ minHeight: 40, padding: "0 12px", borderRadius: 10, border: `1px solid ${aktiv ? "var(--gBd)" : "var(--cardBd)"}`, background: aktiv ? "var(--gSoft)" : "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: aktiv ? "var(--gInk)" : "var(--ink)", boxShadow: "none", whiteSpace: "nowrap" });
 
   const riadok = (x: PolozkaFarnika, i: number) => {
     const o = otv === x.id && !selM, on = vyb.has(x.id), ed = CEZ_EDITOR.includes(x.k);
@@ -82,7 +80,7 @@ export function OdVeriacich({ strankaId, meno, mobil, toast }: { strankaId: stri
       <div key={x.id} style={{ borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
         <button type="button" onClick={() => (selM ? prepniVyb(x.id) : setOtv(o ? null : x.id))} aria-expanded={selM ? undefined : o} aria-pressed={selM ? on : undefined}
           style={{ width: "100%", minHeight: 62, padding: "8px 0", border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" }}>
-          {selM && <span aria-hidden="true" style={{ flex: "none", width: 26, height: 26, borderRadius: 8, border: `2px solid ${on ? "#A34A2A" : "var(--cardBd)"}`, background: on ? "#A34A2A" : "transparent", color: "#fff", fontSize: 15, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{on ? "✓" : ""}</span>}
+          {selM && <PolickoVyberu on={on} />}
           <span style={{ flex: "none", padding: "3px 9px", borderRadius: 8, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 11, fontWeight: 800, color: "var(--gInk)", whiteSpace: "nowrap", maxWidth: mobil ? 110 : undefined, overflow: "hidden", textOverflow: "ellipsis" }}>{druhT(x.k)}</span>
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
             <b style={{ fontSize: 14.5 }}>{x.t}</b>
@@ -102,7 +100,6 @@ export function OdVeriacich({ strankaId, meno, mobil, toast }: { strankaId: stri
   };
 
   const skupiny = SKUPINY.map(([nad, ks]) => [nad, L.filter((x) => ks.includes(x.k))] as const).filter(([, l]) => l.length);
-  const n = L.filter((x) => vyb.has(x.id)).length;
 
   return <>
     {/* D.1 · OPRAVY 176: úmysly hore — povinnosť farára, na stránku nejdú */}
@@ -110,26 +107,20 @@ export function OdVeriacich({ strankaId, meno, mobil, toast }: { strankaId: stri
 
     <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", paddingTop: 6 }}>
       <b style={{ flex: 1, fontSize: 17 }}>Pridali veriaci · {L.length}</b>
-      {L.length > 0 && <button type="button" onClick={() => { setSelM(!selM); setVyb(new Set()); setOtv(null); }} style={tlMale(selM)}>{selM ? "Hotovo" : "Označiť viac"}</button>}
+      {L.length > 0 && <TlacidloVyberu v={hv} />}
     </div>
-    {selM && <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-      <button type="button" onClick={() => pridajVyb(L.map((x) => x.id))} style={tlMale()}>Označiť všetko</button>
-      <button type="button" onClick={() => setVyb(new Set(L.filter((x) => terazMs() - x.cas > 30 * DEN).map((x) => x.id)))} style={tlMale()}>Staršie ako 30 dní</button>
-      <button type="button" onClick={() => setVyb(new Set())} style={tlMale()}>Zrušiť výber</button>
-    </div>}
+    <ListaVyberu v={hv} polozky={L.map((x) => ({ id: x.id, cas: x.cas }))} />
     {!L.length && <section style={{ ...karta, borderRadius: mobil ? 18 : 22, padding: "14px 20px", fontSize: 14, color: "var(--ink3)" }}>Zatiaľ nič. Čo veriaci pridajú, uvidíte tu a môžete to opraviť alebo zmazať.</section>}
     {skupiny.map(([nad, l]) => (
       <div key={nad} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ flex: 1, fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)", padding: "4px 2px 0" }}>{nad} · {l.length}</span>
-          {selM && <button type="button" onClick={() => pridajVyb(l.map((x) => x.id))} style={tlMale()}>Označiť skupinu</button>}
+          <OznacitSkupinu v={hv} ids={l.map((x) => x.id)} />
         </div>
         <section style={{ ...karta, borderRadius: mobil ? 18 : 22, padding: mobil ? "4px 14px" : "6px 20px" }}>{l.map(riadok)}</section>
       </div>))}
-    {selM && n > 0 && <div role="region" aria-label="Označené" style={{ position: "sticky", bottom: mobil ? 104 : 12, zIndex: 6, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", padding: "10px 14px", borderRadius: 16, background: "var(--panel)", border: "1.5px solid var(--cRed)", boxShadow: "0 10px 26px rgba(30,28,20,.22)" }}>
-      <b style={{ flex: 1, fontSize: 15 }}>Označené: {prispevkov(n)}</b>
-      <PodrzZmaz label={`Podržte a zmažte ${n}`} onZmaz={() => { zmazOdFarnikov(strankaId, [...vyb]); setVyb(new Set()); setSelM(false); toast(`${n === 1 ? "1 príspevok je zmazaný" : n < 5 ? `${n} príspevky sú zmazané` : `${n} príspevkov je zmazaných`} ✓`); }} />
-    </div>}
+    <PasVyberu v={hv} dolu={mobil ? 104 : 12} pocet={prispevkov}
+      onZmaz={(ids) => { zmazOdFarnikov(strankaId, ids); setOtv(null); return `${ids.length === 1 ? "1 príspevok je zmazaný" : ids.length < 5 ? `${ids.length} príspevky sú zmazané` : `${ids.length} príspevkov je zmazaných`} ✓`; }} />
 
     {/* D.1: zbalené Nastavenia pre veriacich */}
     <button type="button" onClick={() => setNastOtv((o) => !o)} aria-expanded={nastOtv} style={{ marginTop: 6, minHeight: 64, padding: "10px 16px", borderRadius: 18, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" }}>

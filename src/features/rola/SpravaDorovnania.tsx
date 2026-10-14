@@ -264,7 +264,7 @@ function Detail({ d, entita, hlavnyUcet, toast, onOznamy }: { d: Dorovnanie; ent
           {riadokSum("Komu", d.firma)}{riadokSum("Suma", eur(d.vratenie.suma))}{riadokSum("Odkiaľ", "účet organizácie · SEPA")}{riadokSum("Variabilný symbol", vs)}
         </div>
         <span style={txt}>Po platbe sa prípad uzavrie sám. Firma dostane potvrdenie o vrátení. Vrátenie sa nepočíta do vyzbieraného.</span>
-        <button type="button" onPointerDown={zacni} onPointerUp={pusti} onPointerLeave={pusti} onPointerCancel={pusti}
+        <button type="button" onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); zacni(); }} onPointerUp={pusti} onPointerCancel={pusti}
           onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !e.repeat) { e.preventDefault(); zacni(); } }} onKeyUp={(e) => { if (e.key === "Enter" || e.key === " ") pusti(); }} onContextMenu={(e) => e.preventDefault()}
           style={{ position: "relative", overflow: "hidden", minHeight: 52, border: "none", borderRadius: 14, background: "#3F6E2A", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "#fff", userSelect: "none", touchAction: "none", boxShadow: "none" } as CSSProperties}>
           <span style={{ position: "absolute", inset: 0, background: "#6E9F4E", transformOrigin: "left", transform: `scaleX(${drz ? 1 : 0})`, transition: `transform ${drz ? ".9s" : ".2s"} linear` }} />
