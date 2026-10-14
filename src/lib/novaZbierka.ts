@@ -201,8 +201,20 @@ export async function spustiZbierku(stranka: string, d: NovaZbierkaData, ucet: s
 }
 
 /** KARTA 56D §6: ukončiť zbierku — dary sa zastavia, počítadlo ostáva na profile. Stav je životný cyklus (zámok 0041 ho dovoľuje). */
+/** OPRAVY 264: najprv server (funkcia ukonci_zbierku, 0090 — smie aj správca stránky, ktorý zbierku nezakladal),
+ *  až po úspechu pamäť. Keď sa na serveri nič nezmení, je to chyba — zbierka sa nesmie „zmazať“ len v appke. */
 export async function ukonciZbierku(stranka: string, id: string): Promise<void> {
-  // čas ukončenia dá server (0068); v pamäti len do najbližšieho načítania
+  if (supabase) {
+    const r = await supabase.rpc("ukonci_zbierku", { p_id: id });
+    if (r.error) {
+      // kým Samuel nespustí 0090: priamy zápis, ale s kontrolou, že sa riadok naozaj zmenil
+      if (r.error.code === "PGRST202" || r.error.code === "42883") {
+        const u = await supabase.from("zbierka").update({ stav: "ukoncena" }).eq("id", id).select("id");
+        if (u.error || !u.data?.length) throw new Error("Zbierku sa nepodarilo ukončiť na serveri. Skúste to znova.");
+      } else throw new Error(r.error.code === "42501" ? "Túto zbierku nespravujete, ukončiť ju nemôžete." : "Zbierku sa nepodarilo ukončiť na serveri. Skúste to znova.");
+    }
+  }
+  // čas ukončenia dá server (0068); v pamäti do najbližšieho načítania
   spustene.set(stranka, zbierkyStrankyZPamate(stranka).map((x) => (x.id === id ? { ...x, stav: "ukoncena" as const, koniec: x.koniec ?? new Date().toISOString() } : x))); zmena();
-  if (supabase) { const { error } = await supabase.from("zbierka").update({ stav: "ukoncena" }).eq("id", id); if (error) throw new Error(error.message); void nacitajZbierkyStranky(stranka); }
+  if (supabase) void nacitajZbierkyStranky(stranka);
 }
