@@ -39,6 +39,23 @@ async function bezObrazkov(fid: string, it: VieraFeedItem): Promise<VieraFeedIte
   return cist;
 }
 
+/** OPRAVY 273: zverejnenie, na ktoré sa čaká — zelená hláška až keď je naozaj uložené.
+ *  S DB: obrázky do Storage, zápis na server (chyba = text). Bez DB: zariadenie (plné úložisko = text). Vráti chybu alebo null. */
+export async function zapisPrispevokIsto(fid: string, it: VieraFeedItem, uprava = false): Promise<string | null> {
+  const lok = nacitajStav<VieraFeedItem[]>("prispevky", fid, []);
+  const doZoznamu = (x: VieraFeedItem) => (uprava ? lok.map((y) => (y.id === x.id ? x : y)) : [x, ...lok.filter((y) => y.id !== x.id)]);
+  if (!supabase) return ulozStav("prispevky", fid, doZoznamu(it)) ? null : "Na zariadení nie je miesto. Zmenšite alebo vynechajte fotku a skúste znova.";
+  let cist: VieraFeedItem;
+  try { cist = await bezDataUrl(it, "prispevky"); } catch (e) { return e instanceof Error ? e.message : "Fotky sa nepodarilo nahrať. Skúste znova."; }
+  const { error } = uprava
+    ? await supabase.from("naboz_prispevok").update({ data: cist, upravene: new Date().toISOString() }).eq("id", cist.id)
+    : await supabase.from("naboz_prispevok").upsert({ id: cist.id, farnost_id: fid, data: cist }, { onConflict: "id" });
+  if (error) return "Nepodarilo sa uložiť na server. Skontrolujte pripojenie a skúste znova.";
+  if (!uprava) oznacVDb(fid, cist.id);
+  ulozStav("prispevky", fid, doZoznamu(cist));
+  return null;
+}
+
 /** Upsert (idempotentné — id generuje klient). Obrázky data URL → Storage. */
 export async function vytvorPrispevokDB(fid: string, it: VieraFeedItem): Promise<void> {
   if (!supabase) return;

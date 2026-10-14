@@ -680,7 +680,9 @@ function render(){
 $("f").addEventListener("input",e=>{if(e.target.id==="bOd"||e.target.id==="rc"||e.target.id==="rm"||e.target.id==="sC"||e.target.id==="sM")terminy();render();obnovChybu();autosave()});
 $("f").addEventListener("click",e=>{if(e.target.closest(".chips,.qlist,.tpls")&&!e.target.closest("#papier,#smutVz"))setTimeout(()=>{obnovChybu();autosave()})});
 $("f").addEventListener("change",e=>{if(e.target.id==="neskor"&&e.target.checked)$("kruh").checked=false;if(e.target.id==="kruh"&&e.target.checked)$("neskor").checked=false;render();obnovChybu();autosave()});
-$("foto").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{st.foto=r.result;render()};r.readAsDataURL(f)});
+/* OPRAVY 273: fotka sa zmenší (najviac 1600 px, JPEG) — celá fotka z telefónu (4–8 MB) zaplnila úložisko a parte sa potichu neuložilo */
+function zmensiFoto(src,cb){if(!/^data:image\//.test(src)||/^data:image\/svg/.test(src)){cb(src);return}const im=new Image();im.onload=()=>{const M=1600,k=Math.min(1,M/Math.max(im.naturalWidth,im.naturalHeight));if(k>=1&&src.length<700000){cb(src);return}const c=document.createElement("canvas");c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);const g=c.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);try{cb(c.toDataURL("image/jpeg",.85))}catch(e){cb(src)}};im.onerror=()=>cb(src);im.src=src}
+$("foto").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{zmensiFoto(r.result,x=>{st.foto=x;render()})};r.readAsDataURL(f)});
 // typ z appky: odkaz s #parte, #svadba, #jubileum alebo #blahozelanie
 /* ===== Napojenie na appku — rovnaký kontrakt ako editor vsádzky =====
    VSTUP:  initEditor(cfg)
@@ -988,7 +990,7 @@ window.edDoKroku=function(i){if(i<STEP){STEP=i;showStep();return true}return fal
 window.edUlozKoncept=function(){if(document.body.classList.contains("termin")||$("btnDone").disabled)return;clearTimeout(_as);odosli("koncept")};
 window.edAktivne=function(){const e=document.activeElement;return e&&/^(INPUT|TEXTAREA|SELECT)$/.test(e.tagName)&&e.type!=="checkbox"?e:null};
 /* okno Vybrať fotku (Moje fotky · Verejné fotky) z appky */
-window.edNastavFotku=function(src){if(!src)return;st.foto=src;$("foto").value="";render();autosave()};
+window.edNastavFotku=function(src){if(!src)return;zmensiFoto(src,x=>{st.foto=x;$("foto").value="";render();autosave()})};
 function fotoTl(){let b=$("btnGal");if(typeof CFG.onVyberFotku!=="function"){if(b)b.remove();return}
  if(!b){b=document.createElement("button");b.type="button";b.id="btnGal";b.className="btn ghost";b.onclick=()=>{try{CFG.onVyberFotku()}catch(e){}};const l=$("foto").closest("label");l.parentNode.insertBefore(b,l.nextSibling)}
  b.textContent=CFG.fotkyTlacidlo||"Vybrať z verejných fotiek ›"}
@@ -996,3 +998,4 @@ const _i=window.initEditor;window.initEditor=function(cfg){const R=!!(cfg&&cfg.r
  if(R&&cfg.tema)document.documentElement.setAttribute("data-theme",cfg.tema);
  const r=_i.apply(this,arguments);fotoTl();if(R){fit();hlas();setTimeout(vyska,30)}return r};
 })();</script>
+<script>/* OPRAVY 273: aj fotka z rozpísaného návrhu sa zmenší */(function(){const _i=window.initEditor;if(!_i)return;window.initEditor=function(){const r=_i.apply(this,arguments);try{if(st&&st.foto&&st.foto.length>700000)zmensiFoto(st.foto,x=>{st.foto=x;render()})}catch(e){}return r}})();</script>

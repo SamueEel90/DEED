@@ -15,7 +15,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSPro
 import { createPortal } from "react-dom";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { nacitajSelfAdd } from "@/features/viera/UserOznamy";
-import { DRUHY_FARNIKA, CEZ_EDITOR, BLOK_DRUHU, nacitajSmie, smie, odFarnikov, pridajOdFarnika, upravOdFarnika, zmazOdFarnika, prepniVPolozke, pocetSus, useOdFarnikov, useCerstveOdFarnikov, PLATI_VERIACI, vyprsal, type DruhFarnika, type PolozkaFarnika, type FormularVeriaceho } from "@/lib/odFarnikov";
+import { DRUHY_FARNIKA, CEZ_EDITOR, BLOK_DRUHU, nacitajSmie, smie, odFarnikov, zapisOdFarnikaIsto, zmazOdFarnika, prepniVPolozke, pocetSus, useOdFarnikov, useCerstveOdFarnikov, PLATI_VERIACI, vyprsal, type DruhFarnika, type PolozkaFarnika, type FormularVeriaceho } from "@/lib/odFarnikov";
 import { dokonciCas, CAS_OK, pekny } from "@/lib/kalendarFarnosti";
 import { bezDataUrl } from "@/lib/uploadFoto";
 import type { MediumZbierky } from "@/lib/novaZbierka";
@@ -377,7 +377,10 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     // E.3: fotky natrvalo (Storage), nie data URL
     let it: PolozkaFarnika;
     try { it = await bezDataUrl(zaklad, "od-veriacich"); } catch (e) { toast(e instanceof Error ? e.message : "Fotky sa nepodarilo uložiť."); setUklada(false); return; }
-    if (povodny) upravOdFarnika(strankaId, povodny.id, it); else { pridajOdFarnika(strankaId, it); zmazKoncept(KONV); }
+    // OPRAVY 273: „Zverejnené“ až po naozajstnom uložení, inak hláška a formulár ostane
+    const eUl = await zapisOdFarnikaIsto(strankaId, it, !!povodny);
+    if (eUl) { toast(eUl); setUklada(false); return; }
+    if (!povodny) zmazKoncept(KONV);
     // OPRAVY 170: udalosť veriaceho sa do kalendára farnosti nezapisuje
     // KARTA 57C §2: formulár sa zavrie, dole hláška a stránka sa posunie k bloku
     setChyba(false); setUklada(false); zavri(); naStranke(it.id, k, !!povodny);
@@ -391,7 +394,6 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     zapisZPayloadu(p, kdeStat); // KARTA 57 F: štatistika editora
     if (p.stav === "koncept" && !edId && !hotovo) konceptEd.set(`${strankaId}|${k}`, p);
     if (p.stav !== "hotovo") return;
-    konceptEd.delete(`${strankaId}|${k}`);
     const P = p.polia ?? {}, str = (x: string) => String(P[x] ?? "").trim();
     const t = k === "parte" ? str("meno") : k === "svadba" ? [str("sNev"), str("sZen")].filter(Boolean).join(" a ") : str("jMeno") || str("bMeno");
     const s = k === "parte" ? (P.neskor ? "Termín rozlúčky oznámime." : [fmtD(str("rd")), str("rc"), str("rm")].filter(Boolean).join(" · "))
@@ -403,7 +405,9 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
       // OPRAVY 212: svadba a jubileum majú aj galériu (Editor oznámení len na obrázok pozvánky)
       ...(k === "svadba" || k === "ine" ? { fotky: fotky.length ? fotky.map((m) => m.src) : undefined, popisy: fotky.some((m) => m.popis) ? fotky.map((m) => m.popis ?? "") : undefined } : {}) }, "od-veriacich"); }
     catch (e) { toast(e instanceof Error ? e.message : "Oznámenie sa nepodarilo uložiť."); return; }
-    pridajOdFarnika(strankaId, it);
+    const eUl = await zapisOdFarnikaIsto(strankaId, it, !!povodny); // OPRAVY 273
+    if (eUl) { toast(`${eUl} Rozpísané ostáva.`); return; }
+    konceptEd.delete(`${strankaId}|${k}`);
     setHotovo(it.id); setEdToast(true); window.clearTimeout(tm.current); tm.current = window.setTimeout(() => setEdToast(false), 2500);
   };
 
