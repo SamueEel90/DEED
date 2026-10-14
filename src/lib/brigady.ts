@@ -18,6 +18,7 @@ export interface Brigada {
   /** len pri záväznom: koľko ľudí najviac (0 = bez limitu) */ limit: number;
   vytvorena: string;
   /** riadok autora: kto brigádu pridal */ af?: import("./autorFarnosti").AutorF;
+  /** KARTA 63: farár zvolil Upozorniť sledujúcich (blok Pomôž) */ upoz?: boolean;
 }
 
 let ver = 0;

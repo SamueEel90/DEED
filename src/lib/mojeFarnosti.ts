@@ -7,8 +7,23 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
 import { UKAZKOVE_STRANKY } from "./mojeStranky";
+import { zaregistrujKluc, zmenene } from "./mojeData";
 
-export interface MojeFarnosti { domovska: string | null; sled: string[] }
+/** KARTA 62: sledovaný kostol = miesto konkrétnej farnosti (moje_kostoly, 0086) */
+export interface SledovanyKostol { stranka: string; miesto: string; /** KARTA 63 */ bloky?: string[] }
+
+// ---- KARTA 63: o čom chce sledujúci vedieť (bloky stránky farnosti, 0087) ----
+export type Blok = "oz" | "om" | "pr" | "po" | "de" | "te" | "sp" | "mo" | "ve" | "zb";
+export const BLOKY: [Blok, string, string][] = [
+  ["oz", "Oznamy farnosti", "nedeľné oznamy a dôležité správy"], ["om", "Zmeny a zrušenia omší", "príde hneď"], ["pr", "Príď a zaži s nami", "akcie, púte, koncerty"],
+  ["po", "Pomôž", "brigády a dobrovoľníci"], ["de", "Deti a mládež", "stretká, miništranti, tábory"], ["te", "Teš sa s nami", "svadby, jubileá, blahoželania"],
+  ["sp", "Spomíname", "parte · príde hneď"], ["mo", "Modli sa s nami", "prosby o modlitbu"], ["ve", "Od veriacich", "čo pridali ostatní"], ["zb", "Zbierky", "nová zbierka a míľniky"],
+];
+/** kostol má len bloky svojej podstránky (oznamy, omše, akcie, zbierka na miesto) */
+export const BLOKY_KOSTOLA: Blok[] = ["oz", "om", "pr", "zb"];
+export const PREDVOLENE_FARNOST: Blok[] = ["oz", "om", "sp"], PREDVOLENE_KOSTOL: Blok[] = ["oz", "om"];
+export const kratkeBloky = (b: string[]) => BLOKY.filter(([k]) => b.includes(k)).map(([k, n]) => (k === "om" ? "Zmeny omší" : k === "pr" ? "Príď a zaži" : n.replace(" farnosti", ""))).join(" · ") || "nič, len sledujete";
+export interface MojeFarnosti { domovska: string | null; sled: string[]; /** KARTA 63: bloky pri farnosti (stranka → bloky) */ bloky: Record<string, string[]>; /** KARTA 62 */ kostoly: SledovanyKostol[]; /** KARTA 62: Môj kostol pri domovskej (id miesta) */ mojKostol: string | null }
 export interface FarnostAdresar { id: string; nazov: string; cirkev: string; obec: string | null; lat: number | null; lng: number | null }
 
 /** 18 cirkví a náboženských spoločností registrovaných MK SR: [kód, názov, popis, rodina] */
@@ -23,6 +38,7 @@ export const RODINY_CIRKVI = ["KATOLÍCKE A VÝCHODNÉ", "EVANJELICKÉ A PROTEST
 export const skratkaCirkvi = (k: string) => (k === "RKCr" ? "RKC-r" : k);
 
 const KLUC = "deed.mojeFarnosti.v1";
+const PRAZDNE: MojeFarnosti = { domovska: null, sled: [], bloky: {}, kostoly: [], mojKostol: null };
 let stav: MojeFarnosti = nacitajLS();
 let adresar: FarnostAdresar[] | null = null;
 let nacitane = false;
@@ -31,20 +47,28 @@ const posl = new Set<() => void>();
 const zmena = () => { ver++; posl.forEach((f) => f()); };
 
 function nacitajLS(): MojeFarnosti {
-  try { const v = JSON.parse(localStorage.getItem(KLUC) ?? "null") as MojeFarnosti | null; return v ? { domovska: v.domovska ?? null, sled: Array.isArray(v.sled) ? v.sled : [] } : { domovska: null, sled: [] }; } catch { return { domovska: null, sled: [] }; }
+  try {
+    const v = JSON.parse(localStorage.getItem(KLUC) ?? "null") as Partial<MojeFarnosti> | null;
+    return v ? { domovska: v.domovska ?? null, sled: Array.isArray(v.sled) ? v.sled : [], bloky: v.bloky && typeof v.bloky === "object" ? v.bloky : {}, kostoly: Array.isArray(v.kostoly) ? v.kostoly : [], mojKostol: v.mojKostol ?? null } : PRAZDNE;
+  } catch { return PRAZDNE; }
 }
+const rovnaky = (a: SledovanyKostol, b: SledovanyKostol) => a.stranka === b.stranka && a.miesto === b.miesto;
 function nastav(s: MojeFarnosti) {
-  stav = { domovska: s.domovska, sled: [...new Set(s.sled.filter((x) => x && x !== s.domovska))] };
+  stav = { domovska: s.domovska, sled: [...new Set(s.sled.filter((x) => x && x !== s.domovska))], bloky: s.bloky,
+    kostoly: s.kostoly.filter((k, i, l) => k.stranka && k.miesto && l.findIndex((y) => rovnaky(y, k)) === i), mojKostol: s.domovska ? s.mojKostol : null };
   try { localStorage.setItem(KLUC, JSON.stringify(stav)); } catch { /* LS */ }
   zmena();
 }
 
 async function nacitajDB() {
   if (!supabase) return;
-  const { data, error } = await supabase.from("moje_farnosti").select("stranka, domovska");
-  if (error || !data) return;
-  const rows = data as { stranka: string; domovska: boolean }[];
-  nastav({ domovska: rows.find((r) => r.domovska)?.stranka ?? null, sled: rows.filter((r) => !r.domovska).map((r) => r.stranka) });
+  const [f, k] = await Promise.all([supabase.from("moje_farnosti").select("stranka, domovska, moj_kostol, bloky"), supabase.from("moje_kostoly").select("stranka, miesto, bloky")]);
+  if (f.error || !f.data) return;
+  const rows = f.data as { stranka: string; domovska: boolean; moj_kostol: string | null; bloky?: string[] }[];
+  const hl = rows.find((r) => r.domovska);
+  nastav({ domovska: hl?.stranka ?? null, sled: rows.filter((r) => !r.domovska).map((r) => r.stranka), mojKostol: hl?.moj_kostol ?? null,
+    bloky: Object.fromEntries(rows.filter((r) => Array.isArray(r.bloky)).map((r) => [r.stranka, r.bloky!])),
+    kostoly: k.error || !k.data ? stav.kostoly : (k.data as SledovanyKostol[]) });
 }
 async function nacitajAdresarDB(): Promise<FarnostAdresar[]> {
   if (!supabase) {
@@ -76,7 +100,7 @@ const chyba = (e: { message?: string } | null) => { if (e) throw new Error(e.mes
 /** nová domovská (stará ostane medzi sledovanými); null = odstrániť domovskú */
 export async function nastavDomovsku(id: string | null): Promise<void> {
   const stara = stav.domovska;
-  nastav({ domovska: id, sled: id ? [...stav.sled.filter((x) => x !== id), ...(stara && stara !== id ? [stara] : [])] : stav.sled });
+  nastav({ ...stav, domovska: id, sled: id ? [...stav.sled.filter((x) => x !== id), ...(stara && stara !== id ? [stara] : [])] : stav.sled, mojKostol: id === stara ? stav.mojKostol : null });
   if (supabase) { const { error } = await supabase.rpc("nastav_domovsku", { p_stranka: id }); chyba(error); }
 }
 export async function pridajSledovanu(id: string): Promise<void> {
@@ -87,6 +111,56 @@ export async function pridajSledovanu(id: string): Promise<void> {
 export async function odstranSledovanu(id: string): Promise<void> {
   nastav({ ...stav, sled: stav.sled.filter((x) => x !== id) });
   if (supabase) { const { error } = await supabase.from("moje_farnosti").delete().eq("stranka", id).eq("domovska", false); chyba(error); }
+}
+
+// ---- KARTA 62: Sledovať tento kostol · Môj kostol · počet sledujúcich per miesto (0086) ----
+export const sledujemKostol = (stranka: string, miesto: string) => stav.kostoly.some((k) => k.stranka === stranka && k.miesto === miesto);
+export async function sledujKostol(stranka: string, miesto: string): Promise<void> {
+  if (sledujemKostol(stranka, miesto)) return;
+  nastav({ ...stav, kostoly: [...stav.kostoly, { stranka, miesto }] });
+  if (supabase) { const { error } = await supabase.from("moje_kostoly").insert({ stranka, miesto }); chyba(error); }
+}
+export async function prestanKostol(stranka: string, miesto: string): Promise<void> {
+  nastav({ ...stav, kostoly: stav.kostoly.filter((k) => !rovnaky(k, { stranka, miesto })) });
+  if (supabase) { const { error } = await supabase.from("moje_kostoly").delete().eq("stranka", stranka).eq("miesto", miesto); chyba(error); }
+}
+/** Môj kostol pri domovskej farnosti (null = žiadny) */
+export async function nastavMojKostol(miesto: string | null): Promise<void> {
+  if (!stav.domovska) return;
+  nastav({ ...stav, mojKostol: miesto });
+  if (supabase) { const { error } = await supabase.rpc("nastav_moj_kostol", { p_miesto: miesto }); chyba(error); }
+}
+/** počet sledujúcich pri každom mieste (len správca); bez DB len vlastné sledovanie (test) */
+export async function sledujuciMiest(stranka: string): Promise<Record<string, number>> {
+  if (!supabase) return Object.fromEntries(stav.kostoly.filter((k) => k.stranka === stranka).map((k) => [k.miesto, 1]));
+  const { data, error } = await supabase.rpc("sledujuci_miest", { p_stranka: stranka });
+  if (error || !data) return {};
+  return Object.fromEntries((data as { miesto: string; pocet: number }[]).map((r) => [r.miesto, Number(r.pocet)]));
+}
+
+// ---- KARTA 63: bloky upozornení ----
+export const blokyFarnosti = (stranka: string): string[] => stav.bloky[stranka] ?? PREDVOLENE_FARNOST;
+export const blokyKostola = (stranka: string, miesto: string): string[] => stav.kostoly.find((k) => k.stranka === stranka && k.miesto === miesto)?.bloky ?? PREDVOLENE_KOSTOL;
+/** uloží bloky pri farnosti (miesto null) alebo pri sledovanom kostole */
+export async function nastavBloky(stranka: string, miesto: string | null, bloky: string[]): Promise<void> {
+  if (miesto === null) nastav({ ...stav, bloky: { ...stav.bloky, [stranka]: bloky } });
+  else nastav({ ...stav, kostoly: stav.kostoly.map((k) => (k.stranka === stranka && k.miesto === miesto ? { ...k, bloky } : k)) });
+  if (supabase) { const { error } = await supabase.rpc("nastav_bloky", { p_stranka: stranka, p_miesto: miesto, p_bloky: bloky }); chyba(error); }
+}
+/** Profil → Upozornenia → Moje farnosti: „Spolu najviac 1 správa denne“ (moje_data, server podľa neho skladá súhrn) */
+const KLUC_SUHRN = "deed.farnostiSuhrn";
+zaregistrujKluc(KLUC_SUHRN, () => zmena());
+export const farnostiSuhrn = (): boolean => { try { return localStorage.getItem(KLUC_SUHRN) !== "false"; } catch { return true; } };
+export const nastavFarnostiSuhrn = (on: boolean) => { try { localStorage.setItem(KLUC_SUHRN, JSON.stringify(on)); } catch { /* LS */ } zmenene(KLUC_SUHRN); zmena(); };
+/** pri zverejnení: koľkým ľuďom pôjde upozornenie (blok; pri ozname pre konkrétne kostoly aj ich sledujúci) — len správca */
+export async function pocetSledujucich(stranka: string, blok: Blok, miesta?: string[]): Promise<number> {
+  const riadky: { miesto: string | null; blok: string; pocet: number }[] = supabase
+    ? (((await supabase.rpc("sledujuci_blokov", { p_stranka: stranka })).data ?? []) as { miesto: string | null; blok: string; pocet: number }[])
+    : [ // bez DB: len vlastné sledovanie (test)
+      ...((stav.domovska === stranka || stav.sled.includes(stranka)) ? blokyFarnosti(stranka).map((b) => ({ miesto: null, blok: b, pocet: 1 })) : []),
+      ...stav.kostoly.filter((k) => k.stranka === stranka).flatMap((k) => (k.bloky ?? PREDVOLENE_KOSTOL).map((b) => ({ miesto: k.miesto, blok: b, pocet: 1 }))),
+    ];
+  return riadky.filter((r) => r.blok === blok && (r.miesto === null || !miesta || miesta.includes(r.miesto))).reduce((a, r) => a + Number(r.pocet), 0);
 }
 
 // ---- okno Adresára (otvára ho Viera aj okno Moje farnosti na stránke farnosti) ----

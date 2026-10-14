@@ -2,6 +2,7 @@
 // KARTA 57 C.7–C.8 — verejná stránka farnosti, hore: červené NAŽIVO (keď beží vysielaná omša)
 // a krúžok ▶ Príhovor farára; ťuk = prehrávač na celú obrazovku. Nie je to vo feede Iskier.
 // ============================================================
+import { useZamokVrstvy } from "@/lib/zamokVrstvy";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { naZivo, onlineOmse, prihovor, useZmenyPrihovoru } from "@/lib/prihovor";
@@ -14,6 +15,7 @@ export function PrihovorNaStranke({ strankaId, pad, svetly }: { strankaId: strin
   const [cas, setCas] = useState(teraz);
   useEffect(() => { const t = window.setInterval(() => setCas(teraz()), 30000); return () => window.clearInterval(t); }, []);
   const [otv, setOtv] = useState(false);
+  useZamokVrstvy(otv); // OPRAVY 240
   useEffect(() => {
     if (!otv) return;
     const k = (e: KeyboardEvent) => { if (e.key === "Escape") setOtv(false); };

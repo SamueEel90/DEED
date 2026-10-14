@@ -24,6 +24,9 @@ import {
   type NovaZbierkaData, type SpustenaZbierka,
 } from "@/lib/novaZbierka";
 import { uvodZPamate, nacitajUvod, potvrdUvod } from "@/lib/profilStranky";
+import { useMiesta } from "@/lib/miestaFarnosti";
+import { UpozornitSledujucich } from "./UpozornitSledujucich";
+import { useNastavenieUpoz } from "@/lib/upozorneniaFarnosti";
 import { VERIME_VAM, SUHLAS_FOTKY, SUHLAS_POZNAMKA, SUHLAS_CHYBA, PRED_SPUSTENIM_NADPIS, PRED_SPUSTENIM, PRAVDIVA_ZBIERKA } from "@/lib/pravidlaObsahu";
 
 import { Ik, I, Zamok, vyber, panel, pole, pozn, fmtEur, fmtSek, cis, cistyText, Media, Volby, Nadpis, Zaskrtnutie, odkaz, PravidlaObsahu, TextovePolia, GaleriaEditor } from "./obsahZbierky";
@@ -45,6 +48,13 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   const [nacitane, setNacitane] = useState(false);
   useEffect(() => { let ziva = true; void nacitajKonceptZbierky(strankaId).then((k) => { if (ziva && k && !zmenene.current) setD(k); if (ziva) setNacitane(true); }); return () => { ziva = false; }; }, [strankaId]);
   const zmen = (z: Partial<NovaZbierkaData>) => { zmenene.current = true; setD((x) => ({ ...x, ...z })); };
+  // KARTA 62: „Na ktoré miesto“ — nepovinný účel zbierky farnosti, len pri 2+ miestach
+  const miestaF = useMiesta(strankaId);
+  const naMiesto = farnost && miestaF.length > 1 ? miestaF.find((m) => m.id === d.farnost?.miesto) : undefined;
+  // KARTA 63 1c: Upozorniť sledujúcich pri novej zbierke farnosti (predvolené z Nastavenia upozornení)
+  const predvUpoz = useNastavenieUpoz(strankaId);
+  const [upozV, setUpozV] = useState<boolean | null>(null);
+  const upoz = upozV ?? predvUpoz("zbierka");
   // ROZPÍSANÉ SA UKLADÁ SAMO — 600 ms po poslednej zmene, do účtu stránky
   useEffect(() => {
     if (!zmenene.current || !nacitane) return;
@@ -98,7 +108,7 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   const zapecat = async () => {
     if (chyba) return;
     try {
-      const z = await spustiZbierku(strankaId, zadarmo ? { ...d, typ: "kratka", iban: "", prav: false, ...(farnost ? { ucel: null, farnost: { druh: "farnost" as const } } : {}) } : d, zadarmo ? hlavnyUcet : d.iban, farnost ? "nabozenstvo" : undefined);
+      const z = await spustiZbierku(strankaId, zadarmo ? { ...d, typ: "kratka", iban: "", prav: false, ...(farnost ? { ucel: null, farnost: { druh: "farnost" as const, ...(naMiesto ? { miesto: naMiesto.id } : {}), upoz } } : {}) } : d, zadarmo ? hlavnyUcet : d.iban, farnost ? "nabozenstvo" : undefined);
       if (farnost) { farnost.onSpustena(z); return; }
       setHotovo(z);
     } catch (e) { toast(e instanceof Error ? e.message : "Zbierku sa nepodarilo spustiť."); }
@@ -115,6 +125,7 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
     ["Názov", d.nazov || "—", 1, true], ["Popis", cistyText(d.popis).slice(0, 140) || "—", 1, true],
     ["Fotky a video", `${fotiek} ${fotiek === 1 ? "fotka" : fotiek >= 2 && fotiek <= 4 ? "fotky" : "fotiek"} · ${video ? `video ${fmtSek(video.sek ?? 0)}` : "bez videa"}`, 2, false],
     ["Suma", maCiel ? fmtEur(cielCislo(d)) : "otvorená, bez cieľa", 3, true], ["Kam prídu peniaze", "Na účet hlavnej zbierky", 3, true],
+    ...(miestaF.length > 1 ? [["Na ktoré miesto", naMiesto?.nazov ?? "celá farnosť", 3, false] as [string, string, number, boolean]] : []),
     ["Rýchle sumy", `${SADY[d.sada][0]} · ${SADY[d.sada][1].join(" · ")} €`, 4, false],
     ...(eurcRezim === "nie" ? [] : [["Dary v EURC", eurcOn ? `áno · ${SADY_EURC[d.sadaE][0]} ${SADY_EURC[d.sadaE][1].map(cis).join(" · ")}` : "nie", 4, false] as [string, string, number, boolean]]),
   ] : [
@@ -256,6 +267,12 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
           <Nadpis t="Kam prídu peniaze" />
           <div style={{ ...pole, display: "flex", alignItems: "center", gap: 10, background: "var(--btn)", color: "var(--ink2)", maxWidth: ph ? undefined : 520 }}><Zamok s={15} /><span>Na účet hlavnej zbierky</span></div>
           <span style={{ ...pozn, marginTop: -6 }}>Všetky zbierky farnosti idú na jeden účet. Každá má vlastné počítadlo.</span>
+          {miestaF.length > 1 && <>
+            <Nadpis t="Na ktoré miesto · nepovinné" />
+            <select value={naMiesto?.id ?? ""} onChange={(e) => zmen({ farnost: { druh: "farnost", ...(e.target.value ? { miesto: e.target.value } : {}) } })} aria-label="Na ktoré miesto" style={{ ...pole, maxWidth: ph ? undefined : 520, fontWeight: 700 }}>
+              <option value="">Celá farnosť</option>{miestaF.map((m) => <option key={m.id} value={m.id}>{m.nazov}</option>)}</select>
+            <span style={{ ...pozn, marginTop: -6 }}>Len účel. Zbierka sa ukáže aj na stránke tohto kostola, peniaze idú na účet farnosti.</span>
+          </>}
         </> : zadarmo ? <>
           <Nadpis t="Kam prídu peniaze" />
           <div style={{ ...pole, display: "flex", alignItems: "center", gap: 10, background: "var(--btn)", color: "var(--ink2)", maxWidth: ph ? undefined : 520 }}><Zamok s={15} /><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{hlavnyUcet}</span></div>
@@ -344,7 +361,8 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
         <b style={{ fontSize: 16, color: "var(--ink)" }}>{PRED_SPUSTENIM_NADPIS}</b>
         {PRED_SPUSTENIM.map((t) => <div key={t} style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 15, lineHeight: 1.5, color: "var(--ink2)" }}><span style={{ color: "var(--green)", display: "flex", flex: "none", marginTop: 2 }}><Ik d={I.fajka} s={18} w={2.6} /></span><span>{t}</span></div>)}
       </section>
-      <Zaskrtnutie on={ok} onClick={() => setOk(!ok)}>{PRAVDIVA_ZBIERKA}</Zaskrtnutie></>;
+      <Zaskrtnutie on={ok} onClick={() => setOk(!ok)}>{PRAVDIVA_ZBIERKA}</Zaskrtnutie>
+      {farnost && <UpozornitSledujucich strankaId={strankaId} blok="zb" miesta={naMiesto ? [naMiesto.id] : undefined} value={upoz} onChange={setUpozV} />}</>;
   }
 
   // ---------- spodná lišta ----------

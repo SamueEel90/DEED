@@ -14,6 +14,7 @@
   /* ===== MOTÍV — SVETLÝ (primárny · warm earthy / natural) ===== */
   color-scheme: light;
   --c-bg: #F1ECE1;              /* teplý sand / papier */
+  --linia-bordova: #722535;     /* OPRAVY 243: bordová línia stránky farnosti, matná */
   --c-bg2: #F8F4EB;
   --c-text: #221F18;           /* espresso near-black */
   --c-textSec: #4A4337;        /* teplý taupe (8.3:1 na bg — AAA) */
@@ -38,6 +39,7 @@
 html.dark {
   color-scheme: dark;
   --c-bg: #14110B;             /* teplá near-black */
+  --linia-bordova: #A8445A;
   --c-bg2: #1B170F;
   --c-text: #F2EDE2;          /* teplá off-white */
   --c-textSec: #BBB2A1;
@@ -79,6 +81,13 @@ button, input, textarea {
 #root {
   min-height: calc(100vh / var(--pismo, 1));
 }
+
+/* OPRAVY 240 · iPhone: stránka sa nehýbe do strán a nepruží (žiadne „dve kópie appky“) */
+html, body { overscroll-behavior: none; }
+html, body, #root { overflow-x: clip; max-width: 100%; }
+#root { touch-action: pan-y; }
+/* kým je otvorená plná vrstva (stránka farnosti, detail zbierky, parte, príhovor), obrazovka pod ňou sa neposúva */
+html.zamok-vrstvy, html.zamok-vrstvy body { overflow: hidden; }
 
 /* appka = presná výška VIDITEĽNEJ oblasti (dvh rieši iOS dynamickú lištu);
    bez toho je spodok kontajnera pod home indicatorom a spodný sheet/CTA spadne mimo. */

@@ -2,8 +2,9 @@
 // KARTA 61 §3 — Predplatné farnosti (prototyp Predplatne farnosti.dc.html):
 // PredplatnePas = stav hore v Prehľade (a v Nastaveniach), PredplatneFarnosti = Predplatné a platba (3 kroky).
 // ============================================================
+import { miesta, useMiesta, nazovDruhu } from "@/lib/miestaFarnosti";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { useZmenyNastaveni, citajNastavenie, maNastavenie, zapisNastavenie } from "@/lib/nastaveniaStranky";
+import { useZmenyNastaveni, citajNastavenie, maNastavenie } from "@/lib/nastaveniaStranky";
 import { predplatne, ulozPredplatne, stavPredplatneho, koniecSkusobneho, cenaMiest, dniText, dniDo, datumText, DEN, GRACE_DNI, CENA_HLAVNY, CENA_FIL1, CENA_FIL } from "@/lib/predplatneFarnosti";
 import { vystavFakturu } from "@/lib/fakturyOrg";
 import { vlastnePrispevky } from "@/features/viera/mock";
@@ -20,8 +21,6 @@ const pole: CSSProperties = { height: 48, padding: "0 14px", borderRadius: 12, b
 const obrys: CSSProperties = { flex: "none", minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1.5px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" };
 const hlaskaSt: CSSProperties = { padding: "10px 14px", borderRadius: 12, background: "var(--gSoft)", border: `1.5px solid ${ZELENA}`, fontSize: 14, fontWeight: 700, color: "var(--gInk)" };
 
-type Duch = { fil?: string[] };
-const filialky = (): string[] => ((maNastavenie("duch") ? citajNastavenie("duch") : {}) as Duch).fil ?? [];
 
 /** 2 mesiace sa začnú počítať pri prvom zverejnení (oznam alebo omše) */
 function useStart(strankaId: string) {
@@ -35,13 +34,13 @@ function useStart(strankaId: string) {
 export function PredplatnePas({ strankaId, mobil, onOtvor }: { strankaId: string; mobil: boolean; onOtvor: () => void }) {
   useStart(strankaId);
   if (!PLATENIE_NAOSTRO) return null; // OPRAVY 217: karta v Prehľade skrytá, kým nebeží platenie naostro (karta 61)
-  return <PasPredplatneho mobil={mobil} onOtvor={onOtvor} />;
+  return <PasPredplatneho strankaId={strankaId} mobil={mobil} onOtvor={onOtvor} />;
 }
 /** OPRAVY 217: prepnúť na true, keď pobeží platenie predplatného naostro */
 const PLATENIE_NAOSTRO = false;
-function PasPredplatneho({ mobil, onOtvor }: { mobil: boolean; onOtvor: () => void }) {
+function PasPredplatneho({ strankaId, mobil, onOtvor }: { strankaId: string; mobil: boolean; onOtvor: () => void }) {
   const p = predplatne(), now = teraz(), st = stavPredplatneho(p, now), k = koniecSkusobneho(p);
-  const dni = dniDo(k, now), mes = cenaMiest(1 + filialky().length);
+  const dni = dniDo(k, now), mes = cenaMiest(miesta(strankaId).length); // KARTA 62: cena z tabuľky miest
   const pct = p.start && k > p.start ? Math.min(100, Math.round(((now - p.start) / (k - p.start)) * 100)) : 0;
   const tl = (t: string, plne = false) => <button type="button" onClick={onOtvor} style={plne ? { ...obrys, border: "none", background: ZELENA, color: "#fff" } : obrys}>{t}</button>;
   const ram = (bg: string, bd: string, deti: React.ReactNode) => <section style={{ borderRadius: mobil ? 18 : 22, background: bg, border: `2px solid ${bd}`, padding: mobil ? "14px 14px" : "16px 20px", display: "flex", flexDirection: "column", gap: 8 }}>{deti}</section>;
@@ -63,17 +62,17 @@ function PasPredplatneho({ mobil, onOtvor }: { mobil: boolean; onOtvor: () => vo
 }
 
 /** Predplatné a platba (Nastavenia → Predplatné farnosti) */
-export function PredplatneFarnosti({ strankaId, meno, mobil, onUdaje }: { strankaId: string; meno: string; mobil: boolean; onUdaje: () => void }) {
+export function PredplatneFarnosti({ strankaId, meno, mobil, onUdaje, onMiesta }: { strankaId: string; meno: string; mobil: boolean; onUdaje: () => void; /** KARTA 62: Správa → Kostoly a miesta */ onMiesta?: () => void }) {
   useZmenyNastaveni();
-  const p = predplatne(), fil = filialky(), za = p.za ?? [];
-  const [vyb, setVyb] = useState(0), [filIn, setFilIn] = useState(""), [zaIn, setZaIn] = useState("");
+  // KARTA 62: miesta = jedna tabuľka miest (Správa → Kostoly a miesta), cena sa počíta z nej
+  const ms = useMiesta(strankaId);
+  const p = predplatne(), za = p.za ?? [];
+  const [vyb, setVyb] = useState(0), [zaIn, setZaIn] = useState("");
   const [hl, setHl] = useState<string | null>(null);
   const tm = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(tm.current), []);
   const hlas = (t: string) => { window.clearTimeout(tm.current); setHl(t); tm.current = window.setTimeout(() => setHl(null), 4500); };
-  const ulozFil = (l: string[]) => zapisNastavenie("duch", { ...((maNastavenie("duch") ? citajNastavenie("duch") : {}) as object), fil: l });
-
-  const nM = 1 + fil.length, mes = cenaMiest(nM), zaOk = za.filter((z) => z.ok);
+  const nM = ms.length, mes = cenaMiest(nM), zaOk = za.filter((z) => z.ok);
   const mesSpolu = mes + zaOk.length * CENA_HLAVNY, prvyRok = !p.zaplatene;
   const k = vyb === 1 ? (prvyRok ? 12 : 10) : 1;
   const spolu = `${eur(mesSpolu * k)}${vyb === 1 ? " / rok" : " / mesiac"}`;
@@ -96,15 +95,10 @@ export function PredplatneFarnosti({ strankaId, meno, mobil, onUdaje }: { strank
     {hl && <span role="status" style={hlaskaSt}>{hl}</span>}
     <span style={kick}>1 · MIESTA VAŠEJ FARNOSTI</span>
     <section style={{ ...karta, padding: "0 16px" }}>
-      {riad(0, "Hlavný kostol", "vaša farnosť", `${CENA_HLAVNY} €`)}
-      {fil.map((f, i) => riad(i + 1, f, "filiálka", `+${i === 0 ? CENA_FIL1 : CENA_FIL} €`,
-        <button type="button" aria-label={`Odobrať ${f}`} onClick={() => ulozFil(fil.filter((_, j) => j !== i))} style={{ width: 44, height: 44, border: "none", background: "transparent", cursor: "pointer", fontSize: 20, color: "var(--ink3)" }}>×</button>))}
-      <div style={{ display: "flex", gap: 8, padding: "10px 0 12px", borderTop: "1px solid var(--cardBd)" }}>
-        <input value={filIn} onChange={(e) => setFilIn(e.target.value.slice(0, 40))} placeholder="názov filiálky" aria-label="Názov filiálky" style={pole} />
-        <button type="button" onClick={() => { const t = filIn.trim(); if (!t) return; ulozFil([...fil, t]); setFilIn(""); hlas(`Filiálka pridaná ✓ ${t} · cena ${eur(cenaMiest(nM + 1))} mesačne`); }} style={obrys}>Pridať</button>
-      </div>
+      {ms.map((m, i) => riad(i, m.nazov, i === 0 ? "hlavný kostol · vaša farnosť" : nazovDruhu(m.druh).toLocaleLowerCase("sk-SK"), i === 0 ? `${CENA_HLAVNY} €` : `+${i === 1 ? CENA_FIL1 : CENA_FIL} €`))}
+      {onMiesta && <div style={{ padding: "10px 0 12px", borderTop: "1px solid var(--cardBd)" }}><button type="button" onClick={onMiesta} style={obrys}>Kostoly a miesta ›</button></div>}
     </section>
-    <span style={{ fontSize: 13, color: "var(--ink3)" }}>Filiálka = kostol s vlastnou podstránkou. Prvé miesto {CENA_HLAVNY} €, druhé +{CENA_FIL1} €, každé ďalšie +{CENA_FIL} € mesačne.</span>
+    <span style={{ fontSize: 13, color: "var(--ink3)" }}>Kostol, kaplnka aj filiálka = miesto s vlastnou podstránkou. Pridávajú sa v Správe → Kostoly a miesta. Prvé miesto {CENA_HLAVNY} €, druhé +{CENA_FIL1} €, každé ďalšie +{CENA_FIL} € mesačne.</span>
 
     <span style={kick}>2 · PLATÍTE AJ ZA INÉ FARNOSTI · NEPOVINNÉ</span>
     <section style={{ ...karta, padding: "0 16px" }}>

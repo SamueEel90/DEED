@@ -23,6 +23,7 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { useVazbyOsoby } from "@/lib/zamestnanci";
 import { dataFirmy, useMojaFirma } from "@/lib/mojaFirma";
 import "@/styles/platba.css";
+import { MojeFarnostiUpozornenia } from "./MojeFarnostiUpozornenia";
 
 export { NOTIFY } from "./mock";
 
@@ -195,6 +196,8 @@ export function NastaveniaOznameni({ onBack }: { onBack: () => void }) {
   const n = useNastaveniaAppky();
   const oz = n.oznamy;
   const [otv, setOtv] = useState<string[]>([]);
+  // KARTA 63 1b: Moje farnosti (sledované farnosti a kostoly)
+  const [farn, setFarn] = useState(false);
   const zmenOz = (z: Partial<typeof oz>) => zmenNastavenia({ oznamy: { ...nacitajNastavenia().oznamy, ...z } });
   const prepni = (t: string, k: "a" | "p") => {
     if (!oz.master) return;
@@ -213,6 +216,7 @@ export function NastaveniaOznameni({ onBack }: { onBack: () => void }) {
     <button type="button" role="switch" aria-checked={on} onClick={onClick} style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, minHeight: 68, padding: "12px 18px", borderTop: prvy ? "none" : oddelovac, borderLeft: "none", borderRight: "none", borderBottom: "none", boxShadow: "none", background: "transparent", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--d-ink, var(--ink))" }}>
       <IkonaSek d={d} k="o" />{txt(t, s)}<Prep on={on} /></button>);
 
+  if (farn) return <MojeFarnostiUpozornenia onBack={() => setFarn(false)} />;
   return (
     <div className="deed-platba" style={{ height: "100%", display: "flex", flexDirection: "column", background: "var(--bg)", color: "var(--d-ink, var(--ink))" }}>
       <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 10, padding: "max(6px, env(safe-area-inset-top)) 16px 0", minHeight: 60 }}>
@@ -248,6 +252,15 @@ export function NastaveniaOznameni({ onBack }: { onBack: () => void }) {
                   </div>}
                 </div>);
             })}
+          </NastKarta>
+        </div>
+        <div>
+          <h2 style={lbl}>{bodka("o")}MOJE FARNOSTI</h2>
+          <NastKarta k="o">
+            <button type="button" onClick={() => setFarn(true)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, minHeight: 68, padding: "12px 18px", border: "none", background: "transparent", fontFamily: "inherit", textAlign: "left", cursor: "pointer", color: "inherit", boxShadow: "none" }}>
+              <IkonaSek d={IK.bell} k="o" />{txt("Moje farnosti", "farnosti a kostoly, ktoré sledujete")}
+              <span aria-hidden="true" style={{ fontSize: 20, color: "var(--d-ink3, var(--ink3))", flex: "none" }}>›</span>
+            </button>
           </NastKarta>
         </div>
         <div>

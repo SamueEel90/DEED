@@ -20,6 +20,8 @@ import { type Pozicia, type Tier, type TvarLoga } from "./stav";
 import { Podstranka } from "./Podstranka";
 import { CasPole } from "@/components/CasPole";
 import { DNI_UH, prazdneUH, type CasUH } from "@/lib/uradneHodiny";
+import { uradneUdaje, type UradneUdaje } from "@/lib/uradneUdaje";
+import { GaleriaEditor } from "./obsahZbierky";
 
 // IČO a sídlo z Údajov organizácie (ten istý zdroj, OPRAVY 108)
 // ---------- konštanty z karty 33 ----------
@@ -98,6 +100,8 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
   const zmenK = (z: Partial<Kontakt>) => { zmenene.current = true; setP((x) => ({ ...x, kontakt: { ...x.kontakt, ...z } })); };
   // OPRAVY 223: úradné hodiny (len farnosť)
   const uh = p.kontakt.uradne ?? prazdneUH();
+  const ud = uradneUdaje(strankaId, p.kontakt.udaje);
+  const zmenUd = (z: Partial<UradneUdaje>) => zmenK({ udaje: { ...ud, ...z } });
   const zmenUH = (den: number, casy: CasUH[]) => zmenK({ uradne: { ...uh, d: uh.d.map((x, i) => (i === den ? casy : x)) } });
   useEffect(() => { if (zmenene.current) onZmena?.(p); // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p]);
@@ -216,7 +220,6 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
       {farnost ? <>
         {nadpis("Názov stránky", "predvyplnený z registrácie, môžete ho zmeniť", 14)}
         <input style={pole} value={p.meno ?? nazov} maxLength={80} placeholder="Napríklad: Farnosť sv. Martina" aria-label="Názov stránky" onChange={(e) => zmen({ meno: e.target.value })} />
-        <div style={zamknute}><Zamok />IČO {ICO_REGISTRA} · z registrácie, nemení sa</div>
       </> : <>
         {nadpis("Názov", "z registrácie, overený cez IČO", 14)}
         <div style={zamknute}><Zamok />{nazov} · IČO {ICO_REGISTRA}</div>
@@ -303,6 +306,15 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
         {nadpis("Poznámka k úradným hodinám", "nepovinné", 14)}
         <input style={pole} value={uh.poz} maxLength={200} placeholder="Napríklad: Počas sviatočných období môžu byť zmenené alebo zrušené, sledujte farské oznamy." aria-label="Poznámka k úradným hodinám"
           onChange={(e) => zmenK({ uradne: { ...uh, poz: e.target.value } })} />
+        {/* KARTA 62: päta Kancelária farského úradu — predvyplnené z registrácie, dá sa zmeniť */}
+        {nadpis("Údaje farnosti", "z registrácie, môžete ich zmeniť · v päte stránky", 14)}
+        {([["spravca", "Správca farnosti", "Napríklad: Mgr. Ján Novák, farár", 120], ["ico", "IČO", "Napríklad: 35 606 797", 20], ["dic", "DIČ", "Napríklad: 2021334381", 20], ["iban", "IBAN", "SK.. .... .... .... .... ....", 42]] as [keyof UradneUdaje, string, string, number][]).map(([kk, t, ph, max]) => (
+          <div key={kk} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ width: 84, flex: "none", fontSize: 13.5, fontWeight: 700, color: "var(--ink2)" }}>{t}</span>
+            <input style={{ ...pole, flex: 1 }} value={ud[kk]} maxLength={max} placeholder={ph} aria-label={t} inputMode={kk === "spravca" ? undefined : kk === "iban" ? "text" : "numeric"} onChange={(e) => zmenUd({ [kk]: e.target.value })} />
+          </div>))}
+        {/* KARTA 64: fotka fary pri Farskom úrade (vzhľad Kronika) */}
+        <GaleriaEditor media={p.fotoFary ? [{ id: 1, typ: "foto", src: p.fotoFary }] : []} onMedia={(m) => zmen({ fotoFary: m.find((x) => x.typ === "foto")?.src ?? null })} ph={mobil} max={1} bezVidea nadpis="Fotka fary · nepovinné" dovetok=" Ukáže sa pri Farskom úrade vo vzhľade Kronika." />
       </>}
     </section>);
 

@@ -9,6 +9,7 @@
 // Na stránke: Galéria farnosti (albumy), Od veriacich s filtrom, hlavička autora, Zúčastním sa / Prihlásiť sa,
 // Modlím sa s vami, Úprimnú sústrasť, ··· Nahlásiť, „Upraviť · moje" (len autor).
 // ============================================================
+import { useZamokVrstvy } from "@/lib/zamokVrstvy";
 import { CasPole } from "@/components/CasPole";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -114,6 +115,7 @@ export function MenuPrispevku({ x, strankaId, kto, moje, vMenu }: { x: PolozkaFa
 
 /** obrázok na celú obrazovku (oznámenie z editora pre slabozrakých, album) */
 export function CelaObrazovka({ children, onZavri, label, hore }: { children: ReactNode; onZavri: () => void; label: string; hore?: ReactNode }) {
+  useZamokVrstvy(); // OPRAVY 240
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === "Escape") onZavri(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onZavri]);
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label={label} style={{ position: "fixed", inset: 0, zIndex: 1100, background: "#0E0C08", display: "flex", flexDirection: "column" }}>
@@ -242,6 +244,15 @@ export function OdFarnikov({ strankaId, novy, pad, fab }: { strankaId: string; n
     </section>);
 }
 
+// KARTA 65 · Moderné: na PC je + na konci lišty blokov (plávajúce sa skryje), na mobile 58 px ako v appke
+export type FabRezim = "" | "lista" | "maly";
+let fabR: FabRezim = "";
+const fabP = new Set<() => void>();
+export function nastavFabRezim(r: FabRezim) { if (fabR === r) return; fabR = r; fabP.forEach((f) => f()); }
+const useFabRezim = () => useSyncExternalStore((f) => { fabP.add(f); return () => { fabP.delete(f); }; }, () => fabR);
+/** otvorí hárok + Pridať (zelené + v lište Moderného) */
+export const otvorPridanie = () => window.dispatchEvent(new Event("deed:farnik-pridaj"));
+
 /** je tlačidlo + Pridať zapnuté (farár povolil a aspoň 1 druh) */
 export function fabZapnuty(strankaId: string): boolean {
   const s = nacitajSmie(strankaId);
@@ -261,6 +272,8 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   const povol = DRUHY_FARNIKA.filter((d) => smie(sm, d.k));
   const pop = self.poplatok || 0;
   const [sheet, setSheet] = useState(false);
+  const fabRez = useFabRezim();
+  useEffect(() => { const f = () => setSheet(true); window.addEventListener("deed:farnik-pridaj", f); return () => window.removeEventListener("deed:farnik-pridaj", f); }, []);
   const [galOtv, setGalOtv] = useState(false); // OPRAVY 212: galéria pri svadbe a jubileu
   const [k, setK] = useState<DruhFarnika | null>(null);
   const [edId, setEdId] = useState<string | null>(null);
@@ -310,6 +323,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   // BLOK B 232: veriaci vyberá zo svojich fotiek (čo pridal na stránku farnosti a k skutkom)
   const mojKluc = klucJa(ja);
   const zdrojFotiek = useMemo(() => zdrojMoje(() => mojeFotky(strankaId, mojKluc)), [strankaId, mojKluc]);
+  useZamokVrstvy(!!k); // OPRAVY 240: stránka pod formulárom sa neposúva
   if (!self.on || !povol.length) return null;
 
   const set = (z: Partial<FormularVeriaceho>) => { setF((q) => ({ ...q, ...z })); setChyba(false); };
@@ -388,8 +402,9 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     setHotovo(it.id); setEdToast(true); window.clearTimeout(tm.current); tm.current = window.setTimeout(() => setEdToast(false), 2500);
   };
 
-  const fab = !k && (
-    <button type="button" onClick={() => setSheet(true)} aria-label="Pridať na stránku farnosti" style={{ position: "fixed", right: vpravo, bottom: mobil ? 96 + 16 : 28, zIndex: 150, width: 68, height: 68, padding: 0, border: "none", borderRadius: "50%", background: ZELENA, color: "#fff", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 10px 24px rgba(30,40,20,.35)" }}>
+  const fabS = fabRez === "maly" ? 58 : 68;
+  const fab = !k && fabRez !== "lista" && (
+    <button type="button" onClick={() => setSheet(true)} aria-label="Pridať na stránku farnosti" style={{ position: "fixed", right: vpravo, bottom: mobil ? 96 + 16 : 28, zIndex: 150, width: fabS, height: fabS, padding: 0, border: "none", borderRadius: "50%", background: ZELENA, color: "#fff", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 10px 24px rgba(30,40,20,.35)" }}>
       <span aria-hidden="true" style={{ position: "relative", width: 26, height: 26, flex: "none" }}>
         <span style={{ position: "absolute", left: 11, top: 0, width: 4, height: 26, borderRadius: 2, background: "#fff" }} />
         <span style={{ position: "absolute", top: 11, left: 0, width: 26, height: 4, borderRadius: 2, background: "#fff" }} />
@@ -561,7 +576,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   // KARTA 57C §2: formulár nad stránkou — hore „‹ Späť na stránku farnosti", stránka presvitá
   const spat = () => { if (jeEd && !hotovo && edRef.current?.krokSpat()) return; spatNaStranku(); };
   const okno = k && createPortal(
-    <div role="dialog" aria-modal="true" aria-label={T?.t} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(20,17,11,.82)", display: "flex", flexDirection: "column", alignItems: "center", gap: mobil ? 10 : 12, padding: mobil ? "calc(10px + env(safe-area-inset-top, 0px)) 10px 10px" : 16, boxSizing: "border-box" }}>
+    <div role="dialog" aria-modal="true" aria-label={T?.t} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(20,17,11,.82)", overscrollBehavior: "contain", display: "flex", flexDirection: "column", alignItems: "center", gap: mobil ? 10 : 12, padding: mobil ? "calc(10px + env(safe-area-inset-top, 0px)) 10px 10px" : 16, boxSizing: "border-box" }}>
       <div style={{ width: "100%", maxWidth: jeEd ? 1200 : 520, flex: "none", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         {/* OPRAVY 201: nad oknom len Späť (mobil 44 px, 15 px), okno hneď pod ním */}
         <button type="button" onClick={spat} style={{ minHeight: mobil ? 44 : 52, padding: mobil ? "0 16px" : "0 20px", border: "none", borderRadius: mobil ? 12 : 14, background: ZELENA, color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: mobil ? 15 : 17, fontWeight: 800 }}>‹ Späť na stránku farnosti</button>
