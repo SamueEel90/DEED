@@ -1799,7 +1799,7 @@ function DetailZbierky({ d, strankaId, onZavri }: { d: DetailF; strankaId: strin
   const farska = d.typ === "hl" || d.typ === "zv" || d.typ === "far";
   const sumyFar = useSumyDarcov(strankaId, d.typ === "hl" ? "hlavna" : d.typ === "zv" ? "zvoncek" : d.typ === "far" ? d.data.id : null);
   return createPortal(<SumyDarcovKontext.Provider value={d.typ === "rodina" ? false : farska ? sumyFar : null}>
-    <div role="dialog" aria-modal="true" aria-label="Zbierka" style={{ position: "fixed", inset: 0, zIndex: 1000, background: "var(--c-bg)", overflowY: "auto", overscrollBehavior: "contain", padding: 16, boxSizing: "border-box", fontFamily: "'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif" }}>
+    <div role="dialog" aria-modal="true" aria-label="Zbierka" style={{ position: "fixed", inset: 0, zIndex: 1000, background: "var(--c-bg)", overflowY: "auto", overscrollBehavior: "contain", padding: wide ? 16 : 12, boxSizing: "border-box", fontFamily: "'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif" }}>
       <div style={{ maxWidth: 1180, margin: "0 auto", paddingBottom: 24, display: "flex", flexDirection: "column", gap: 14 }}>
         <div><button type="button" onClick={onZavri} autoFocus style={{ minHeight: 52, padding: "0 20px", border: "none", borderRadius: 14, background: ZELENA_TL, color: "#fff", fontFamily: "inherit", fontSize: 17, fontWeight: 800, cursor: "pointer" }}>‹ Späť na stránku farnosti</button></div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 20, alignItems: "flex-start" }}>
@@ -1828,11 +1828,11 @@ function DetailZbierky({ d, strankaId, onZavri }: { d: DetailF; strankaId: strin
             </div>
           </div>
           <div style={{ flex: "1 1 380px", minWidth: 0, maxWidth: 520, display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ borderRadius: 24, overflow: "hidden", border: rod ? `3px solid ${FIALOVA}` : "1px solid var(--cardBd)", background: "rgb(var(--panel-rgb))", padding: "14px 0", ["--hcPruh" as string]: hc, ["--hcF" as string]: hc } as CSSProperties}>
+            <div style={{ borderRadius: wide ? 24 : rod ? 18 : 0, overflow: "hidden", border: rod ? `3px solid ${FIALOVA}` : wide ? "1px solid var(--cardBd)" : "none", background: wide ? "rgb(var(--panel-rgb))" : "transparent", padding: wide ? "14px 0" : rod ? "10px 0" : 0, /* OPRAVY 257: mobil bez dvojitého rámu, modul na celú šírku */ ["--hcPruh" as string]: hc, ["--hcF" as string]: hc } as CSSProperties}>
               {d.typ === "hl" || d.typ === "zv" || d.typ === "far"
                 // OPRAVY 189: klasické zbierky farnosti = ten istý platobný modul ako na profile charity
                 // OPRAVY 251: bez data-hier — hierarchia farbí len rám karty, vnútro modulu ostáva ako modul charita a viera
-                ? <div className="vp sc-tokeny" data-stit="silver" style={{ background: "transparent", padding: "0 14px" }}><div><ZmensenyModul><ModulPlatby profil={{ k: strankaId, meno: d.data.organizacia?.meno ?? "Farnosť" } as TestProfil}
+                ? <div className="vp sc-tokeny" data-stit="silver" style={{ background: "transparent", padding: wide ? "0 14px" : rod ? "0 10px" : 0 }}><div><ZmensenyModul><ModulPlatby profil={{ k: strankaId, meno: d.data.organizacia?.meno ?? "Farnosť" } as TestProfil}
                     sektor={{ id: d.data.id, nazov: d.t, druh: d.typ === "hl" ? "centralna" : "sektor", foto: d.obr ?? "", vyzbierane: 0, darcovia: 0, mesta: {} } as unknown as TestSektor}
                     nazov={`${d.t} · ${d.data.organizacia?.meno ?? "Farnosť"}`} dorovnanie={false} ktoVoli="farnosť" bezObjektu={d.typ === "zv"} sumy={d.data.rychleSumy} sumyE={d.data.rychleSumyE} bezEurc={d.data.eurc === false} ciel={d.data.ciel} /></ZmensenyModul></div></div>
                 : d.pin?.ukazkova ? <div style={{ margin: "0 14px", padding: "16px 18px", borderRadius: 16, background: "var(--goldBg)", border: "2px solid #C9A24A", display: "flex", flexDirection: "column", gap: 6, color: "var(--ink)" }}>

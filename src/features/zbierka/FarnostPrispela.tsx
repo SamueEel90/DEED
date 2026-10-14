@@ -11,7 +11,7 @@ import { otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
 import { toast } from "@/shared";
 import { PlatobneOkno } from "./Platba";
 
-const eur = (n: number) => `${n.toLocaleString("sk-SK", { maximumFractionDigits: 2 })} €`;
+const eur = (n: number) => `${n.toLocaleString("sk-SK", { maximumFractionDigits: 2 })}\u00A0€`;
 const inic = (m: string) => m.split(/\s+/).filter((w) => w.length > 1 && !/^(Farnosť|o\.z\.|OZ)$/.test(w)).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "F";
 /** „Farnosť Stakčín“ → „Farnosti Stakčín“ (od koho) */
 const odKoho = (m: string) => m.replace(/^Farnosť /, "Farnosti ");

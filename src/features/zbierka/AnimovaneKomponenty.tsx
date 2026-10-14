@@ -14,7 +14,7 @@ type MikroProps = { suma: number | string; jednotka: 'DeeD' | 'EURC'; eur: numbe
   onOdoslane: () => Promise<void> | void; onDoleteli: (eur: number) => void; };
 export function MikrodarDlazdica({ suma, jednotka, eur, najcastejsie, root, ciel, blokovane, onOdoslane, onDoleteli }: MikroProps) {
   const [odoslane, setOdoslane] = useState(false);
-  const eurTxt = '≈ ' + eur.toLocaleString('sk-SK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+  const eurTxt = '≈ ' + eur.toLocaleString('sk-SK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '\u00A0€';
   const klik = async (e: React.MouseEvent<HTMLButtonElement>) => {
     if (odoslane || blokovane || !root.current || !ciel.current) return;
     vibruj(8); setOdoslane(true);

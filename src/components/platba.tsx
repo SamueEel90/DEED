@@ -122,7 +122,7 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
   const tipAplik = tip ? tipSuma : 0;
   const spolu = Math.round((sumaNum + poplatok + tipAplik) * 100) / 100;
   const malo = !jeEur && spolu > PLATBA_ZOSTATOK;
-  const tipLabel = jeEur ? `${tipSuma.toFixed(2)} €` : `${tipSuma.toLocaleString("sk")} ${jed}`;
+  const tipLabel = jeEur ? `${tipSuma.toFixed(2)}\u00A0€` : `${tipSuma.toLocaleString("sk")} ${jed}`;
 
   const inpS: CSSProperties = { width: "100%", padding: `${SPACE.sm}px ${SPACE.sm}px`, borderRadius: RADIUS.sm, background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, color: C.text, fontSize: 16, outline: "none", fontFamily: "inherit" };
   const btnP = (ok: boolean, grad = GRAD): CSSProperties => ({ width: "100%", padding: `${SPACE.sm}px 0`, borderRadius: RADIUS.md, border: "none", fontWeight: 700, fontSize: 15, cursor: ok ? "pointer" : "not-allowed", fontFamily: "inherit", background: ok ? grad : "rgba(var(--glass-rgb),.06)", color: ok ? "#fff" : C.textTer, boxShadow: ok ? "0 8px 26px color-mix(in srgb, var(--a-green) 32%, transparent)" : "none", marginTop: SPACE.gutter });
@@ -234,14 +234,14 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
         </div>
         </>)}
         <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.sm}px ${SPACE.xs}px` }}>
-          <Riadok k="Suma" v={`${sumaNum.toFixed(2)} €`} />
-          <Riadok k={`Poplatok (${pop.popis})`} v={`${poplatok.toFixed(2)} €`} />
-          {tipAplik > 0 && <Riadok k={<>Dar pre nás (chod <DeedZnacka />)</>} v={`${tipSuma.toFixed(2)} €`} accent={C.green} />}
+          <Riadok k="Suma" v={`${sumaNum.toFixed(2)}\u00A0€`} />
+          <Riadok k={`Poplatok (${pop.popis})`} v={`${poplatok.toFixed(2)}\u00A0€`} />
+          {tipAplik > 0 && <Riadok k={<>Dar pre nás (chod <DeedZnacka />)</>} v={`${tipSuma.toFixed(2)}\u00A0€`} accent={C.green} />}
           <div style={{ display: "flex", justifyContent: "space-between", paddingTop: SPACE.xs, fontSize: 14, fontWeight: 800 }}><span>Spolu</span><span>{spolu.toFixed(2)} €</span></div>
         </div>
         {tipSuma > 0 && <DarPreNas on={tip} label={tipLabel} onToggle={() => setTip((v) => !v)} />}
         <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, fontSize: 11, color: C.textTer, marginTop: SPACE.sm, lineHeight: 1.4 }}><IkonaStit size={13} color={C.green} /> Zabezpečené · 3‑D Secure · test 4242 4242 4242 4242</div>
-        <Lipni><PotvrdPlatbu text={`${spolu.toFixed(2)} €`} ok={kartaOk} onConfirm={zaplatit} style={btnP(kartaOk)} /></Lipni>
+        <Lipni><PotvrdPlatbu text={`${spolu.toFixed(2)}\u00A0€`} ok={kartaOk} onConfirm={zaplatit} style={btnP(kartaOk)} /></Lipni>
       </>)}
 
       {/* EUR · SEPA prevod */}
@@ -251,15 +251,15 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
         <input placeholder="Meno majiteľa účtu" value={sepa.meno} onChange={(e) => setSepa({ ...sepa, meno: e.target.value })} style={{ ...inpS, marginBottom: SPACE.sm }} />
         </>)}
         <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.sm}px ${SPACE.xs}px` }}>
-          <Riadok k="Dar charite" v={`${sumaNum.toFixed(2)} €`} />
+          <Riadok k="Dar charite" v={`${sumaNum.toFixed(2)}\u00A0€`} />
           <Riadok k={<>Marža <DeedZnacka /></>} v="0 € · neberieme nič" accent={C.green} />
-          {split && <Riadok k="Poplatok partnera (split)" v={`${poplatok.toFixed(2)} €`} />}
-          {tipAplik > 0 && <Riadok k={<>Dar pre nás (chod <DeedZnacka />)</>} v={`${tipSuma.toFixed(2)} €`} accent={C.green} />}
+          {split && <Riadok k="Poplatok partnera (split)" v={`${poplatok.toFixed(2)}\u00A0€`} />}
+          {tipAplik > 0 && <Riadok k={<>Dar pre nás (chod <DeedZnacka />)</>} v={`${tipSuma.toFixed(2)}\u00A0€`} accent={C.green} />}
           <div style={{ display: "flex", justifyContent: "space-between", paddingTop: SPACE.xs, fontSize: 14, fontWeight: 800 }}><span>Spolu</span><span>{spolu.toFixed(2)} €</span></div>
         </div>
         {tipSuma > 0 && <DarPreNas on={tip} label={tipLabel} onToggle={() => setTip((v) => !v)} />}
         <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, fontSize: 11, color: C.textTer, marginTop: SPACE.sm, lineHeight: 1.4 }}><IkonaStit size={13} color={C.green} /> Bankový prevod · SEPA · charita dostane celý dar · pripísanie do 1 prac. dňa</div>
-        <Lipni><PotvrdPlatbu text={`${spolu.toFixed(2)} €`} ok={sepaOk} onConfirm={zaplatit} style={btnP(sepaOk)} /></Lipni>
+        <Lipni><PotvrdPlatbu text={`${spolu.toFixed(2)}\u00A0€`} ok={sepaOk} onConfirm={zaplatit} style={btnP(sepaOk)} /></Lipni>
       </>)}
 
       {krok === "detaily" && !jeEur && (<>
@@ -288,7 +288,7 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
         <Svetlusik nadpis={registrovany && meno ? `Ďakujeme, ${meno}, za tvoju podporu!` : "Ďakujeme za tvoju podporu!"} dar="Tvoj dar je na ceste" />
         <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.sm}px ${SPACE.xs}px` }}>
           <Riadok k="Kanál" v={jeEur ? (jeSepa ? "SEPA prevod (EUR)" : "Karta (EUR)") : `Peňaženka (${jed})`} />
-          {jeEur && <Riadok k="Poplatok" v={`${poplatok.toFixed(2)} €`} />}
+          {jeEur && <Riadok k="Poplatok" v={`${poplatok.toFixed(2)}\u00A0€`} />}
           {tipAplik > 0 && <Riadok k={<>Dar pre nás (chod <DeedZnacka />)</>} v={tipLabel} accent={C.green} />}
           <Riadok k={jeSepa ? "Referencia prevodu" : "ID transakcie"} v={res.id} />
           {!jeSepa && <Riadok k="Záznam platby" v={res.hash} accent={C.blueL} />}
@@ -406,7 +406,7 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKana
             ))}
           </div>
           <button onClick={() => onKanal("EUR")} style={{ ...psKanal, width: "100%", marginTop: SPACE.xs }}>
-            <span style={{ fontWeight: 800, fontSize: 14 }}>Vlastná suma v €</span>
+            <span style={{ fontWeight: 800, fontSize: 14 }}>Vlastná suma v{"\u00A0"}€</span>
           </button>
         </>)}
 

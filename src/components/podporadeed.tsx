@@ -89,7 +89,7 @@ function PodporitDeedSheet({ toast, onClose }: { toast?: (m: string) => void; on
             </button>
           ))}
         </div>
-        <button onClick={() => setPlatba("EUR")} style={vlastna}>Vlastná suma v €</button>
+        <button onClick={() => setPlatba("EUR")} style={vlastna}>Vlastná suma v{"\u00A0"}€</button>
         <div style={{ fontSize: 10.5, color: C.textTer, textAlign: "center", marginTop: SPACE.sm }}>Ďakujeme — vďaka podpore ostáva <DeedZnacka /> zadarmo pre všetkých.</div>
       </Sheet>
       {platba && <PlatbaModal kanal={platba} komu="DEED+ — platforma dobra" onClose={() => setPlatba(null)}
@@ -102,7 +102,7 @@ function PodporitDeedSheet({ toast, onClose }: { toast?: (m: string) => void; on
       {eurRychly != null && <PlatbaModal kanal="EUR" suma={eurRychly} lenSepa komu="DEED+ — platforma dobra" onClose={() => setEurRychly(null)}
         onDone={(s: number) => {
           pridajDar({ refId: DAR_REF, suma: s, kanal: "psp", registrovany: ja.typ !== "pasivny" });
-          toast?.(`Ďakujeme za podporu platformy — ${s} €`);
+          toast?.(`Ďakujeme za podporu platformy — ${s}\u00A0€`);
           onClose();
         }} />}
     </>

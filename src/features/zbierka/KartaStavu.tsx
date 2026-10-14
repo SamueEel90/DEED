@@ -16,7 +16,7 @@ export function milnikyPre(suma: number): { dosiahnuty: number | null; dalsi: nu
   return { dosiahnuty: nad, dalsi: nad + 100000 };
 }
 
-const eur = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: n % 1 ? 2 : 0 })} €`;
+const eur = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: n % 1 ? 2 : 0 })}\u00A0€`;
 const dnesOd = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
 /** suma v zozname len keď ju darca povolil a je nad 2 € (≤ 2 € nikdy) */
 const sumaDaru = (r: DarRiadok) => (r.firma || (r.registrovany && r.zobrazSumu)) && r.suma > DARCOVIA_CFG.prahSumy ? eur(r.suma) : null;
@@ -70,8 +70,8 @@ function Ludia({ pocet, fanusikov, org = 0 }: { pocet: number; fanusikov?: boole
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12, fontSize: 13, color: "var(--ink3)" }}>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg>
-      <span style={{ flex: 1 }}>{fanusikov ? fanusikovia(pocet) : ludiaAOrg(pocet, org)}</span>
-      <span style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--green)", fontWeight: 700 }}>
+      <span style={{ flex: 1, minWidth: 0 }}>{(fanusikov ? fanusikovia(pocet) : ludiaAOrg(pocet, org)).replace(/^(\d+) /, "$1\u00A0")}</span>
+      <span style={{ flex: "none", display: "flex", alignItems: "center", gap: 6, color: "var(--green)", fontWeight: 700, whiteSpace: "nowrap" }}>
         <span className="zb-pulz" style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)" }} />
         rastie naživo
       </span>
@@ -136,10 +136,13 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, ko
     const pct = Math.floor((suma / ciel!) * 100);
     return (
       <div style={karta}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 12 }}>
-          <span style={velka} data-zb-suma={refId}>{eur(zobrazena)}</span>
-          <span style={{ fontSize: 14, color: "var(--ink3)" }}>z {eur(ciel!)}</span>
-          <span style={{ marginLeft: "auto", fontSize: 18, fontWeight: 800, color: "var(--green)", fontVariantNumeric: "tabular-nums" }}>{pct} %</span>
+        {/* OPRAVY 257: číslo a jednotka sa nikdy nerozdelia; keď sa riadok nezmestí, „z 500 € · 2 %“ ide celé pod sumu */}
+        <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: "2px 8px", marginBottom: 12 }}>
+          <span style={{ ...velka, whiteSpace: "nowrap" }} data-zb-suma={refId}>{eur(zobrazena)}</span>
+          <span style={{ flex: "1 0 auto", display: "flex", alignItems: "baseline", gap: 8, whiteSpace: "nowrap" }}>
+            <span style={{ fontSize: 14, color: "var(--ink3)" }}>z{"\u00A0"}{eur(ciel!)}</span>
+            <span style={{ marginLeft: "auto", fontSize: 18, fontWeight: 800, color: "var(--green)", fontVariantNumeric: "tabular-nums" }}>{pct}{"\u00A0"}%</span>
+          </span>
         </div>
         <Pruh podiel={suma / ciel!} vyska={10} koniec={koniecPruhu} useky={[{ w: org.vlastne / ciel!, farba: VLASTNE_USEK }, { w: org.cudzie / ciel!, farba: ZLATA_USEK }].filter((u) => u.w > 0)} />
         <PrispievateliaFarnosti refId={refId} />

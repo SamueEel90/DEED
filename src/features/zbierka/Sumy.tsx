@@ -9,7 +9,7 @@ export type KanalPlatby = "eur" | "deed" | "eurc";
 /** otvorenie platobného okna (karta 07): so sumou → rovno krok Spôsob, bez sumy → krok Suma */
 export type OtvorPlatbu = (p: { kanal: KanalPlatby; suma?: number }) => void;
 
-const eurTxt = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })} €`;
+const eurTxt = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })}\u00A0€`;
 const cislo = (n: number) => n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
 const EUR_FARBY: [string, string][] = [["var(--card)", "var(--cardBd)"], ["var(--t2)", "var(--t2Bd)"], ["var(--t3)", "var(--t3Bd)"]];
 
@@ -45,8 +45,9 @@ export function RychleSumyEur({ sumy, doplnok, kDaru, otvor }: { sumy: number[];
           const popis = bonus > 0 ? `→ ${eurTxt(s + bonus)}` : s < KARTA_OD_EUR ? "SEPA" : "SEPA · karta";
           return (
             <button key={s} type="button" className="zb-dlazdica" onClick={() => otvor({ kanal: "eur", suma: s })} style={dlazdica(bg, bd)}>
-              <span style={{ fontSize: 20, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{cislo(s)} <span style={{ fontSize: 13, fontWeight: 700 }}>€</span></span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: bonus > 0 ? "var(--gold)" : "var(--ink3)", fontVariantNumeric: "tabular-nums" }}>{popis}</span>
+              {/* OPRAVY 257: suma a popis nikdy nepretečú z dlaždice */}
+              <span style={{ fontSize: "clamp(17px,5vw,20px)", fontWeight: 800, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{cislo(s)}{"\u00A0"}<span style={{ fontSize: 13, fontWeight: 700 }}>€</span></span>
+              <span style={{ fontSize: "clamp(10.5px,3vw,12px)", fontWeight: 700, color: bonus > 0 ? "var(--gold)" : "var(--ink3)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", maxWidth: "100%", padding: "0 4px", boxSizing: "border-box" }}>{popis}</span>
             </button>
           );
         })}
@@ -93,9 +94,9 @@ export function VlastnaSuma({ eur, deed, firma, otvor, onPodporit }: { eur: bool
   if (!eur && !deed) return null;
   const karta = (nadpis: string, popis: string, onClick: () => void, o: { zelena?: boolean; modra?: boolean; pole?: boolean; extra?: ReactNode }) => (
     <button type="button" className="zb-karta" onClick={onClick}
-      style={{ flex: 1, minWidth: 0, padding: "12px 12px 10px", borderRadius: 18, background: o.pole ? "var(--field)" : "var(--card)", border: o.pole ? "1.5px solid var(--gBd)" : "1px solid var(--cardBd)",
+      style={{ flex: "1 1 172px", minWidth: 0, padding: "12px 12px 10px", borderRadius: 18, background: o.pole ? "var(--field)" : "var(--card)", border: o.pole ? "1.5px solid var(--gBd)" : "1px solid var(--cardBd)",
         textAlign: "left", cursor: "pointer", display: "flex", flexDirection: "column", gap: 3, fontFamily: "inherit" }}>
-      <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14.5, fontWeight: 800, color: o.zelena ? "var(--green)" : o.modra ? "var(--blue)" : "var(--ink)", whiteSpace: "nowrap" }}>
+      <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "clamp(13.5px,3.8vw,14.5px)", fontWeight: 800, color: o.zelena ? "var(--green)" : o.modra ? "var(--blue)" : "var(--ink)", whiteSpace: "nowrap" }}>
         {nadpis}
         <svg style={{ marginLeft: "auto", flex: "none" }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={o.modra ? "var(--blue)" : "var(--green)"} strokeWidth="2.2" strokeLinecap="round"><path d="M9 6l6 6-6 6" /></svg>
       </span>
@@ -103,8 +104,9 @@ export function VlastnaSuma({ eur, deed, firma, otvor, onPodporit }: { eur: bool
       {o.extra}
     </button>);
   return (
-    <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-      {eur && karta("Vlastná suma v €", "karta alebo prevod", () => otvor({ kanal: "eur" }), { pole: true, extra: firma ? <span style={{ marginTop: 3, fontSize: 12, fontWeight: 700, color: "var(--gold)" }}>{firma}</span> : undefined })}
+    // OPRAVY 257: keď sa dve karty vedľa seba nezmestia (úzky mobil), idú pod seba na celú šírku — nadpis nikdy nepretečie
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+      {eur && karta("Vlastná suma v\u00A0€", "karta alebo prevod", () => otvor({ kanal: "eur" }), { pole: true, extra: firma ? <span style={{ marginTop: 3, fontSize: 12, fontWeight: 700, color: "var(--gold)" }}>{firma}</span> : undefined })}
       {onPodporit && karta("Podporiť DEED+", "dar na chod platformy", onPodporit, { zelena: true })}
       {deed && karta("DeeD", "z peňaženky", () => otvor({ kanal: "deed" }), { modra: true })}
     </div>

@@ -10,8 +10,8 @@ import { potvrditTuknutim } from "./Platba";
 import { usePoplatok } from "@/lib/poplatky";
 
 const STROP_MAX = 300, STROP_MIN = 50, DEN = 86400000;
-const eS = (n: number) => `${n.toLocaleString("sk-SK", { maximumFractionDigits: 2 })} €`;
-const e2 = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+const eS = (n: number) => `${n.toLocaleString("sk-SK", { maximumFractionDigits: 2 })}\u00A0€`;
+const e2 = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\u00A0€`;
 const datumSk = (t: number) => new Date(t).toLocaleDateString("sk-SK", { day: "numeric", month: "numeric", year: "numeric" });
 const POMER_L: Record<number, string> = { 0.5: "+50 %", 1: "1 : 1", 2: "2 : 1", 5: "5 : 1" };
 const POMER_SLOVOM: Record<number, string> = { 0.5: "polovicu", 1: "rovnakú sumu", 2: "dvojnásobok", 5: "päťnásobok" };

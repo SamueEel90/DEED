@@ -10,8 +10,8 @@ import { useDarcovia, identitaDarcu, relCas, DARCOVIA_CFG, useSektorDarcu, useUk
 import { vycerpane, zostatok, type Dorovnanie } from "@/lib/dorovnanie";
 import type { Oblubeny } from "@/types";
 
-const eK = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })} €`;
-const riadkove: CSSProperties = { height: 50, borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 15.5, fontWeight: 700, color: "var(--ink)", cursor: "pointer", fontFamily: "inherit" };
+const eK = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })}\u00A0€`;
+const riadkove: CSSProperties = { whiteSpace: "nowrap", minWidth: 0, height: 50, borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: "clamp(14px,4vw,15.5px)", fontWeight: 700, color: "var(--ink)", cursor: "pointer", fontFamily: "inherit" };
 const male: CSSProperties = { height: 44, borderRadius: 14, background: "transparent", border: "1px solid var(--cardBd)", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontSize: 14, fontWeight: 700, color: "var(--ink2)", cursor: "pointer", fontFamily: "inherit" };
 
 // ---------------- Zdieľať · QR + Páči sa mi ----------------
