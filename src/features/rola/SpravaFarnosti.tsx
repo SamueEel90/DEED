@@ -101,6 +101,8 @@ export function SpravaFarnosti(p: Parameters<typeof SpravaFarnostiObsah>[0]) {
   return <SektorDarcuKontext.Provider value="viera"><ZdrojFotiekKontext.Provider value={zdroj}><SpravaFarnostiObsah {...p} /></ZdrojFotiekKontext.Provider></SektorDarcuKontext.Provider>;
 }
 
+/** OPRAVY 268: obsah, ktorý sa poskladá až pri vykreslení (sekcie sú definované nižšie v tej istej funkcii) */
+function Odlozene({ f }: { f: () => ReactNode }) { return <>{f()}</>; }
 /** KARTA 57 A.8: ukončené a zrušené zbierky idú do archívu */
 const vArchive = (z: SpustenaZbierka) => !!z.stav && z.stav !== "aktivna";
 /** „8. 10. 2026 o 14:05" */
@@ -154,6 +156,8 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const [piny, setPiny] = useState<Pin[]>(() => pinyZPamate<Pin>(strankaId, []));
   useEffect(() => { let ziva = true; void nacitajPiny<Pin>(strankaId, []).then((p) => { if (ziva) setPiny(p.filter((x) => PINY.includes(x))); }); return () => { ziva = false; }; }, [strankaId]);
   const [pinOtv, setPinOtv] = useState(false);
+  // OPRAVY 268: ťuk na čip neodchádza z Prehľadu — obsah sekcie sa ukáže pod lištou; po otvorení Treba vybaviť
+  const [pinAkt, setPinAkt] = useState<Pin | "treba" | null>("treba");
   const prepniPin = (k: Pin) => { const n = piny.includes(k) ? piny.filter((x) => x !== k) : piny.length < PIN_MAX_F ? [...piny, k] : piny; setPiny(n); void ulozPiny(strankaId, n, PIN_MAX_F); };
 
   // KARTA 56B · hlavná zbierka farnosti (= centrálna charity) a okno „Na najbližšiu omšu"
@@ -222,7 +226,6 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
         </button>))}
       {!ulohy.length && <span style={{ fontSize: 14.5, color: "var(--ink3)" }}>Nič nečaká.</span>}
     </section>);
-  const naTreba = () => document.querySelector("[data-treba]")?.scrollIntoView({ behavior: "smooth", block: "start" });
   // KARTA 56B · §6 / 56D §3: Čísla — Vyzbierané · hlavná (podľa obdobia) · Na najbližšiu omšu · Posledná omšová · Sledujúci.
   // Sumy = len dary cez DEED. Počet darov a pravidelná podpora sú v Nástroje → Štatistiky.
   const obOd = zaciatokObdobia(ob);
@@ -257,13 +260,13 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     </section>);
   // KARTA 56D §3: Pripnuté — Treba vybaviť + počet, potom pripnuté sekcie (najviac 6, ukladá sa do účtu)
   const pripnute = (
-    <section aria-label="Pripnuté" style={{ ...karta, position: "relative", borderRadius: 18, padding: 8, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+    <section aria-label="Pripnuté" style={{ ...karta, position: "sticky", top: mobil ? 74 : 12, zIndex: 4, borderRadius: 18, padding: 8, display: "flex", alignItems: "center", gap: 6, flexWrap: mobil ? "nowrap" : "wrap", overflowX: mobil ? "auto" : undefined, scrollbarWidth: "none", boxShadow: "0 6px 16px rgba(30,28,20,.10)" }}>
       <span style={{ flex: "none", padding: "0 8px 0 6px", fontSize: 12, fontWeight: 800, letterSpacing: ".07em", color: "var(--acc)" }}>PRIPNUTÉ</span>
-      <button type="button" onClick={naTreba} style={{ flex: "none", whiteSpace: "nowrap", height: 44, padding: "0 12px 0 14px", borderRadius: 13, border: `1.5px solid ${ulohy.length ? "#C9A24A" : "var(--cardBd)"}`, background: ulohy.length ? "var(--goldBg)" : "var(--bg)", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--ink)", boxShadow: "none" }}>
+      <button type="button" onClick={() => setPinAkt((a) => (a === "treba" ? null : "treba"))} aria-pressed={pinAkt === "treba"} style={{ flex: "none", whiteSpace: "nowrap", height: 44, padding: "0 12px 0 14px", borderRadius: 13, border: `${pinAkt === "treba" ? 2 : 1.5}px solid ${pinAkt === "treba" ? "var(--green)" : ulohy.length ? "#C9A24A" : "var(--cardBd)"}`, background: pinAkt === "treba" ? "var(--gSoft)" : ulohy.length ? "var(--goldBg)" : "var(--bg)", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--ink)", boxShadow: "none" }}>
         Treba vybaviť<span style={{ minWidth: 24, height: 24, padding: "0 7px", borderRadius: 12, background: ulohy.length ? "#A34A2A" : "#85867B", color: "#fff", fontSize: 12.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{ulohy.length}</span>
       </button>
       {piny.map((k) => (
-        <button key={k} type="button" onClick={() => go(k)} style={{ flex: "none", whiteSpace: "nowrap", height: 44, padding: "0 16px 0 12px", borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--bg)", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontFamily: "inherit", fontSize: 14.5, fontWeight: 700, color: "var(--ink)", boxShadow: "none" }}>
+        <button key={k} type="button" onClick={() => setPinAkt((a) => (a === k ? null : k))} aria-pressed={pinAkt === k} style={{ flex: "none", whiteSpace: "nowrap", height: 44, padding: "0 16px 0 12px", borderRadius: 13, border: pinAkt === k ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: pinAkt === k ? "var(--gSoft)" : "var(--bg)", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontFamily: "inherit", fontSize: 14.5, fontWeight: pinAkt === k ? 800 : 700, color: pinAkt === k ? "var(--gInk)" : "var(--ink)", boxShadow: "none" }}>
           <Ik d={IC[k]} s={18} />{TIT[k]}
         </button>))}
       {!piny.length && <span style={{ fontSize: 13.5, color: "var(--ink3)", padding: "0 6px" }}>Zatiaľ nič nepripnuté</span>}
@@ -331,6 +334,13 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const predPas = <PredplatnePas strankaId={strankaId} mobil={mobil} onOtvor={() => { setNId("predplatne"); go("n"); }} />;
   // OPRAVY 218: mobil a tablet ako Správa charity — karta farnosti, mriežka 3 × 3 (Verejný profil modrý), Pripnuté, Treba vybaviť, Čísla úplne dole
   const DLAZDICE9: [Sub | "verejny", string][] = [["verejny", "Verejný profil"], ["zbierky", "Zbierky"], ["oznamy", "Oznamy"], ["omse", "Omše a kalendár"], ["veriaci", "Od veriacich"], ["ludia", "Ľudia"], ["filialky", "Kostoly a miesta"], ["penazenka", "Peňaženka"], ["nastroje", "Nástroje a výkazy"]];
+  const pinObsah = <Odlozene f={() => pinAkt === "treba" ? trebaVybavit : pinAkt ? (
+    <section style={{ flex: "none", display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ maxHeight: "68vh", overflowY: "auto", overscrollBehavior: "contain", display: "flex", flexDirection: "column", gap: 12, borderRadius: 18 }}>
+        {pinAkt === "omse" ? <TyzdenVPrehlade strankaId={strankaId} onDen={naDen} mobil={mobil} /> : obsah[pinAkt]}
+      </div>
+      <button type="button" onClick={() => go(pinAkt)} style={{ alignSelf: "flex-start", minHeight: 44, padding: "0 4px", border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--green)", boxShadow: "none" }}>Otvoriť celú sekciu ›</button>
+    </section>) : null} />;
   const prehlad = mobil ? <>
     {predPas}
     <button type="button" onClick={() => go("profil")} style={{ flex: "none", borderRadius: 20, background: "var(--card)", border: "1.5px solid var(--cardBd)", padding: "14px 16px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", textAlign: "left", fontFamily: "inherit", boxShadow: "none" }}>
@@ -350,10 +360,9 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
         </button>); })}
     </div>
     {pripnute}
-    <TyzdenVPrehlade strankaId={strankaId} onDen={naDen} mobil />
-    {trebaVybavit}
+    {pinObsah}
     {cisla}
-  </> : <>{predPas}{pripnute}<TyzdenVPrehlade strankaId={strankaId} onDen={naDen} mobil={false} />{trebaVybavit}{cisla}</>;
+  </> : <>{predPas}{pripnute}{pinObsah}{cisla}</>;
 
   // KARTA 56D §6 · OPRAVY 161: ďalšie zbierky stránky (zbierka farnosti / pre veriacich) — z účtu (tabuľka zbierka)
   const sprava = (m: string) => { setZbVyber(false); setZbBlok(false); setNoveOk(null); setZmazana(false); return m; };

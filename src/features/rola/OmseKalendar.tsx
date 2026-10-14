@@ -437,12 +437,7 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, tel = false, toa
         </div>
       </div>
     </section>);
-  const pinTl = (
-    <button type="button" onClick={() => { const on = !kal.pin; zmenKalendar(strankaId, (s) => ({ ...s, pin: on })); ukaz("pin", on ? "Hotovo · týždeň uvidíte v Prehľade na boku" : "Odopnuté · z Prehľadu zmizol", 3000); }} aria-pressed={kal.pin}
-      style={{ flex: "none", minHeight: 48, padding: "0 14px", borderRadius: 12, border: "1.5px solid var(--blue)", background: "color-mix(in srgb, var(--blue) 14%, transparent)", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--blue)", whiteSpace: "nowrap", boxShadow: "none" }}>
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 4h6l-1 6 3 3H7l3-3zM12 13v7" /></svg>
-      {kal.pin ? "Pripnuté v Prehľade ✓" : "Pripnúť týždeň do Prehľadu"}
-    </button>);
+  // OPRAVY 268: pripínanie len cez „Upraviť pripnuté“ v Prehľade (tlačidlo tu zrušené)
   const taby = (
     <div role="tablist" aria-label="Zobrazenie" style={{ display: "flex", gap: 4, padding: 4, borderRadius: 12, background: "var(--btn)" }}>
       {(["Týždeň", "Mesiac", "Rozvrh omší"] as const).map((t, i) => { const on = tab === i; return (
@@ -466,14 +461,13 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, tel = false, toa
   return <>
     <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 12, flexWrap: mobil ? "wrap" : "nowrap" }}>
       {!mobil && <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 22, fontWeight: 800 }}>Omše a kalendár</span><span style={{ display: "block", fontSize: 13.5, color: "var(--ink3)" }}>Vzor nastavíte raz, kalendár ho opakuje. Ťuk na deň zmení len ten deň.</span></span>}
-      {taby}{pinTl}
+      {taby}
     </div>
     <div style={{ flex: "none", display: "flex", gap: 10, flexWrap: "wrap" }}>
       {ikTl(panel === "ver", <><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></>, "Čo uvidia ľudia na stránke", () => setPanel((p) => (p === "ver" ? null : "ver")))}
       {ikTl(panel === "tl", <path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z" />, "Vytlačiť na nástenku", () => setPanel((p) => (p === "tl" ? null : "tl")))}
     </div>
     {verPanel}{tlPanel}
-    {hlaska?.k === "pin" && <div role="status" style={{ flex: "none", alignSelf: "flex-end", padding: "8px 12px", borderRadius: 12, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 13.5, fontWeight: 800, color: "var(--gInk)" }}>{hlaska.t}</div>}
     {viac && <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
       <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)", paddingRight: 4 }}>UPRAVUJETE</span>
       {kostoly.map((x, i) => { const on = i === kI; return <button key={x.nazov + i} type="button" onClick={() => { setKI(i); setDen(null); }} aria-pressed={on} style={{ minHeight: 44, padding: "0 16px", borderRadius: 12, border: on ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: on ? "var(--gSoft)" : "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: on ? 800 : 600, color: "var(--ink)", boxShadow: "none" }}>{x.nazov}</button>; })}
@@ -519,10 +513,10 @@ export function plagatTyzdna(k: KalKostol, VJ: KalendarFarnosti["verejne"], off:
 }
 
 /** KARTA 56G §1: pripnutý týždeň v Prehľade = ten istý Týždeň ako v Omšiach; ťuk na deň otvorí jeho úpravu */
+/** OPRAVY 268: tento týždeň v Prehľade — ukáže sa pod čipom Omše a kalendár */
 export function TyzdenVPrehlade({ strankaId, onDen, mobil }: { strankaId: string; onDen: (key: string) => void; mobil: boolean }) {
-  const kal = useKalendar(strankaId);
+  useKalendar(strankaId);
   const [off, setOff] = useState(0);
   const SLO = useSlovaFarnosti(strankaId);
-  if (!kal.pin) return null;
   return <TyzdenKarta k={kostolKal(strankaId)} off={off} setOff={setOff} den={null} onDen={onDen} mobil={mobil} pozn={false} slovo={SLO.omsa} />;
 }
