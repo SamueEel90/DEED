@@ -1,5 +1,5 @@
 // ============================================================
-// Vite plugin: /api/score + /api/score-log + /i/{id} (api/iskra) v `npm run dev` a `vite preview`
+// Vite plugin: /api/score + /api/score-log + /i/{id} (api/iskra) + /api/push + /api/fotky(/uloz) v `npm run dev` a `vite preview`
 // ------------------------------------------------------------
 // Vercel serverless funkcie z api/ inak lokálne nebežia (vite ich nepozná,
 // treba `vercel dev`). Tento plugin ich namontuje ako connect middleware
@@ -13,6 +13,9 @@ import scoreHandler from "../api/score";
 import scoreLogHandler from "../api/score-log";
 import iskraHandler from "../api/iskra";
 import otpHandler from "../api/otp";
+import pushHandler from "../api/push";
+import fotkyHandler from "../api/fotky/index";
+import fotkyUlozHandler from "../api/fotky/uloz";
 
 const MAX_TELO_B = 20 * 1024 * 1024; // 3 fotky v base64 sa zmestia s rezervou
 
@@ -53,7 +56,7 @@ function apiMiddleware() {
     // /i/{id} → /api/iskra?id={id} (rewrite ako vo vercel.json)
     const iskra = url.pathname.match(/^\/i\/([^/]+)$/);
     if (iskra) { url.pathname = "/api/iskra"; url.searchParams.set("id", decodeURIComponent(iskra[1])); }
-    const handlery: Record<string, typeof scoreHandler> = { "/api/score": scoreHandler, "/api/score-log": scoreLogHandler, "/api/iskra": iskraHandler, "/api/otp": otpHandler };
+    const handlery: Record<string, typeof scoreHandler> = { "/api/score": scoreHandler, "/api/score-log": scoreLogHandler, "/api/iskra": iskraHandler, "/api/otp": otpHandler, "/api/push": pushHandler, "/api/fotky": fotkyHandler, "/api/fotky/uloz": fotkyUlozHandler };
     if (!handlery[url.pathname]) { next(); return; }
 
     const vreq = req as IncomingMessage & { query: Record<string, string>; body?: unknown };
@@ -80,7 +83,7 @@ export function apiDevPlugin(): Plugin {
       // .env/.env.local → process.env pre backend handlery (vite ich sám do
       // process.env nedáva). Existujúce hodnoty z shellu majú prednosť.
       const env = loadEnv(mode, process.cwd(), "");
-      for (const k of ["ANTHROPIC_API_KEY", "SUPABASE_URL", "VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY", "SCORING_ADMIN_TOKEN", "SCORING_MOCK"]) {
+      for (const k of ["ANTHROPIC_API_KEY", "SUPABASE_URL", "VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY", "SCORING_ADMIN_TOKEN", "SCORING_MOCK", "PEXELS_API_KEY", "PIXABAY_API_KEY", "UNSPLASH_ACCESS_KEY", "FOTKY_DENNY_STROP", "VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT"]) {
         if (env[k] && !process.env[k]) process.env[k] = env[k];
       }
       // lokálny default admin tokenu, nech kalibračná tabuľka funguje hneď
