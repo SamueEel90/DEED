@@ -282,7 +282,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
       obr: z.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src, parte: d === "pohreb" });
   };
   // ---------- omše ----------
-  const omseD = (d: Date) => VJ.omse ? [...omseDna(kk, d).filter((o) => !o.zrusena).map((o) => ({ t: o.t, n: nazovOmse(o.kod) })), ...polozkyDna(kk, d).filter((x) => druhPolozky(x.typ).kat === "omse").map((x) => ({ t: x.t, n: "omša" }))].sort((a, b) => minuty(a.t) - minuty(b.t)) : [];
+  const omseD = (d: Date) => VJ.omse ? [...omseDna(kk, d).filter((o) => !o.zrusena).map((o) => ({ t: o.t, n: nazovOmse(o.kod, kk), st: o.stitok })), ...polozkyDna(kk, d).filter((x) => druhPolozky(x.typ).kat === "omse").map((x) => ({ t: x.t, n: "omša", st: "" }))].sort((a, b) => minuty(a.t) - minuty(b.t)) : [];
   const dni = Array.from({ length: 7 }, (_, i) => { const d = new Date(cas.getFullYear(), cas.getMonth(), cas.getDate() + i); return { d, i, om: omseD(d), ol: VJ.omse ? onlineVDen(strankaId, d) : [] }; });
   const maOmse = dni.some((d) => d.om.length);
 
@@ -573,7 +573,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   const sekcia = (blok: string, nadpis: string, suhrnT: string, deti: ReactNode, o?: { pozadie?: string; bez?: boolean }): ReactNode => (!k3 ? zbK(blok, nadpis, suhrnT, deti, o) :
     <section data-blok={blok} style={{ padding: "36px 40px", borderTop: o?.bez ? "none" : `1px solid ${LINKA}`, background: o?.pozadie, display: "flex", flexDirection: "column", gap: 14, scrollMarginTop: 16, minWidth: 0 }}>{KN(nadpis)}{deti}</section>);
   const dnesD = new Date(cas.getFullYear(), cas.getMonth(), cas.getDate());
-  const casyDna = (d: Date) => omseD(d).map((o) => o.t).join(" · ");
+  const casyDna = (d: Date) => omseD(d).map((o) => (o.st ? `${o.t} ${o.st}` : o.t)).join(" · "); // OPRAVY 283: „14:00 školská“
   const zmenaT = ozAll.find((o) => o.zm)?.t;
   const pocty = [[ozAll.length, "oznam", "oznamy", "oznamov"], [udalosti.length, "akcia", "akcie", "akcií"], [prosby.length, "prosba", "prosby", "prosieb"]] as const;
   const poctyT = pocty.filter(([n]) => n > 0).map(([n, a, b, c]) => `${n} ${n === 1 ? a : n < 5 ? b : c}`).join(" · ");

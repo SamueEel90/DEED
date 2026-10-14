@@ -7,7 +7,7 @@
 // ============================================================
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { useKalendar, kostolKal, omseDna, polozkyDna, druhPolozky, iso, dvt, DNI_K, minuty, pekny, type KalKostol } from "@/lib/kalendarFarnosti";
+import { useKalendar, kostolKal, omseDna, casSoStitkom, polozkyDna, druhPolozky, iso, dvt, DNI_K, minuty, pekny, type KalKostol } from "@/lib/kalendarFarnosti";
 import { nazovDruhu, type Miesto } from "@/lib/miestaFarnosti";
 import { cistyText, jeHtmlText } from "@/lib/richtext";
 import { FormatovanyText } from "@/components/formattext";
@@ -25,7 +25,7 @@ export function omseMiesta(k: KalKostol, dni = 7, od = new Date()): { d: Date; t
   const out: { d: Date; t: string[] }[] = [];
   for (let i = 0; i < dni; i++) {
     const d = new Date(od.getFullYear(), od.getMonth(), od.getDate() + i);
-    const t = omseDna(k, d).filter((o) => !o.zrusena).map((o) => o.t).filter((x) => x && x !== "—").sort((a, b) => minuty(a) - minuty(b));
+    const t = omseDna(k, d).filter((o) => !o.zrusena && o.t && o.t !== "—").sort((a, b) => minuty(a.t) - minuty(b.t)).map(casSoStitkom); // OPRAVY 283: so štítkom druhu
     if (t.length) out.push({ d, t });
   }
   return out;
