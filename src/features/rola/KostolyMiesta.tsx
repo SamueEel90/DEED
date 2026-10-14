@@ -11,6 +11,8 @@ import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
 import { useKalendar } from "@/lib/kalendarFarnosti";
 import { cenaMiest, predplatne, stavPredplatneho } from "@/lib/predplatneFarnosti";
 import { DRUHY_MIESTA, nazovDruhu, prazdneMiesto, riadokCeny, ulozMiesto, useMiesta, zamrazMiesto, stavPlatcu, odpovedPlatcu, platimSam, LEHOTA_PLATCU_DNI, type Miesto } from "@/lib/miestaFarnosti";
+import { RamFormulara, MateRozpisane, ZahoditRozpisane, useRamPisania } from "@/components/RamPisania";
+import { nacitajKoncept, zmazKoncept, useUkladajKoncept } from "@/lib/koncept";
 
 const karta: CSSProperties = { borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)" };
 const lbl: CSSProperties = { fontSize: 14, fontWeight: 800 };
@@ -35,11 +37,20 @@ export function KostolyMiesta({ strankaId, mobil, onOmse }: { strankaId: string;
   const platca = st === "zaNasPlati" ? p.platca?.meno ?? null : null;
   const omsiTyzdenne = (id: string) => { const k = kal.kostoly[id]; return k?.casyOk ? Object.values(k.vzor).reduce((a, l) => a + l.length, 0) : 0; };
   const novy = !!f && !vsetky.some((m) => m.id === f.id);
+  // OPRAVY 271: na mobile rám na celú obrazovku; rozpísané nové miesto ostane na zariadení, kým sa neuloží alebo nezahodí
+  const ram = useRamPisania();
+  const KON = `miesto.${strankaId}`;
+  const [, prekresli] = useState(0);
+  const maObsah = !!f && !!(f.nazov.trim() || f.adresa.trim() || f.popis.trim() || f.media.length || f.historia);
+  const kon = !f ? nacitajKoncept<Miesto>(KON) : null;
+  useUkladajKoncept(KON, f, novy && maObsah);
+  const zahod = () => { zmazKoncept(KON); setF(null); setPotvrd(false); };
   const zamrz = !!f && vsetky.find((m) => m.id === f.id)?.zamrznute;
 
   const uloz = async () => {
     if (!f || !f.nazov.trim()) return;
     const ziadost = novy && platca;
+    if (novy) zmazKoncept(KON);
     await ulozMiesto(strankaId, { ...f, nazov: f.nazov.trim(), adresa: f.adresa.trim(), popis: f.popis.trim(), ...(ziadost ? { platca: { od: new Date().toISOString(), stav: "caka" as const } } : {}) });
     const n = aktivne.length + (novy ? 1 : 0);
     setHlaska(ziadost ? `${f.nazov.trim()} čaká na potvrdenie platiteľa (${platca}) · na stránke bude po potvrdení` : `${f.nazov.trim()} je na stránke · cena teraz ${cenaMiest(n)} € mesačne`);
@@ -58,10 +69,7 @@ export function KostolyMiesta({ strankaId, mobil, onOmse }: { strankaId: string;
     const rocne = (novy || zamrz) && !skusobne && p.rocne ? " Pri ročnom predplatnom príde faktúra na pomernú časť do konca predplateného roka." : "";
     const platcaT = novy && platca ? ` Predplatné za vás platí ${platca}: miesto sa ukáže po jeho potvrdení. Ak do ${LEHOTA_PLATCU_DNI} dní neodpovie, žiadosť sa zruší a dostanete správu.` : "";
     const omse = omsiTyzdenne(f.id);
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 640 }}>
-        <button type="button" onClick={() => { setF(null); setPotvrd(false); }} style={{ ...tl(false), alignSelf: "flex-start" }}>‹ Kostoly a miesta</button>
-        <b style={{ fontSize: 22 }}>{novy ? "Nové miesto" : f.nazov || "Miesto"}</b>
+    const telo = <>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={lbl}>Čo to je</span>
           <div role="radiogroup" aria-label="Čo to je" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {DRUHY_MIESTA.map(([k, t]) => { const on = f.druh === k; return (
@@ -78,9 +86,9 @@ export function KostolyMiesta({ strankaId, mobil, onOmse }: { strankaId: string;
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={lbl}>História <span style={pozn}>· nepovinné, na podstránku</span></span>
           <TextovePolia key={f.id} popis={f.historia} popis2="" onPopis={(h) => setF({ ...f, historia: h })} onPopis2={() => undefined} ph={mobil} popisHlavneho="Krátka história kostola. Ukáže sa na jeho podstránke." placeholder="napr. Kostol bol postavený v roku 1909…" /></div>
         <span style={{ padding: "12px 14px", borderRadius: 12, background: "var(--goldBg)", fontSize: 14, fontWeight: 700, lineHeight: 1.45 }}>{cena}{rocne}{platcaT}</span>
-        {f.nazov.trim()
-          ? <PodrzTlacidlo label={zamrz ? "Podržte a obnovte" : "Podržte a uložte"} trvanie={1200} onConfirm={() => { void (zamrz ? zamrazMiesto(strankaId, f.id, false).then(() => { setHlaska(`${f.nazov} je znova na stránke · cena teraz ${cenaMiest(n)} € mesačne`); setF(null); }) : uloz()); }} />
-          : <span role="status" style={{ padding: "12px 14px", borderRadius: 12, background: "var(--goldBg)", fontSize: 14.5, fontWeight: 800 }}>Ešte chýba: názov</span>}
+        {novy && maObsah && <ZahoditRozpisane onZahodit={zahod} />}
+    </>;
+    const odobrat = <>
         {!novy && !zamrz && f.id !== "0" && (potvrd
           ? <div role="alert" style={{ padding: "12px 14px", borderRadius: 12, border: "1.5px solid #A34A2A", display: "flex", flexDirection: "column", gap: 10 }}>
               <b style={{ fontSize: 15 }}>{omse ? `V tomto kostole je ${omsiT(omse)}. Odobrať ho aj tak?` : "Odobrať toto miesto?"}</b>
@@ -88,6 +96,18 @@ export function KostolyMiesta({ strankaId, mobil, onOmse }: { strankaId: string;
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><DrzTlacidlo ms={1200} styl={{ minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1.5px solid #A34A2A", background: "transparent", color: "#A34A2A", fontSize: 14.5, fontWeight: 800 }} onHotovo={() => { void odober(); }}>Podržte · odobrať</DrzTlacidlo><button type="button" onClick={() => setPotvrd(false)} style={tl(false)}>Nechať</button></div>
             </div>
           : <button type="button" onClick={() => setPotvrd(true)} style={{ ...tl(false), alignSelf: "flex-start", color: "#A34A2A", borderColor: "#A34A2A" }}>Odobrať miesto</button>)}
+    </>;
+    const dole = <>
+        {f.nazov.trim()
+          ? <PodrzTlacidlo label={zamrz ? "Podržte a obnovte" : "Podržte a uložte"} trvanie={1200} onConfirm={() => { void (zamrz ? zamrazMiesto(strankaId, f.id, false).then(() => { setHlaska(`${f.nazov} je znova na stránke · cena teraz ${cenaMiest(n)} € mesačne`); setF(null); }) : uloz()); }} />
+          : <span role="status" style={{ padding: "12px 14px", borderRadius: 12, background: "var(--goldBg)", fontSize: 14.5, fontWeight: 800 }}>Ešte chýba: názov</span>}
+    </>;
+    if (ram) return <RamFormulara nazov={novy ? "Nové miesto" : f.nazov || "Miesto"} onSpat={() => { setF(null); setPotvrd(false); }} dole={dole}>{telo}{odobrat}</RamFormulara>;
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 640 }}>
+        <button type="button" onClick={() => { setF(null); setPotvrd(false); }} style={{ ...tl(false), alignSelf: "flex-start" }}>‹ Kostoly a miesta</button>
+        <b style={{ fontSize: 22 }}>{novy ? "Nové miesto" : f.nazov || "Miesto"}</b>
+        {telo}{dole}{odobrat}
       </div>);
   }
 
@@ -136,6 +156,7 @@ export function KostolyMiesta({ strankaId, mobil, onOmse }: { strankaId: string;
       {hlaska && <div role="status" style={{ padding: "12px 14px", borderRadius: 14, background: "var(--gSoft)", border: "2px solid #4B7A35", fontSize: 15, fontWeight: 800, color: "var(--gInk)" }}>{hlaska}</div>}
       {aktivne.map(riadok)}
       {cakaju.map(riadokPlatcu)}
+      {kon && <MateRozpisane cas={kon.cas} co={kon.d.nazov.trim() || "nové miesto"} onPokracovat={() => { setHlaska(null); setF({ ...prazdneMiesto(), ...kon.d }); }} onZahodit={() => { zmazKoncept(KON); prekresli((x) => x + 1); }} />}
       <button type="button" onClick={() => { setHlaska(null); setF(prazdneMiesto()); }} style={{ ...tl(true), alignSelf: "flex-start", minHeight: 52, padding: "0 22px", fontSize: 16 }}>+ Pridať kostol alebo filiálku</button>
       <div style={{ padding: "14px 16px", borderRadius: 14, background: "var(--card)", display: "flex", flexDirection: "column", gap: 4 }}>
         <b style={{ fontSize: 14.5 }}>Cena podľa miest</b>

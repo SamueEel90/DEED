@@ -33,6 +33,8 @@ import { ZdrojFotiekKontext, zdrojMoje } from "@/components/VyberZGalerie";
 import { mojeFotky } from "@/lib/galeriaFotiek";
 import { useRamPisania } from "@/components/RamPisania";
 import { CelaGaleria } from "@/components/celaGaleria";
+import { nacitajKoncept, ulozKoncept, zmazKoncept, useUkladajKoncept } from "@/lib/koncept";
+import { MateRozpisane, ZahoditRozpisane } from "@/components/RamPisania";
 
 const ZELENA = "#4B7A35", ZLATA = "#C9A24A";
 const lab = (zle: boolean): CSSProperties => ({ fontSize: 12.5, fontWeight: 800, letterSpacing: ".06em", color: zle ? "#A07A1C" : "var(--ink3)" });
@@ -50,8 +52,13 @@ const DNI_W = ["nedeľa", "pondelok", "utorok", "streda", "štvrtok", "piatok", 
 const PAL = ["#C77D9A", "#5C8F9E", "#8C7AB8", "#B8875C", "#6E9E6A"];
 const prazdnyF = (): FormularVeriaceho => ({ nad: "", txt: "", datum: "", cas: "", kde: "", umK: 0, pozv: 0, limit: "", anon: false, plat: 0 });
 const naHtml = (t: string) => t ? t.split("\n").map((r) => `<p>${r.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</p>`).join("") : "";
-/** OPRAVY 258: rozpísané v Editore oznámení (Späť z 1. kroku nič nezahodí) — počas relácie, len na tomto zariadení */
-const konceptEd = new Map<string, PayloadEditora>();
+/** OPRAVY 258 · 271: rozpísané v Editore oznámení (Späť z 1. kroku nič nezahodí) — natrvalo na tomto zariadení, kým sa nezverejní */
+const konceptEd = {
+  get: (kl: string) => nacitajKoncept<PayloadEditora>(`ed.${kl}`)?.d,
+  set: (kl: string, p: PayloadEditora) => ulozKoncept(`ed.${kl}`, p),
+  delete: (kl: string) => zmazKoncept(`ed.${kl}`),
+};
+type KonVer = { k: DruhFarnika; f: FormularVeriaceho; media: MediumZbierky[] };
 /** E.1: poradie v hárku */
 const SKUPINY: [string, DruhFarnika[]][] = [["LEN PRE FARÁRA · NIKTO INÝ NEVIDÍ", ["umysel"]], ["NA STRÁNKU FARNOSTI", ["modlitba", "oznam", "udalost", "fotky"]], ["", ["svadba", "ine", "parte"]]];
 /** BLOK C 235: „Jubileum a iné oznámenie“ vo Viere = Blahoželanie (Pozvánka na oslavu sa vo Viere neponúka) */
@@ -315,6 +322,11 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   const zdrojFotiek = useMemo(() => zdrojMoje(() => mojeFotky(strankaId, mojKluc)), [strankaId, mojKluc]);
   useZamokVrstvy(!!k); // OPRAVY 240: stránka pod formulárom sa neposúva
   const ramOn = useRamPisania(); // OPRAVY 258: Editor oznámení na mobile v ráme na celú obrazovku
+  // OPRAVY 271: rozpísaný príspevok (oznam, udalosť, úmysel, modlitba, fotky) ostane na zariadení, kým sa nezverejní alebo nezahodí
+  const KONV = `veriaci.${strankaId}`;
+  const maObsahV = !!(f.nad.trim() || cistyText(f.txt).trim() || f.datum || f.cas || f.kde.trim() || media.length);
+  useUkladajKoncept<KonVer | null>(KONV, k ? { k, f, media } : null, !!k && !edId && !hotovo && !CEZ_EDITOR.includes(k) && maObsahV);
+  const [, prekresliK] = useState(0);
   if (!self.on || !povol.length) return null;
 
   const set = (z: Partial<FormularVeriaceho>) => { setF((q) => ({ ...q, ...z })); setChyba(false); };
@@ -365,7 +377,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     // E.3: fotky natrvalo (Storage), nie data URL
     let it: PolozkaFarnika;
     try { it = await bezDataUrl(zaklad, "od-veriacich"); } catch (e) { toast(e instanceof Error ? e.message : "Fotky sa nepodarilo uložiť."); setUklada(false); return; }
-    if (povodny) upravOdFarnika(strankaId, povodny.id, it); else pridajOdFarnika(strankaId, it);
+    if (povodny) upravOdFarnika(strankaId, povodny.id, it); else { pridajOdFarnika(strankaId, it); zmazKoncept(KONV); }
     // OPRAVY 170: udalosť veriaceho sa do kalendára farnosti nezapisuje
     // KARTA 57C §2: formulár sa zavrie, dole hláška a stránka sa posunie k bloku
     setChyba(false); setUklada(false); zavri(); naStranke(it.id, k, !!povodny);
@@ -404,6 +416,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
       </span>
     </button>);
 
+  const konV = sheet ? nacitajKoncept<KonVer>(KONV) : null;
   const harok = sheet && (
     <div className="sc-tokeny" style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", flexDirection: "column", justifyContent: "flex-end", alignItems: mobil ? "center" : "flex-end", padding: mobil ? 0 : 20, paddingRight: mobil ? 0 : `calc(${vpravo} - 8px)`, boxSizing: "border-box" }}>
       <div onClick={() => setSheet(false)} style={{ position: "absolute", inset: 0, background: "rgba(10,9,6,.55)" }} />
@@ -412,6 +425,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
           <b style={{ flex: 1, fontSize: 21 }}>Čo chcete pridať?</b>
           <button type="button" onClick={() => setSheet(false)} style={{ minHeight: 44, padding: "0 14px", borderRadius: 12, border: "1px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--ink2)" }}>× Zavrieť</button>
         </div>
+        {reg && konV && <MateRozpisane cas={konV.cas} co={druhT(konV.d.k)} onPokracovat={() => { const d = konV.d; otvor(d.k); setF({ ...prazdnyF(), ...d.f }); setTxtKey((n) => n + 1); setMedia(d.media ?? []); }} onZahodit={() => { zmazKoncept(KONV); prekresliK((x) => x + 1); }} />}
         {reg ? <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {SKUPINY.map(([nad, ks]) => { const l = ks.map((kk) => povol.find((d) => d.k === kk)).filter((d): d is (typeof povol)[number] => !!d); return l.length > 0 && <div key={nad || "ozn"} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {nad && <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)", padding: "6px 2px 0" }}>{nad}</span>}
@@ -604,6 +618,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
         </div>}
         {!jeEd && <div style={{ flex: "none", borderTop: "1px solid var(--cardBd)", background: "var(--bg)" }}>
           <div style={{ padding: "12px 16px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
+            {!edId && maObsahV && <ZahoditRozpisane onZahodit={() => { zmazKoncept(KONV); zavri(); }} />}
             {chyba && ch.length > 0 && <span role="alert" style={{ padding: "12px 14px", borderRadius: 12, background: "var(--goldBg)", border: `1.5px solid ${ZLATA}`, fontSize: 15, fontWeight: 800, color: "var(--ink)" }}>Ešte doplňte: {ch.map((c) => c[1]).join(", ")}. Označili sme to vyššie.</span>}
             {plati ? <>
               {/* PLACEBO — karta 56I: poplatok za oznam sa zatiaľ neplatí (žiadny pohyb v ledgeri), zverejní sa po podržaní */}

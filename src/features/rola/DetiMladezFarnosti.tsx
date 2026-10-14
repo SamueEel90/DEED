@@ -13,6 +13,8 @@ import { TextovePolia, GaleriaEditor } from "./obsahZbierky";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
 import { UpozornitSledujucich } from "./UpozornitSledujucich";
 import { useNastavenieUpoz } from "@/lib/upozorneniaFarnosti";
+import { RamFormulara, MateRozpisane, ZahoditRozpisane, useRamPisania } from "@/components/RamPisania";
+import { nacitajKoncept, zmazKoncept, useUkladajKoncept } from "@/lib/koncept";
 
 const ZELENA = "#4B7A35", CERV = "#A34A2A";
 const DNI = ["NEDEĽA", "PONDELOK", "UTOROK", "STREDA", "ŠTVRTOK", "PIATOK", "SOBOTA"];
@@ -65,6 +67,13 @@ export function DetiMladezFarnosti({ strankaId, mobil }: { strankaId: string; mo
   useEffect(() => () => window.clearTimeout(tm.current), []);
   const hlas = (t: string) => { window.clearTimeout(tm.current); setHl(t); tm.current = window.setTimeout(() => setHl(null), 4000); };
   const setF = (p: Partial<Form>) => setFf((q) => ({ ...q, ...p }));
+  // OPRAVY 271: na mobile rám na celú obrazovku; rozpísané stretnutie ostane na zariadení, kým sa nezverejní alebo nezahodí
+  const ram = useRamPisania();
+  const KON = `deti.${strankaId}`;
+  const maObsah = !!(f.t.trim() || cistyText(f.txt).trim() || f.dat || f.cas || f.kde.trim() || f.media.length);
+  const kon = !on ? nacitajKoncept<Form>(KON) : null;
+  useUkladajKoncept(KON, f, on && !edit && maObsah);
+  const zahod = () => { zmazKoncept(KON); setOn(false); setEdit(null); setFf(prazdny()); };
 
   const otvor = (b?: Stretnutie) => {
     setEdit(b?.id ?? null);
@@ -83,6 +92,7 @@ export function DetiMladezFarnosti({ strankaId, mobil }: { strankaId: string; mo
     const b: Stretnutie = { id: edit ?? `dm${teraz().toString(36)}`, druh: DRUHY_STRETNUTIA[f.druh], t: f.t.trim(), dat: f.dat, datDo: tabor && f.datDo ? f.datDo : undefined, cas: f.cas, kde: f.kde.trim(), txt: f.txt,
       fotky: fotky.length ? fotky.map((m) => m.src) : undefined, popisy: fotky.some((m) => m.popis) ? fotky.map((m) => m.popis ?? "") : undefined,
       pz: f.pz, limit: f.pz === 2 ? parseInt(f.lim, 10) || 0 : 0, vytvorena: st?.vytvorena ?? new Date().toISOString(), upoz };
+    if (!edit) zmazKoncept(KON);
     void ulozStretnutie(strankaId, b).then(() => { setOn(false); setEdit(null); setUpozV(null); hlas(`${edit ? "Zmeny sú uložené ✓" : "Zverejnené ✓"} ${b.t} je na stránke v bloku Deti a mládež.`); });
   };
 
@@ -104,12 +114,7 @@ export function DetiMladezFarnosti({ strankaId, mobil }: { strankaId: string; mo
       </div>
     </div>);
 
-  if (on) return (
-    <section style={{ ...karta, padding: mobil ? "14px 14px" : "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
-      <button type="button" onClick={() => { setOn(false); setEdit(null); }} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--green)" }}>‹ Späť na zoznam stretnutí</button>
-      <b style={{ fontSize: 19 }}>{edit ? "Upravujete stretnutie" : "Nové stretnutie"}</b>
-      <div style={{ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : "minmax(0,1.3fr) minmax(0,1fr)", gap: 18, alignItems: "start" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
+  const polia = <>
           <span style={lab}>Čo to je</span>
           <div role="radiogroup" aria-label="Čo to je" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {DRUHY_STRETNUTIA.map((t, i) => { const a = f.druh === i; return <button key={t} type="button" role="radio" aria-checked={a} onClick={() => setF({ druh: i })} style={{ minHeight: 44, padding: "0 16px", borderRadius: 12, border: a ? `2px solid ${ZELENA}` : "1px solid var(--cardBd)", background: a ? "var(--gSoft)" : "var(--field)", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--ink)" }}>{t}</button>; })}
@@ -138,9 +143,21 @@ export function DetiMladezFarnosti({ strankaId, mobil }: { strankaId: string; mo
             <span style={{ fontSize: 13, color: "var(--ink3)" }}>Nepovinné. Po naplnení sa prihlasovanie zavrie. Mená uvidíte len vy, na stránke je len počet.</span>
           </>}
           <UpozornitSledujucich strankaId={strankaId} blok="de" value={upoz} onChange={setUpozV} />
+          {!edit && maObsah && <ZahoditRozpisane onZahodit={zahod} />}
+  </>;
+  const dole = <>
           {ch.length > 0 && <span style={{ fontSize: 14, fontWeight: 700, color: CERV }}>Ešte chýba: {ch.join(", ")}.</span>}
           {ch.length ? <span style={{ minHeight: 52, borderRadius: 14, background: "var(--btn)", color: "var(--ink2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15.5, fontWeight: 800 }}>{edit ? "Podržte a uložte zmeny" : "Podržte a zverejnite"}</span>
             : <DrzTlacidlo ms={1500} plnenie="rgba(255,255,255,.3)" styl={{ minHeight: 52, borderRadius: 14, border: "none", background: ZELENA, color: "#fff", fontSize: 15.5, fontWeight: 800 }} onHotovo={zverejni}>{edit ? "Podržte a uložte zmeny" : "Podržte a zverejnite"}</DrzTlacidlo>}
+  </>;
+  if (on && ram) return <RamFormulara nazov={edit ? "Úprava stretnutia" : "Nové stretnutie"} onSpat={() => { setOn(false); setEdit(null); }} nahlad={nahlad} dole={dole}>{polia}</RamFormulara>;
+  if (on) return (
+    <section style={{ ...karta, padding: mobil ? "14px 14px" : "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+      <button type="button" onClick={() => { setOn(false); setEdit(null); }} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--green)" }}>‹ Späť na zoznam stretnutí</button>
+      <b style={{ fontSize: 19 }}>{edit ? "Upravujete stretnutie" : "Nové stretnutie"}</b>
+      <div style={{ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : "minmax(0,1.3fr) minmax(0,1fr)", gap: 18, alignItems: "start" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
+          {polia}{dole}
         </div>
         {nahlad}
       </div>
@@ -151,6 +168,7 @@ export function DetiMladezFarnosti({ strankaId, mobil }: { strankaId: string; mo
     <section style={{ ...karta, padding: mobil ? "14px 14px" : "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
       <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>Stretko, miništranti, spevokol, tábor. Na stránke farnosti sa ukáže v bloku <b>Deti a mládež</b> s tlačidlom Prídem.</span>
       <button type="button" onClick={() => otvor()} style={{ alignSelf: "flex-start", minHeight: 50, padding: "0 20px", border: "none", borderRadius: 14, background: ZELENA, color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800 }}>+ Vytvoriť stretnutie</button>
+      {kon && <MateRozpisane cas={kon.cas} co={kon.d.t.trim() || "stretnutie"} onPokracovat={() => { setEdit(null); setFf({ ...prazdny(), ...kon.d }); setKluc((k) => k + 1); setOn(true); }} onZahodit={() => { zmazKoncept(KON); setKluc((k) => k + 1); }} />}
       {hl && <span role="status" style={hlaskaSt}>{hl}</span>}
       {L.length > 0 && <div style={{ display: "flex", flexDirection: "column" }}>{L.map((b, i) => <Riadok key={b.id} b={b} strankaId={strankaId} prvy={!i} onUpr={() => otvor(b)} hlas={hlas} />)}</div>}
     </section>
