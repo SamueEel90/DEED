@@ -8,11 +8,14 @@ import { useState, type CSSProperties } from "react";
 import { GaleriaEditor, TextovePolia } from "./obsahZbierky";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
-import { useKalendar } from "@/lib/kalendarFarnosti";
+import { useKalendar, dniTyzdna } from "@/lib/kalendarFarnosti";
+import { omseZvoncek } from "@/lib/zvoncekOmse";
 import { cenaMiest, predplatne, stavPredplatneho } from "@/lib/predplatneFarnosti";
-import { DRUHY_MIESTA, nazovDruhu, prazdneMiesto, riadokCeny, ulozMiesto, useMiesta, zamrazMiesto, stavPlatcu, odpovedPlatcu, platimSam, LEHOTA_PLATCU_DNI, type Miesto } from "@/lib/miestaFarnosti";
+import { DRUHY_MIESTA, nazovDruhu, prazdneMiesto, riadokCeny, doplatokMiesta, ulozMiesto, useMiesta, zamrazMiesto, stavPlatcu, odpovedPlatcu, platimSam, LEHOTA_PLATCU_DNI, type Miesto } from "@/lib/miestaFarnosti";
 import { RamFormulara, MateRozpisane, ZahoditRozpisane, useRamPisania } from "@/components/RamPisania";
 import { nacitajKoncept, zmazKoncept, useUkladajKoncept } from "@/lib/koncept";
+import { useHromadnyVyber, TlacidloVyberu, ListaVyberu, PolickoVyberu, PasVyberu } from "@/components/HromadnyVyber";
+import { OrezFotky } from "@/components/orezfotky";
 
 const karta: CSSProperties = { borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)" };
 const lbl: CSSProperties = { fontSize: 14, fontWeight: 800 };
@@ -31,11 +34,15 @@ export function KostolyMiesta({ strankaId, mobil, onOmse }: { strankaId: string;
   const [hlaska, setHlaska] = useState<string | null>(null);
   const [potvrd, setPotvrd] = useState(false);
   const [teraz] = useState(() => Date.now());
+  const hv = useHromadnyVyber(); // OPRAVY 284 (5): odobrať viac miest naraz (hlavný kostol nie)
+  const [vyrezId, setVyrezId] = useState<number | null>(null);
+  const vyrezM = vyrezId != null && f ? f.media.find((x) => x.id === vyrezId) : undefined;
   const p = predplatne(), st = stavPredplatneho(p, teraz);
   const skusobne = st === "nezverejnene" || st === "skusobne" || st === "konci";
   // platí iná farnosť: nové (aj obnovené) miesto beží až po potvrdení platiteľa
   const platca = st === "zaNasPlati" ? p.platca?.meno ?? null : null;
-  const omsiTyzdenne = (id: string) => { const k = kal.kostoly[id]; return k?.casyOk ? Object.values(k.vzor).reduce((a, l) => a + l.length, 0) : 0; };
+  // OPRAVY 291: omše tohto týždňa rovnako ako zvončeková (omseZvoncek), nie podľa casyOk
+  const omsiTyzdenne = (id: string) => { const k = kal.kostoly[id]; return k ? dniTyzdna(0).reduce((a, d) => a + omseZvoncek(k, d).length, 0) : 0; };
   const novy = !!f && !vsetky.some((m) => m.id === f.id);
   // OPRAVY 271: na mobile rám na celú obrazovku; rozpísané nové miesto ostane na zariadení, kým sa neuloží alebo nezahodí
   const ram = useRamPisania();
@@ -65,7 +72,8 @@ export function KostolyMiesta({ strankaId, mobil, onOmse }: { strankaId: string;
 
   if (f) {
     const n = aktivne.length + (novy || zamrz ? 1 : 0);
-    const cena = novy || zamrz ? riadokCeny(n, aktivne.length, skusobne) : `Cena sa nemení, ${cenaMiest(aktivne.length)} € mesačne.`;
+    // OPRAVY 281: doplatok, nie celková suma; pri úprave pridaného kostola veta nie je (nič sa nedopláca)
+    const dopl = novy || zamrz ? doplatokMiesta(n, aktivne.length, skusobne) : null;
     const rocne = (novy || zamrz) && !skusobne && p.rocne ? " Pri ročnom predplatnom príde faktúra na pomernú časť do konca predplateného roka." : "";
     const platcaT = novy && platca ? ` Predplatné za vás platí ${platca}: miesto sa ukáže po jeho potvrdení. Ak do ${LEHOTA_PLATCU_DNI} dní neodpovie, žiadosť sa zruší a dostanete správu.` : "";
     const omse = omsiTyzdenne(f.id);
@@ -80,12 +88,19 @@ export function KostolyMiesta({ strankaId, mobil, onOmse }: { strankaId: string;
           <input value={f.nazov} onChange={(e) => setF({ ...f, nazov: e.target.value.slice(0, 80) })} placeholder="napr. Kaplnka svätej Anny" style={pole} /></label>
         <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={lbl}>Adresa</span>
           <input value={f.adresa} onChange={(e) => setF({ ...f, adresa: e.target.value.slice(0, 120) })} placeholder="ulica, číslo, obec" style={pole} /></label>
-        <GaleriaEditor media={f.media} onMedia={(m) => setF({ ...f, media: m })} ph={mobil} max={12} bezVidea nadpis="Fotky · galéria, prvá je titulná" dovetok=" Pod fotku môžete napísať popis." />
+        {/* OPRAVY 282: GaleriaEditor ako všade, aj Výrez */}
+        {vyrezM ? <OrezFotky sprava src={vyrezM.src} pomer={16 / 9} vyrez={vyrezM.vyrez} onZrusit={() => setVyrezId(null)}
+            onVyrez={(v) => { setF({ ...f, media: f.media.map((x) => (x.id === vyrezM.id ? { ...x, vyrez: v } : x)) }); setVyrezId(null); }} />
+          : <GaleriaEditor media={f.media} onMedia={(m) => setF({ ...f, media: m })} ph={mobil} max={12} bezVidea onVyrez={setVyrezId} nadpis="Fotky · galéria, prvá je titulná" dovetok=" Pod fotku môžete napísať popis." />}
         <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={lbl}>Krátky popis <span style={pozn}>· jedna veta na kartu</span></span>
           <input value={f.popis} onChange={(e) => setF({ ...f, popis: e.target.value.slice(0, 140) })} placeholder="napr. Spätá so stredovekým mestským špitálom." style={pole} /></label>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={lbl}>História <span style={pozn}>· nepovinné, na podstránku</span></span>
           <TextovePolia key={f.id} popis={f.historia} popis2="" onPopis={(h) => setF({ ...f, historia: h })} onPopis2={() => undefined} ph={mobil} popisHlavneho="Krátka história kostola. Ukáže sa na jeho podstránke." placeholder="napr. Kostol bol postavený v roku 1909…" /></div>
-        <span style={{ padding: "12px 14px", borderRadius: 12, background: "var(--goldBg)", fontSize: 14, fontWeight: 700, lineHeight: 1.45 }}>{cena}{rocne}{platcaT}</span>
+        {(dopl || platcaT) && <span style={{ padding: "12px 14px", borderRadius: 12, background: "var(--goldBg)", display: "flex", flexDirection: "column", gap: 4, lineHeight: 1.45 }}>
+          {dopl && <b style={{ fontSize: 15 }}>{dopl[0]}</b>}
+          {dopl && <span style={{ fontSize: 13, color: "var(--ink2)" }}>{dopl[1]}.{rocne}</span>}
+          {platcaT && <span style={{ fontSize: 13.5, fontWeight: 700 }}>{platcaT.trim()}</span>}
+        </span>}
         {novy && maObsah && <ZahoditRozpisane onZahodit={zahod} />}
     </>;
     const odobrat = <>
@@ -114,7 +129,8 @@ export function KostolyMiesta({ strankaId, mobil, onOmse }: { strankaId: string;
   const riadok = (m: Miesto) => {
     const t = m.media.find((x) => x.typ === "foto")?.src, om = omsiTyzdenne(m.id);
     return (
-      <div key={m.id} style={{ ...karta, display: "flex", alignItems: "center", gap: 14, padding: "12px 14px", opacity: m.zamrznute ? 0.7 : 1 }}>
+      <div key={m.id} onClick={hv.zap && m.id !== "0" && !m.zamrznute ? () => hv.prepni(m.id) : undefined} style={{ ...karta, display: "flex", alignItems: "center", gap: 14, padding: "12px 14px", opacity: m.zamrznute ? 0.7 : 1, cursor: hv.zap && m.id !== "0" && !m.zamrznute ? "pointer" : undefined }}>
+        {hv.zap && m.id !== "0" && !m.zamrznute && <PolickoVyberu on={hv.vyb.has(m.id)} />}
         <span style={{ width: 64, height: 64, borderRadius: 12, flex: "none", background: t ? `center/cover no-repeat url('${t}')` : "linear-gradient(160deg,#A9A290,#5F584A)" }} />
         <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
           <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: "#8A6A1F" }}>{nazovDruhu(m.druh).toLocaleUpperCase("sk-SK")}{m.id === "0" ? " · HLAVNÝ" : ""}{m.zamrznute ? " · ODOBRATÉ" : ""}</span>
@@ -122,7 +138,7 @@ export function KostolyMiesta({ strankaId, mobil, onOmse }: { strankaId: string;
           <span style={{ fontSize: 13, color: "var(--ink3)" }}>{[m.adresa || (m.id === "0" ? "z registrácie" : ""), m.zamrznute ? "stránka zamrzla" : omsiT(om)].filter(Boolean).join(" · ")}
             {!m.zamrznute && !om && onOmse && <> · <button type="button" onClick={onOmse} style={{ border: "none", background: "transparent", padding: 0, color: "var(--gInk)", fontFamily: "inherit", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>nastaviť omše ›</button></>}</span>
         </span>
-        <button type="button" onClick={() => { setHlaska(null); setF(m); }} style={tl(false)}>{m.zamrznute ? "Obnoviť" : "Upraviť"}</button>
+        {!hv.zap && <button type="button" onClick={() => { setHlaska(null); setF(m); }} style={tl(false)}>{m.zamrznute ? "Obnoviť" : "Upraviť"}</button>}
       </div>);
   };
   // platí iná farnosť: čaká · odmietol (hláška + zaplatiť sám) · zrušené po 14 dňoch (správa farárovi)
@@ -154,7 +170,11 @@ export function KostolyMiesta({ strankaId, mobil, onOmse }: { strankaId: string;
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <span style={{ fontSize: 14, color: "var(--ink3)" }}>Každý kostol alebo filiálka má na stránke svoju kartu a podstránku. Peniaze a zbierky sú vždy farnosti.</span>
       {hlaska && <div role="status" style={{ padding: "12px 14px", borderRadius: 14, background: "var(--gSoft)", border: "2px solid #4B7A35", fontSize: 15, fontWeight: 800, color: "var(--gInk)" }}>{hlaska}</div>}
+      {aktivne.length > 2 && <div style={{ display: "flex", justifyContent: "flex-end" }}><TlacidloVyberu v={hv} /></div>}
+      <ListaVyberu v={hv} polozky={aktivne.filter((m) => m.id !== "0").map((m) => ({ id: m.id, cas: Date.parse(m.vytvorene) || 0 }))} />
       {aktivne.map(riadok)}
+      <PasVyberu v={hv} dolu={mobil ? 104 : 12} sloveso="odoberte" pocet={(n) => miestT(n)}
+        onZmaz={(ids) => { void (async () => { for (const id of ids) await zamrazMiesto(strankaId, id, true); })(); /* po jednom — každý zápis číta celý zoznam */ return `Odobraté: ${miestT(ids.length)} ✓ · stránky miest zamrzli, dajú sa obnoviť · cena ${cenaMiest(aktivne.length - ids.length)} € mesačne od ďalšej platby`; }} />
       {cakaju.map(riadokPlatcu)}
       {kon && <MateRozpisane cas={kon.cas} co={kon.d.nazov.trim() || "nové miesto"} onPokracovat={() => { setHlaska(null); setF({ ...prazdneMiesto(), ...kon.d }); }} onZahodit={() => { zmazKoncept(KON); prekresli((x) => x + 1); }} />}
       <button type="button" onClick={() => { setHlaska(null); setF(prazdneMiesto()); }} style={{ ...tl(true), alignSelf: "flex-start", minHeight: 52, padding: "0 22px", fontSize: 16 }}>+ Pridať kostol alebo filiálku</button>

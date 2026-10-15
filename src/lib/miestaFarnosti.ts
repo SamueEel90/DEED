@@ -83,10 +83,17 @@ export const platimSam = (stranka: string, id: string) => zapis(stranka, (l) => 
 
 /** cena pri počte aktívnych miest a riadok pred „Podržte a uložte“ */
 export const POR = ["Prvé", "Druhé", "Tretie", "Štvrté", "Piate", "Šieste", "Siedme", "Ôsme", "Deviate", "Desiate"];
+/** OPRAVY 281: pri pridaní doplatok (+ 10 € prvý ďalší, + 5 € každý ďalší), nie celková suma; pod tým menším spolu po pridaní */
+export function doplatokMiesta(pocetPo: number, pocetPred: number, skusobne: boolean): [string, string] | null {
+  const po = cenaMiest(pocetPo), rozdiel = po - cenaMiest(pocetPred);
+  if (rozdiel <= 0) return null;
+  return [`Tento kostol pridá k predplatnému + ${rozdiel} € mesačne.`, `Predplatné spolu po pridaní: ${po} € mesačne${skusobne ? " · počas skúšobnej doby zadarmo" : " · od ďalšej platby"}`];
+}
 export function riadokCeny(pocetPo: number, pocetPred: number, skusobne: boolean): string {
   const po = cenaMiest(pocetPo), rozdiel = po - cenaMiest(pocetPred);
-  if (skusobne) return `Počas skúšobnej doby je pridávanie zadarmo. Po skúšobnej dobe ${po} € mesačne.`;
-  if (rozdiel > 0) return `${POR[pocetPo - 1] ?? `${pocetPo}.`} miesto zvýši predplatné o ${rozdiel} € mesačne. Spolu ${po} € od ďalšej platby.`;
+  const d = doplatokMiesta(pocetPo, pocetPred, skusobne);
+  if (d) return `${d[0]} ${d[1]}.`;
+  if (skusobne) return `Počas skúšobnej doby sa nič neplatí. Po skúšobnej dobe ${po} € mesačne.`;
   if (rozdiel < 0) return `Predplatné klesne o ${-rozdiel} € mesačne. Spolu ${po} € od ďalšej platby, spätne sa nič nevracia.`;
   return `Cena sa nemení, ${po} € mesačne.`;
 }

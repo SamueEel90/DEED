@@ -5,7 +5,7 @@
 // Pridané položky = oblasť odfarnikov (KV stav farnosti, zrkadlo naboz_stav). Zverejní sa hneď, farár môže zmazať.
 // ============================================================
 import { useEffect, useSyncExternalStore } from "react";
-import { nacitajStav, ulozStav, obnovOblast } from "@/features/viera/stav";
+import { nacitajStav, ulozStav, ulozStavIsto, obnovOblast } from "@/features/viera/stav";
 
 export type DruhFarnika = "parte" | "svadba" | "ine" | "oznam" | "udalost" | "umysel" | "fotky" | "modlitba";
 /** k · názov · popis v Správe · popis vo výbere veriaceho · vždy zadarmo */
@@ -88,6 +88,14 @@ export const odFarnikov = (id: string): PolozkaFarnika[] => nacitajStav<PolozkaF
 function zmenZoznam(id: string, f: (l: PolozkaFarnika[]) => PolozkaFarnika[]) {
   ulozStav("odfarnikov", id, f(odFarnikov(id))); zmena();
   void obnovOblast("odfarnikov", id).then((ok) => { if (ok) { ulozStav("odfarnikov", id, f(odFarnikov(id))); zmena(); } }, () => undefined);
+}
+/** OPRAVY 273: pridanie / úprava, na ktoré sa čaká — hláška „Zverejnené“ až po naozajstnom uložení. Vráti chybu alebo null. */
+export async function zapisOdFarnikaIsto(id: string, p: PolozkaFarnika, uprava = false): Promise<string | null> {
+  await obnovOblast("odfarnikov", id).catch(() => false); // čerstvý zoznam (iní medzitým mohli pridať)
+  const l = odFarnikov(id);
+  const e = await ulozStavIsto("odfarnikov", id, uprava ? l.map((x) => (x.id === p.id ? { ...x, ...p } : x)) : [p, ...l.filter((x) => x.id !== p.id)]);
+  zmena();
+  return e;
 }
 export function pridajOdFarnika(id: string, p: PolozkaFarnika) { zmenZoznam(id, (l) => [p, ...l.filter((x) => x.id !== p.id)]); }
 export function zmazOdFarnika(id: string, pid: string) { zmenZoznam(id, (l) => l.filter((x) => x.id !== pid)); }

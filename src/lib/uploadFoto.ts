@@ -110,7 +110,15 @@ export async function bezDataUrl<T>(obj: T, priecinok: string): Promise<T> {
   const uid = (await supabase.auth.getSession()).data.session?.user?.id;
   if (!uid) throw new Error("Fotky sa dajú uložiť len po prihlásení.");
   const prejdi = async (v: unknown): Promise<unknown> => {
-    if (typeof v === "string") return /^data:[^;]+;base64,/.test(v) ? nahrajJeden(v, uid, priecinok) : v;
+    if (typeof v === "string") {
+      if (/^data:[^;]+;base64,[^"'\s)]*$/.test(v)) return nahrajJeden(v, uid, priecinok);
+      // OPRAVY 273: obrázky vnútri textu (HTML hárku z Editora oznámení: fotka, QR) — každý do Storage, v texte adresa
+      if (!v.includes(";base64,")) return v;
+      const zhody = [...new Set(v.match(/data:[a-z]+\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=]+/gi) ?? [])];
+      let out = v;
+      for (const z of zhody) { const u = await nahrajJeden(z, uid, priecinok); out = out.split(z).join(u); }
+      return out;
+    }
     if (Array.isArray(v)) return Promise.all(v.map(prejdi));
     if (v && typeof v === "object") {
       const out: Record<string, unknown> = {};

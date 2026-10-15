@@ -193,9 +193,11 @@ export async function nastavCirkevFarnosti(stranka: string, kod: string): Promis
 }
 
 // ---- KARTA 61 §0 · slová podľa cirkvi (číselník public.cirkev, 0078). V kóde jedna rola „duchovný“, mení sa len slovo. ----
-export interface SlovaCirkvi { titul: string; titul2p: string; jednotka2p: string; oslovenie: string | null; dozorca: boolean }
-type RiadokCirkvi = { kod: string; titul: string; titul_2p: string; jednotka_2p: string; oslovenie: string | null; dozorca: boolean };
-const S = (titul: string, titul2p: string, jednotka2p: string, oslovenie: string | null, dozorca = false): SlovaCirkvi => ({ titul, titul2p, jednotka2p, oslovenie, dozorca });
+export interface SlovaCirkvi { titul: string; titul2p: string; jednotka2p: string; oslovenie: string | null; dozorca: boolean; /** OPRAVY 289: poďakovanie v riadku zvončekovej v Hlavnej zbierke (0091) */ podakovanie: string }
+type RiadokCirkvi = { kod: string; titul: string; titul_2p: string; jednotka_2p: string; oslovenie: string | null; dozorca: boolean; podakovanie?: string | null };
+/** OPRAVY 289: zbory a obce „Ďakujeme“, ostatné „Pán Boh zaplať“ (záloha ako 0091) */
+const podakovanieJednotky = (jednotka2p: string) => (/(zboru|obce)$/.test(jednotka2p) ? "Ďakujeme" : "Pán Boh zaplať");
+const S = (titul: string, titul2p: string, jednotka2p: string, oslovenie: string | null, dozorca = false, podakovanie?: string | null): SlovaCirkvi => ({ titul, titul2p, jednotka2p, oslovenie, dozorca, podakovanie: podakovanie?.trim() || podakovanieJednotky(jednotka2p) });
 /** záloha, kým nepríde číselník z DB (rovnaké hodnoty ako 0078) */
 const SLOVA_ZALOHA: Record<string, SlovaCirkvi> = {
   RKC: S("Farár", "farára", "farnosti", "pán farár"), GKC: S("Farár", "farára", "farnosti", "otec"), PC: S("Otec duchovný", "otca duchovného", "cirkevnej obce", "otec"),
@@ -209,9 +211,10 @@ let ciselnik: Record<string, SlovaCirkvi> | null = null;
 let ciselnikNacitany = false;
 async function nacitajCiselnik() {
   if (!supabase) return;
-  const { data, error } = await supabase.from("cirkev").select("kod, titul, titul_2p, jednotka_2p, oslovenie, dozorca");
+  let { data, error } = await supabase.from("cirkev").select("kod, titul, titul_2p, jednotka_2p, oslovenie, dozorca, podakovanie");
+  if (error) ({ data, error } = await supabase.from("cirkev").select("kod, titul, titul_2p, jednotka_2p, oslovenie, dozorca")); // DB ešte bez 0091
   if (error || !data) return;
-  ciselnik = Object.fromEntries((data as RiadokCirkvi[]).map((r) => [r.kod, S(r.titul, r.titul_2p, r.jednotka_2p, r.oslovenie, r.dozorca)]));
+  ciselnik = Object.fromEntries((data as RiadokCirkvi[]).map((r) => [r.kod, S(r.titul, r.titul_2p, r.jednotka_2p, r.oslovenie, r.dozorca, r.podakovanie)]));
   zmena();
 }
 export const slovaCirkvi = (kod: string): SlovaCirkvi => ciselnik?.[kod] ?? SLOVA_ZALOHA[kod] ?? SLOVA_INE;

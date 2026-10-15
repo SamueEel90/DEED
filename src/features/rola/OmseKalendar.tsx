@@ -12,7 +12,7 @@ import { pridajPrispevok, vlastnePrispevky, type VieraFeedItem } from "@/feature
 import { useSlovaFarnosti } from "@/lib/mojeFarnosti";
 import {
   useKalendar, zmenKalendar, zmenKostol, zmazVlastnu, novyKostol, omseDna, polozkyDna, maZmenu, druhPolozky, jeObrad, casKodu,
-  dniTyzdna, rozsahTyzdna, iso, dvt, minuty, posunTyzdna, kostolKal, DRUHY, SKUPINY_OMSI, VEREJNE_VOLBY, VLASTNE_PREFIX,
+  dniTyzdna, rozsahTyzdna, iso, dvt, minuty, posunTyzdna, kostolKal, DRUHY, skupinyOmsi, PONUKA_DRUHOV_OMSE, stitokOmse, type PoznOmse, VEREJNE_VOLBY, VLASTNE_PREFIX,
   DNI_K, DNI_D, MES_G, MES_N, nazovOmse, type KalKostol, type KalendarFarnosti, type PolozkaDna, type Skupina, type Verej } from "@/lib/kalendarFarnosti";
 
 /** KARTA 62: miesto farnosti — id = kľúč kostola v kalendári (hlavný „0“) */
@@ -41,7 +41,8 @@ interface Riadok { t: string; s: string; zrusena?: boolean; zmena?: boolean; obr
 function riadkyDna(k: KalKostol, d: Date, slovo: string): Riadok[] {
   return [
     // OPRAVY 220: aj omša má slovo ako udalosti („17:30 sv. omša“)
-    ...omseDna(k, d).map((o): Riadok => ({ t: o.zrusena ? o.vzor : o.t, s: o.zrusena ? `${slovo} · zrušená` : o.posunuta ? `${slovo} · posunutá` : slovo, zrusena: o.zrusena, zmena: o.zrusena || o.posunuta })),
+    // OPRAVY 283: druh omše („školská sv. omša“) a poznámka
+    ...omseDna(k, d).map((o): Riadok => ({ t: o.zrusena ? o.vzor : o.t, s: `${o.stitok ? `${o.stitok} ` : ""}${slovo}${o.zrusena ? " · zrušená" : o.posunuta ? " · posunutá" : ""}${o.pozn ? ` · ${o.pozn}` : ""}`, zrusena: o.zrusena, zmena: o.zrusena || o.posunuta })),
     ...polozkyDna(k, d).map((p): Riadok => { const x = druhPolozky(p.typ); return { t: p.t, s: x.kratko, meno: p.m.trim(), obrad: x.skupina === "Obrady", extra: true, kat: x.kat, typ: p.typ }; }),
   ].sort((a, b) => minuty(a.t) - minuty(b.t));
 }
@@ -165,18 +166,68 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, tel = false, toa
   const [zle, setZle] = useState<Record<string, boolean>>({});
   const [vzDen, setVzDen] = useState(0);
   const [kopT, setKopT] = useState<string | null>(null);
-  const casyRiadky = SKUPINY_OMSI.map(([g, t]) => {
+  // OPRAVY 283: druhy omší (Detská, Školská, vlastný názov…) a poznámka pri čase (aj s obdobím, keď sa omša nekoná)
+  const [poznG, setPoznG] = useState<number | null>(null);
+  const [pridDruh, setPridDruh] = useState(false);
+  const [vlDruh, setVlDruh] = useState("");
+  const skupiny = skupinyOmsi(k);
+  const nastavCas = (g: number, j: number, v: string) => zmenK((x) => { const c = x.casy.map((r) => [...r]); while (c.length <= g) c.push(["", "", ""]); c[g][j] = v; return { ...x, casy: c }; });
+  const pridajDruh = (nazov: string, kratko: string) => {
+    const n = nazov.trim(); if (!n) return;
+    zmenK((x) => { const g = Math.max(2, ...(x.druhy ?? []).map((d) => d.g)) + 1; const c = x.casy.map((r) => [...r]); while (c.length <= g) c.push(["", "", ""]); c[g] = ["", "", ""];
+      return { ...x, druhy: [...(x.druhy ?? []), { g, nazov: n, kratko: kratko.trim() || n }], casy: c }; });
+    setPridDruh(false); setVlDruh("");
+  };
+  const zmazDruh = (g: number) => zmenK((x) => {
+    const vz: Record<number, number[]> = {}; Object.entries(x.vzor).forEach(([w, a]) => { vz[Number(w)] = a.filter((kod) => Math.floor(kod / 10) !== g); });
+    const pz = { ...(x.pozn ?? {}) }; [0, 1, 2].forEach((j) => { delete pz[g * 10 + j]; });
+    return { ...x, druhy: (x.druhy ?? []).filter((d) => d.g !== g), casy: x.casy.map((r, gi) => (gi === g ? ["", "", ""] : r)), vzor: vz, pozn: pz };
+  });
+  const nastavPozn = (kod: number, z: Partial<PoznOmse>) => zmenK((x) => { const p = { t: "", ...(x.pozn?.[kod] ?? {}), ...z }; const pz = { ...(x.pozn ?? {}) };
+    if (!p.t.trim() && !p.od && !p.do) delete pz[kod]; else pz[kod] = p; return { ...x, pozn: pz }; });
+  const pole: CSSProperties = { minHeight: 44, padding: "0 12px", borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--field)", fontFamily: "inherit", fontSize: 15, color: "var(--ink)", boxSizing: "border-box", minWidth: 0 };
+  const tlM: CSSProperties = { minHeight: 44, padding: "0 14px", borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)", boxShadow: "none" };
+  const casyRiadky = <>{skupiny.map(([g, t]) => {
     const chyba = [0, 1, 2].some((j) => zle[`c${g}${j}`]);
+    const pridany = g >= 3, maPozn = [0, 1, 2].some((j) => k.pozn?.[g * 10 + j]);
     return (
-      <div key={g} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", minHeight: 56, borderTop: "1px solid var(--cardBd)", paddingTop: 6, paddingBottom: chyba ? 6 : 0 }}>
+      <div key={g} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", minHeight: 56, borderTop: "1px solid var(--cardBd)", paddingTop: 6, paddingBottom: chyba || poznG === g ? 6 : 0 }}>
         <b style={{ width: mobil ? "100%" : 130, fontSize: 14.5 }}>{t}</b>
         {[0, 1, 2].map((j) => <CasPole key={j} value={k.casy[g]?.[j] ?? ""} label={`${t}, ${j + 1}. čas · ťuknite a prepíšte`}
           onChyba={(z) => setZle((o) => (o[`c${g}${j}`] === z ? o : { ...o, [`c${g}${j}`]: z }))}
-          onCommit={(v) => zmenK((x) => ({ ...x, casy: x.casy.map((r, gi) => (gi === g ? r.map((c, ji) => (ji === j ? v : c)) : r)) }))} />)}
+          onCommit={(v) => nastavCas(g, j, v)} />)}
+        <button type="button" onClick={() => setPoznG((x) => (x === g ? null : g))} aria-expanded={poznG === g} style={{ ...tlM, border: maPozn ? "1.5px solid var(--gBd)" : tlM.border, color: maPozn ? "var(--gInk)" : "var(--ink)" }}>{maPozn ? "Poznámka ✓" : "Poznámka"}</button>
+        {pridany && <button type="button" onClick={() => { zmazDruh(g); if (poznG === g) setPoznG(null); }} style={{ ...tlM, color: "var(--cRed)" }}>Zmazať</button>}
         {chyba && <span role="alert" style={{ flexBasis: "100%", paddingLeft: mobil ? 0 : 138, fontSize: 12.5, fontWeight: 700, color: "var(--cRed)" }}>{CHYBA_CASU}</span>}
+        {poznG === g && <div style={{ flexBasis: "100%", display: "flex", flexDirection: "column", gap: 8, padding: "10px 12px", borderRadius: 14, background: "var(--field)", border: "1px solid var(--cardBd)" }}>
+          <span style={{ fontSize: 13, color: "var(--ink3)" }}>Poznámka sa ukáže pri čase, napríklad „UPC“. Keď vyplníte obdobie od – do, omša sa v tom čase v kalendári nezobrazí.</span>
+          {[0, 1, 2].map((j) => { const kod = g * 10 + j, pz = k.pozn?.[kod], cas = casKodu(k, kod); if (cas === "—" && !pz) return null; return (
+            <div key={j} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <b style={{ width: 56, fontSize: 15, fontVariantNumeric: "tabular-nums" }}>{cas}</b>
+              <input value={pz?.t ?? ""} onChange={(e) => nastavPozn(kod, { t: e.target.value })} placeholder="Poznámka" aria-label={`Poznámka k ${cas}`} style={{ ...pole, flex: "1 1 160px" }} />
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, color: "var(--ink3)" }}>nekoná sa od
+                <input type="date" value={pz?.od ?? ""} onChange={(e) => nastavPozn(kod, { od: e.target.value || undefined })} style={pole} /></label>
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, color: "var(--ink3)" }}>do
+                <input type="date" value={pz?.do ?? ""} onChange={(e) => nastavPozn(kod, { do: e.target.value || undefined })} style={pole} /></label>
+            </div>); })}
+        </div>}
       </div>);
-  });
-  const casyDna = (wd: number) => (k.vzor[wd] ?? []).map((kod) => casKodu(k, kod)).filter((t) => t !== "—").sort((a, b) => minuty(a) - minuty(b));
+  })}
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid var(--cardBd)", paddingTop: 10 }}>
+      {!pridDruh ? <button type="button" onClick={() => setPridDruh(true)} style={{ ...tlM, alignSelf: "flex-start", border: "1.5px solid var(--gBd)", color: "var(--gInk)" }}>+ Pridať druh omše</button> : <>
+        <span style={{ fontSize: 13, color: "var(--ink3)" }}>Vyberte druh. Dostane vlastné tri časy a ponúkne sa v týždennom vzore.</span>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {PONUKA_DRUHOV_OMSE.filter(([n]) => !(k.druhy ?? []).some((d) => d.nazov === n)).map(([n, kr]) => <button key={n} type="button" onClick={() => pridajDruh(n, kr)} style={tlM}>{n}</button>)}
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <input value={vlDruh} onChange={(e) => setVlDruh(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") pridajDruh(vlDruh, vlDruh); }} placeholder="Vlastný názov, napríklad UPC" aria-label="Vlastný názov druhu omše" style={{ ...pole, flex: "1 1 200px" }} />
+          <button type="button" onClick={() => pridajDruh(vlDruh, vlDruh)} disabled={!vlDruh.trim()} style={{ ...tlZ, minHeight: 44, opacity: vlDruh.trim() ? 1 : 0.5 }}>Pridať</button>
+          <button type="button" onClick={() => { setPridDruh(false); setVlDruh(""); }} style={tlM}>Zrušiť</button>
+        </div>
+      </>}
+    </div>
+  </>;
+  const casyDna = (wd: number) => (k.vzor[wd] ?? []).filter((kod) => casKodu(k, kod) !== "—").sort((a, b) => minuty(casKodu(k, a)) - minuty(casKodu(k, b))).map((kod) => { const st = stitokOmse(k, kod); return st ? `${casKodu(k, kod)} ${st}` : casKodu(k, kod); });
   const tog = (kod: number) => zmenK((x) => { const a = x.vzor[vzDen] ?? []; return { ...x, vzor: { ...x.vzor, [vzDen]: a.includes(kod) ? a.filter((y) => y !== kod) : [...a, kod] } }; });
   const kop = (ciele: number[], kto: string) => { zmenK((x) => { const n = { ...x.vzor }; ciele.forEach((w) => { n[w] = [...(x.vzor[vzDen] ?? [])]; }); return { ...x, vzor: n }; }); setKopT(kto); window.setTimeout(() => setKopT(null), 1800); };
   const casVzoru = vSvetle() ? "#A34A2A" : "#E08A7A";
@@ -193,7 +244,7 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, tel = false, toa
       </> : <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", padding: "10px 14px", borderRadius: 14, background: "var(--gSoft)", border: "1px solid var(--gBd)" }}>
         <span style={{ flex: 1, minWidth: 220, display: "flex", flexDirection: "column", gap: 2 }}>
           <b style={{ fontSize: 14.5, color: "var(--gInk)" }}>Časy uložené ✓</b>
-          <span style={{ fontSize: 13.5, color: "var(--ink2)" }}>{SKUPINY_OMSI.map(([g, , kr]) => `${kr.charAt(0).toUpperCase()}${kr.slice(1)} ${k.casy[g].join(" · ")}`).join("   |   ")}</span>
+          <span style={{ fontSize: 13.5, color: "var(--ink2)" }}>{skupiny.map(([g, , kr]) => `${kr.charAt(0).toUpperCase()}${kr.slice(1)} ${(k.casy[g] ?? []).filter((c) => c.trim()).join(" · ") || "—"}`).join("   |   ")}</span>
         </span>
         <button type="button" onClick={() => zmenK((x) => ({ ...x, casyOk: false }))} style={{ minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1.5px solid var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--gInk)", boxShadow: "none" }}>Zmeniť časy</button>
       </div>}
@@ -209,11 +260,11 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, tel = false, toa
         </div>
         <div style={{ borderRadius: 18, border: "1px solid var(--cardBd)", background: "var(--field)", padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
           <b style={{ fontSize: 16 }}>{DNI_D[vzDen]} · ťuknite časy, ktoré platia</b>
-          {SKUPINY_OMSI.map(([g, , kr]) => (
+          {skupiny.map(([g, , kr]) => (
             <div key={g} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" }}>{kr.toLocaleUpperCase("sk-SK")}</span>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {[0, 1, 2].map((j) => { const kod = g * 10 + j, on = (k.vzor[vzDen] ?? []).includes(kod); return (
+                {[0, 1, 2].map((j) => { const kod = g * 10 + j, on = (k.vzor[vzDen] ?? []).includes(kod); if (g >= 3 && !on && casKodu(k, kod) === "—") return null; return (
                   <button key={j} type="button" onClick={() => tog(kod)} aria-pressed={on} style={{ minHeight: 48, minWidth: 72, padding: "0 12px", borderRadius: 14, border: on ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: on ? "#4B7A35" : "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: on ? 800 : 600, color: on ? "#fff" : "var(--ink)", fontVariantNumeric: "tabular-nums", boxShadow: "none" }}>{on ? "✓ " : ""}{casKodu(k, kod)}</button>); })}
               </div>
             </div>))}
@@ -277,7 +328,7 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, tel = false, toa
               ? <button type="button" onClick={() => zmenK((y) => ({ ...y, odpovede: bezOdp(y), zrus: { ...y.zrus, [den]: (y.zrus[den] ?? []).filter((q) => q !== o.kod) } }))} style={{ height: 40, flex: "none", padding: "0 12px", borderRadius: 12, border: "1.5px solid var(--gBd)", background: "transparent", color: "var(--gInk)", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, boxShadow: "none" }}>Obnoviť</button>
               : <button type="button" onClick={() => zmenK((y) => ({ ...y, odpovede: bezOdp(y), zrus: { ...y.zrus, [den]: [...(y.zrus[den] ?? []), o.kod] } }))} aria-label="Zrušiť túto omšu len v tento deň" title="Zrušiť túto omšu len v tento deň" style={xTl}>×</button>}
             <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1, opacity: o.zrusena ? 0.55 : 1 }}>
-              <span style={{ fontSize: 14.5, fontWeight: 800 }}>Omša · {nazovOmse(o.kod)}</span>
+              <span style={{ fontSize: 14.5, fontWeight: 800 }}>Omša · {nazovOmse(o.kod, k)}</span>
               <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{o.zrusena ? "zrušená len v tento deň" : o.posunuta ? `posunutá z ${o.vzor} len v tento deň` : "podľa vzoru"}</span>
             </span>
             <CasPole velky value={o.t} farba={o.zrusena || o.posunuta ? "var(--cRed)" : undefined} onChyba={(z) => setZlyDen((x) => (x[`o${o.kod}`] === z ? x : { ...x, [`o${o.kod}`]: z }))}
@@ -501,7 +552,7 @@ export function oznamyNaPlagat(strankaId: string) {
 export function plagatTyzdna(k: KalKostol, VJ: KalendarFarnosti["verejne"], off: number, slovo = "sv. omša") {
   return dniTyzdna(off).map((d) => {
     const o: PlagatRiadok[] = [
-      ...(VJ.omse ? omseDna(k, d).filter((x) => VJ.zmeny || !x.zrusena).map((x) => ({ t: x.zrusena ? x.vzor : x.t, s: x.zrusena ? `${slovo} · zrušená` : x.posunuta ? `${slovo} · posunutá` : slovo, z: x.zrusena })) : []),
+      ...(VJ.omse ? omseDna(k, d).filter((x) => VJ.zmeny || !x.zrusena).map((x) => ({ t: x.zrusena ? x.vzor : x.t, s: `${x.stitok ? `${x.stitok} ` : ""}${slovo}${x.zrusena ? " · zrušená" : x.posunuta ? " · posunutá" : ""}${x.pozn ? ` · ${x.pozn}` : ""}`, z: x.zrusena })) : []),
       ...polozkyDna(k, d).filter((p) => VJ[druhPolozky(p.typ).kat]).map((p) => {
         const x = druhPolozky(p.typ);
         const sMenom = x.kat !== "omse" || VJ.umysel;

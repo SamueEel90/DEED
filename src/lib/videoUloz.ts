@@ -3,7 +3,7 @@
 // V produkcii upload do úložiska + prekódovanie na serveri.
 // V dátach sa drží len odkaz „idb:<kľúč>"; URL na prehratie sa získa hookom.
 // ============================================================
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { jeVStorage, nahrajSuborUrl } from "@/lib/uploadFoto";
 
 export const VIDEO_CFG = { maxMB: 60, maxSekund: 90 };
@@ -83,4 +83,46 @@ export async function zmazVideo(src?: string) {
       tx.onerror = () => ok();
     });
   } catch { /* nič */ }
+}
+
+// ---------------- OPRAVY 284 (3): prvý záber videa ako náhľad na karte (keď položka nemá fotku) ----------------
+const postery = new Map<string, string | null>();
+let verziaP = 0;
+const poslP = new Set<() => void>();
+/** prekreslí kartu, keď je záber hotový */
+export const useZmenyPosterov = () => useSyncExternalStore((f) => { poslP.add(f); return () => { poslP.delete(f); }; }, () => verziaP);
+async function urlNaPrehratie(src: string): Promise<string | null> {
+  if (!jeIdb(src)) return src;
+  const db = await otvor();
+  return new Promise((ok) => {
+    const r = db.transaction(STORE).objectStore(STORE).get(src.slice(4));
+    r.onsuccess = () => ok(r.result ? URL.createObjectURL(r.result as Blob) : null);
+    r.onerror = () => ok(null);
+  });
+}
+/** záber videa (data URL) alebo undefined, kým sa robí / keď sa nedá; prvé volanie ho začne robiť */
+export function posterVidea(src?: string): string | undefined {
+  if (!src) return undefined;
+  if (postery.has(src)) return postery.get(src) ?? undefined;
+  postery.set(src, null);
+  void (async () => {
+    const u = await urlNaPrehratie(src).catch(() => null);
+    if (!u) return;
+    try {
+      const v = document.createElement("video");
+      v.muted = true; v.playsInline = true; v.preload = "auto";
+      if (/^https?:/.test(u)) v.crossOrigin = "anonymous";
+      v.src = u;
+      await new Promise<void>((ok, ko) => { v.onloadeddata = () => ok(); v.onerror = () => ko(new Error("video")); window.setTimeout(() => ko(new Error("cas")), 10000); });
+      v.currentTime = Math.min(0.5, (v.duration || 1) / 2);
+      await new Promise<void>((ok) => { v.onseeked = () => ok(); window.setTimeout(ok, 1500); });
+      const k = Math.min(1, 640 / (v.videoWidth || 640));
+      const c = document.createElement("canvas");
+      c.width = Math.round((v.videoWidth || 640) * k); c.height = Math.round((v.videoHeight || 360) * k);
+      c.getContext("2d")?.drawImage(v, 0, 0, c.width, c.height);
+      postery.set(src, c.toDataURL("image/jpeg", 0.8)); verziaP++; poslP.forEach((f) => f());
+    } catch { /* záber sa nedá (cudzí server, formát) — karta ostane bez obrázka */ }
+    finally { if (u.startsWith("blob:") && u !== src) URL.revokeObjectURL(u); }
+  })();
+  return undefined;
 }

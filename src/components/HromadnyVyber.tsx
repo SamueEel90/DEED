@@ -58,7 +58,7 @@ export function PolickoVyberu({ on }: { on: boolean }) {
 }
 
 /** pevný pás dole: Označené: N · Podržte a zmažte N; po zmazaní zelená hláška na tom istom mieste */
-export function PasVyberu({ v, pocet, onZmaz, dolu = 12 }: { v: HromadnyVyberStav; /** „3 oznamy“ */ pocet: (n: number) => string; onZmaz: (ids: string[]) => string; dolu?: number }) {
+export function PasVyberu({ v, pocet, onZmaz, dolu = 12, sloveso = "zmažte" }: { v: HromadnyVyberStav; /** „3 oznamy“ */ pocet: (n: number) => string; onZmaz: (ids: string[]) => string; dolu?: number; /** OPRAVY 284 (5): „odoberte“ pri ľuďoch a kostoloch */ sloveso?: string }) {
   const n = v.vyb.size;
   const st: CSSProperties = { position: "sticky", bottom: dolu, zIndex: 6, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", padding: "10px 14px", borderRadius: 16, boxShadow: "0 10px 26px rgba(30,28,20,.22)" };
   if (v.hlaska) return <div role="status" style={{ ...st, background: "var(--gSoft)", border: "2px solid var(--green)" }}><b style={{ fontSize: 15.5, color: "var(--gInk)" }}>{v.hlaska}</b></div>;
@@ -66,7 +66,7 @@ export function PasVyberu({ v, pocet, onZmaz, dolu = 12 }: { v: HromadnyVyberSta
   return (
     <div role="region" aria-label="Označené" style={{ ...st, background: "var(--panel)", border: "1.5px solid var(--cRed)" }}>
       <b style={{ flex: 1, fontSize: 15 }}>Označené: {pocet(n)}</b>
-      <PodrzZmaz label={`Podržte a zmažte ${n}`} onZmaz={() => v.hotovo(onZmaz([...v.vyb]))} />
+      <PodrzZmaz label={`Podržte a ${sloveso} ${n}`} onZmaz={() => v.hotovo(onZmaz([...v.vyb]))} />
     </div>);
 }
 

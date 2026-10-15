@@ -12,8 +12,9 @@ import { supabase } from "@/lib/supabase";
 function nacitaj<T>(kluc: string, fallback: T): T {
   try { const s = localStorage.getItem(kluc); return s ? (JSON.parse(s) as T) : fallback; } catch { return fallback; }
 }
-function uloz(kluc: string, val: unknown) {
-  try { localStorage.setItem(kluc, JSON.stringify(val)); } catch { /* LS nedostupné */ }
+/** OPRAVY 273: vráti false, keď sa zápis nepodaril (plné úložisko) — volajúci nesmie hlásiť „uložené“ */
+function uloz(kluc: string, val: unknown): boolean {
+  try { localStorage.setItem(kluc, JSON.stringify(val)); return true; } catch { return false; /* LS nedostupné alebo plné */ }
 }
 
 // namespace: deed.naboz.<oblast>.<id>
@@ -25,13 +26,23 @@ const LOKALNE = new Set(["prispevky", "dbsync"]);
 export function nacitajStav<T>(oblast: string, id: string, fallback: T): T {
   return nacitaj<T>(kluc(oblast, id), fallback);
 }
-export function ulozStav(oblast: string, id: string, val: unknown) {
-  uloz(kluc(oblast, id), val);
+export function ulozStav(oblast: string, id: string, val: unknown): boolean {
+  const ok = uloz(kluc(oblast, id), val);
   if (supabase && !LOKALNE.has(oblast)) {
     void supabase.from("naboz_stav")
       .upsert({ oblast, id, data: val, upravene: new Date().toISOString() }, { onConflict: "oblast,id" })
       .then(() => undefined, () => undefined); // fire-and-forget (builder beží až po .then)
   }
+  return ok;
+}
+/** OPRAVY 273: zápis, na ktorý sa čaká — s DB rozhoduje server, bez DB zariadenie. Vráti chybu ako text alebo null. */
+export async function ulozStavIsto(oblast: string, id: string, val: unknown): Promise<string | null> {
+  const ok = uloz(kluc(oblast, id), val);
+  if (supabase && !LOKALNE.has(oblast)) {
+    const { error } = await supabase.from("naboz_stav").upsert({ oblast, id, data: val, upravene: new Date().toISOString() }, { onConflict: "oblast,id" });
+    return error ? "Nepodarilo sa uložiť na server. Skontrolujte pripojenie a skúste znova." : null;
+  }
+  return ok ? null : "Na zariadení nie je miesto. Uvoľnite miesto alebo zmenšite fotky a skúste znova.";
 }
 
 /** Stiahne KV stav farnosti z DB do LS. Vráti true, ak niečo prišlo. */

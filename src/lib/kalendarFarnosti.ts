@@ -12,7 +12,17 @@ import { nacitajStav, ulozStav, synchronizujStav } from "@/features/viera/stav";
 export type KodOmse = number;
 export const SKUPINY_OMSI: [number, string, string][] = [[0, "Ranná", "ranná"], [2, "Veľká (nedeľná)", "veľká"], [1, "Večerná", "večerná"]];
 const NAZ_SK = ["ranná", "večerná", "veľká"];
-export const nazovOmse = (k: KodOmse) => NAZ_SK[Math.floor(k / 10)] ?? "omša";
+export const nazovOmse = (k: KodOmse, kal?: KalKostol) => NAZ_SK[Math.floor(k / 10)] ?? druhOmse(kal, k)?.kratko ?? "omša";
+/** OPRAVY 283: ďalšie druhy omší (detská, mládežnícka, školská, za zosnulých, vlastný názov) — skupina g ≥ 3, kód = g × 10 + čas */
+export interface DruhOmse { g: number; nazov: string; kratko: string }
+export const PONUKA_DRUHOV_OMSE: [string, string][] = [["Detská", "detská"], ["Mládežnícka", "mládežnícka"], ["Školská", "školská"], ["Za zosnulých", "za zosnulých"]];
+export const druhOmse = (kal: KalKostol | undefined, kod: KodOmse) => (Math.floor(kod / 10) >= 3 ? kal?.druhy?.find((d) => d.g === Math.floor(kod / 10)) : undefined);
+/** riadky časov: tri bežné + pridané druhy */
+export const skupinyOmsi = (kal: KalKostol): [number, string, string][] => [...SKUPINY_OMSI, ...(kal.druhy ?? []).map((d): [number, string, string] => [d.g, d.nazov, d.kratko])];
+/** krátky štítok druhu pri čase („školská“); bežné omše bez štítku */
+export const stitokOmse = (kal: KalKostol, kod: KodOmse) => druhOmse(kal, kod)?.kratko ?? "";
+/** poznámka pri čase omše: text a nepovinné obdobie od–do, keď sa omša v kalendári neukáže */
+export interface PoznOmse { t: string; od?: string; do?: string }
 export const PREDVOLENE_CASY: string[][] = [["6:00", "6:30", "7:00"], ["17:30", "18:00", "18:30"], ["9:00", "10:00", "10:30"]];
 
 export interface PolozkaDna { id: string; typ: string; t: string; m: string }
@@ -30,6 +40,10 @@ export interface KalKostol {
   extra: Record<string, PolozkaDna[]>;
   /** KARTA 56G §3: „Poslať oznam veriacim?" — odpoveď ku zmene omše (kľúč „dátum|kód") */
   odpovede?: Record<string, "ano" | "nie">;
+  /** OPRAVY 283: pridané druhy omší (každý so svojimi časmi v casy[g]) */
+  druhy?: DruhOmse[];
+  /** OPRAVY 283: kód omše → poznámka (napr. „nie počas letných prázdnin“ s obdobím od–do) */
+  pozn?: Record<number, PoznOmse>;
   /** OPRAVY 223: dátum → výnimka úradných hodín (len hlavný kostol „0“) */
   uradne?: Record<string, import("./uradneHodiny").VynimkaUH>;
 }
@@ -124,12 +138,17 @@ export function rozsahTyzdna(posun = 0, rok = false): string {
 // ---- deň: omše z rozvrhu a položky ----
 export const novyKostol = (): KalKostol => ({ casy: PREDVOLENE_CASY.map((x) => [...x]), casyOk: false, vzor: {}, zrus: {}, posun: {}, extra: {} });
 export const casKodu = (k: KalKostol, kod: KodOmse) => { const v = k.casy[Math.floor(kod / 10)]?.[kod % 10] ?? ""; return CAS_OK(v) ? pekny(v) : "—"; };
-export interface OmsaDna { kod: KodOmse; vzor: string; t: string; zrusena: boolean; posunuta: boolean }
+export interface OmsaDna { kod: KodOmse; vzor: string; t: string; zrusena: boolean; posunuta: boolean; /** OPRAVY 283: štítok druhu („školská“), bežná omša prázdny */ stitok: string; pozn?: string }
+/** OPRAVY 283: omša s poznámkou s obdobím od–do sa v tom období neukáže */
+const mimoObdobia = (p: PoznOmse | undefined, key: string) => !p || !(p.od || p.do) || key < (p.od || "0000") || key > (p.do || "9999");
 export function omseDna(k: KalKostol, d: Date): OmsaDna[] {
   const key = iso(d), zr = k.zrus[key] ?? [], ps = k.posun[key] ?? {};
-  return (k.vzor[dvt(d)] ?? []).map((kod) => { const vz = casKodu(k, kod); const p = ps[kod]; return { kod, vzor: vz, t: p && CAS_OK(p) ? pekny(p) : vz, zrusena: zr.includes(kod), posunuta: !!p && pekny(p) !== vz }; })
+  return (k.vzor[dvt(d)] ?? []).filter((kod) => mimoObdobia(k.pozn?.[kod], key)).map((kod) => { const vz = casKodu(k, kod); const p = ps[kod]; const pz = k.pozn?.[kod];
+    return { kod, vzor: vz, t: p && CAS_OK(p) ? pekny(p) : vz, zrusena: zr.includes(kod), posunuta: !!p && pekny(p) !== vz, stitok: stitokOmse(k, kod), pozn: pz?.t.trim() || undefined }; })
     .filter((o) => o.vzor !== "—").sort((a, b) => minuty(a.vzor) - minuty(b.vzor));
 }
+/** „14:00 školská“ — čas so štítkom druhu */
+export const casSoStitkom = (o: Pick<OmsaDna, "t" | "stitok">) => (o.stitok ? `${o.t} ${o.stitok}` : o.t);
 export const polozkyDna = (k: KalKostol, d: Date) => k.extra[iso(d)] ?? [];
 /** deň so zmenou (zrušená / posunutá omša) — jemne červený */
 export const maZmenu = (k: KalKostol, d: Date) => omseDna(k, d).some((o) => o.zrusena || o.posunuta);
