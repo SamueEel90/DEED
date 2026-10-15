@@ -13,6 +13,8 @@ import { cistyText } from "./obsahZbierky";
 import { UmyslyFarara } from "./UmyslyFarara";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { relCas } from "@/lib/darcovia";
+import { cielSpravyPre, zrusCielSpravy } from "@/lib/mojeStranky";
+import { zvyrazniOznam } from "@/features/verejny-profil/NastenkaFarnosti";
 
 /** OPRAVY 310: Povolené · Po schválení · Zakázané */
 function Stupne({ v, on, moz = STUPNE, label }: { v: Stupen | null; on: (s: Stupen) => void; moz?: [Stupen, string][]; label: string }) {
@@ -55,7 +57,7 @@ function NastavitPravidla({ strankaId, mobil, toast, onSpat }: { strankaId: stri
     </section>
     <section style={kartaS}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        {/* PLACEBO — karta 57 D.4: posielanie správ rieši server */}
+        {/* OPRAVY 315: naostro — server pošle upozornenie (0097, spúšťač na odfarnikov; vypnuté = odfnast.upozornit false) */}
         <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15 }}>Upozorniť ma na nový príspevok</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Príde vám správa, keď veriaci niečo pridá, nahlási alebo čaká na schválenie.</span></span>
         <Prepinac on={upoz} onClick={() => setUpoz(!upoz)} label="Upozorniť ma na nový príspevok" />
       </div>
@@ -119,7 +121,10 @@ export function OdVeriacich({ strankaId, meno, mobil, toast }: { strankaId: stri
   const nast = nastavenieOdVeriacich(strankaId);
   // D.5: farár otvoril Od veriacich → nové príspevky a úmysly sú videné
   useEffect(() => { ulozNastavenieOdVeriacich(strankaId, { videne: terazMs() }); }, [strankaId]);
-  const [otv, setOtv] = useState<string | null>(null);
+  // OPRAVY 315: z upozornenia v zvončeku — príspevok zvýraznený (nahlásený v Pridali veriaci sa rozbalí)
+  const [zv] = useState(() => cielSpravyPre(strankaId)?.zvyrazni ?? null);
+  const [otv, setOtv] = useState<string | null>(() => (zv && odFarnikov(strankaId).some((x) => x.id === zv && x.k !== "umysel" && !x.stav) ? zv : null));
+  useEffect(() => { zrusCielSpravy(); if (zv) return zvyrazniOznam(zv); }, [zv]);
   // OPRAVY 263: ten istý hromadný výber ako v Správe oznamov
   const hv = useHromadnyVyber(), selM = hv.zap, vyb = hv.vyb;
   const [nastOtv, setNastOtv] = useState(false);
@@ -133,7 +138,7 @@ export function OdVeriacich({ strankaId, meno, mobil, toast }: { strankaId: stri
   if (nastOtv) return <NastavitPravidla strankaId={strankaId} mobil={mobil} toast={toast} onSpat={() => setNastOtv(false)} />;
   const tlC: CSSProperties = { minHeight: 44, padding: "0 14px", borderRadius: 12, fontFamily: "inherit", fontSize: 14, fontWeight: 800, cursor: "pointer", boxShadow: "none" };
   const riadokC = (x: PolozkaFarnika, i: number) => { const v = vybC?.has(x.id) ?? false, o = pozriC === x.id; return (
-    <div key={x.id} style={{ display: "flex", flexDirection: "column", gap: 8, padding: "12px 0", borderTop: i ? "1px solid var(--goldBd)" : "none" }}>
+    <div key={x.id} data-oz={x.id} style={{ display: "flex", flexDirection: "column", gap: 8, padding: "12px 0", borderTop: i ? "1px solid var(--goldBd)" : "none" }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
         {vybC && <button type="button" role="checkbox" aria-checked={v} onClick={() => setVybC((s0) => { const n = new Set(s0); if (n.has(x.id)) n.delete(x.id); else n.add(x.id); return n; })} style={{ flex: "none", width: 44, height: 44, border: "none", background: "transparent", padding: 0, cursor: "pointer" }}><PolickoVyberu on={v} /></button>}
         <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
@@ -156,7 +161,7 @@ export function OdVeriacich({ strankaId, meno, mobil, toast }: { strankaId: stri
   const riadok = (x: PolozkaFarnika, i: number) => {
     const o = otv === x.id && !selM, on = vyb.has(x.id), ed = CEZ_EDITOR.includes(x.k);
     return (
-      <div key={x.id} style={{ borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
+      <div key={x.id} data-oz={x.id} style={{ borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
         <button type="button" onClick={() => (selM ? prepniVyb(x.id) : setOtv(o ? null : x.id))} aria-expanded={selM ? undefined : o} aria-pressed={selM ? on : undefined}
           style={{ width: "100%", minHeight: 62, padding: "8px 0", border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" }}>
           {selM && <PolickoVyberu on={on} />}

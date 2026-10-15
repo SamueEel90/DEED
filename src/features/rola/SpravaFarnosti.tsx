@@ -2,6 +2,7 @@
 // KARTA 56D: Správa od prvého príchodu — všetky funkcie, žiadne ukážkové dáta (prototyp „Sprava farnosti - prvy prichod").
 // Profil, logo a percento = profil_stranky (ako charita), pripnuté = sprava_piny, hlavná zbierka = profil_stranky.centralna.
 // Omše, oznamy a nastavenia farnosti z modulu Viera (stav.ts — localStorage + zrkadlo naboz_stav) pod kľúčom stránky.
+import { cielSpravyPre } from "@/lib/mojeStranky";
 import { FarbaLinii } from "./FarbaLinii";
 import { VzhladStranky } from "./VzhladStranky";
 import { KostolyMiesta } from "./KostolyMiesta";
@@ -114,7 +115,7 @@ const casKonca = (iso?: string) => { if (!iso) return ""; const d = new Date(iso
 function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBack: () => void; strankaId: string; /** názov z registrácie (Moje stránky) */ nazov?: string; /** testovací pás (OPRAVY 147, 153: dostane „Pozrieť profil ›") */ test?: (onPozriet: () => void) => ReactNode }) {
   const { desktop, wide } = useLayout();
   const tablet = wide && !desktop;
-  const [sub, setSub] = useState<Sub>("prehlad");
+  const [sub, setSub] = useState<Sub>(() => (cielSpravyPre(strankaId)?.sub === "veriaci" ? "veriaci" : "prehlad")); // OPRAVY 315: z upozornenia rovno Od veriacich
   const [ob, setOb] = useState(2);
   const [pridat, setPridat] = useState(false);
   const [oznamyHore, setOznamyHore] = useState(0); // KARTA 56G §2: + Pridať → Oznam otvorí Oznamy hore

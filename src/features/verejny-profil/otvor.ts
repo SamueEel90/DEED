@@ -15,12 +15,17 @@ const zmena = () => { verzia++; posluchaci.forEach((f) => f()); };
 
 // OPRAVY 225: náhľad vlastnej stránky zo Správy („‹ Späť do Správy“, štítok Náhľad namiesto Sledovať)
 let zoSpravy = false;
-export function otvorVerejnyProfil(k: string, o?: { zoSpravy?: boolean }) { otvorene = true; kluc = k; zoSpravy = !!o?.zoSpravy; zmena(); }
+// OPRAVY 315: ťuk na upozornenie „Farár zverejnil váš príspevok“ → stránka presne pri príspevku
+let doOznamu: string | null = null;
+export function otvorVerejnyProfil(k: string, o?: { zoSpravy?: boolean; doOznamu?: string }) { otvorene = true; kluc = k; zoSpravy = !!o?.zoSpravy; doOznamu = o?.doOznamu ?? null; zmena(); }
+/** príspevok, pri ktorom sa má stránka otvoriť (číta sa bez mazania, zmaže ho zrusDoOznamu) */
+export const cielOznamu = (): string | null => doOznamu;
+export function zrusDoOznamu() { doOznamu = null; }
 /** stránka je otvorená ako náhľad zo Správy */
 export const nahladZoSpravy = (): boolean => zoSpravy;
 /** KARTA 55 · E: odkaz z feedu „Celý príbeh na stránke … ›" — stránka Príbeh nad feedom, „Späť do feedu" vráti na to isté miesto */
 export function otvorPribeh(zbierkaId: string) { otvorVerejnyProfil(`pribeh:${zbierkaId}`); }
-export function zavriVerejnyProfil() { otvorene = false; zoSpravy = false; zmena(); } // OPRAVY 249: náhľad sa neprenesie na ďalšie otvorenie
+export function zavriVerejnyProfil() { otvorene = false; zoSpravy = false; doOznamu = null; zmena(); } // OPRAVY 249: náhľad sa neprenesie na ďalšie otvorenie
 /** kľúč profilu, ktorý je otvorený (číta sa bez mazania — StrictMode volá inicializáciu dvakrát) */
 export const verejnyProfilKluc = (): string | null => kluc;
 

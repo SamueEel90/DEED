@@ -46,11 +46,12 @@ import { kedyBrigady } from "@/features/rola/BrigadyFarnosti";
 import { useDarcovia, sucetDarov, relCas, nastavCiste, identitaDarcu, zobrazenaSuma, useUkazSumy, SumyDarcovKontext, SektorDarcuKontext } from "@/lib/darcovia";
 import { useZvoncekOkno, nadpisOkna } from "@/lib/zvoncekOmse";
 import { nacitajZbierkyStranky, zbierkyStrankyZPamate, useZmenyZbierok, cielCislo, type SpustenaZbierka } from "@/lib/novaZbierka";
-import { useKalendar, kostolKal, omseDna, polozkyDna, druhPolozky, minuty, iso, dvt, nazovOmse, rozsahTyzdna } from "@/lib/kalendarFarnosti";
+import { useKalendar, kostolKal, omseDna, polozkyDna, druhPolozky, minuty, iso, dvt, nazovOmse, rozsahTyzdna, DNI_D, MES_G } from "@/lib/kalendarFarnosti";
+import { stiahniIcs } from "@/lib/kalendar";
 import { sumaEur } from "@/lib/suma";
 import { prihovory, odkazyVidei, useZmenyPrihovoru, naZivo, onlineOmse, onlineVDen, type Prihovor } from "@/lib/prihovor";
 import { PrihovorVelky, StarsiePrihovory, OdkazyVidei, ZvukPas } from "./VypocujSi";
-import { odFarnikov, useOdFarnikov, useCerstveOdFarnikov, prepniVPolozke, vyprsal, pocetSus, naStranke, type PolozkaFarnika, type PoleReakcie } from "@/lib/odFarnikov";
+import { odFarnikov, useOdFarnikov, useCerstveOdFarnikov, prepniVPolozke, vyprsal, pocetSus, naStranke, BLOK_DRUHU, type PolozkaFarnika, type PoleReakcie } from "@/lib/odFarnikov";
 import { reakcieF, prepniReakciuF, useReakcieF, useCerstveReakcieF, type PoleReakcieF } from "@/lib/reakcieFarnosti";
 import { vlastnePrispevky, vlastnePrispevkyVsetky, type VieraFeedItem } from "@/features/viera/mock";
 import { usePrispevkySync } from "@/features/viera/prispevkyDB";
@@ -632,7 +633,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   })();
   // --- OPRAVY 245: mobil a tablet na výšku — bloky zbalené, riadok súhrnu (počet + najbližšia vec) ---
   const { otv, prepni, otvor } = useZbaleneBloky();
-  const blokOznamu = !doOznamu ? null : ozAll.some((x) => x.id === doOznamu) ? "ozn" : udalosti.some((x) => x.id === doOznamu) ? "prid" : tesy.some((x) => x.id === doOznamu) ? "tes" : spomienky.some((x) => x.id === doOznamu) ? "spom" : null;
+  const blokOznamu = !doOznamu ? null : ozAll.some((x) => x.id === doOznamu) ? "ozn" : udalosti.some((x) => x.id === doOznamu) ? "prid" : tesy.some((x) => x.id === doOznamu) ? "tes" : spomienky.some((x) => x.id === doOznamu) ? "spom" : (BLOK_DRUHU[OD.find((x) => x.id === doOznamu)?.k ?? "umysel"]?.[0] ?? null); // OPRAVY 315: aj príspevok veriaceho
   useEffect(() => { if (blokOznamu) otvor(blokOznamu); }, [blokOznamu]); // eslint-disable-line react-hooks/exhaustive-deps
   const zbalene = !pc;
   /** otvorí zbalený blok a posunie naň (tlačidlá a návraty zo zatvorených okien) */
@@ -2172,6 +2173,7 @@ function TyzdenFarnosti({ strankaId, slovo, siroka, cas, miestaF, mojKostol, bez
   const [vyb, setVyb] = useState<string | null>(() => (mojKostol && miestaF.some((m) => m.id === mojKostol) ? mojKostol : null));
   const [cely, setCely] = useState(false);
   const [mesiac, setMesiac] = useState(false);
+  const [denD, setDenD] = useState<string | null>(null); // OPRAVY 315: ťuk na deň = detail dňa
   const dnes = iso(cas);
   const tyzden = (off: number) => {
     if (!viac) return plagatTyzdna(k, VJ, off, slovo);
@@ -2192,7 +2194,7 @@ function TyzdenFarnosti({ strankaId, slovo, siroka, cas, miestaF, mojKostol, bez
       const ozn = (o: (typeof d.o)[number]) => { const ix = o.s.indexOf(slovo); return ix < 0 ? { hl: o.s, dr: "" } : { hl: slovo, dr: (o.s.slice(0, ix) + o.s.slice(ix + slovo.length)).replace(/^\s*·\s*|\s+$/g, "").replace(/^\s+/, "") }; };
       const kost = viac && !vyb ? [...new Set(d.o.map((o) => (o as { k?: string }).k ?? ""))] : [];
       return (
-        <div key={d.key} style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px", borderRadius: 14, background: dn ? "var(--nf-plne)" : KARTA, color: dn ? "var(--nf-plneInk)" : INK, overflow: "hidden" }}>
+        <button type="button" key={d.key} onClick={() => setDenD(d.key)} aria-label={`${d.w} ${d.dt} · detail dňa`} style={{ width: "100%", border: "none", textAlign: "left", fontFamily: "inherit", cursor: "pointer", boxShadow: "none", minWidth: 0, display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px", borderRadius: 14, background: dn ? "var(--nf-plne)" : KARTA, color: dn ? "var(--nf-plneInk)" : INK, overflow: "hidden" }}>
           <span style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}><Datum d={dt} /><b style={{ fontSize: 16, minWidth: 0 }}>{pozn ? `${pozn} · ${d.w}` : dn ? `dnes · ${d.w}` : d.w}</b></span>
           {d.o.length === 0 ? <span style={{ fontSize: 15, ...vedlajsi }}>bez {slovo.replace(/^sv\. /, "")}</span>
             : kost.length > 1 ? kost.map((kn) => { const l = d.o.filter((o) => ((o as { k?: string }).k ?? "") === kn); return (
@@ -2209,10 +2211,10 @@ function TyzdenFarnosti({ strankaId, slovo, siroka, cas, miestaF, mojKostol, bez
                 {kn ? <span style={{ fontSize: 14, fontWeight: 700, ...vedlajsi }}>{kratkyKostol(kn)}</span> : null}
               </span>); })}
           {(() => { const v = k.uradne?.[d.key]; return v && (v.zrus || (v.od && v.do)) ? <span style={{ fontSize: 14, fontWeight: 700, color: dn ? "inherit" : "var(--nf-cervena, #A3341F)" }}>{v.zrus ? "úradné hodiny zrušené" : `úradné hodiny zmenené na ${textCasu(v)}`}</span> : null; })()}
-        </div>);
+        </button>);
     }
     return (
-      <div key={d.key} style={{ display: "grid", gridTemplateColumns: siroka ? "150px minmax(0,1fr)" : "auto minmax(0,1fr)", gap: siroka ? 20 : 12, alignItems: siroka ? "center" : "flex-start", padding: siroka ? "12px 16px" : "10px 12px", borderRadius: 14, background: dn ? "var(--nf-plne)" : KARTA, color: dn ? "var(--nf-plneInk)" : INK }}>
+      <button type="button" key={d.key} onClick={() => setDenD(d.key)} aria-label={`${d.w} ${d.dt} · detail dňa`} style={{ width: "100%", border: "none", textAlign: "left", fontFamily: "inherit", cursor: "pointer", boxShadow: "none", display: "grid", gridTemplateColumns: siroka ? "150px minmax(0,1fr)" : "auto minmax(0,1fr)", gap: siroka ? 20 : 12, alignItems: siroka ? "center" : "flex-start", padding: siroka ? "12px 16px" : "10px 12px", borderRadius: 14, background: dn ? "var(--nf-plne)" : KARTA, color: dn ? "var(--nf-plneInk)" : INK }}>
         <span style={{ display: "flex", alignItems: "center", gap: 12 }}><Datum d={dt} />{siroka && <span style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.3 }}>{dn ? "dnes" : d.w}</span>}</span>
         <span style={{ display: "flex", flexDirection: siroka ? "row" : "column", flexWrap: "wrap", gap: siroka ? "8px 18px" : 4, alignItems: siroka ? "center" : "flex-start", paddingTop: siroka ? 0 : 2 }}>
           {!siroka && <span style={{ fontSize: 12, fontWeight: 800 }}>{pozn ?? d.w}</span>}
@@ -2220,7 +2222,7 @@ function TyzdenFarnosti({ strankaId, slovo, siroka, cas, miestaF, mojKostol, bez
             : d.o.map((o, i) => <span key={i} style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: siroka ? 16 : 15.5, textDecoration: o.z ? "line-through" : "none", opacity: o.z ? 0.6 : 1 }}><b style={{ flex: "none", fontVariantNumeric: "tabular-nums", minWidth: siroka ? undefined : 44 }}>{o.t}</b><span style={{ minWidth: 0 }}>{o.s}{(o as { k?: string }).k ? <span style={{ color: INK3 }}> · {(o as { k?: string }).k}</span> : null}</span></span>)}
           {(() => { const v = k.uradne?.[d.key]; return v && (v.zrus || (v.od && v.do)) ? <span style={{ fontSize: 14, fontWeight: 700, color: dn ? "inherit" : "var(--nf-cervena, #A3341F)" }}>{v.zrus ? "úradné hodiny zrušené" : `úradné hodiny zmenené na ${textCasu(v)}`}</span> : null; })()}
         </span>
-      </div>);
+      </button>);
   };
   const tlac = () => {
     const f = document.createElement("iframe"); f.style.cssText = "position:fixed;width:0;height:0;border:0;right:0;bottom:0"; document.body.appendChild(f);
@@ -2253,5 +2255,38 @@ function TyzdenFarnosti({ strankaId, slovo, siroka, cas, miestaF, mojKostol, bez
           </div>)}
         </div>
       </CelaObrazovka>}
+      {denD && <DetailDna strankaId={strankaId} den={denD} dnes={dnes} slovo={slovo} miestaF={miestaF} onZavri={() => setDenD(null)} />}
     </div>);
+}
+
+/** OPRAVY 315: detail dňa — všetky omše vo všetkých kostoloch, zmeny, úradné hodiny, Pridať do kalendára (.ics pri každej omši) */
+function DetailDna({ strankaId, den, dnes, slovo, miestaF, onZavri }: { strankaId: string; den: string; dnes: string; slovo: string; miestaF: Miesto[]; onZavri: () => void }) {
+  const kal = useKalendar(strankaId), VJ = kal.verejne;
+  const [pridane, setPridane] = useState<string[]>([]);
+  const dt = zIso(den), zajtra = iso(new Date(zIso(dnes).getTime() + 864e5));
+  const dnaKostola = (kk: ReturnType<typeof kostolKal>) => { for (let off = 0; off < 6; off++) { const x = plagatTyzdna(kk, VJ, off, slovo).find((y) => y.key === den); if (x) return x; } return null; };
+  const kostoly = miestaF.length > 1 ? miestaF.map((m) => ({ id: m.id, n: m.nazov, d: dnaKostola(kostolKal(strankaId, m.id)) })) : [{ id: "", n: "", d: dnaKostola(kostolKal(strankaId)) }];
+  const uh = kostolKal(strankaId).uradne?.[den];
+  const nazov = nazovFarnosti(strankaId) || "Farnosť";
+  const tlP: CSSProperties = { flex: "none", minHeight: 44, padding: "0 14px", borderRadius: 12, border: `1.5px solid ${LINKA}`, background: PAPIER, color: INK, fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, cursor: "pointer" };
+  return <CelaObrazovka label={`Detail dňa ${dt.getDate()}. ${dt.getMonth() + 1}.`} onZavri={onZavri}>
+    <div className="nastenka-farnosti" style={{ ...PREMENNE, flex: 1, minHeight: 0, overflowY: "auto", background: BG, color: INK, padding: "16px 16px 28px" } as CSSProperties}>
+      <div style={{ maxWidth: 720, margin: "0 auto", display: "flex", flexDirection: "column", gap: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}><Datum d={dt} velky />
+          <span style={{ display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 24, letterSpacing: "-.02em" }}>{den === dnes ? "Dnes · " : den === zajtra ? "Zajtra · " : ""}{DNI_D[dvt(dt)]}</b><span style={{ fontSize: 16, color: INK2 }}>{dt.getDate()}. {MES_G[dt.getMonth()]} {dt.getFullYear()}</span></span></div>
+        {uh && (uh.zrus || (uh.od && uh.do)) && <span style={{ padding: "12px 14px", borderRadius: 14, background: KARTA, fontSize: 15.5, fontWeight: 700, color: "var(--nf-cervena, #A3341F)" }}>{uh.zrus ? "Úradné hodiny sú v tento deň zrušené." : `Úradné hodiny sú v tento deň zmenené na ${textCasu(uh)}.`}</span>}
+        {kostoly.map((kk) => <section key={kk.id || "f"} style={{ display: "flex", flexDirection: "column", gap: 8, padding: "14px 16px", borderRadius: 18, background: KARTA }}>
+          {kk.n && <b style={{ fontSize: 17 }}>{kk.n}</b>}
+          {!kk.d || kk.d.o.length === 0 ? <span style={{ fontSize: 15.5, color: INK2 }}>bez {slovo.replace(/^sv\. /, "")}</span>
+            : kk.d.o.map((o, i) => { const kl = `${kk.id}|${o.t}|${i}`, uz = pridane.includes(kl); return (
+              <div key={kl} style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", padding: "8px 0", borderTop: i ? `1px solid ${LINKA}` : "none" }}>
+                <b style={{ flex: "none", fontSize: 22, fontVariantNumeric: "tabular-nums", textDecoration: o.z ? "line-through" : "none", opacity: o.z ? 0.6 : 1 }}>{o.t}</b>
+                <span style={{ flex: "1 1 160px", minWidth: 0, fontSize: 15.5, lineHeight: 1.4, color: o.z ? "var(--nf-cervena, #A3341F)" : INK }}>{o.s}</span>
+                {!o.z && /^\d{1,2}:\d{2}$/.test(o.t) && (den >= dnes) && <button type="button" disabled={uz} onClick={() => { stiahniIcs({ id: `${strankaId}-${kk.id || "0"}-${den}-${o.t.replace(":", "")}`, nazov: `${o.s.split(" · ")[0]} · ${kk.n || nazov}`, datum: den, cas: o.t, miesto: kk.n ? `${kk.n} · ${nazov}` : nazov }); setPridane((p) => [...p, kl]); }} style={{ ...tlP, opacity: uz ? 0.7 : 1, cursor: uz ? "default" : "pointer" }}>{uz ? "Stiahnuté ✓" : "Pridať do kalendára"}</button>}
+              </div>); })}
+        </section>)}
+        <span style={{ fontSize: 14, lineHeight: 1.5, color: INK3 }}>Pridať do kalendára stiahne súbor, ktorý telefón alebo počítač otvorí vo vašom kalendári, s pripomienkou hodinu vopred.</span>
+      </div>
+    </div>
+  </CelaObrazovka>;
 }

@@ -79,4 +79,12 @@ export function vezmiOtvorenieProfilu(): boolean { try { const a = sessionStorag
 const KLUC_ORG = "deed.reg.org";
 export function cakajRegistraciuOrg(a: boolean) { try { if (a) sessionStorage.setItem(KLUC_ORG, "1"); else sessionStorage.removeItem(KLUC_ORG); } catch { /* SS */ } }
 export function cakaRegistraciaOrg(): boolean { try { return sessionStorage.getItem(KLUC_ORG) === "1"; } catch { return false; } }
+/** OPRAVY 315: ťuk na upozornenie → Profil → Správa stránky na danom mieste (napr. Od veriacich, príspevok zvýraznený) */
+export interface CielSpravy { stranka: string; sub: string; zvyrazni?: string }
+let cielSpravy: CielSpravy | null = null;
+export const UDALOST_SPRAVA = "deed:otvor-spravu";
+export function otvorSpravuNa(c: CielSpravy) { cielSpravy = c; try { window.dispatchEvent(new Event(UDALOST_SPRAVA)); } catch { /* SSR */ } }
+/** čítanie bez mazania (StrictMode volá inicializáciu dvakrát) */
+export const cielSpravyPre = (stranka?: string): CielSpravy | null => (cielSpravy && (!stranka || cielSpravy.stranka === stranka) ? cielSpravy : null);
+export function zrusCielSpravy() { cielSpravy = null; }
 export function zrusOtvorenieSpravy() { try { sessionStorage.removeItem(KLUC_SPRAVA); } catch { /* SS */ } }

@@ -421,6 +421,8 @@ export interface Notifikacia {
   akcie?: NotifAkciaKod[];
   /** kontext akcie (AI sa pýta: skutok a otázky) */
   skutok?: { nazov: string; popis: string; otazky?: string[] };
+  /** OPRAVY 315: kam vedie ťuk (odv:stránka:príspevok · prisp:… · nezv:…) — nikdy mŕtve upozornenie */
+  odkaz?: string;
 }
 
 export interface NotifKategoria {

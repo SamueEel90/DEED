@@ -39,6 +39,7 @@ function naNotifikaciu(r: any): Notifikacia {
     nove: !!r.nove,
     agg: !!r.agg,
     akcie: Array.isArray(r.akcie) ? r.akcie : undefined,
+    odkaz: typeof r.odkaz === "string" && r.odkaz ? r.odkaz : undefined, // OPRAVY 315 (0097)
   };
 }
 

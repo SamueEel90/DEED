@@ -19,7 +19,7 @@ import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
 import { najdiTestProfil, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { centralnaZPamate, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
 import { cistyText } from "@/lib/richtext";
-import { otvorVerejnyProfil, useVerejnyProfilOtvoreny, verejnyProfilKluc, zavriVerejnyProfil, vrstvaProfiluPripoj, nahladZoSpravy } from "./otvor";
+import { otvorVerejnyProfil, useVerejnyProfilOtvoreny, verejnyProfilKluc, zavriVerejnyProfil, vrstvaProfiluPripoj, nahladZoSpravy, cielOznamu, zrusDoOznamu } from "./otvor";
 import { VrstvaProfilu, naZbierkaData } from "./casti";
 import { useVzhlad, maVybranyVzhlad, type Vzhlad } from "@/lib/vzhladStranky";
 import { nacitajTiery } from "@/features/rola/stav";
@@ -200,12 +200,18 @@ export function FarnostStranka({ strankaId, onBack, nahlad = false, stit = "Silv
   const [pre, setPre] = useState(strankaId);
   if (pre !== strankaId) { setPre(strankaId); setProf(profilZPamate(strankaId).ulozeny); }
   useEffect(() => { let ziva = true; void nacitajProfil(strankaId).then((z) => { if (ziva) setProf(z.ulozeny); }); return () => { ziva = false; }; }, [strankaId]);
+  // OPRAVY 315: z upozornenia — blok s príspevkom sa rozbalí a stránka sa posunie presne naň
+  const [doOz, setDoOz] = useState(() => (onBack ? cielOznamu() : null));
+  const zvyrazni = (id: string) => { const kd = odFarnikov(strankaId).find((x) => x.id === id)?.k, b = kd ? BLOK_DRUHU[kd] : undefined; return zvyrazniOznam(id, undefined, () => posunNaBlok(b?.[0] ?? "ozn")); };
+  useEffect(() => { zrusDoOznamu(); if (doOz) return zvyrazni(doOz); }, [doOz]); // eslint-disable-line react-hooks/exhaustive-deps
+  /** doOznamu rozbalí zbalený blok (mobil), potom zvýraznenie */
+  const naPrispevok = (id: string) => { if (id === doOz) zvyrazni(id); else setDoOz(id); };
   const fab = fabZapnuty(strankaId);
   const meno = cistyNazov(prof?.meno ?? nazovFarnosti(strankaId)) || "Vaša farnosť";
   return (
     <div style={{ position: "relative", minHeight: "100%", background: "var(--nf-bg)" }}>
-      <NastenkaFarnosti strankaId={strankaId} meno={meno} profil={prof} fab={fab} onBack={onBack} stit={stit} nahlad={!!onBack && nahlad} />
+      <NastenkaFarnosti strankaId={strankaId} meno={meno} profil={prof} fab={fab} onBack={onBack} stit={stit} nahlad={!!onBack && nahlad} doOznamu={doOz ?? undefined} />
       {fab && <div aria-hidden="true" style={{ height: pc ? 110 : 180 }} />/* OPRAVY 278: rezerva dole, + nikdy nezakryje text ani tlačidlá (mobil: + je nad spodným menu, všetky vzhľady rovnako) */}
-      <FarnikPridava strankaId={strankaId} mobil={!pc} onPozriet={(id) => { const kd = odFarnikov(strankaId).find((x) => x.id === id)?.k, b = kd ? BLOK_DRUHU[kd] : undefined; zvyrazniOznam(id, undefined, () => posunNaBlok(b?.[0] ?? "ozn")); /* OPRAVY 301: presne pri oznámení, inak aspoň blok */ }} />
+      <FarnikPridava strankaId={strankaId} mobil={!pc} onPozriet={(id) => { naPrispevok(id); /* OPRAVY 301: presne pri oznámení, inak aspoň blok */ }} />
     </div>);
 }

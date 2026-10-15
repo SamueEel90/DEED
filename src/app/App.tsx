@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, lazy, Suspense, type CSSProperties } from "react";
 import { AdresarHost } from "@/features/viera/AdresarCirkvi";
-import { cakaOtvorenieSpravy, vezmiOtvorenieProfilu, cakaRegistraciaOrg, cakajRegistraciuOrg } from "@/lib/mojeStranky";
+import { cakaOtvorenieSpravy, vezmiOtvorenieProfilu, cakaRegistraciaOrg, cakajRegistraciuOrg, UDALOST_SPRAVA } from "@/lib/mojeStranky";
 import { useStitAppky } from "@/lib/stitAppky";
 import "@/styles/sprava.css";
 import { LazyMotion, domAnimation, MotionConfig } from "motion/react";
@@ -194,6 +194,13 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   // KARTA 44: koniec registrácie osoby → Profil; organizácia sa pridáva z osobného účtu → po prihlásení vrstva registrácie organizácie
   const [orgReg, setOrgReg] = useState(false);
   const [profilKluc, setProfilKluc] = useState(0);
+  // OPRAVY 315: upozornenie v zvončeku → Profil → Správa stránky (napr. Od veriacich, príspevok zvýraznený)
+  const modulRef = useRef(modul);
+  useEffect(() => { modulRef.current = modul; }, [modul]);
+  useEffect(() => {
+    const f = () => { if (modulRef.current !== "profil") pushModul("profil"); setModul("profil" as ModulId); setProfilKluc((k) => k + 1); };
+    window.addEventListener(UDALOST_SPRAVA, f); return () => window.removeEventListener(UDALOST_SPRAVA, f);
+  }, []);
   useEffect(() => {
     if (!session) return;
     if (vezmiOtvorenieProfilu()) setModul("profil");
