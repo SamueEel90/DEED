@@ -137,12 +137,13 @@ export function uzavreteOmse(stranka: string, kostol = "0"): ZvOmsaSDarmi[] {
   });
 }
 
-/** súhrn hlavnej zbierky farnosti: suma už obsahuje zvončekové omše (jedno číslo). Pri ročnom prepínači len od 1. januára. */
+/** súhrn hlavnej zbierky farnosti: suma už obsahuje zvončekové omše (jedno číslo). Pri ročnom prepínači len od 1. januára.
+ *  Martin 15. 10.: bežiaca omša sa do Hlavnej nepočíta — pripíše sa až po omši jedným riadkom (inak by sa sumy zdvojili). */
 export function suhrnHlavnej(stranka: string, hlavnaRef: string): { suma: number; darcov: number } {
-  const od = odKedyHlavna(stranka), akt = aktualneOkno(stranka), a = akt ? sucetDarov(akt.id) : { suma: 0, pocet: 0 };
+  const od = odKedyHlavna(stranka);
   const h = od ? darcoviaPre(hlavnaRef).filter((r) => r.cas >= od) : null, hs = h ? { suma: h.reduce((x, r) => x + r.suma, 0), pocet: h.length } : sucetDarov(hlavnaRef);
   const uz = uzavreteOmse(stranka).filter((o) => zIso(o.den).getTime() >= od);
-  return { suma: hs.suma + a.suma + uz.reduce((s, o) => s + o.suma, 0), darcov: hs.pocet + a.pocet + uz.length };
+  return { suma: hs.suma + uz.reduce((s, o) => s + o.suma, 0), darcov: hs.pocet + uz.length };
 }
 
 /** mená darcov okna bez súm: „Anna K., Jozef Mráz, Mária a ďalší“ */

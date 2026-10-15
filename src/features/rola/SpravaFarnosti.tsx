@@ -232,7 +232,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   // KARTA 56B · §6 / 56D §3: Čísla — Vyzbierané · hlavná (podľa obdobia) · Na najbližšiu omšu · Posledná omšová · Sledujúci.
   // Sumy = len dary cez DEED. Počet darov a pravidelná podpora sú v Nástroje → Štatistiky.
   const obOd = zaciatokObdobia(ob);
-  const vsetkyDary = [...darcoviaPre(hlavnaRef), ...om.dary, ...om.uzavrete.flatMap((o) => darcoviaPre(o.id))];
+  const vsetkyDary = [...darcoviaPre(hlavnaRef), ...om.uzavrete.flatMap((o) => darcoviaPre(o.id))]; // bežiaca omša nie (Martin 15. 10.)
   const vyzbObd = vsetkyDary.filter((r) => r.cas >= obOd).reduce((a, r) => a + r.suma, 0);
   const posledna = om.uzavrete[0];
   const poslPocet = posledna ? posledna.darov : 0;
