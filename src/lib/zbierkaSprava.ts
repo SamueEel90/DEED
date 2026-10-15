@@ -116,7 +116,11 @@ export interface StavZbierky {
   obsah?: ObsahZbierky;
   /** KARTA 48: doklady odoslané na overenie DEED+ (ISO) */
   odoslaneNaOverenie?: string;
+  /** OPRAVY 314: poďakovanie darcom (zbierka farnosti) — na čo sme peniaze použili, fotky ako to dopadlo; na stránke pri ukončenej zbierke */
+  podakovanie?: PodakovanieZbierky;
 }
+export interface PodakovanieZbierky { popis: string; popis2: string; media: import("./novaZbierka").MediumZbierky[];
+  /** kedy sa uložilo (ISO) — bez neho sa na stránke neukáže */ ulozene?: string; /** kedy dostali darcovia upozornenie (ISO) — posiela sa raz */ poslane?: string }
 export interface ObsahZbierky { popis: string; popis2: string; media: import("./novaZbierka").MediumZbierky[]; sada: number; eurc: boolean; sadaE: number }
 
 // ---- úložisko + reaktivita ----
@@ -137,6 +141,21 @@ function ulozLokalne(id: string, s: StavZbierky) {
 export function ulozStav(id: string, s: StavZbierky) {
   ulozLokalne(id, s);
   naplanujZapis(id);
+}
+
+/** OPRAVY 314: zápis, na ktorý sa čaká (poďakovanie) — vráti chybu ako text alebo null */
+export async function ulozStavIsto(id: string, s: StavZbierky): Promise<string | null> {
+  ulozLokalne(id, s);
+  if (!supabase) return null;
+  clearTimeout(casovace.get(id)); casovace.delete(id); ceka.add(id);
+  try {
+    const obsah = await bezDataUrl(s, "zbierky");
+    const { error } = await supabase.from("zbierka_sprava").upsert({ zbierka: id, data: obsah }, { onConflict: "zbierka" });
+    ceka.delete(id);
+    if (error) return "Nepodarilo sa uložiť na server. Skontrolujte pripojenie a skúste znova.";
+    if (obsah !== s) ulozLokalne(id, obsah);
+    return null;
+  } catch { ceka.delete(id); return "Fotku sa nepodarilo nahrať. Skúste znova."; }
 }
 
 // ---- server (0083b): stiahne sa pri prvom čítaní, zápis s oneskorením (Správa ukladá často) ----

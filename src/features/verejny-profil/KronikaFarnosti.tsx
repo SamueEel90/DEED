@@ -111,18 +111,19 @@ export function Zapis({ d, obr, stitok, farbaStitku, t, veta, serif, onTap, deti
 }
 
 /** Spomíname: malý ovál 66 × 84 so zlatým rámom (fotka z parte, bez fotky krížik podľa cirkvi), meno s pätkami */
-export function SpomZapis({ foto, symbol, meno, rod, roky, rozlucka, zbierka, sustrast, onTap, oz }: { /** OPRAVY 274: id zápisu pre „Pozrieť na stránke“ */ oz?: string; foto?: string; symbol: string; meno: string; rod?: string; roky?: string; rozlucka?: string; zbierka: boolean; sustrast: number; onTap: () => void }) {
+export function SpomZapis({ foto, symbol, meno, rod, roky, rozlucka, zbierka, sustrast, onTap, oz, siva, znacka }: { /** OPRAVY 274: id zápisu pre „Pozrieť na stránke“ */ oz?: string; /** OPRAVY 302: čiernobiela fotka */ siva?: boolean;
+  /** OPRAVY 300: značka sústrastí v rohu medailónu (namiesto textu) */ znacka?: ReactNode; foto?: string; symbol: string; meno: string; rod?: string; roky?: string; rozlucka?: string; zbierka: boolean; sustrast: number; onTap: () => void }) {
   return (
     <button type="button" data-oz={oz} onClick={onTap} style={{ display: "flex", gap: 20, alignItems: "center", padding: "20px 0", border: "none", borderBottom: "1px solid color-mix(in srgb,var(--nf-linka) 70%,transparent)", background: "transparent", color: INK, fontFamily: "inherit", textAlign: "left", cursor: "pointer", width: "100%", flexWrap: "wrap" }}>
-      <span style={{ flex: "none", width: 66, height: 84, borderRadius: "50%", border: "2px solid #C9A24A", background: foto ? `center/cover no-repeat url('${foto}')` : "linear-gradient(160deg,#3A2E3E,#1C1820)", display: "flex", alignItems: "center", justifyContent: "center", color: "#C9A24A", fontSize: 30, fontWeight: 400 }}>{foto ? "" : symbol}</span>
+      <span style={{ position: "relative", flex: "none", display: "flex" }}>{znacka}<span style={{ flex: "none", width: 66, height: 84, borderRadius: "50%", border: "2px solid #C9A24A", overflow: "hidden", background: foto ? undefined : "linear-gradient(160deg,#3A2E3E,#1C1820)", display: "flex", alignItems: "center", justifyContent: "center", color: "#C9A24A", fontSize: 30, fontWeight: 400 }}>{foto ? <span style={{ width: "100%", height: "100%", background: `center/cover no-repeat url('${foto}')`, filter: siva ? "grayscale(1)" : undefined }} /> : symbol}</span></span>
       <span style={{ flex: "1 1 220px", minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
         <b style={{ fontFamily: SERIF_KRONIKY, fontSize: 24, lineHeight: 1.2, fontWeight: 600 }}>{meno}</b>
         {(rod || roky) && <span style={{ fontSize: 15.5, color: INK3 }}>{[rod, roky].filter(Boolean).join(" · ")}</span>}
         {rozlucka && <span style={{ fontSize: 15.5, color: INK2 }}>{rozlucka}</span>}
       </span>
-      {(zbierka || sustrast > 0) && <span style={{ flex: "none", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, marginLeft: "auto" }}>
+      {(zbierka || (sustrast > 0 && !znacka)) && <span style={{ flex: "none", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, marginLeft: "auto" }}>
         {zbierka && <span style={{ padding: "5px 11px", borderRadius: 9, border: "1.5px solid var(--nf-fialova)", color: "var(--nf-fialova)", fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em" }}>ZBIERKA RODINY</span>}
-        {sustrast > 0 && <span style={{ fontSize: 14.5, color: INK3 }}>{sustrast} {sustrast === 1 ? "prejavil" : sustrast < 5 ? "prejavili" : "prejavilo"} sústrasť</span>}
+        {sustrast > 0 && !znacka && <span style={{ fontSize: 14.5, color: INK3 }}>{sustrast} {sustrast === 1 ? "prejavil" : sustrast < 5 ? "prejavili" : "prejavilo"} sústrasť</span>}
       </span>}
     </button>);
 }

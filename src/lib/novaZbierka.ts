@@ -166,14 +166,21 @@ export async function nacitajZbierkyStranky(stranka: string): Promise<SpustenaZb
 
 /** KARTA 48 · úprava spustenej zbierky v Správe (Ukladá sa samo): len text pre darcov, galéria a rýchle sumy.
  *  Cieľ, účel, účet a lehota ostávajú zapečatené. */
-export async function upravZbierku(stranka: string, id: string, p: Pick<NovaZbierkaData, "popis" | "popis2" | "media" | "sada" | "eurc" | "sadaE">): Promise<void> {
+/** OPRAVY 314: vráti chybu ako text (Správa ju ukáže pri poli „Neuložilo sa · Skúsiť znova“), inak null */
+export async function upravZbierku(stranka: string, id: string, p: Pick<NovaZbierkaData, "popis" | "popis2" | "media" | "sada" | "eurc" | "sadaE">): Promise<string | null> {
   const l = zbierkyStrankyZPamate(stranka);
-  const z = l.find((x) => x.id === id); if (!z) return;
+  const z = l.find((x) => x.id === id); if (!z) return null;
   const n = { ...z, ...p };
   spustene.set(stranka, l.map((x) => (x.id === id ? n : x))); zmena();
-  // vs a stav sú stĺpce zbierky, nie súčasť zapečateného nastavenia — inak by ich zámok 0041 bral ako zmenu
-  const { vs: _vs, stav: _stav, ...nastavenie } = n;
-  if (supabase) await supabase.from("zbierka").update({ nastavenie: await bezDataUrl(nastavenie, "zbierky") }).eq("id", id);
+  // vs, stav a koniec sú stĺpce zbierky, nie súčasť zapečateného nastavenia — inak by ich zámok 0041 bral ako zmenu
+  const { vs: _vs, stav: _stav, koniec: _koniec, ...nastavenie } = n;
+  if (!supabase) return null;
+  let cista: typeof nastavenie;
+  try { cista = await bezDataUrl(nastavenie, "zbierky"); } catch { return "Fotku sa nepodarilo nahrať. Skúste znova."; }
+  const { data, error } = await supabase.from("zbierka").update({ nastavenie: cista }).eq("id", id).select("id").then((x) => x, () => ({ data: null, error: { message: "" } }));
+  if (error) return "Nepodarilo sa uložiť na server. Skontrolujte pripojenie a skúste znova.";
+  if (!data?.length) return "Túto zbierku môže upraviť len ten, kto ju založil.";
+  return null;
 }
 
 /** Zapečatiť a spustiť — po spustení sa názov, text, dĺžka, suma, účet, účel a lehota nedajú meniť (karta 37 · bod 4) */

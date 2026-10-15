@@ -57,7 +57,7 @@ export function NaseKostolyBlok({ strankaId, miesta, siroka, pc, onMiesto, styl,
       {nadpis("Naše kostoly", siroka ? `${miesta.length === 2 ? "Dve miesta" : miesta.length === 3 ? "Tri miesta" : `${miesta.length} miest`}, jedna farnosť. Ťuknite na kostol a uvidíte omše a akcie len v ňom.` : "Ťuknite na kostol, uvidíte omše len v ňom.")}
       <div style={stlpec ? { display: "flex", flexDirection: "column", gap: 14 } : siroka
         ? { flex: "999 1 520px", minWidth: 0, display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: pc ? 20 : 14 }
-        : { flex: "1 1 100%", minWidth: 0, display: "flex", gap: 12, overflowX: "auto", WebkitOverflowScrolling: "touch", scrollSnapType: "x proximity", touchAction: "pan-x", margin: "0 calc(-1 * clamp(20px,5vw,72px))", padding: "0 clamp(20px,5vw,72px) 6px", overscrollBehaviorX: "contain" }}>
+        : { flex: "1 1 100%", minWidth: 0, display: "flex", gap: 12, overflowX: "auto", WebkitOverflowScrolling: "touch", scrollSnapType: "x proximity", touchAction: "pan-x pan-y", margin: "0 calc(-1 * clamp(20px,5vw,72px))", padding: "0 clamp(20px,5vw,72px) 6px", overscrollBehaviorX: "contain" }}>
         {miesta.map((m) => <KartaMiesta key={m.id} m={m} k={kostolKal(strankaId, m.id)} siroka={siroka} onTap={() => onMiesto(m)} />)}
       </div>
     </div>);

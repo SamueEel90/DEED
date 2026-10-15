@@ -112,7 +112,7 @@ export function UmyslyFarara({ strankaId, meno, mobil, toast }: { strankaId: str
   const riadok = (u: PolozkaFarnika, i: number) => {
     const o = otv === u.id, z = u.zapis;
     return (
-      <div key={u.id} style={{ borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
+      <div key={u.id} data-oz={u.id} /* OPRAVY 315: zvýraznenie z upozornenia */ style={{ borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
         <button type="button" onClick={() => { setOtv(o ? null : u.id); setPresun(null); setSpravaPre(null); }} aria-expanded={o} style={{ width: "100%", minHeight: 60, padding: "8px 0", border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" }}>
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
             <b style={{ fontSize: 14.5 }}>{u.t || "Úmysel"}</b>

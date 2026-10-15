@@ -42,16 +42,36 @@ export const useZmenyCentralnej = () => useSyncExternalStore((f) => { posluchaci
 
 export const centralnaZPamate = (stranka: string): CentralnaZbierka | null => pamat.get(stranka) ?? null;
 
+/** OPRAVY 307: profil_stranky číta len správca (RLS) — iný účet aj neprihlásený čítajú pohľad profil_stranky_verejny (bez IBAN).
+ *  Predtým iný účet dostal prázdny riadok bez chyby → Hlavná (a s ňou zvončeková) u neho nebola. Zlyhanie = centralnaChyba(). */
+const chyby = new Set<string>();
+export const centralnaChyba = (stranka: string) => chyby.has(stranka);
 export async function nacitajCentralnuZbierku(stranka: string): Promise<CentralnaZbierka | null> {
   if (supabase) {
-    const { data, error } = await supabase.from("profil_stranky").select("centralna").eq("stranka", stranka).maybeSingle();
-    if (!error) { const c = (data?.centralna as CentralnaZbierka | null) ?? null; if (c) { pamat.set(stranka, c); zmena(); } return c ?? centralnaZPamate(stranka); }
+    const vlastna = await supabase.from("profil_stranky").select("centralna").eq("stranka", stranka).maybeSingle().then((x) => x, () => ({ data: null, error: { message: "siet" } }));
+    let c: CentralnaZbierka | null = !vlastna.error && vlastna.data ? (vlastna.data.centralna as CentralnaZbierka | null) ?? null : null;
+    let chyba = !!vlastna.error;
+    if (!vlastna.data) { // nie som správca (alebo riadok nie je) → verejný pohľad
+      const v = await supabase.from("profil_stranky_verejny").select("centralna").eq("stranka", stranka).maybeSingle().then((x) => x, () => ({ data: null, error: { message: "siet" } }));
+      chyba = !!v.error;
+      if (!v.error) c = (v.data?.centralna as CentralnaZbierka | null) ?? null;
+    }
+    const mal = chyby.has(stranka);
+    if (chyba) chyby.add(stranka); else chyby.delete(stranka);
+    if (c) pamat.set(stranka, c);
+    if (c || chyba !== mal) zmena();
+    return c ?? centralnaZPamate(stranka);
   }
   return centralnaZPamate(stranka);
 }
-export async function ulozCentralnuZbierku(stranka: string, c: CentralnaZbierka): Promise<void> {
+/** OPRAVY 313: vráti chybu ako text (Správa ju ukáže pri poli), inak null */
+export async function ulozCentralnuZbierku(stranka: string, c: CentralnaZbierka): Promise<string | null> {
   pamat.set(stranka, c); zmena();
-  if (supabase) await supabase.from("profil_stranky").upsert({ stranka, centralna: await bezDataUrl(c, "stranky"), centralna_cas: new Date().toISOString() }, { onConflict: "stranka" });
+  if (!supabase) return null;
+  let cista: CentralnaZbierka;
+  try { cista = await bezDataUrl(c, "stranky"); } catch { return "Fotku sa nepodarilo nahrať. Skúste znova."; }
+  const { error } = await supabase.from("profil_stranky").upsert({ stranka, centralna: cista, centralna_cas: new Date().toISOString() }, { onConflict: "stranka" }).then((x) => x, () => ({ error: { message: "" } }));
+  return error ? "Nepodarilo sa uložiť na server. Skontrolujte pripojenie." : null;
 }
 
 /** KARTA 56B · hlavná zbierka farnosti beží (spustená). Bez záznamu alebo pred Spustiť = nebeží. */

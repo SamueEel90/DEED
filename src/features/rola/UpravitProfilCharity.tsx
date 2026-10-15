@@ -74,7 +74,7 @@ function Volba<T extends string>({ moznosti, value, onChange }: { moznosti: [T, 
         <button key={k} type="button" aria-pressed={on} onClick={() => onChange(k)} style={{ flex: 1, minWidth: 0, height: 42, borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, background: on ? "var(--gSoft)" : "var(--btn)", border: `1.5px solid ${on ? "var(--gBd)" : "transparent"}`, color: on ? "var(--gInk)" : "var(--ink2)" }}>{t}</button>); })}
     </div>);
 }
-const Chyba = ({ t }: { t: string | null }) => (t ? <span style={{ fontSize: 13, fontWeight: 700, color: "#A34A2A", marginTop: -6 }}>{t}</span> : null);
+const Chyba = ({ t }: { t: string | null }) => (t ? <span data-chyba="1" style={{ fontSize: 13, fontWeight: 700, color: "#A34A2A", marginTop: -6 }}>{t}</span> : null);
 const Zmaz = ({ onClick }: { onClick: () => void }) => <button type="button" onClick={onClick} aria-label="Odstrániť" style={{ flex: "none", width: 40, height: 50, border: "none", background: "transparent", cursor: "pointer", fontSize: 20, color: "var(--ink3)" }}>×</button>;
 const Pridat = ({ onClick, children }: { onClick: () => void; children: ReactNode }) => <button type="button" onClick={onClick} style={{ alignSelf: "flex-start", minHeight: 44, border: "none", background: "transparent", padding: "0", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--green)" }}>{children}</button>;
 const cas = (iso: string) => new Date(iso).toLocaleTimeString("sk-SK", { hour: "2-digit", minute: "2-digit" });
@@ -125,8 +125,14 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
   const chyby = [...k.telefony.map((t) => chybaTel(t.cislo)), ...k.emaily.map((e) => chybaEmailu(e.adresa)), chybaWebu(k.web), ...SIETE.map((x) => chybaSiete(x.k, k.siete[x.k] ?? ""))].filter(Boolean);
   const mozeUlozit = !dlhy && chyby.length === 0;
 
+  // OPRAVY 306: Uložiť nikdy mŕtve — pri chybe posun na prvé červené pole a veta, čo opraviť
   const uloz = async () => {
-    if (!mozeUlozit) return;
+    if (!mozeUlozit) {
+      setPohlad("uprava");
+      window.setTimeout(() => document.querySelector("[data-chyba]")?.scrollIntoView({ behavior: "smooth", block: "center" }), 60);
+      toast(dlhy ? "Hlavný text je dlhší ako 12 riadkov · skráťte ho." : "Opravte, čo je označené červenou.");
+      return;
+    }
     const cisty: ProfilStranky = { ...p, kontakt: { ...k, telefony: k.telefony.filter((t) => t.cislo.trim()), emaily: k.emaily.filter((e, i) => i === 0 || e.adresa.trim()) } };
     try { await zverejniProfil(strankaId, cisty); }
     catch { toast("Profil sa nepodarilo uložiť — skúste to znova."); return; }
@@ -195,7 +201,7 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
       lista={pohlad === "nahlad"
         ? <><b style={{ flex: mobil ? "1 1 100%" : 1, minWidth: 0, fontSize: 14.5, color: "#5E4A12" }}>Náhľad. Zatiaľ nič nie je uložené.</b>
             <button type="button" onClick={() => setPohlad("uprava")} style={tl("sive", 44)}>Späť na úpravu</button>
-            <button type="button" onClick={() => void uloz()} disabled={!mozeUlozit} style={{ ...tl("zelene", 44), opacity: mozeUlozit ? 1 : 0.45 }}>Uložiť profil</button></>
+            <button type="button" onClick={() => void uloz()} style={tl("zelene", 44)}>Uložiť profil</button></>
         : <><b style={{ flex: mobil ? "1 1 100%" : 1, minWidth: 0, fontSize: 14.5, color: "var(--gInk)" }}>Profil uložený. Takto ho vidia ľudia.</b>
             <button type="button" onClick={() => setPohlad("uprava")} style={{ ...tl("obrys", 44), border: "none", color: "var(--gInk)", padding: "0 10px" }}>Upraviť</button>
             <button type="button" onClick={onHotovo} style={tl("zelene", 44)}>Hotovo</button></>} />
@@ -214,7 +220,7 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
       {!(mobil && !tablet) && <span style={{ flex: "none", display: "flex", gap: 12 }}>
         <button type="button" onClick={onZrusit} style={tl("obrys")}>Zrušiť</button>
         <button type="button" onClick={() => setPohlad("nahlad")} style={tl("sive")}>Náhľad</button>
-        <button type="button" onClick={() => void uloz()} disabled={!mozeUlozit} title={mozeUlozit ? undefined : "Najprv opravte chyby"} style={{ ...tl("zelene"), padding: "0 22px", opacity: mozeUlozit ? 1 : 0.45, cursor: mozeUlozit ? "pointer" : "default" }}>Uložiť profil</button>
+        <button type="button" onClick={() => void uloz()} style={{ ...tl("zelene"), padding: "0 22px" }}>Uložiť profil</button>
       </span>}
     </div>);
 
@@ -236,7 +242,7 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
           <span style={{ flex: 1, height: 6, borderRadius: 3, background: "var(--track)", overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: "100%", borderRadius: 3, background: f, transformOrigin: "0 50%", transform: `scaleX(${Math.min(1, riadky / ONAS_RIADKY)})` }} /></span>
           <span style={{ flex: "none", fontSize: 13, fontWeight: 800, color: f }}>{riadky} z {ONAS_RIADKY} riadkov</span>
         </div>); })()}
-      {dlhy && <span style={{ fontSize: 13, fontWeight: 700, color: "#A34A2A", lineHeight: 1.45 }}>Hlavný text je dlhší ako 12 riadkov. Skráťte ho, alebo časť presuňte nižšie do pokračovania.</span>}
+      {dlhy && <span data-chyba="1" style={{ fontSize: 13, fontWeight: 700, color: "#A34A2A", lineHeight: 1.45 }}>Hlavný text je dlhší ako 12 riadkov. Skráťte ho, alebo časť presuňte nižšie do pokračovania.</span>}
       <span style={{ marginTop: 8 }}>{nadpis("O nás · pokračovanie", "nepovinné")}</span>
       <span style={{ fontSize: 13, color: "var(--ink2)", lineHeight: 1.45, marginTop: -4 }}>Ukáže sa, až keď návštevník klikne na „viac“.</span>
       <RichTextInput vzhlad="sprava" value={p.onas2} onChange={(h) => zmen({ onas2: h })} nastroje={NASTROJE} minH={130}
@@ -437,7 +443,7 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
       {!vpOtvoreny && createPortal(
         <div className="sprava-charity" data-stit={stit} style={{ position: "fixed", left: 12, right: 12, bottom: "calc(96px + env(safe-area-inset-bottom, 0px))", zIndex: 45, display: "flex", gap: 10, padding: 8, borderRadius: 18, background: "var(--panel)", border: "1px solid var(--cardBd)", boxShadow: "0 8px 24px rgba(30,28,20,.16)" }}>
           <button type="button" onClick={() => setPohlad("nahlad")} style={{ ...tl("sive", 50), flex: 1 }}>Náhľad</button>
-          <button type="button" onClick={() => void uloz()} disabled={!mozeUlozit} style={{ ...tl("zelene", 50), flex: 2, opacity: mozeUlozit ? 1 : 0.45 }}>Uložiť profil</button>
+          <button type="button" onClick={() => void uloz()} style={{ ...tl("zelene", 50), flex: 2 }}>Uložiť profil</button>
         </div>, document.body)}
     </div>);
   return (

@@ -209,6 +209,23 @@ export function useZvoncekOkno(stranka: string, kostol = "0"): { okno: ZvOkno | 
 }
 
 /** „dnes o 12:00“ / „zajtra o 0:00“ / „Ne 18. 10. o 14:00“ — kedy sa zvončeková prepne na ďalšiu omšu ("" = ďalšia omša nie je v kalendári) */
+/** OPRAVY 313: „Št 15. 10. · 18:00“ — nadpis zvončekovej bez druhu omše */
+export function nadpisOmse(o: Pick<ZvOkno, "den" | "cas">): string {
+  const d = zIso(o.den);
+  return `${DNI_K[dvt(d)]} ${d.getDate()}. ${d.getMonth() + 1}. · ${o.cas}`;
+}
+/** OPRAVY 313: skutočná ďalšia omša z kalendára („ďalšia omša Pi 16. 10. · 7:00“), nie okamih prepnutia;
+ *  keď v kalendári ďalšia nie je: „ďalšia omša zatiaľ nie je v kalendári“ */
+export function dalsiaOmsa(o: ZvOkno | null, stranka: string): string {
+  if (!o) return "";
+  const k = kostolKal(stranka, o.kostol || "0"), z = zIso(o.den);
+  for (let i = 0; i <= 31; i++) {
+    const d = new Date(z.getFullYear(), z.getMonth(), z.getDate() + i);
+    const n = omseZvoncek(k, d).sort((a, b) => a.m - b.m).find((x) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, x.m).getTime() > o.zac);
+    if (n) return `ďalšia omša ${nadpisOmse({ den: iso(d), cas: n.cas })}`;
+  }
+  return "ďalšia omša zatiaľ nie je v kalendári";
+}
 export function kedyPrepne(o: ZvOkno | null, stranka: string): string {
   if (!o?.do) return "";
   const d = new Date(o.do), t = new Date(teraz(stranka)), cas = `${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`;

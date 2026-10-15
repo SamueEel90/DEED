@@ -16,7 +16,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSPro
 import { createPortal } from "react-dom";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { nacitajSelfAdd } from "@/features/viera/UserOznamy";
-import { DRUHY_FARNIKA, CEZ_EDITOR, BLOK_DRUHU, nacitajSmie, smie, odFarnikov, zapisOdFarnikaIsto, zmazOdFarnika, prepniVPolozke, pocetSus, useOdFarnikov, useCerstveOdFarnikov, PLATI_VERIACI, vyprsal, type DruhFarnika, type PolozkaFarnika, type FormularVeriaceho } from "@/lib/odFarnikov";
+import { DRUHY_FARNIKA, CEZ_EDITOR, BLOK_DRUHU, nacitajSmie, smie, stupen, naStranke as jeNaStranke, pridajMojeCakajuce, odFarnikov, zapisOdFarnikaIsto, zmazOdFarnika, prepniVPolozke, pocetSus, useOdFarnikov, useCerstveOdFarnikov, PLATI_VERIACI, vyprsal, type DruhFarnika, type PolozkaFarnika, type FormularVeriaceho } from "@/lib/odFarnikov";
 import { dokonciCas, CAS_OK, pekny } from "@/lib/kalendarFarnosti";
 import { bezDataUrl } from "@/lib/uploadFoto";
 import type { MediumZbierky } from "@/lib/novaZbierka";
@@ -99,13 +99,14 @@ function Pozvanie({ x, strankaId, kto, reg }: { x: PolozkaFarnika; strankaId: st
 }
 
 /** ··· Nahlásiť nevhodný príspevok · Upraviť · moje */
-export function MenuPrispevku({ x, strankaId, kto, moje, vMenu }: { x: PolozkaFarnika; strankaId: string; kto: string; moje: boolean; /** OPRAVY 228: Upraviť a Zmazať autora až v „…“ */ vMenu?: boolean }) {
+export function MenuPrispevku({ x, strankaId, kto, moje, vMenu, bezZmazania, onZmazane }: { x: PolozkaFarnika; strankaId: string; kto: string; moje: boolean; /** OPRAVY 228: Upraviť a Zmazať autora až v „…“ */ vMenu?: boolean;
+  /** OPRAVY 305: parte so zapečatenou pohrebnou zbierkou — len Upraviť (zbierku ukončí Moja zbierka rodiny) */ bezZmazania?: boolean; onZmazane?: () => void }) {
   const [menu, setMenu] = useState(false), [potvrd, setPotvrd] = useState(false), [ok, setOk] = useState(false);
   const tm = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(tm.current), []);
   // OPRAVY 190: svadbu a jubileum (cez editor) si autor upraví sám a zmaže podržaním
-  const mozeUp = moje && ["oznam", "udalost", "modlitba", "svadba", "ine", "fotky"].includes(x.k); // OPRAVY 194: aj fotky z akcie
-  const mozeZmaz = moje && x.k !== "umysel";
+  const mozeUp = moje && ["oznam", "udalost", "modlitba", "svadba", "ine", "fotky", "parte"].includes(x.k); // OPRAVY 194: aj fotky z akcie · OPRAVY 305: aj parte
+  const mozeZmaz = moje && x.k !== "umysel" && !bezZmazania;
   return <>
     {potvrd && <div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--goldBg)", border: `1.5px solid ${ZLATA}`, display: "flex", flexDirection: "column", gap: 8 }}>
       <b style={{ fontSize: 15.5 }}>Nahlásiť farárovi?</b>
@@ -121,7 +122,7 @@ export function MenuPrispevku({ x, strankaId, kto, moje, vMenu }: { x: PolozkaFa
       {menu && <button type="button" onClick={() => { setMenu(false); setPotvrd(true); }} style={{ minHeight: 40, padding: "0 12px", borderRadius: 10, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--ink)" }}>Nahlásiť nevhodný príspevok</button>}
       {mozeUp && (!vMenu || menu) && <button type="button" onClick={() => nastavUpravu(x.id)} style={{ minHeight: 40, padding: "0 12px", borderRadius: 10, border: "1.5px solid var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--gInk)" }}>Upraviť · moje</button>}
       {mozeZmaz && (!vMenu || menu) && <DrzTlacidlo ms={1200} styl={{ minHeight: 40, padding: "0 12px", borderRadius: 10, border: "1.5px solid #A34A2A", background: "transparent", color: "#A34A2A", fontSize: 13.5, fontWeight: 800 }}
-        onHotovo={() => { zmazOdFarnika(strankaId, x.id); toast("Zmazané ✓"); }}>Podržte · zmazať</DrzTlacidlo>}
+        onHotovo={() => { zmazOdFarnika(strankaId, x.id); toast("Zmazané ✓"); onZmazane?.(); }}>Podržte · zmazať</DrzTlacidlo>}
     </div>
   </>;
 }
@@ -184,7 +185,7 @@ export function OdFarnikov({ strankaId, novy, pad, fab }: { strankaId: string; n
   const kto = klucJa(ja), reg = ja.typ !== "pasivny";
   const [flt, setFlt] = useState<Filter>("vse");
   const [velke, setVelke] = useState<PolozkaFarnika | null>(null);
-  const vsetko = odFarnikov(strankaId).filter((x) => x.k !== "umysel" && platne(x)); // úmysel na omšu vidí len farár (v Správe)
+  const vsetko = odFarnikov(strankaId).filter((x) => x.k !== "umysel" && jeNaStranke(x) && platne(x)); // OPRAVY 310: čakajúce nie // úmysel na omšu vidí len farár (v Správe)
   const alba = vsetko.filter((x) => x.k === "fotky" && x.fotky?.length);
   const list = vsetko.filter((x) => !(x.k === "fotky" && x.fotky?.length));
   const zobraz = list.filter((x) => vFiltri(flt, x));
@@ -269,7 +270,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   const qrStr = useQrObrazok(odkazQrStranky(strankaId));
   const self = nacitajSelfAdd(strankaId), sm = nacitajSmie(strankaId);
   const povol = DRUHY_FARNIKA.filter((d) => smie(sm, d.k));
-  const pop = self.poplatok || 0;
+  const pop = 0; // OPRAVY 310: poplatok za oznam zrušený — všetko zadarmo (self.poplatok sa ignoruje)
   const [sheet, setSheet] = useState(false);
   const fabRez = useFabRezim();
   useEffect(() => { const f = () => setSheet(true); window.addEventListener("deed:farnik-pridaj", f); return () => window.removeEventListener("deed:farnik-pridaj", f); }, []);
@@ -294,8 +295,10 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     window.clearTimeout(okTm.current); okTm.current = window.setTimeout(() => setOk(null), 9000);
     if (druh !== "umysel") onPozriet(id);
   };
+  /** OPRAVY 315: krátky formulár po odoslaní — tá istá karta ako editor (301 / 310 C), na mieste tlačidla, nie len hláška */
+  const [vys, setVys] = useState<{ id: string; druh: DruhFarnika; upravene: boolean; caka: boolean } | null>(null);
   const edRef = useRef<EditorApi>(null);
-  const zavri = () => { setK(null); setHotovo(null); setEdId(null); };
+  const zavri = () => { setK(null); setHotovo(null); setEdId(null); setVys(null); };
   /** ‹ Späť na stránku farnosti — po uloženom oznámení z editora hláška a posun k bloku */
   const spatNaStranku = () => { const h = hotovo, kk = k; zavri(); if (h && kk && CEZ_EDITOR.includes(kk)) naStranke(h, kk, false); };
   useEffect(() => {
@@ -364,6 +367,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     const anon = k === "modlitba" && f.anon;
     const t = k === "modlitba" ? (anon ? "Prosím o modlitbu" : `${ja.celeMeno || "Veriaci"} prosí o modlitbu`) : f.nad.trim();
     const povodny = edId ? odFarnikov(strankaId).find((x) => x.id === edId) : undefined;
+    const caka = !povodny && stupen(sm, k) === "schvalenie"; // OPRAVY 310: Po schválení — na stránku až keď farár zverejní
     const zaklad: PolozkaFarnika = {
       ...(povodny ?? {}), id: povodny?.id ?? `f${teraz().toString(36)}`, k, t, s, kto: anon ? "Bohu známy veriaci" : ja.celeMeno || "Veriaci", cas: povodny?.cas ?? teraz(),
       autor: kto, mesto: ja.mesto, anon: k === "modlitba" ? anon : undefined, f: ff, autorFoto: anon ? undefined : povodny?.autorFoto ?? ja.foto ?? undefined,
@@ -372,7 +376,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
       popisy: (k === "fotky" || k === "udalost" || k === "oznam") && fotky.some((m) => m.popis) ? fotky.map((m) => m.popis ?? "") : k === "fotky" ? fotky.map((m) => m.popis ?? "") : undefined, text: k === "fotky" ? txt || undefined : undefined,
       pozv: k === "udalost" || k === "fotky" ? pz : undefined, limit: k === "udalost" || k === "fotky" ? limitN : undefined,
       dalsia: k === "fotky" && pz ? [fmtD(f.datum), CAS_OK(c) ? pekny(c) : ""].filter(Boolean).join(" · ") : undefined,
-      upravene: povodny ? true : undefined };
+      upravene: povodny ? true : undefined, stav: caka ? "caka" : povodny?.stav };
     // E.3: fotky natrvalo (Storage), nie data URL
     let it: PolozkaFarnika;
     try { it = await bezDataUrl(zaklad, "od-veriacich"); } catch (e) { toast(e instanceof Error ? e.message : "Fotky sa nepodarilo uložiť."); setUklada(false); return; }
@@ -382,7 +386,9 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     if (!povodny) zmazKoncept(KONV);
     // OPRAVY 170: udalosť veriaceho sa do kalendára farnosti nezapisuje
     // KARTA 57C §2: formulár sa zavrie, dole hláška a stránka sa posunie k bloku
-    setChyba(false); setUklada(false); zavri(); naStranke(it.id, k, !!povodny);
+    setChyba(false); setUklada(false);
+    if (caka) pridajMojeCakajuce({ stranka: strankaId, id: it.id, t: it.t || druhT(k), cas: it.cas });
+    setVys({ id: it.id, druh: k, upravene: !!povodny, caka });
   };
   const zverejni = () => { if (ch.length) { setChyba(true); return; } void uloz(); };
 
@@ -401,7 +407,8 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     let it: PolozkaFarnika;
     const povId = edId ?? hotovo; // OPRAVY 301: po zverejnení Upraviť = úprava toho istého
     const povodny = povId ? odFarnikov(strankaId).find((y) => y.id === povId) : undefined; // OPRAVY 190: úprava ponechá id aj reakcie
-    try { it = await bezDataUrl<PolozkaFarnika>({ ...(povodny ?? {}), id: povodny?.id ?? `f${teraz().toString(36)}`, k, t: t || druhT(k), s, kto: povodny?.kto ?? (ja.celeMeno || "Veriaci"), cas: povodny?.cas ?? teraz(), autor: povodny?.autor ?? kto, mesto: povodny?.mesto ?? ja.mesto, autorFoto: povodny?.autorFoto ?? ja.foto ?? undefined, editor: p, obr: obr || undefined,
+    const caka = povodny ? povodny.stav === "caka" : stupen(sm, k) === "schvalenie"; // OPRAVY 310
+    try { it = await bezDataUrl<PolozkaFarnika>({ ...(povodny ?? {}), id: povodny?.id ?? `f${teraz().toString(36)}`, k, t: t || druhT(k), s, kto: povodny?.kto ?? (ja.celeMeno || "Veriaci"), cas: povodny?.cas ?? teraz(), autor: povodny?.autor ?? kto, mesto: povodny?.mesto ?? ja.mesto, autorFoto: povodny?.autorFoto ?? ja.foto ?? undefined, editor: p, obr: obr || undefined, stav: caka ? "caka" : povodny?.stav,
       // OPRAVY 212: svadba a jubileum majú aj galériu (Editor oznámení len na obrázok pozvánky)
       ...(k === "svadba" || k === "ine" ? { fotky: fotky.length ? fotky.map((m) => m.src) : undefined, popisy: fotky.some((m) => m.popis) ? fotky.map((m) => m.popis ?? "") : undefined } : {}) }, "od-veriacich"); }
     catch (e) { edRef.current?.vysledok({ ok: false, chyba: e instanceof Error ? e.message : "Oznámenie sa nepodarilo uložiť." }); return; }
@@ -410,7 +417,8 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     konceptEd.delete(`${strankaId}|${k}`);
     setHotovo(it.id);
     // OPRAVY 301: karta Zverejnené ✓ v editore (namiesto krátkej hlášky)
-    edRef.current?.vysledok({ ok: true, uprava: !!povodny, blok: BLOK_DRUHU[k]?.[1] });
+    if (caka && !povodny) pridajMojeCakajuce({ stranka: strankaId, id: it.id, t: it.t, cas: it.cas });
+    edRef.current?.vysledok({ ok: true, uprava: !!povodny, blok: BLOK_DRUHU[k]?.[1], caka });
   };
 
   // OPRAVY 278: + vždy plávajúce vpravo dole, 58 px, zelený prechod — rovnaké vo všetkých vzhľadoch, PC aj mobil
@@ -600,6 +608,20 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
       ram={ram} onZavri={spatNaStranku} spatText="‹ Späť na stránku farnosti" onPozriet={spatNaStranku} onHotovo={zavri} hotovoText="Hotovo · späť na stránku farnosti" nadpis={edId ? `Upraviť · ${T?.t ?? ""}` : T?.t}
       cfg={{ typ: TYP_EDITORA[k]!, sektor: "viera", rezim: "plny", qrObrazok: k === "parte" ? qrStr : undefined, miesta: k === "parte" ? ["v Dome smútku", "vo farskom kostole", "na miestnom cintoríne"] : undefined, kontext: { stranka: strankaId, veriaci: true },
         navrh: edId ? odFarnikov(strankaId).find((y) => y.id === edId)?.editor ?? null : konceptEd.get(`${strankaId}|${k}`) ?? null }} />);
+  // OPRAVY 315: karta po odoslaní krátkeho formulára (rovnaká ako v editore: 301 Zverejnené ✓ / 310 C Odoslané · čaká na schválenie)
+  const kartaVysledku = (v: NonNullable<typeof vys>) => {
+    const um1 = v.druh === "umysel", b = BLOK_DRUHU[v.druh];
+    const [t, s0] = v.caka ? ["Odoslané · čaká na schválenie", "Farár ho pozrie a zverejní. Dáme vám vedieť."]
+      : um1 ? ["Úmysel je zapísaný ✓", "Ide len farárovi. Na stránke ho nikto nevidí. Farár vám potvrdí čas omše."]
+      : [v.upravene ? "Zmeny sú uložené ✓" : "Zverejnené ✓", `${druhT(v.druh)} je na stránke farnosti v ${b?.[1] ?? "Oznamy farnosti"}.`];
+    const ok1 = !v.caka;
+    return <div role="status" style={{ margin: 16, padding: 16, borderRadius: 14, display: "flex", flexDirection: "column", gap: 12, background: ok1 ? "#E3EDDA" : "var(--goldBg)", border: `2px solid ${ok1 ? "#4B7A35" : ZLATA}`, color: "#1D211B" }}>
+      <b style={{ fontSize: 22, fontWeight: 800, color: ok1 ? "#2F5A22" : "#6B5214" }}>{t}</b>
+      <span style={{ fontSize: 15.5, lineHeight: 1.45 }}>{s0}</span>
+      {ok1 && !um1 && <button type="button" onClick={() => { const id = v.id; zavri(); onPozriet(id); }} style={{ minHeight: 58, border: "none", borderRadius: 14, background: ZELENA, color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 18, fontWeight: 800 }}>Pozrieť na stránke ›</button>}
+      <button type="button" onClick={zavri} style={{ minHeight: 52, borderRadius: 14, border: "1.5px solid var(--cardBd)", background: "transparent", color: "var(--ink)", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800 }}>Hotovo · späť na stránku farnosti</button>
+    </div>;
+  };
   // KARTA 57C §2: formulár nad stránkou — hore „‹ Späť na stránku farnosti", stránka presvitá
   const okno = jeEd ? editorEl({ extra: galeriaEd ? <div style={{ padding: "8px 16px", borderBottom: ramOn ? "1px solid var(--cardBd)" : undefined }}>{galRiadok}</div> : undefined })
     : k && createPortal(
@@ -610,6 +632,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
       </div>
       <div className="sc-tokeny" style={{ position: "relative", flex: 1, minHeight: 0, width: "100%", maxWidth: 520, borderRadius: 20, overflow: "hidden", background: "var(--bg)", color: "var(--ink)", display: "flex", flexDirection: "column" }}>
         <div style={{ flex: "none", padding: "14px 16px 10px", borderBottom: "1px solid var(--cardBd)" }}><b style={{ fontSize: 19 }}>{edId ? `Upraviť · ${T?.t ?? ""}` : T?.t}</b></div>
+        {vys ? <div style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>{kartaVysledku(vys)}</div> : <>
         <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
           <div style={{ padding: "8px 16px 24px", display: "flex", flexDirection: "column", gap: 14 }}>{formular}</div>
         </div>
@@ -625,7 +648,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
               <span style={{ fontSize: 13, color: "var(--ink3)", textAlign: "center" }}>Podržte prst na tlačidle, kým sa nenaplní.</span>
             </> : <button type="button" onClick={zverejni} disabled={uklada} style={{ minHeight: 56, border: "none", borderRadius: 14, background: ch.length ? "var(--btn)" : ZELENA, cursor: "pointer", fontFamily: "inherit", fontSize: 17, fontWeight: 800, color: ch.length ? "var(--ink)" : "#fff" }}>{edId ? "Uložiť zmeny" : um ? "Zapísať úmysel" : "Zverejniť"}</button>}
           </div>
-        </div>
+        </div></>}
       </div>
     </div>, document.body);
 

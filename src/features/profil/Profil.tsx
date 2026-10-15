@@ -11,7 +11,7 @@ import { SIRKA, C, SPACE, RADIUS } from "@/theme";
 import { toast, useScrollPamat, useLayout, obalSiroky, IkonaNastavenia, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, ScreenSwitch } from "@/shared";
 import { MojDeedFiremny } from "@/features/rola/MojDeedFiremny";
 import { SpravaStranky } from "@/features/rola/SpravaStranky";
-import { UKAZKOVE_STRANKY, cakaOtvorenieSpravy, zrusOtvorenieSpravy } from "@/lib/mojeStranky";
+import { UKAZKOVE_STRANKY, cakaOtvorenieSpravy, zrusOtvorenieSpravy, cielSpravyPre } from "@/lib/mojeStranky";
 import { useVrstva } from "@/lib/urlnav";
 import { Nastavenia as NotifNastavenia } from "@/features/notifikacie/Notifikacie";
 import type { WideProps } from "@/types";
@@ -45,7 +45,9 @@ type ProfilProps = WideProps & { walletReq?: number };
 export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
   const { desktop } = useLayout();
   // KARTA 34: po registrácii charity sa otvorí rovno Správa charity
-  const [screen, setScreen] = useState(() => (cakaOtvorenieSpravy() ? "sprava" : "profil")); // profil | wallet | sub | nastavenia | notif | sprava
+  // OPRAVY 315: ťuk na upozornenie → rovno Správa danej stránky
+  const [ciel] = useState(() => { const c = cielSpravyPre(); return c ? UKAZKOVE_STRANKY.find((s) => s.k === c.stranka) ?? null : null; });
+  const [screen, setScreen] = useState(() => (cakaOtvorenieSpravy() || ciel ? "sprava" : "profil")); // profil | wallet | sub | nastavenia | notif | sprava
   useEffect(() => { zrusOtvorenieSpravy(); }, []); // príznak platí len raz
   const [subNazov, setSubNazov] = useState<string | null>(null);
   // pod-obrazovka = vrstva histórie → browser Back sa vráti na profil (nie von z appky)
@@ -60,9 +62,10 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
   const [skOblast, setSkOblast] = useState<Oblast | undefined>(undefined); // Moje skutky s filtrom oblasti (z detailu oblasti)
   // OPRAVY 75: Moje stránky → Spravovať = rolový panel danej stránky (nahrádza „Môj DEED+ firemný" v Charite)
   // KARTA 36: Spravovať → jedna správa s typom stránky (charita, firma, tvorca …); MojDeedFiremny ostáva, len sa sem neprepína
-  const [stranka, setStranka] = useState<Stranka>(UKAZKOVE_STRANKY[0]);
+  const [stranka, setStranka] = useState<Stranka>(ciel ?? UKAZKOVE_STRANKY[0]);
   // typ správy: zo stránky, po registrácii z výberu typu organizácie (KARTA 36)
-  const [typSpravy, setTypSpravy] = useState<TypStranky>(() => (cakaOtvorenieSpravy() ? nacitajTypStranky() ?? "charita" : "charita"));
+  const [typSpravy, setTypSpravy] = useState<TypStranky>(() => (ciel ? ciel.typ : cakaOtvorenieSpravy() ? nacitajTypStranky() ?? "charita" : "charita"));
+  useEffect(() => { if (ciel) ulozPoziciu(ciel.pozicia); }, [ciel]);
   const spravovat = (s: Stranka) => { ulozPoziciu(s.pozicia); setStranka(s); setTypSpravy(s.typ); setScreen("sprava"); };
   const sprava = <SpravaStranky key={`${stranka.k}-${typSpravy}`} typ={typSpravy} strankaId={stranka.k} nazov={stranka.n} inicialy={stranka.i} onBack={() => setScreen("profil")} />;
   const sub = (n: string) => { setSubNazov(n); setSkOblast(undefined); setScreen("sub"); };

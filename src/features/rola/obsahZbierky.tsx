@@ -95,9 +95,11 @@ export function PravidlaObsahu({ ph, stit, onZavri }: { ph: boolean; stit: strin
 
 
 /** TEXTOVÉ POLIA — hlavný text (najviac 12 riadkov) + pokračovanie po „… viac", spolu 1 500 znakov */
-export function TextovePolia({ popis, popis2, onPopis, onPopis2, ph, pecat, onRiadky, popisHlavneho = "Toto ľudia uvidia hneď. Napíšte, komu a na čo idú peniaze, tak, aby to zaujalo. Najviac 12 riadkov.", placeholder }: {
+export function TextovePolia({ popis, popis2, onPopis, onPopis2, ph, pecat, onRiadky, popisHlavneho = "Toto ľudia uvidia hneď. Napíšte, komu a na čo idú peniaze, tak, aby to zaujalo. Najviac 12 riadkov.", placeholder, bezPokracovania, nadpis2, popis2Text, placeholder2 }: {
   popis: string; popis2: string; onPopis: (h: string) => void; onPopis2: (h: string) => void; ph: boolean; pecat?: boolean; onRiadky?: (n: number) => void; popisHlavneho?: string;
   /** OPRAVY 160/3 · text v prázdnom hlavnom poli */ placeholder?: string;
+  /** OPRAVY 313: len Hlavný text (zvončeková); keď už pokračovanie má text, ostane, aby sa dalo upraviť */ bezPokracovania?: boolean;
+  /** OPRAVY 314: poďakovanie — vlastný nadpis, popis a text v prázdnom poli pokračovania */ nadpis2?: string; popis2Text?: string; placeholder2?: string;
 }) {
   const [riadky, setRiadky] = useState(0);
   const [zn1, setZn1] = useState(0);
@@ -112,11 +114,12 @@ export function TextovePolia({ popis, popis2, onPopis, onPopis2, ph, pecat, onRi
       <span style={{ flex: 1, height: 6, borderRadius: 3, background: "var(--track)", overflow: "hidden" }}><span style={{ display: "block", height: "100%", borderRadius: 3, background: f, transformOrigin: "0 50%", transform: `scaleX(${Math.min(1, riadky / RIADKY_ZB)})`, transition: "transform .3s ease" }} /></span>
       <span style={{ flex: "none", fontSize: 13, fontWeight: 800, color: f }}>{riadky} z {RIADKY_ZB} riadkov</span>
     </div>
-    {dlhy && <span style={{ fontSize: 13, fontWeight: 700, color: "#A34A2A", lineHeight: 1.45 }}>{ph ? "Skráťte ho, alebo časť presuňte nižšie do pokračovania." : "Hlavný text je dlhší ako 12 riadkov. Skráťte ho, alebo časť presuňte nižšie do „Pokračovanie príbehu“."}</span>}
-    <Nadpis t="Pokračovanie príbehu" d={<span style={{ fontSize: 14, color: "var(--ink3)" }}>— nepovinné</span>} />
-    <span style={{ fontSize: 13.5, lineHeight: 1.45, color: "var(--ink2)", marginTop: -6 }}>{ph ? "Ukáže sa po kliknutí na „… viac“." : "Ukáže sa, až keď darca klikne na „… viac“. Sem patria podrobnosti."}</span>
-    <RichTextInput vzhlad="sprava" value={popis2} onChange={onPopis2} nastroje={NASTROJE} minH={130}
-      ariaLabel="Pokračovanie príbehu" tvrdyLimit={Math.max(0, ZNAKY_ZB - zn1)} onZnaky={setZn2} />
+    {dlhy && <span style={{ fontSize: 13, fontWeight: 700, color: "#A34A2A", lineHeight: 1.45 }}>{bezPokracovania && !popis2 ? "Hlavný text je dlhší ako 12 riadkov. Skráťte ho." : ph ? "Skráťte ho, alebo časť presuňte nižšie do pokračovania." : "Hlavný text je dlhší ako 12 riadkov. Skráťte ho, alebo časť presuňte nižšie do „Pokračovanie príbehu“."}</span>}
+    {!(bezPokracovania && !popis2) && <>
+    <Nadpis t={nadpis2 ?? "Pokračovanie príbehu"} d={<span style={{ fontSize: 14, color: "var(--ink3)" }}>— nepovinné</span>} />
+    <span style={{ fontSize: 13.5, lineHeight: 1.45, color: "var(--ink2)", marginTop: -6 }}>{popis2Text ?? (ph ? "Ukáže sa po kliknutí na „… viac“." : "Ukáže sa, až keď darca klikne na „… viac“. Sem patria podrobnosti.")}</span>
+    <RichTextInput vzhlad="sprava" value={popis2} onChange={onPopis2} nastroje={NASTROJE} minH={130} placeholder={placeholder2}
+      ariaLabel={nadpis2 ?? "Pokračovanie príbehu"} tvrdyLimit={Math.max(0, ZNAKY_ZB - zn1)} onZnaky={setZn2} /></>}
     <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
       <span style={pozn}>Text z Wordu, Facebooku či Instagramu si tučné, kurzívu aj odrážky ponechá.</span>
       <span style={{ ...pozn, fontWeight: 800, flex: "none" }}>{(zn1 + zn2).toLocaleString("sk-SK")} / 1 500</span>
@@ -179,7 +182,7 @@ export function GaleriaEditor({ media, onMedia, ph, onVyrez, nadpis = "Galéria 
         <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}><span style={{ fontSize: 15.5, fontWeight: 800 }}>{nadpis}</span><span style={{ ...pozn, fontWeight: 800 }}>{fotiek} / {max} fotiek{bezVidea ? "" : video ? ` · 1 video ${fmtSek(video.sek ?? 0)}` : " · bez videa"}</span></div>
         {ph && <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>{fotiek < max && pridat(true)}{!video && !bezVidea && pridat(false)}</div>}
         {/* OPRAVY 254: Moje fotky (ak je zdroj) · Verejné fotky (vždy); verejná = ilustračná, súhlas ľudí na fotkách sa pri nej nepýta */}
-        {fotiek < max && <TlacidloGalerie zdroj={zdroj} vybrane={media.map((m) => m.src)} zostava={max - fotiek} style={{ alignSelf: ph ? "stretch" : "flex-start" }}
+        {fotiek < max && <TlacidloGalerie zdroj={zdroj} vybrane={media.map((m) => m.src)} zostava={max - fotiek} style={{ alignSelf: ph ? "stretch" : "flex-start" }} zZariadenia={(f) => { void pridajSubory(f); }}
           onVyber={async (l) => { const nove: MediumZbierky[] = []; for (const src of l) nove.push({ id: MID++, typ: "foto", src, w: await sirkaFotky(src), ...(jeVerejnaFotka(src) ? { ilustracna: true } : {}) }); onMedia([...mediaRef.current, ...nove]); }} />}
         <div style={{ display: "grid", gridTemplateColumns: ph ? "minmax(0,1fr)" : "repeat(3,minmax(0,1fr))", gap: 14 }}>
           {media.map((m, i) => (

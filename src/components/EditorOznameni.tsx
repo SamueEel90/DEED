@@ -32,9 +32,9 @@ export interface EditorApi {
   /** OPRAVY 301: výsledok uloženia — editor ukáže kartu Zverejnené ✓ (blok = kde na stránke) alebo Neuložilo sa · Skúsiť znova */
   vysledok: (v: VysledokUlozenia) => void;
 }
-export interface VysledokUlozenia { ok: boolean; uprava?: boolean; blok?: string; chyba?: string }
+export interface VysledokUlozenia { ok: boolean; uprava?: boolean; blok?: string; chyba?: string; /** OPRAVY 310: Po schválení — čaká na farára */ caka?: boolean }
 type Vysledok = { ok: boolean; y?: number | null };
-type OknoEditora = Window & { initEditor?: (c: unknown) => void; edKrokSpat?: () => boolean; edNahlad?: (o?: { verejny?: boolean }) => Promise<string>;
+type OknoEditora = Window & { initEditor?: (c: unknown) => void; edKrokSpat?: () => boolean; edNahlad?: (o?: { verejny?: boolean; w?: number }) => Promise<string>;
   /** OPRAVY 258: rám na mobile */ edDalej?: () => Vysledok; edHotovo?: () => Vysledok; edNahladRam?: (on: boolean, w: number, h: number) => void; edUlozKoncept?: () => void;
   edAktivne?: () => HTMLElement | null; edNastavFotku?: (src: string) => void;
   /** OPRAVY 303: Kontrola — Podržte a zverejnite, upozorniť na nezaškrtnuté */ edZverejni?: () => Vysledok; edUkazKontrolu?: () => void;
@@ -105,7 +105,9 @@ export const EditorOznameni = forwardRef<EditorApi, { cfg: CfgEditora; onSend: (
       } catch { /* iframe ešte nie je pripravený */ }
     };
     const vyber = (l: string[]) => { setGalOtv(false); const s = l[0]; if (s) void naDataUrl(s).then((d) => { try { okno()?.edNastavFotku?.(d); } catch { /* editor zatvorený */ } }); };
-    const galeria = galOtv && <OknoGalerie zdroj={zdroj} vybrane={[]} zostava={1} onZavri={() => setGalOtv(false)} onVyber={vyber} />;
+    // Editor A: jedno okno Vybrať fotku — Z telefónu · Moje fotky · Verejné fotky
+    const zTel = (f: File) => { setGalOtv(false); const r = new FileReader(); r.onload = () => { try { okno()?.edNastavFotku?.(String(r.result)); } catch { /* editor zatvorený */ } }; r.readAsDataURL(f); };
+    const galeria = galOtv && <OknoGalerie zdroj={zdroj} vybrane={[]} zostava={1} onZavri={() => setGalOtv(false)} onVyber={vyber} zTelefonu={zTel} />;
     const posunNa = (y?: number | null) => { const el = telo.current, f = fr.current; if (el && f && y != null) el.scrollTo({ top: Math.max(0, f.offsetTop + y - 12), behavior: "smooth" }); };
     // náhľad na celú plochu: editor dostane rozmer plochy, po zatvorení to isté miesto a to isté pole
     useLayoutEffect(() => {
@@ -169,10 +171,15 @@ export const EditorOznameni = forwardRef<EditorApi, { cfg: CfgEditora; onSend: (
   });
 
 /** OPRAVY 228: verejný obrázok oznámenia z návrhu editora (svadba, pozvánka, blahoželanie) — bez súkromných riadkov.
- *  Editor sa načíta skrytý mimo obrazovky, obnoví návrh a vráti obrázok; výsledok sa pamätá počas relácie. */
+ *  Editor sa načíta skrytý mimo obrazovky, obnoví návrh a vráti obrázok; výsledok sa pamätá počas relácie.
+ *  OPRAVY 296: aj celý hárok parte (verejny = false) — fotka zo Storage, hárok až keď je fotka načítaná. */
 const verejne = new Map<string, string>();
 export function useVerejnyObrazok(navrh: PayloadEditora | null | undefined, kluc: string): string {
-  const k = navrh ? `${kluc}|${navrh.cas ?? ""}` : "";
+  return useObrazokNavrhu(navrh, kluc, true) || "";
+}
+/** null = ešte sa kreslí · "" = nepodarilo sa · inak obrázok (JPEG data URL) */
+export function useObrazokNavrhu(navrh: PayloadEditora | null | undefined, kluc: string, verejny: boolean, /** OPRAVY 302: šírka obrázka */ w = 840): string | null {
+  const k = navrh ? `${kluc}|${navrh.cas ?? ""}|${verejny ? "v" : "c"}|${w}` : "";
   const [, obnov] = useState(0);
   useEffect(() => {
     if (!navrh || !k || verejne.has(k)) return;
@@ -182,17 +189,17 @@ export function useVerejnyObrazok(navrh: PayloadEditora | null | undefined, kluc
     fr.style.cssText = "position:fixed;left:-10000px;top:0;width:900px;height:1200px;border:0;visibility:hidden;pointer-events:none";
     fr.src = `/editor/oznamenia.html#${navrh.typ}`;
     fr.onload = () => {
-      const w = fr.contentWindow as OknoEditora | null;
-      try { w?.initEditor?.({ typ: navrh.typ, navrh, onSend: () => undefined }); } catch { /* editor ešte nie je pripravený */ }
+      const okn = fr.contentWindow as OknoEditora | null;
+      try { okn?.initEditor?.({ typ: navrh.typ, navrh, onSend: () => undefined }); } catch { /* editor ešte nie je pripravený */ }
       window.setTimeout(async () => {
-        const o = await (async () => { try { return (await w?.edNahlad?.({ verejny: true })) ?? ""; } catch { return ""; } })();
-        if (o) verejne.set(k, o);
+        const o = await (async () => { try { return (await okn?.edNahlad?.({ verejny, w })) ?? ""; } catch { return ""; } })();
+        verejne.set(k, o);
         if (zivy) obnov((x) => x + 1);
         fr.remove();
       }, 450);
     };
     document.body.appendChild(fr);
     return () => { zivy = false; fr.remove(); };
-  }, [navrh, k]);
-  return k ? verejne.get(k) ?? "" : "";
+  }, [navrh, k, verejny, w]);
+  return !k ? "" : verejne.has(k) ? verejne.get(k)! : null;
 }

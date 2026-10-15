@@ -4,7 +4,7 @@
 // OPRAVY 254: okno má dve záložky — Moje fotky (zdroj z kontextu) · Verejné fotky (bod 254: náš výber + fotobanky cez /api/fotky,
 // vybrané uloží server k nám cez /api/fotky/uloz; fotobanky hľadá len správca stránky, ostatní vidia náš výber).
 // Bez kontextu je len záložka Verejné fotky. Verejná fotka = ilustračná (súhlas ľudí na fotkách sa nepýta, štítok sa neukazuje).
-import { createContext, useContext, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { PanelVerejnychFotiek, klucFotky } from "./VerejneFotky";
 import { ulozFotku, type VerejnaFotka } from "@/lib/verejneFotky";
@@ -33,9 +33,10 @@ export const zdrojMoje = (fotky: () => string[]): ZdrojFotiek => ({
 const fotiek = (n: number) => (n === 1 ? "1 fotku" : n >= 2 && n <= 4 ? `${n} fotky` : `${n} fotiek`);
 
 /** tlačidlo vedľa „Pridať fotky" — otvorí okno s mriežkou (Moje fotky · Verejné fotky) */
-export function TlacidloGalerie({ zdroj, vybrane, zostava, onVyber, style }: {
+export function TlacidloGalerie({ zdroj, vybrane, zostava, onVyber, style, zZariadenia }: {
   zdroj: ZdrojFotiek | null; /** čo už je pridané (ukáže sa ako pridané) */ vybrane: string[];
   /** koľko sa ešte zmestí */ zostava: number; onVyber: (src: string[]) => void; style?: CSSProperties;
+  /** OPRAVY 313: jedno okno Vybrať fotku — prvá záložka Z telefónu / Z počítača (viac fotiek naraz) */ zZariadenia?: (f: File[]) => void;
 }) {
   const [otv, setOtv] = useState(false);
   return <>
@@ -43,14 +44,19 @@ export function TlacidloGalerie({ zdroj, vybrane, zostava, onVyber, style }: {
       <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "none" }}><path d="M4 5h16v14H4zM8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3M20 15l-5-5L5 19" /></svg>
       {zdroj ? zdroj.tlacidlo : "Vybrať z verejných fotiek ›"}
     </button>
-    {otv && <OknoGalerie zdroj={zdroj} vybrane={vybrane} zostava={zostava} onZavri={() => setOtv(false)} onVyber={(l) => { setOtv(false); if (l.length) onVyber(l); }} />}
+    {otv && <OknoGalerie zdroj={zdroj} vybrane={vybrane} zostava={zostava} onZavri={() => setOtv(false)} onVyber={(l) => { setOtv(false); if (l.length) onVyber(l); }}
+      zZariadenia={zZariadenia ? (f) => { setOtv(false); zZariadenia(f); } : undefined} />}
   </>;
 }
 
 /** okno Vybrať fotku · OPRAVY 258: aj Editor oznámení (jedna fotka) */
-export function OknoGalerie({ zdroj, vybrane, zostava, onZavri, onVyber }: { zdroj: ZdrojFotiek | null; vybrane: string[]; zostava: number; onZavri: () => void; onVyber: (l: string[]) => void }) {
+export function OknoGalerie({ zdroj, vybrane, zostava, onZavri, onVyber, zTelefonu, zZariadenia }: { zdroj: ZdrojFotiek | null; vybrane: string[]; zostava: number; onZavri: () => void; onVyber: (l: string[]) => void;
+  /** Editor A: prvá záložka Z telefónu (fotka zo zariadenia) — jedno okno Z telefónu · Moje fotky · Verejné fotky */ zTelefonu?: (f: File) => void;
+  /** OPRAVY 313: to isté pre galériu (Správa) — viac fotiek naraz */ zZariadenia?: (f: File[]) => void }) {
+  const zTel = !!(zTelefonu || zZariadenia);
   const moje = useMemo(() => (zdroj ? zdroj.fotky() : []), [zdroj]);
-  const [tab, setTab] = useState<"moje" | "verejne">(zdroj ? "moje" : "verejne");
+  const [tab, setTab] = useState<"tel" | "moje" | "verejne">(zTel ? "tel" : zdroj ? "moje" : "verejne");
+  const subor = useRef<HTMLInputElement>(null);
   const fotky = moje;
   const [vyb, setVyb] = useState<string[]>([]);
   const [vybV, setVybV] = useState<VerejnaFotka[]>([]); // bod 254: vybrané verejné fotky (server ich uloží k nám pri Pridať)
@@ -101,11 +107,15 @@ export function OknoGalerie({ zdroj, vybrane, zostava, onZavri, onVyber }: { zdr
           <button type="button" onClick={onZavri} aria-label="Zavrieť" style={{ flex: "none", width: 44, height: 44, borderRadius: "50%", border: "none", background: "var(--btn)", color: "var(--ink)", cursor: "pointer", fontSize: 22, lineHeight: 1 }}>×</button>
         </div>
         <div role="tablist" aria-label="Odkiaľ fotky" style={{ display: "flex", gap: 4, margin: "4px 20px 8px", padding: 4, borderRadius: 14, background: "var(--btn)" }}>
-          {([...(zdroj ? [["moje", "Moje fotky"]] : []), ["verejne", "Verejné fotky"]] as [("moje" | "verejne"), string][]).map(([k, t]) => (
-            <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)} style={{ flex: 1, minHeight: 44, border: "none", borderRadius: 11, background: tab === k ? "var(--card)" : "transparent", color: tab === k ? "var(--ink)" : "var(--ink3)", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer", boxShadow: "none" }}>{t}</button>))}
+          {([...(zTel ? [["tel", uzke ? "Z telefónu" : "Z počítača"]] : []), ...(zdroj ? [["moje", "Moje fotky"]] : []), ["verejne", "Verejné fotky"]] as [("tel" | "moje" | "verejne"), string][]).map(([k, t]) => (
+            <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => { setTab(k); if (k === "tel") subor.current?.click(); }} style={{ flex: 1, minHeight: 44, border: "none", borderRadius: 11, background: tab === k ? "var(--card)" : "transparent", color: tab === k ? "var(--ink)" : "var(--ink3)", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer", boxShadow: "none" }}>{t}</button>))}
         </div>
         <div style={{ flex: 1, overflowY: "auto", padding: "6px 20px 16px" }}>
-          {tab === "verejne" ? <PanelVerejnychFotiek uzke={uzke} vyb={vybV.map(klucFotky)} onTukni={tukniV} /> : fotky.length === 0
+          <input ref={subor} type="file" accept="image/*" multiple={!!zZariadenia} hidden onChange={(e) => { const l = Array.from(e.target.files ?? []); e.target.value = ""; if (!l.length) return; if (zZariadenia) zZariadenia(l.slice(0, Math.max(1, zostava))); else if (zTelefonu) zTelefonu(l[0]); }} />
+          {tab === "tel" ? <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "14px 0" }}>
+            <button type="button" onClick={() => subor.current?.click()} style={{ ...tl, height: 60, background: "var(--green)", color: "#fff" }}>{zZariadenia ? `Vybrať fotky z ${uzke ? "telefónu" : "počítača"} ›` : "Vybrať fotku z telefónu ›"}</button>
+            <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>Otvoria sa fotky vo vašom telefóne alebo počítači. {zZariadenia ? "Môžete vybrať aj viac naraz." : "Vyberte jednu."}</span>
+          </div> : tab === "verejne" ? <PanelVerejnychFotiek uzke={uzke} vyb={vybV.map(klucFotky)} onTukni={tukniV} /> : fotky.length === 0
             ? <p style={{ margin: "18px 0", fontSize: 15, lineHeight: 1.5, color: "var(--ink2)" }}>{zdroj?.prazdne}</p>
             : <div style={{ display: "grid", gridTemplateColumns: `repeat(${uzke ? 3 : 4}, minmax(0,1fr))`, gap: 8 }}>
               {fotky.map((src, i) => {

@@ -1,6 +1,6 @@
 // KARTA 48 · spoločné diely Správy zbierky a Správy centrálnej a sektorov (1 : 1 podľa prototypov).
 // Hlavička „Ukladá sa samo", pás dorovnania, záložky, Stav, Ako budú ľudia darovať, Zapečatené, QR na plagát, Štatistiky.
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { DeedQr } from "@/components/deedqr";
 import { kopiruj } from "@/lib/zdielanie";
@@ -22,6 +22,57 @@ const fmt = (n: number) => n.toLocaleString("sk-SK", { maximumFractionDigits: 2 
 export function SpatZbierky({ onClick }: { onClick: () => void }) {
   return <button type="button" onClick={onClick} style={{ alignSelf: "flex-start", minHeight: 44, border: "none", background: "transparent", padding: 0, cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--green)", whiteSpace: "nowrap", boxShadow: "none" }}>‹ Zbierky</button>;
 }
+// ---- OPRAVY 313: ukladanie viditeľne — pri poli „Uložené ✓“ (2 s) alebo „Neuložilo sa · Skúsiť znova“, dole pás ----
+type StavPola = { s: "uklada" | "ok" | "chyba"; t: number };
+export interface Ukladanie {
+  stav: Record<string, StavPola>;
+  /** zápis poľa (alebo viacerých naraz): výsledok = chyba ako text alebo null; znova = ten istý zápis s aktuálnymi údajmi */
+  sleduj: (polia: string[], zapis: Promise<string | null>, znova: () => Promise<string | null>) => void;
+  znova: (pole?: string) => void;
+  celkovo: "ok" | "uklada" | "chyba";
+}
+export function useUkladanie(): Ukladanie {
+  const [stav, setStav] = useState<Record<string, StavPola>>({});
+  const opakuj = useRef<() => Promise<string | null>>(() => Promise.resolve(null));
+  const sleduj = (polia: string[], zapis: Promise<string | null>, znova: () => Promise<string | null>) => {
+    opakuj.current = znova;
+    const t = Date.now() + Math.random();
+    setStav((x) => { const n = { ...x }; polia.forEach((p) => { n[p] = { s: "uklada", t }; }); return n; });
+    void zapis.then((e) => e, (e: unknown) => (e instanceof Error ? e.message : "Neuložilo sa.")).then((e) => setStav((x) => {
+      const n = { ...x }; polia.forEach((p) => { if (n[p]?.t === t) n[p] = { s: e ? "chyba" : "ok", t }; }); return n;
+    }));
+  };
+  const znova = (pole?: string) => { const polia = pole ? [pole] : Object.keys(stav).filter((k) => stav[k].s === "chyba"); if (polia.length) sleduj(polia, opakuj.current(), opakuj.current); };
+  const v = Object.values(stav);
+  return { stav, sleduj, znova, celkovo: v.some((x) => x.s === "chyba") ? "chyba" : v.some((x) => x.s === "uklada") ? "uklada" : "ok" };
+}
+/** pri poli: „Uložené ✓“ zelené 2 s, pri chybe „Neuložilo sa · Skúsiť znova“ */
+export function UlozenePri({ u, pole, style }: { u: Ukladanie; pole: string; style?: CSSProperties }) {
+  const st = u.stav[pole];
+  const [vidno, setVidno] = useState<number | null>(null);
+  useEffect(() => {
+    if (st?.s !== "ok") return;
+    const t0 = window.setTimeout(() => setVidno(st.t), 0), t1 = window.setTimeout(() => setVidno((x) => (x === st.t ? null : x)), 2000);
+    return () => { window.clearTimeout(t0); window.clearTimeout(t1); };
+  }, [st?.s, st?.t]);
+  if (st?.s === "chyba") return <span role="alert" style={{ alignSelf: "flex-end", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontSize: 13.5, fontWeight: 800, color: "#A34A2A", ...style }}>Neuložilo sa ·
+    <button type="button" onClick={() => u.znova(pole)} style={{ minHeight: 36, padding: "0 12px", borderRadius: 10, border: "1.5px solid #A34A2A", background: "transparent", color: "#A34A2A", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, cursor: "pointer", boxShadow: "none" }}>Skúsiť znova</button></span>;
+  if (st?.s === "ok" && vidno === st.t) return <b role="status" style={{ alignSelf: "flex-end", fontSize: 13.5, color: "var(--gInk, #2F5A22)", ...style }}>Uložené ✓</b>;
+  return null;
+}
+/** pevný pás dole: „Všetko je uložené ✓ · Späť na Zbierky“ (farár vie, že môže odísť) */
+export function PasUlozene({ u, onSpat, mobil, spat = "Späť na Zbierky" }: { u: Ukladanie; onSpat: () => void; mobil: boolean; spat?: string }) {
+  const c = u.celkovo;
+  const st: CSSProperties = { width: "100%", minHeight: 52, padding: "0 16px", borderRadius: 14, fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 6px 18px rgba(30,40,20,.18)", boxSizing: "border-box",
+    border: c === "chyba" ? "1.5px solid #A34A2A" : "1px solid var(--gBd)", background: c === "chyba" ? "#F6E3DC" : "linear-gradient(var(--gSoft), var(--gSoft)), var(--bg)", color: c === "chyba" ? "#A34A2A" : "var(--gInk)" };
+  // mobil: nad spodným menu appky (pevne), PC: prilepený dole v obsahu
+  return <div style={mobil ? { height: 60 } : { position: "sticky", bottom: 12, zIndex: 5, marginTop: 4 }}><div style={mobil ? { position: "fixed", left: 16, right: 16, bottom: "calc(100px + env(safe-area-inset-bottom, 0px))", zIndex: 60 } : undefined}>
+    {c === "chyba" ? <button type="button" onClick={() => u.znova()} style={{ ...st, cursor: "pointer" }}>Neuložilo sa · Skúsiť znova</button>
+      : c === "uklada" ? <span role="status" style={st}>Ukladá sa…</span>
+      : <button type="button" onClick={onSpat} style={{ ...st, cursor: "pointer" }}>Všetko je uložené ✓ · {spat}</button>}
+  </div></div>;
+}
+
 /** „Ukladá sa samo" — zmeny sa uložia 600 ms po poslednej úprave */
 export function UkladaSa({ dovetok }: { dovetok?: string }) {
   return <span role="status" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--ink3)", whiteSpace: "nowrap" }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#4B7A35" }} />Ukladá sa samo{dovetok ? ` · ${dovetok}` : ""}</span>;

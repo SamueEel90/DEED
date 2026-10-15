@@ -24,6 +24,10 @@ import { useVazbyOsoby } from "@/lib/zamestnanci";
 import { dataFirmy, useMojaFirma } from "@/lib/mojaFirma";
 import "@/styles/platba.css";
 import { MojeFarnostiUpozornenia } from "./MojeFarnostiUpozornenia";
+import { mojeCakajuce, obnovMojeCakajuce, odFarnikov, useOdFarnikov } from "@/lib/odFarnikov";
+import { nazovFarnosti } from "@/lib/mojeFarnosti";
+import { otvorSpravuNa } from "@/lib/mojeStranky";
+import { otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
 
 export { NOTIFY } from "./mock";
 
@@ -85,10 +89,34 @@ export function Zvoncek({ color = "var(--c-textSec)", toast }: { color?: string;
   const odFirmy: Notifikacia[] = firmy.flatMap((v, fi) => dataFirmy(v.firmaUcet).oznamy.filter((o) => !mf.vybavene.includes(o.id)).map((o, i) => ({
     id: 900000 + fi * 50 + i, kat: "firma" as const, den: "Dnes", cas: v.firma, ikona: o.typ === "kontrola" ? "otaz" as const : o.typ === "akcia" ? "kal" as const : "srd" as const,
     ton: o.typ === "kontrola" ? "gold" as const : "g" as const, titul: o.t, text: `${v.firma} · ${o.s}`, nove: o.typ === "kontrola" })));
-  const vsetky = [...oznamyNaRiadky(oznamy), ...odFirmy, ...zakladne];
+  // OPRAVY 310: príspevok, ktorý čakal na schválenie — „Farár zverejnil váš príspevok“ / „Farár príspevok nezverejnil.“
+  useOdFarnikov();
+  useEffect(() => { obnovMojeCakajuce(); }, [otvor]);
+  const odFarara: Notifikacia[] = mojeCakajuce().flatMap((c, i) => {
+    const x = odFarnikov(c.stranka).find((y) => y.id === c.id);
+    if (!x || x.stav === "caka" || !x.rozhodnute) return [];
+    const d = new Date(x.rozhodnute), dni = Math.round((new Date(new Date().toDateString()).getTime() - new Date(d.toDateString()).getTime()) / 86400000);
+    const zver = !x.stav;
+    return [{ id: 800000 + i, kat: "ludia" as const, ikona: zver ? "ok" as const : "namiet" as const, ton: zver ? "g" as const : "gold" as const,
+      den: dni <= 0 ? "Dnes" : dni === 1 ? "Včera" : `${d.getDate()}. ${d.getMonth() + 1}.`, cas: relCas(x.rozhodnute),
+      titul: zver ? "Farár zverejnil váš príspevok ›" : "Farár príspevok nezverejnil.", text: `${c.t} · ${nazovFarnosti(c.stranka) || "farnosť"}`, nove: true,
+      odkaz: `${zver ? "prisp" : "nezv"}:${c.stranka}:${c.id}` }];
+  });
+  const vsetky = [...odFarara, ...oznamyNaRiadky(oznamy), ...odFirmy, ...zakladne];
   const nove = vsetky.filter((n) => n.nove && !prec.includes(n.id)).length;
   const oznac = (id: number) => setPrec((p) => { const n = p.includes(id) ? p : [...p, id]; ulozPrec(n); return n; });
   const zavri = () => { setOtvor(false); requestAnimationFrame(() => tlacidlo.current?.focus()); };
+  // OPRAVY 315: ťuk na upozornenie vždy niekam vedie — veriaci na svoj príspevok (alebo vysvetlenie), farár do Správy → Od veriacich
+  const [nezv, setNezv] = useState<{ stranka: string; t: string } | null>(null);
+  const naOdkaz = (n: Notifikacia) => {
+    const m = /^(odv|prisp|nezv):([^:]+):(.+)$/.exec(n.odkaz ?? "");
+    oznac(n.id); setOtvor(false);
+    if (!m) return;
+    const [, druh, stranka, pid] = m;
+    if (druh === "odv") otvorSpravuNa({ stranka, sub: "veriaci", zvyrazni: pid });
+    else if (druh === "prisp") otvorVerejnyProfil(stranka, { doOznamu: pid });
+    else setNezv({ stranka, t: mojeCakajuce().find((c) => c.id === pid)?.t ?? n.text });
+  };
   useVrstva(otvor, () => setOtvor(false));
   return (
     <>
@@ -98,16 +126,27 @@ export function Zvoncek({ color = "var(--c-textSec)", toast }: { color?: string;
         {nove > 0 && <span aria-hidden="true" style={{ position: "absolute", top: 5, right: 4, minWidth: 16, height: 16, padding: "0 4px", borderRadius: 8, background: "var(--a-green)", color: "#fff", fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 0 2px var(--c-bg)" }}>{nove}</span>}
       </button>
       {otvor && <OznameniaObrazovka zoznam={vsetky} prec={prec} onOznac={oznac}
+        onOdkaz={naOdkaz}
         onPrecitaj={() => { const n = vsetky.map((x) => x.id); setPrec(n); ulozPrec(n); oznacVsetkyPrecitane(); }}
         onOznamDarcovi={(id) => { const o = oznamy[-id - 1]; if (!o) return; oznacPrecitany(o.id); zavri(); setDetail(o); }}
         onClose={zavri} toast={toast} />}
+      {nezv && createPortal(<div className="deed-platba" role="dialog" aria-modal="true" aria-label="Farár príspevok nezverejnil" style={{ position: "fixed", inset: 0, zIndex: 1200, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+        <div onClick={() => setNezv(null)} style={{ position: "absolute", inset: 0, background: "rgba(10,9,6,.55)" }} />
+        <div style={{ position: "relative", width: "min(560px, 100%)", boxSizing: "border-box", padding: "20px 18px max(20px, env(safe-area-inset-bottom))", borderRadius: "24px 24px 0 0", background: "var(--bg)", display: "flex", flexDirection: "column", gap: 12, color: "var(--ink)" }}>
+          <b style={{ fontSize: 20 }}>Farár príspevok nezverejnil</b>
+          <span style={{ fontSize: 15.5, fontWeight: 700 }}>{nezv.t}</span>
+          <span style={{ fontSize: 15, lineHeight: 1.5, color: "var(--ink2)" }}>Na stránke farnosti {nazovFarnosti(nezv.stranka).replace(/^Farnosť\s+/, "")} sa neukáže. O tom, čo sa na stránke zverejní, rozhoduje farár. Ak chcete vedieť prečo, obráťte sa na farský úrad.</span>
+          <button type="button" onClick={() => { const st = nezv.stranka; setNezv(null); otvorVerejnyProfil(st); }} style={{ minHeight: 52, borderRadius: 14, border: "1px solid var(--cardBd)", background: "var(--btn)", color: "var(--ink)", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" }}>Otvoriť stránku farnosti ›</button>
+          <button type="button" onClick={() => setNezv(null)} style={{ minHeight: 52, borderRadius: 14, border: "none", background: "var(--green)", color: "#fff", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" }}>Rozumiem</button>
+        </div>
+      </div>, document.body)}
       {detail && <OznamDarcoviSheet zbierkaId={detail.zbierkaId} typ={detail.typ} text={detail.text} onClose={() => setDetail(null)} />}
     </>
   );
 }
 
-function OznameniaObrazovka({ zoznam, prec, onOznac, onPrecitaj, onOznamDarcovi, onClose, toast }: {
-  zoznam: Notifikacia[]; prec: number[]; onOznac: (id: number) => void; onPrecitaj: () => void; onOznamDarcovi: (id: number) => void; onClose: () => void; toast?: (m: string) => void;
+function OznameniaObrazovka({ zoznam, prec, onOznac, onOdkaz, onPrecitaj, onOznamDarcovi, onClose, toast }: {
+  zoznam: Notifikacia[]; prec: number[]; onOznac: (id: number) => void; onOdkaz: (n: Notifikacia) => void; onPrecitaj: () => void; onOznamDarcovi: (id: number) => void; onClose: () => void; toast?: (m: string) => void;
 }) {
   const [f, setF] = useState<Notifikacia["kat"] | "vsetko">("vsetko");
   const [nast, setNast] = useState(false);
@@ -158,7 +197,7 @@ function OznameniaObrazovka({ zoznam, prec, onOznac, onPrecitaj, onOznamDarcovi,
                 {vybav ? (
                   <div style={riadokSt}>{obsah}</div>
                 ) : (
-                  <button type="button" onClick={() => (n.id < 0 ? onOznamDarcovi(n.id) : onOznac(n.id))} style={{ ...riadokSt, cursor: "pointer" }}>{obsah}</button>
+                  <button type="button" onClick={() => (n.odkaz ? onOdkaz(n) : n.id < 0 ? onOznamDarcovi(n.id) : onOznac(n.id))} style={{ ...riadokSt, cursor: "pointer" }}>{obsah}</button>
                 )}
                 {vybav && <div style={{ display: "flex", gap: 6, flexWrap: "wrap", padding: "0 12px 10px 64px", marginTop: -4 }}>
                   {n.akcie!.map((a) => { const [t, hl] = AKCIA[a]; return (

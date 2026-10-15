@@ -30,14 +30,14 @@ import {
   CENTRALNA_CISLA, CENTRALNA_SLUG, NULA, SEKTORY_MAX, SEKTORY_OD_TIERU, STANOVY_CINNOSTI, type SektorCharity,
 } from "@/lib/sektoryCharity";
 import { nacitajStav, ulozStav, OVERENY_SKEN, type StavZbierky } from "@/lib/zbierkaSprava";
-import { sucetDarov, darcoviaPre, identitaDarcu, relCas, zobrazenaSuma, useZmenyDarov, useSektorDarcu } from "@/lib/darcovia";
+import { nastavCiste, sucetDarov, darcoviaPre, identitaDarcu, relCas, zobrazenaSuma, useZmenyDarov, useSektorDarcu } from "@/lib/darcovia";
 import { beziaceDorovnanieNaCiel, zostatok } from "@/lib/dorovnanie";
 import { useUkazky, ukazkyTeraz } from "@/lib/testStav";
 import { cisloObjektu } from "@/lib/cisloObjektu";
 import { overIban, formatujIban } from "./segmenty";
 import { TextovePolia, GaleriaEditor } from "./obsahZbierky";
 import { DokladyCharity } from "./SpravaZbierky";
-import { kartaK, nadpisK, textK, drobneK, obrysK, zelenyK, ZAMOK, SpatZbierky, UkladaSa, DorovnaniePas, Taby, CislaKarta, AkoDarovat, QrKarta, Statistiky, type DataStatistik } from "./spravaCasti";
+import { kartaK, nadpisK, textK, drobneK, obrysK, zelenyK, ZAMOK, SpatZbierky, UkladaSa, DorovnaniePas, useUkladanie, UlozenePri, PasUlozene, Taby, CislaKarta, AkoDarovat, QrKarta, Statistiky, type DataStatistik } from "./spravaCasti";
 import { sumaEur } from "@/lib/suma";
 
 const eur = (n: number) => `${sumaEur(n)}`;
@@ -59,7 +59,7 @@ const statTest = (jeS: boolean, nazov: string): DataStatistik => ({
   dary: [["Lucia B.", "10 € · cez QR plagát · pred 4 min", "10 €"], ["Anonymný darca", "mesačne · priamo na profile", "25 €"], ["Pekáreň Dobrota", "dorovnanie k daru Lucie B.", "10 €"], ["Martin Konaľ", "split 20 % · z podpory fanúšikov", "6 €"]],
 });
 
-function novyStav(id: string): StavZbierky { return { stav: "aktivna", koniec: new Date(Date.now() + 3650 * 86400000).toISOString(), predlzenia: 0, lehota: "30", text: "", fotky: [], doklady: ukazkyTeraz() && id.endsWith("-centralna") ? DOKLADY_TEST : [], spravy: [] }; }
+function novyStav(id: string, farnost = false): StavZbierky { return { stav: "aktivna", koniec: new Date(Date.now() + 3650 * 86400000).toISOString(), predlzenia: 0, lehota: "30", text: "", fotky: [], doklady: !farnost && ukazkyTeraz() && id.endsWith("-centralna") ? DOKLADY_TEST : [], spravy: [] }; }
 
 export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, toast, onZbierky, onDorovnanie, onDarcovia, farnost }: {
   strankaId: string; nazov: string; hlavnyUcet: string; tier: number; mobil: boolean; toast: (m: string) => void;
@@ -88,24 +88,40 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const zmenene = useRef(false);
   useEffect(() => { zmenene.current = false; setD(nacitaj()); setUlozene(false); }, [kluc]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (sek) return; let ziva = true; void nacitajCentralnuZbierku(strankaId).then((c) => { if (ziva && c && !zmenene.current) setD(c); }); return () => { ziva = false; }; }, [strankaId, kluc]); // eslint-disable-line react-hooks/exhaustive-deps
+  // OPRAVY 313: pri poli „Uložené ✓“ / „Neuložilo sa · Skúsiť znova“, dole pás Všetko je uložené
+  const u = useUkladanie();
+  const polia = useRef(new Set<string>());
+  const dRef = useRef(d);
+  useEffect(() => { dRef.current = d; }, [d]);
+  const zapis = (x: CentralnaZbierka): Promise<string | null> => { if (sek) { ulozObsahSektora(sek.id, x); return Promise.resolve(null); } return ulozCentralnuZbierku(strankaId, x); };
   useEffect(() => {
     if (!zmenene.current) return;
-    const t = window.setTimeout(() => { if (sek) ulozObsahSektora(sek.id, d); else void ulozCentralnuZbierku(strankaId, d); setUlozene(true); }, 600);
+    const t = window.setTimeout(() => { const pl = [...polia.current]; polia.current.clear(); u.sleduj(pl, zapis(d), () => zapis(dRef.current)); setUlozene(true); }, 600);
     return () => window.clearTimeout(t);
   }, [d]); // eslint-disable-line react-hooks/exhaustive-deps
-  const zmen = (p: Partial<CentralnaZbierka>) => { zmenene.current = true; setD((x) => ({ ...x, ...p })); };
+  const zmen = (p: Partial<CentralnaZbierka>, pole = "ine") => { zmenene.current = true; polia.current.add(pole); setD((x) => ({ ...x, ...p })); };
 
   // ---- doklady (dobrovoľné) ----
-  const [stav, setStav] = useState<StavZbierky>(() => nacitajStav(idZbierky) ?? novyStav(idZbierky));
-  useEffect(() => { setStav(nacitajStav(idZbierky) ?? novyStav(idZbierky)); }, [idZbierky]); // eslint-disable-line react-hooks/exhaustive-deps
+  // OPRAVY 311: farnosť nikdy ukážkové doklady (aj keď už ostali uložené zo skoršieho otvorenia)
+  const bezUkazok = (x: StavZbierky): StavZbierky => farnost ? { ...x, doklady: x.doklady.filter((dk) => !DOKLADY_TEST.some((t) => t.id === dk.id)) } : x;
+  const [stav, setStav] = useState<StavZbierky>(() => bezUkazok(nacitajStav(idZbierky) ?? novyStav(idZbierky, !!farnost)));
+  useEffect(() => { setStav(bezUkazok(nacitajStav(idZbierky) ?? novyStav(idZbierky, !!farnost))); }, [idZbierky]); // eslint-disable-line react-hooks/exhaustive-deps
   const zmenStav = (p: Partial<StavZbierky>) => setStav((x) => { const n = { ...x, ...p }; ulozStav(idZbierky, n); return n; });
 
   // ---- čísla a dary ----
-  const ukazky = useUkazky(); // Profil: Prázdny = bez ukážkových čísel, darov a dokladov
+  // OPRAVY 311: farnosť (Hlavná zbierka) nikdy ukážkové čísla — len skutočné súčty zo servera (ledger, 0096 s omšami)
+  if (farnost) nastavCiste([idZbierky]); // ani ukážkoví darcovia
+  const ukazky = useUkazky() && !farnost; // Profil: Prázdny = bez ukážkových čísel, darov a dokladov
   const c = ukazky ? (sek ? cislaSektora(sek.id) : CENTRALNA_CISLA) : NULA;
   const darov = sucetDarov(idZbierky);
   const hlavnaSuma = farnost ? suhrnHlavnej(strankaId, idZbierky).suma : darov.suma; // farnosť: okná sú v hlavnej (jedno číslo)
-  const mesiac = c.mesiac + hlavnaSuma, spolu = c.spolu + hlavnaSuma;
+  const zacMes = (() => { const x = new Date(); x.setDate(1); x.setHours(0, 0, 0, 0); return x.getTime(); })();
+  const mesiacReal = darcoviaPre(idZbierky).filter((r) => r.cas >= zacMes).reduce((a, r) => a + r.suma, 0);
+  const mesiac = farnost ? mesiacReal : c.mesiac + hlavnaSuma, spolu = c.spolu + hlavnaSuma;
+  // Štatistiky (skutočné): dary po dňoch tento mesiac, počet darcov
+  const dniMes = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+  const dniReal = Array.from({ length: dniMes }, (_, i) => darcoviaPre(idZbierky).filter((r) => r.cas >= zacMes && new Date(r.cas).getDate() === i + 1).length);
+  const darcovReal = new Set(darcoviaPre(idZbierky).filter((r) => !r.omsa).map((r) => (r.moj ? "ja" : r.id))).size;
   const sektor = useSektorDarcu();
   // farnosť: mená bez súm; OPRAVY 289: po každej omši jeden riadok zvončekovej („Ranná omša 7:00 · Pán Boh zaplať · 120 €“),
   // jednotliví darcovia zvončekovej sa do hlavnej nepripisujú; suma hlavnej už omše obsahuje
@@ -169,9 +185,10 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
     <button type="button" onClick={onDarcovia} style={obrysK}>Všetci darcovia ›</button>
   </CislaKarta>;
   const textKarta = <section data-pole="text" style={kartaK}><span style={nadpisK}>Text pre darcov</span>
-    <TextovePolia popis={d.popis} popis2={d.popis2} onPopis={(x) => zmen({ popis: x })} onPopis2={(x) => zmen({ popis2: x })} ph={mobil} popisHlavneho="Toto ľudia uvidia pri zbierke hneď. Najviac 12 riadkov."
-      placeholder={farnost ? "Napíšte, na čo ľudia prispievajú." : undefined} /></section>;
-  const galeria = <div data-pole="foto"><GaleriaEditor media={d.media} onMedia={(m) => zmen({ media: m })} ph={mobil} nadpis="Fotky a video" popisNapoveda="Popis (nepovinné)" dovetok="" /></div>;
+    <TextovePolia popis={d.popis} popis2={d.popis2} onPopis={(x) => zmen({ popis: x }, "text")} onPopis2={(x) => zmen({ popis2: x }, "text")} ph={mobil} popisHlavneho="Toto ľudia uvidia pri zbierke hneď. Najviac 12 riadkov."
+      placeholder={farnost ? "Napíšte, na čo ľudia prispievajú." : undefined} />
+    <UlozenePri u={u} pole="text" /></section>;
+  const galeria = <div data-pole="foto" style={{ display: "flex", flexDirection: "column", gap: 6 }}><GaleriaEditor media={d.media} onMedia={(m) => zmen({ media: m }, "fotky")} ph={mobil} nadpis="Fotky a video" popisNapoveda="Popis (nepovinné)" dovetok="" /><UlozenePri u={u} pole="fotky" style={{ paddingRight: 8 }} /></div>;
   // OPRAVY 160/5: náhľad = tá istá karta ako na profile (KartaModulu), mení sa hneď pri písaní a pridaní fotky
   const nahlad = farnost ? (
     <section style={kartaK}>
@@ -264,19 +281,20 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   // Martin 13:11 · ročné počítanie hlavnej zbierky (prepínač áno/nie, nič sa nemaže)
   const rocneKarta = farnost && (
     <section key="rocne" style={kartaK}>
-      <button type="button" role="switch" aria-checked={!!d.rocne} onClick={() => zmen({ rocne: !d.rocne })}
+      <button type="button" role="switch" aria-checked={!!d.rocne} onClick={() => zmen({ rocne: !d.rocne }, "rocne")}
         style={{ display: "flex", alignItems: "center", gap: 14, minHeight: 56, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", textAlign: "left", color: "var(--ink)" }}>
         <span style={{ flex: 1, display: "flex", flexDirection: "column", gap: 3 }}><b style={{ fontSize: 16.5 }}>Každý rok začať od nuly</b>
           <span style={{ fontSize: 14.5, lineHeight: 1.45, color: "var(--ink2)" }}>{d.rocne ? `Ukazovateľ počíta dary od 1. januára ${new Date().getFullYear()}. Staršie dary ostávajú vo výpise.` : "Ukazovateľ počíta všetky dary od spustenia zbierky."}</span></span>
         <Prepinac on={!!d.rocne} />
       </button>
+      <UlozenePri u={u} pole="rocne" />
     </section>);
   const vlavo = <>{spustena && tentoMesiac}{textKarta}{galeria}</>;
   // Martin 13. 10.: farnosť — sumy pri darcoch hlavnej zbierky zapína farár (OPRAVY 266: zvončeková je v Správe zvončekovej)
   const sumyKarta = farnost ? <section style={{ borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "20px 22px", display: "flex", flexDirection: "column", gap: 16 }}>
     <SumyPriDarcoch stranka={strankaId} kluc="hlavna" nadpis="Hlavná zbierka · ukázať sumy pri darcoch" />
   </section> : null;
-  const vpravo = <>{sumyKarta}{nahlad}{ucetKarta}<AkoDarovat sada={d.sada} eurc={d.eurc} sadaE={d.sadaE} onZmena={zmen} pravidelna bezi={spustena} />{sektorKarta}{rocneKarta}{spustena ? <>{bezi}{qr}</> : nebezi}</>;
+  const vpravo = <>{sumyKarta}{nahlad}{ucetKarta}<AkoDarovat sada={d.sada} eurc={d.eurc} sadaE={d.sadaE} onZmena={(p) => zmen(p, "sumy")} pravidelna bezi={spustena} /><UlozenePri u={u} pole="sumy" style={{ paddingRight: 8, marginTop: -6 }} />{sektorKarta}{rocneKarta}{spustena ? <>{bezi}{qr}</> : nebezi}</>;
   const stlpce = (l: ReactNode, p: ReactNode) => mobil
     ? <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>{l}{p}</div>
     : <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.3fr) minmax(0,1fr)", gap: 16, alignItems: "start" }}><div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>{l}</div><div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>{p}</div></div>;
@@ -331,8 +349,9 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
     </div>
     {farnost && <>
       <b style={{ fontSize: 28, lineHeight: 1.15, letterSpacing: "-.02em", paddingTop: 2 }}>Hlavná zbierka</b>
-      <input data-pole="nazov" value={d.nazov ?? ""} maxLength={HLAVNA_NAZOV_MAX} onChange={(e) => zmen({ nazov: e.target.value })} placeholder="Pridajte názov zbierky" aria-label="Názov hlavnej zbierky"
+      <input data-pole="nazov" value={d.nazov ?? ""} maxLength={HLAVNA_NAZOV_MAX} onChange={(e) => zmen({ nazov: e.target.value }, "nazov")} placeholder="Pridajte názov zbierky" aria-label="Názov hlavnej zbierky"
         style={{ height: 48, padding: "0 14px", borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--field)", fontFamily: "inherit", fontSize: 16, fontWeight: 700, color: "var(--ink)", outline: "none", width: "100%", boxSizing: "border-box" }} />
+      <UlozenePri u={u} pole="nazov" style={{ marginTop: -6 }} />
     </>}
     {!farnost && <div role="tablist" aria-label="Centrálna a sektory" style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2 }}>
       {rad.map(([t, v]) => { const on = typ === v; return (
@@ -356,8 +375,9 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
       <button type="button" onClick={pasZav.vrat} style={{ height: 46, padding: "0 18px", border: "none", borderRadius: 14, background: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "#1D211B" }}>Vrátiť späť</button>
     </div>}
     {tab === 0 && stlpce(vlavo, vpravo)}
+    {tab === 0 && <PasUlozene u={u} onSpat={onZbierky} mobil={mobil} />}
     {tab === 1 && <DokladyCharity zbierkaId={idZbierky} s={stav} zmen={zmenStav} vyzbierane={spolu} teraz={Date.now()} mobil={mobil} toast={toast} nepovinne />}
-    {tab === 2 && <Statistiky d={ukazky ? statTest(!!sek, nazovPol) : { obdobie: "tento mesiac", od: "", dni: Array.from({ length: 30 }, () => 0), cez: [["Priamo na profile", mesiac, ""]], split: [], darcovia: [[String(c.mesacne), "dáva mesačne"]], dary: realne }} tier={tier} mobil={mobil} toast={toast} />}
+    {tab === 2 && <Statistiky d={ukazky ? statTest(!!sek, nazovPol) : { obdobie: "tento mesiac", od: "", dni: farnost ? dniReal : Array.from({ length: 30 }, () => 0), cez: [["Priamo na profile", mesiac, ""]], split: [], darcovia: farnost ? [[String(darcovReal), "darcov"], [String(c.mesacne), "dáva mesačne"]] : [[String(c.mesacne), "dáva mesačne"]], dary: realne }} tier={tier} mobil={mobil} toast={toast} />}
     {tab === 3 && ukoncenie}
     {harok && <ZavrietHarok mobil={mobil} sektor={sek?.nazov ?? null} farnost={!!farnost} mesacne={c.mesacne} onPotvrd={potvrd} onZavri={() => setHarok(false)} />}
   </>);

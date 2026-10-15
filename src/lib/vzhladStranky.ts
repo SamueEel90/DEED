@@ -27,18 +27,26 @@ let ver = 0;
 const posl = new Set<() => void>();
 const zmena = () => { ver++; posl.forEach((f) => f()); };
 const jeVzhlad = (v: unknown): v is Vzhlad => v === "kronika" || v === "vyklad" || v === "pirat";
-const nacitane = new Set<string>();
+// OPRAVY 308: zo servera pri každom otvorení (čerstvé 15 s), server má prednosť pred pamäťou — okrem zmeny urobenej tu počas načítania
+const nacitane = new Map<string, number>();
+const zapisane = new Map<string, number>();
 
 export async function nacitajVzhlad(stranka: string): Promise<Vzhlad | null> {
-  if (supabase && !nacitane.has(stranka)) {
-    nacitane.add(stranka);
-    const { data, error } = await supabase.from("profil_stranky_verejny").select("vzhlad").eq("stranka", stranka).maybeSingle();
-    if (!error && jeVzhlad(data?.vzhlad) && !pamat.has(stranka)) { pamat.set(stranka, data.vzhlad); zmena(); }
+  if (supabase && Date.now() - (nacitane.get(stranka) ?? 0) > 15_000) {
+    const zac = Date.now();
+    nacitane.set(stranka, zac);
+    const { data, error } = await supabase.from("profil_stranky_verejny").select("vzhlad").eq("stranka", stranka).maybeSingle().then((x) => x, () => ({ data: null, error: { message: "siet" } }));
+    if (error) nacitane.delete(stranka);
+    else if ((zapisane.get(stranka) ?? 0) < zac) {
+      const v = jeVzhlad(data?.vzhlad) ? data!.vzhlad as Vzhlad : null;
+      if (v && pamat.get(stranka) !== v) { pamat.set(stranka, v); zmena(); }
+    }
   }
   return pamat.get(stranka) ?? null;
 }
 /** zmena sa uloží hneď (Ukladá sa samo) */
 export async function ulozVzhlad(stranka: string, v: Vzhlad): Promise<void> {
+  zapisane.set(stranka, Date.now());
   pamat.set(stranka, v); zmena();
   if (supabase) await supabase.from("profil_stranky").upsert({ stranka, vzhlad: v }, { onConflict: "stranka" });
 }

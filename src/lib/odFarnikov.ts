@@ -6,6 +6,7 @@
 // ============================================================
 import { useEffect, useSyncExternalStore } from "react";
 import { nacitajStav, ulozStav, ulozStavIsto, obnovOblast } from "@/features/viera/stav";
+import { zaregistrujKluc, zmenene } from "./mojeData";
 
 export type DruhFarnika = "parte" | "svadba" | "ine" | "oznam" | "udalost" | "umysel" | "fotky" | "modlitba";
 /** k · názov · popis v Správe · popis vo výbere veriaceho · vždy zadarmo */
@@ -24,9 +25,26 @@ export const CEZ_EDITOR: DruhFarnika[] = ["parte", "svadba", "ine"];
 /** KARTA 57C: blok živej stránky, kde sa príspevok ukáže — [data-blok, názov bloku] (úmysel nikam) */
 export const BLOK_DRUHU: Partial<Record<DruhFarnika, [string, string]>> = { modlitba: ["mod", "Modli sa s nami"], oznam: ["ver", "Od veriacich"], udalost: ["prid", "Príď a zaži s nami"], fotky: ["prid", "Príď a zaži s nami"], parte: ["spom", "Spomíname"], svadba: ["tes", "Teš sa s nami"], ine: ["tes", "Teš sa s nami"] };
 
-export type SmieFarnika = Partial<Record<DruhFarnika, boolean>>;
+/** OPRAVY 310: každá kategória má 3 stupne — Povolené (zverejní sa hneď) · Po schválení (farár zverejní) · Zakázané (+ Pridať sa neukáže).
+ *  Staršie uloženie: true = Povolené, false = Zakázané. Úmysel na omšu len Povolené · Zakázané. Ukladá sa pri farnosti na serveri (naboz_stav). */
+export type Stupen = "povolene" | "schvalenie" | "zakazane";
+export type SmieFarnika = Partial<Record<DruhFarnika, boolean | Stupen>>;
+const PREDVOLENE: Record<DruhFarnika, Stupen> = { parte: "povolene", svadba: "povolene", ine: "povolene", umysel: "povolene", modlitba: "schvalenie", oznam: "schvalenie", udalost: "schvalenie", fotky: "schvalenie" };
 export const nacitajSmie = (id: string): SmieFarnika => nacitajStav<SmieFarnika>("farniksmie", id, {});
-export const smie = (s: SmieFarnika, k: DruhFarnika) => s[k] !== false;
+export function stupen(s: SmieFarnika, k: DruhFarnika): Stupen {
+  const v = s[k];
+  const st: Stupen = v === true ? "povolene" : v === false ? "zakazane" : v ?? PREDVOLENE[k];
+  return k === "umysel" && st === "schvalenie" ? "povolene" : st;
+}
+export const smie = (s: SmieFarnika, k: DruhFarnika) => stupen(s, k) !== "zakazane";
+/** OPRAVY 310: kam sa príspevok ukáže (nastavenie farára) */
+export const KAM_DRUHU: Record<DruhFarnika, string> = {
+  parte: "ukáže sa v Spomíname · zo šablóny", svadba: "ukáže sa v Teš sa s nami · zo šablóny", ine: "ukáže sa v Teš sa s nami · výročie, poďakovanie",
+  modlitba: "ukáže sa v Modli sa s nami · môže byť ako „Bohu známy veriaci“, vy autora vidíte", oznam: "ukáže sa dole v bloku Od veriacich (nie medzi oznamami farnosti)",
+  udalost: "ukáže sa v Príď a zaži s nami · dátum, čas, miesto", fotky: "pribudnú k akcii v Príď a zaži s nami", umysel: "ide len vám, nikde sa nezverejní · potvrdíte čas omše",
+};
+/** príspevok je na stránke (nečaká na schválenie a nebol zamietnutý) */
+export const naStranke = (x: PolozkaFarnika) => !x.stav;
 
 export interface PolozkaFarnika {
   id: string; k: DruhFarnika; t: string; s: string;
@@ -54,6 +72,8 @@ export interface PolozkaFarnika {
   /** odslúžené (čas) */ odsluzene?: number;
   /** posledná správa veriacemu */ sprava?: { text: string; cas: number };
   /** zapísal farár (osobne alebo telefonicky) — veriaci nemá účet v appke */ osobne?: boolean;
+  /** OPRAVY 310: čaká na schválenie farára / farár ho nezverejnil; bez stavu = na stránke */ stav?: "caka" | "zamietnute";
+  /** kedy farár rozhodol (zverejnil alebo zamietol) */ rozhodnute?: number;
 }
 export interface FormularVeriaceho { nad: string; txt: string; datum: string; cas: string; kde: string; umK: number; pozv: number; limit: string; anon: boolean;
   /** OPRAVY 179: krátky oznam · Platí do (index do PLATI_VERIACI) */ plat?: number }
@@ -101,6 +121,11 @@ export function pridajOdFarnika(id: string, p: PolozkaFarnika) { zmenZoznam(id, 
 export function zmazOdFarnika(id: string, pid: string) { zmenZoznam(id, (l) => l.filter((x) => x.id !== pid)); }
 /** KARTA 57 D.3: zmazať viac naraz */
 export function zmazOdFarnikov(id: string, pids: string[]) { const z = new Set(pids); zmenZoznam(id, (l) => l.filter((x) => !z.has(x.id))); }
+/** OPRAVY 310: farár zverejní / nezverejní príspevky, ktoré čakajú na schválenie */
+export function rozhodniOdFarnikov(id: string, pids: string[], zverejnit: boolean) {
+  const z = new Set(pids), t = Date.now();
+  zmenZoznam(id, (l) => l.map((x) => (z.has(x.id) ? { ...x, stav: zverejnit ? undefined : "zamietnute", rozhodnute: t } : x)));
+}
 /** KARTA 57 D.2: oprava farára (nadpis, text) */
 export function upravOdFarnika(id: string, pid: string, patch: Partial<PolozkaFarnika>) { zmenZoznam(id, (l) => l.map((x) => (x.id === pid ? { ...x, ...patch } : x))); }
 
@@ -113,6 +138,7 @@ export function pocetyOdVeriacich(id: string) {
   const l = odFarnikov(id), v = nastavenieOdVeriacich(id).videne;
   return {
     nove: l.filter((x) => x.k !== "umysel" && x.cas > v).length,
+    caka: l.filter((x) => x.stav === "caka").length, // OPRAVY 310
     nahlasene: l.filter((x) => pocetNahl(x) > 0).length,
     // OPRAVY 176: úmysly, ktoré ešte nie sú zapísané na omšu
     umysly: l.filter((x) => x.k === "umysel" && !x.zapis && !x.odsluzene).length,
@@ -126,3 +152,16 @@ export function useOdFarnikov(): number {
 export function useCerstveOdFarnikov(id: string) {
   useEffect(() => { let ziva = true; void obnovOblast("odfarnikov", id).then((ok) => { if (ok && ziva) zmena(); }, () => undefined); return () => { ziva = false; }; }, [id]);
 }
+
+// ---- OPRAVY 310: veriaci — moje príspevky, ktoré čakali na schválenie (upozornenie „Farár zverejnil váš príspevok“) ----
+// Osobné → do účtu (moje_data, 0084b): [{ stranka, id, t, cas }]. Rozhodnutie sa číta z príspevku farnosti (stav, rozhodnute).
+export interface MojeCakajuce { stranka: string; id: string; t: string; cas: number }
+const KLUC_CAKA = "deed.odfarnikov.cakajuce";
+export const mojeCakajuce = (): MojeCakajuce[] => { try { return JSON.parse(localStorage.getItem(KLUC_CAKA) || "[]") as MojeCakajuce[]; } catch { return []; } };
+export function pridajMojeCakajuce(c: MojeCakajuce) {
+  try { localStorage.setItem(KLUC_CAKA, JSON.stringify([c, ...mojeCakajuce().filter((x) => x.id !== c.id)].slice(0, 50))); } catch { /* LS */ }
+  zmenene(KLUC_CAKA); zmena();
+}
+zaregistrujKluc(KLUC_CAKA, () => zmena());
+/** stiahne čerstvé príspevky farností, kde niečo čaká (zvonček) */
+export function obnovMojeCakajuce() { [...new Set(mojeCakajuce().map((c) => c.stranka))].forEach((st) => { void obnovOblast("odfarnikov", st).then((ok) => { if (ok) zmena(); }, () => undefined); }); }

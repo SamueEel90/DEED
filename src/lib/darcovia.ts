@@ -143,13 +143,19 @@ function realneDary(refId: string): DarRiadok[] {
   return r;
 }
 // ---- 0067: zbierka stránky v databáze — zoznam aj súčty LEN z ledgera (dar, ktorý server odmietol, sa neukáže) ----
-const zLedgera = new Set<string>();
+// OPRAVY 311: dary zo servera sa čítajú znova, keď sú staršie ako 20 s (predtým raz za beh appky → Správa a stránka nesedeli,
+// dar z iného zariadenia sa ukázal až po reštarte)
+const zLedgera = new Map<string, number>();
+const ledgerBezi = new Set<string>();
+const CERSTVE_DARY_MS = 20_000;
 /** zbierky rodiny, ktorých sumu server nepošle (0075b · KARTA 57 A.7): refId → počet darov */
 const skrytaSuma = new Map<string, number>();
 /** id zbierky v ledgeri, ak má appka databázu a dar patrí zbierke stránky */
 function ledgerId(refId: string): string | null { return supabase ? idZbierkyDB(refId) : null; }
 function obnovZLedgera(refId: string, id: string) {
-  void nacitajDaryZbierky(id).then(({ dary: l, skryte, pocet }) => {
+  if (ledgerBezi.has(refId)) return;
+  ledgerBezi.add(refId); zLedgera.set(refId, Date.now());
+  void nacitajDaryZbierky(id).finally(() => ledgerBezi.delete(refId)).then(({ dary: l, skryte, pocet }) => {
     if (skryte) skrytaSuma.set(refId, pocet); else skrytaSuma.delete(refId);
     // dorovnanie firmy zapísal server (dorovnanie_dar) — jeho riadok ostáva
     const firmy = realneDary(refId).filter((x) => x.firma);
@@ -183,7 +189,7 @@ export function obnovDaryZbierky(refId: string) { const id = ledgerId(refId); if
 function riadkyPre(refId: string): DarRiadok[] {
   const id = ledgerId(refId);
   if (id) {
-    if (!zLedgera.has(refId)) { zLedgera.add(refId); queueMicrotask(() => obnovZLedgera(refId, id)); }
+    if (!ledgerBezi.has(refId) && Date.now() - (zLedgera.get(refId) ?? 0) > CERSTVE_DARY_MS) { zLedgera.set(refId, Date.now()); queueMicrotask(() => obnovZLedgera(refId, id)); }
     return realneDary(refId);
   }
   const r = sOmsami(refId, realneDary(refId));
