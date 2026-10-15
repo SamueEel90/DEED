@@ -68,7 +68,7 @@ import { SADY_EUR, SADY_EURC } from "@/lib/sadyDarov";
 import { useLayout } from "@/components/context";
 
 import "@/styles/nastenka.css";
-import { useVerejnyObrazok, type PayloadEditora } from "@/components/EditorOznameni";
+import { useObrazokNavrhu, type PayloadEditora } from "@/components/EditorOznameni";
 import { ParteMedailon, TvarOznamu, PARTE, SVADBA, JUBILEUM, BLAHOZELANIE, ZAKLAD, BORDOVA, symbolCirkvi, kickerTvaru, SERIF_TVARU, type Paleta } from "./Medailony";
 import { Darcovia } from "@/features/zbierka/Riadky";
 import { useQrObrazok } from "@/lib/qrObrazok";
@@ -1710,8 +1710,14 @@ function DetailParte({ sp, strankaId, symbol, orgMeno, sablona, vz, onOsoba, onZ
   const qp = sablona?.volba && sablona.volba.qr !== false && qr ? 76 : 0;
   const sirkaRamu = (cele: boolean) => cele ? Math.min(sirka - 16, (vyska - 90) / 1.4189) : vedla ? 560 : Math.min(560, sirka - 32);
   const sirkaPlagatu = (cele: boolean) => { const w = sirkaRamu(cele); return Math.floor(Math.min(w, (w * 210 / 148) * 360 / (510 + qp))); };
-  const parteEl = (vyrez: boolean, cele = false) => sp.obr
-    ? <img src={sp.obr} alt={`Parte · ${sp.d.meno}`} style={vyrez ? { width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" } : { width: "100%", height: "100%", objectFit: "contain", display: "block", background: "#fff" }} />
+  // OPRAVY 296: parte z Editora sa kreslí z návrhu s fotkou zo Storage (uložený obrázok mohol vzniknúť bez fotky); kým nie je fotka načítaná, hárok sa neukáže
+  const navrhP = (sp.x?.editor ?? sp.it?.smutocny?.editor ?? null) as PayloadEditora | null;
+  const zNavrhu = useObrazokNavrhu(navrhP, `parte-${sp.id}`, false);
+  const obrP = zNavrhu || sp.obr;
+  const parteEl = (vyrez: boolean, cele = false) => navrhP && zNavrhu === null
+    ? <div style={{ width: "100%", height: "100%", minHeight: 240, display: "flex", alignItems: "center", justifyContent: "center", background: "#fff", color: "#5B5D53", fontSize: 15, fontWeight: 700 }}>Načítavam parte…</div>
+    : obrP
+    ? <img src={obrP} alt={`Parte · ${sp.d.meno}`} style={vyrez ? { width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" } : { width: "100%", height: "100%", objectFit: "contain", display: "block", background: "#fff" }} />
     : sablona?.u && sablona.volba ? <div style={{ display: "flex", justifyContent: "center", background: "#fff", height: "100%", overflow: "hidden" }}><Plagat u={sablona.u} volba={sablona.volba} vz={vz} sirka={vyrez ? Math.min(560, sirka - 32) : sirkaPlagatu(cele)} qr={qr} qrText={zb ? "Prispieť rodine" : "Naša farnosť"} hotove /></div>
     : <ParteKarta sp={sp} symbol={symbol} qr={qr} />;
   const organizuje = org ? <div className="zb-pol" style={{ padding: "4px 16px 12px", display: "flex", alignItems: "center", gap: 10 }}>
@@ -1801,11 +1807,12 @@ function CeleOznamenie({ t, vz }: { t: Tes; vz: Parameters<typeof Plagat>[0]["vz
   // OPRAVY 275: ako v Klasike — uložený obrázok hárku (s fotkou); nanovo kreslený hárok fotku stratí
   const ulozeny = t.x ? (ziveObr(t.x.obr) ? t.x.obr : t.x.editor && ziveObr(t.x.fotky?.[0]) ? t.x.fotky![0] : undefined)
     : t.it?.plagat && ziveObr(t.it.fotky?.[0]) ? t.it.fotky![0] : undefined;
-  const src0 = useVerejnyObrazok(ulozeny ? null : navrh, t.id), src = ulozeny ?? src0;
+  // OPRAVY 296 (275): z návrhu s fotkou zo Storage; uložený obrázok len keď sa kreslenie nepodarí
+  const src0 = useObrazokNavrhu(navrh, t.id, true), src = src0 === null ? null : src0 || ulozeny || "";
   const tvar = <TvarOznamu tvar={t.druh === "svadba" ? "kruh" : t.druh === "jubileum" ? "kosostvorec" : "stvorec"} pal={t.pal} label={t.meno} onTap={() => undefined}><ObsahTvaru t={t} /></TvarOznamu>;
   if (navrh) return src
     ? <img src={src} alt={`${t.meno} · oznámenie`} style={{ display: "block", width: "100%", maxWidth: 420, height: "auto", borderRadius: 8, boxShadow: "0 6px 20px rgba(0,0,0,.18)" }} />
-    : <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>{tvar}<span style={{ fontSize: 13.5, color: "var(--nf-ink2)" }}>Načítavam oznámenie…</span></div>;
+    : src === null ? <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>{tvar}<span style={{ fontSize: 13.5, color: "var(--nf-ink2)" }}>Načítavam oznámenie…</span></div> : tvar;
   const oz = t.it?.oz;
   if (oz?.u && oz.volba && !t.it?.plagat) return <div style={{ display: "flex", justifyContent: "center", background: "#fff", borderRadius: 8, overflow: "hidden" }}><Plagat u={{ ...oz.u, kedyC: "", kde: "" }} volba={oz.volba} vz={vz} sirka={360} /></div>;
   const f = t.it?.plagat ? t.it.fotky?.find(ziveObr) : t.ine ? t.foto : undefined;

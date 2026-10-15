@@ -1268,3 +1268,60 @@ function fotoRiadok(){const fl=$("foto")&&$("foto").closest("label");if(!fl)retu
 const _r=render;render=function(){const r=_r.apply(this,arguments);try{fotoRiadok()}catch(e){}return r};
 const _ie=window.initEditor;window.initEditor=function(){const r=_ie.apply(this,arguments);try{fotoRiadok()}catch(e){}return r};
 })();</script>
+<script>/* OPRAVY 296: hárok ako obrázok (stránka, Stiahnuť obrázok) — fotky a QR sa kreslia na plátno samostatne, až keď sú načítané
+   (v SVG foreignObject sa obrázok na iPhone často nevykreslí a cudzia adresa zo Storage nikde) — hárok nikdy nie je bez fotky */(function(){
+const $=id=>document.getElementById(id);
+async function nacitaj(src){const skus=s=>new Promise((ok,ko)=>{const im=new Image();if(/^https?:/.test(s))im.crossOrigin="anonymous";im.onload=()=>ok(im);im.onerror=ko;im.src=s});
+ try{return await skus(src)}catch(e){if(!/^https?:/.test(src))throw e;const b=await(await fetch(src,{mode:"cors"})).blob();return await skus(URL.createObjectURL(b))}}
+function polomery(cs,w,h,f){return["borderTopLeftRadius","borderTopRightRadius","borderBottomRightRadius","borderBottomLeftRadius"].map(n=>{const p=String(cs[n]||"0").split(/\s+/);
+ const v=(t,z)=>/%$/.test(t)?parseFloat(t)/100*z:(parseFloat(t)||0)*f;return[v(p[0],w),v(p[1]??p[0],h)]})}
+function cesta(x,y,w,h,r){const c=r.map(([a,b])=>[Math.min(a,w/2),Math.min(b,h/2)]),P=new Path2D();
+ P.moveTo(x+c[0][0],y);P.lineTo(x+w-c[1][0],y);P.ellipse(x+w-c[1][0],y+c[1][1],c[1][0],c[1][1],0,-Math.PI/2,0);
+ P.lineTo(x+w,y+h-c[2][1]);P.ellipse(x+w-c[2][0],y+h-c[2][1],c[2][0],c[2][1],0,0,Math.PI/2);
+ P.lineTo(x+c[3][0],y+h);P.ellipse(x+c[3][0],y+h-c[3][1],c[3][0],c[3][1],0,Math.PI/2,Math.PI);
+ P.lineTo(x,y+c[0][1]);P.ellipse(x+c[0][0],y+c[0][1],c[0][0],c[0][1],0,Math.PI,Math.PI*1.5);P.closePath();return P}
+/* text sa zmestí do hárku 420 px (ako vtesnaj, ale na kópii — náhľad v úzkom stĺpci má iné zmenšenie) */
+function vtesnajEl(p){const tx=p.querySelector(":scope>.txt");const kusy=tx?[tx]:[...p.children].filter(e=>getComputedStyle(e).position!=="absolute");
+ kusy.forEach(e=>e.style.zoom="");const jc=p.style.justifyContent;p.style.justifyContent="flex-start";if(tx)tx.style.justifyContent="flex-start";
+ const big=p.querySelector(".big-foto");if(big)big.style.height="";const bh=big?big.offsetHeight:0;
+ const pretece=()=>p.scrollHeight>p.clientHeight+1||(tx&&tx.scrollHeight>tx.clientHeight+1);
+ let k=1;while(pretece()&&k>.62){k-=.03;kusy.forEach(e=>e.style.zoom=k);if(big&&k<.86)big.style.height=Math.round(bh*Math.max(.6,k+.1))+"px"}
+ p.style.justifyContent=jc;if(tx)tx.style.justifyContent=""}
+/** o.w = šírka obrázka (výška 1,5 ×), o.verejny = bez súkromných riadkov (svadba, pozvánka) */
+window.edKresli=async function(o){o=o||{};const W=o.w||420,H=Math.round(W*630/420),k=W/420;
+ const c=$("p").cloneNode(true);c.id="";
+ if(o.verejny&&typeof st!=="undefined"&&st.typ!=="parte")c.querySelectorAll(".p-roz").forEach(x=>x.remove());
+ c.querySelectorAll(".ph").forEach(x=>{const r=x.closest(".p-roz");if(r)r.remove();else x.remove()});
+ c.style.transform="";c.style.transformOrigin="";c.style.width="420px";c.style.maxWidth="none";c.style.boxShadow="none";c.style.margin="0";
+ const box=document.createElement("div");box.style.cssText="position:fixed;left:-20000px;top:0;width:420px;visibility:hidden;pointer-events:none";box.appendChild(c);document.body.appendChild(box);
+ let obr=[];
+ try{vtesnajEl(c);const R=c.getBoundingClientRect();
+  obr=[...c.querySelectorAll("img")].filter(im=>im.getAttribute("src")).map(im=>{const kon=im.parentElement,kr=kon.getBoundingClientRect(),f=kr.width/(kon.offsetWidth||kr.width||1),cs=getComputedStyle(kon),ic=getComputedStyle(im),
+   ir=im.getBoundingClientRect(),fimg=im.classList.contains("fimg"),fx=fimg&&typeof st!=="undefined"&&st.fx?st.fx:{x:50,y:50,z:1},pos=String(ic.objectPosition||"50% 50%").split(/\s+/).map(t=>/%$/.test(t)?parseFloat(t):50);
+   const b=fimg?{x:kr.left-R.left,y:kr.top-R.top,w:kr.width,h:kr.height}:{x:ir.left-R.left,y:ir.top-R.top,w:ir.width,h:ir.height};
+   return{src:im.getAttribute("src"),...b,r:fimg?polomery(cs,kr.width,kr.height,f):[[0,0],[0,0],[0,0],[0,0]],fit:ic.objectFit||"fill",px:(fimg?fx.x:pos[0])/100,py:(fimg?fx.y:pos[1])/100,z:fimg?(fx.z||1):1,siv:/grayscale/.test(ic.filter)}});
+  c.querySelectorAll("img").forEach(im=>{im.style.visibility="hidden";im.removeAttribute("src")})}
+ finally{box.remove()}
+ const css=[...document.querySelectorAll("style")].map(x=>x.textContent).join("\n"),xh=new XMLSerializer().serializeToString(c);
+ const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}"><foreignObject width="${W}" height="${H}"><div xmlns="http://www.w3.org/1999/xhtml" style="width:420px;height:630px;transform:scale(${k});transform-origin:0 0"><style>${css.replace(/<\/style/g,"")}</style>${xh}</div></foreignObject></svg>`;
+ const zak=await nacitaj("data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg));
+ const cv=document.createElement("canvas");cv.width=W;cv.height=H;const g=cv.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,W,H);g.drawImage(zak,0,0,W,H);
+ for(const f of obr){let im;try{im=await nacitaj(f.src)}catch(e){throw new Error("Fotku sa nepodarilo načítať.")}
+  const t=document.createElement("canvas");t.width=W;t.height=H;const tg=t.getContext("2d");tg.scale(k,k);tg.clip(cesta(f.x,f.y,f.w,f.h,f.r));
+  const iw=im.naturalWidth||1,ih=im.naturalHeight||1,s=f.fit==="cover"?Math.max(f.w/iw,f.h/ih):f.fit==="contain"?Math.min(f.w/iw,f.h/ih):null;
+  let dx=f.x,dy=f.y,dw=f.w,dh=f.h;if(s){dw=iw*s;dh=ih*s;dx=f.x+(f.w-dw)*f.px;dy=f.y+(f.h-dh)*f.py}
+  const cx=f.x+f.w/2,cy=f.y+f.h/2;tg.drawImage(im,cx+(dx-cx)*f.z,cy+(dy-cy)*f.z,dw*f.z,dh*f.z);
+  if(f.siv){const d=tg.getImageData(0,0,W,H),a=d.data;for(let i=0;i<a.length;i+=4){if(!a[i+3])continue;const y=a[i]*.299+a[i+1]*.587+a[i+2]*.114;a[i]=a[i+1]=a[i+2]=y}tg.putImageData(d,0,0)}
+  g.drawImage(t,0,0)}
+ return cv};
+/* obrázok hárku pre stránku */
+window.edNahlad=async function(o){try{const cv=await window.edKresli({verejny:!!(o&&o.verejny)});return cv.toDataURL("image/jpeg",.82)}catch(e){return""}};
+/* Stiahnuť obrázok 1080 × 1620 */
+$("btnPng").onclick=async()=>{try{if(typeof CFG.onUdalost==="function")CFG.onUdalost({akcia:"obrazok"})}catch(e){}const b=$("btnPng"),info=$("infoHotovo");info.hidden=true;b.textContent="Pripravujem…";
+ try{const url=(await window.edKresli({w:1080})).toDataURL("image/png");
+  if(typeof CFG.onObrazok==="function")CFG.onObrazok(url);else{const a=document.createElement("a");a.href=url;a.download=(TYP[st.typ]+".png").toLowerCase().replace(/\s+/g,"-");document.body.appendChild(a);a.click();a.remove()}
+  b.textContent="Stiahnuté ✓"}catch(e){b.textContent="Stiahnuť obrázok";info.textContent="Obrázok sa v tomto prehliadači nepodarilo vytvoriť. Skúste Vytlačiť a Uložiť ako PDF.";info.hidden=false}
+ setTimeout(()=>b.textContent="Stiahnuť obrázok",3000)};
+/* tlač až po načítaní fotiek */
+$("btnTlac").onclick=async()=>{await pripravTlac();await Promise.all([...$("printArea").querySelectorAll("img")].map(i=>i.decode?i.decode().catch(()=>{}):null));try{if(typeof CFG.onUdalost==="function")CFG.onUdalost({akcia:"tlac",papier:PAPIER})}catch(e){}window.print()};
+})();</script>

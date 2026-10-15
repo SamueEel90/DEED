@@ -171,10 +171,15 @@ export const EditorOznameni = forwardRef<EditorApi, { cfg: CfgEditora; onSend: (
   });
 
 /** OPRAVY 228: verejný obrázok oznámenia z návrhu editora (svadba, pozvánka, blahoželanie) — bez súkromných riadkov.
- *  Editor sa načíta skrytý mimo obrazovky, obnoví návrh a vráti obrázok; výsledok sa pamätá počas relácie. */
+ *  Editor sa načíta skrytý mimo obrazovky, obnoví návrh a vráti obrázok; výsledok sa pamätá počas relácie.
+ *  OPRAVY 296: aj celý hárok parte (verejny = false) — fotka zo Storage, hárok až keď je fotka načítaná. */
 const verejne = new Map<string, string>();
 export function useVerejnyObrazok(navrh: PayloadEditora | null | undefined, kluc: string): string {
-  const k = navrh ? `${kluc}|${navrh.cas ?? ""}` : "";
+  return useObrazokNavrhu(navrh, kluc, true) || "";
+}
+/** null = ešte sa kreslí · "" = nepodarilo sa · inak obrázok (JPEG data URL) */
+export function useObrazokNavrhu(navrh: PayloadEditora | null | undefined, kluc: string, verejny: boolean): string | null {
+  const k = navrh ? `${kluc}|${navrh.cas ?? ""}|${verejny ? "v" : "c"}` : "";
   const [, obnov] = useState(0);
   useEffect(() => {
     if (!navrh || !k || verejne.has(k)) return;
@@ -187,14 +192,14 @@ export function useVerejnyObrazok(navrh: PayloadEditora | null | undefined, kluc
       const w = fr.contentWindow as OknoEditora | null;
       try { w?.initEditor?.({ typ: navrh.typ, navrh, onSend: () => undefined }); } catch { /* editor ešte nie je pripravený */ }
       window.setTimeout(async () => {
-        const o = await (async () => { try { return (await w?.edNahlad?.({ verejny: true })) ?? ""; } catch { return ""; } })();
-        if (o) verejne.set(k, o);
+        const o = await (async () => { try { return (await w?.edNahlad?.(verejny ? { verejny: true } : undefined)) ?? ""; } catch { return ""; } })();
+        verejne.set(k, o);
         if (zivy) obnov((x) => x + 1);
         fr.remove();
       }, 450);
     };
     document.body.appendChild(fr);
     return () => { zivy = false; fr.remove(); };
-  }, [navrh, k]);
-  return k ? verejne.get(k) ?? "" : "";
+  }, [navrh, k, verejny]);
+  return !k ? "" : verejne.has(k) ? verejne.get(k)! : null;
 }
