@@ -1,5 +1,5 @@
 -- ============================================================
--- Test 0088b — doručenie upozornení z farnosti (zvonček, súhrn, hneď, kostol, pripomienka, push)
+-- Test 0088b + 0092b — doručenie upozornení z farnosti (zvonček, súhrn, hneď, kostol, pripomienka, push)
 -- Všetko beží v transakcii a na konci sa vráti (ROLLBACK). Každý riadok musí mať ok = t.
 -- ============================================================
 begin;
@@ -24,6 +24,7 @@ insert into public.moje_farnosti (stranka) values ('t88-far');
 select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-0000000088c1', false);
 insert into public.moje_kostoly (stranka, miesto) values ('t88-far', '1');
 insert into t select 'push: ulozi odber', public.uloz_push_odber('https://push.example/x1', 'kluc', 'auth');
+select public.nastav_bloky('t88-far', '1', array['oz','om','de']);
 select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-0000000088d1', false);
 insert into public.moje_farnosti (stranka) values ('t88-far');
 select public.nastav_bloky('t88-far', null, array['oz','po']);
@@ -41,7 +42,8 @@ insert into public.naboz_prispevok (id, farnost_id, data) values
 update public.naboz_prispevok set data = data || '{"podpora":1}' where id = 't88-oz1';
 insert into public.naboz_stav (oblast, id, data) values
  ('brigady', 't88-far', '[{"id":"b1","t":"Upratovanie kostola","dat":"2026-11-01","cas":"9:00","kde":"","upoz":true}]'),
- ('kalendar', 't88-far', '{"kostoly":{"1":{"zrus":{"2026-10-20":[10]},"posun":{},"odpovede":{"2026-10-20|10":"ano"}}}}');
+ ('kalendar', 't88-far', '{"kostoly":{"1":{"zrus":{"2026-10-20":[10]},"posun":{},"odpovede":{"2026-10-20|10":"ano"}},"2":{"zrus":{"2026-10-25":[20]},"posun":{},"odpovede":{"2026-10-25|20":"ano"}}}}'),
+ ('deti', 't88-far', '[{"id":"d1","t":"Miništranti","dat":"2026-11-02","cas":"15:00","kde":"","kostol":"2","upoz":true},{"id":"d2","t":"Detská schola","dat":"2026-11-03","cas":"16:00","kde":"","kostol":"1","upoz":true},{"id":"d3","t":"Výlet","dat":"2026-11-04","cas":"8:00","kde":"Vrátna","kostol":"~","upoz":true}]');
 reset role;
 
 insert into t select 'oznam: V caka na suhrn', exists (select 1 from public.upozornenie_cakajuce c join public.upozornenie_farnosti f on f.id = c.upozornenie where c.ucet_id = '7e57c100-0000-0000-0000-0000000088b1' and f.zdroj = 'p:t88-oz1');
@@ -58,6 +60,10 @@ insert into t select 'parte: X nesleduje Spominame', not exists (select 1 from p
 insert into t select 'omsa: X hned + push', exists (select 1 from public.notifikacia where ucet_id = '7e57c100-0000-0000-0000-0000000088c1' and text = 'Zrušená večerná omša 20. 10.' and push);
 insert into t select 'omsa: V hned bez push', exists (select 1 from public.notifikacia where ucet_id = '7e57c100-0000-0000-0000-0000000088b1' and text = 'Zrušená večerná omša 20. 10.' and not push);
 insert into t select 'brigada: Y (Pomoz) hned', exists (select 1 from public.notifikacia where ucet_id = '7e57c100-0000-0000-0000-0000000088d1' and text = 'Nová brigáda: Upratovanie kostola');
+insert into t select 'stretnutie v kostole 2: X (kostol 1) nie', not exists (select 1 from public.upozornenie_cakajuce c join public.upozornenie_farnosti f on f.id = c.upozornenie where c.ucet_id = '7e57c100-0000-0000-0000-0000000088c1' and f.text = 'Nové stretnutie: Miništranti');
+insert into t select 'stretnutie v kostole 1: X ano', exists (select 1 from public.upozornenie_cakajuce c join public.upozornenie_farnosti f on f.id = c.upozornenie where c.ucet_id = '7e57c100-0000-0000-0000-0000000088c1' and f.text = 'Nové stretnutie: Detská schola');
+insert into t select 'stretnutie na inom mieste ~: X ano (cela farnost)', exists (select 1 from public.upozornenie_cakajuce c join public.upozornenie_farnosti f on f.id = c.upozornenie where c.ucet_id = '7e57c100-0000-0000-0000-0000000088c1' and f.text = 'Nové stretnutie: Výlet');
+insert into t select 'hlavna omsa (0091): V hned', exists (select 1 from public.notifikacia where ucet_id = '7e57c100-0000-0000-0000-0000000088b1' and text = 'Zrušená hlavná omša 25. 10.');
 insert into t select 'brigada: V nesleduje Pomoz', not exists (select 1 from public.upozornenie_cakajuce c join public.upozornenie_farnosti f on f.id = c.upozornenie where c.ucet_id = '7e57c100-0000-0000-0000-0000000088b1' and f.blok = 'po');
 
 -- úprava oznamu → „Upravené“, druhá rovnaká odpoveď v kalendári sa nepošle znova
@@ -68,6 +74,7 @@ update public.naboz_stav set data = data where oblast = 'kalendar' and id = 't88
 reset role;
 insert into t select 'uprava: Upravene', exists (select 1 from public.upozornenie_farnosti where zdroj like 'p:t88-oz1:u:%' and text = 'Upravené: Ohlášky (opravené)');
 insert into t select 'omsa: druhy zapis nic', (select count(*) from public.notifikacia where ucet_id = '7e57c100-0000-0000-0000-0000000088c1' and text like 'Zrušená%') = 1;
+insert into t select 'omsa v kostole 2: X (kostol 1) nie', not exists (select 1 from public.notifikacia where ucet_id = '7e57c100-0000-0000-0000-0000000088c1' and text like 'Zrušená hlavná%');
 insert into t select 'cakajuce nevidi pouzivatel', not has_table_privilege('authenticated', 'public.upozornenie_cakajuce', 'select');
 
 -- ---- denný súhrn ----
