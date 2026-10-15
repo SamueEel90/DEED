@@ -41,7 +41,7 @@ export function CentralnaZbierkaSprava({ strankaId, nazov, inicialy, hlavnyUcet,
   const [stav, setStav] = useState<StavZbierky>(() => nacitajStav(idZbierky) ?? { stav: "aktivna", koniec: new Date(Date.now() + 3650 * 86400000).toISOString(), predlzenia: 0, lehota: "30", text: "", fotky: [], doklady: [], spravy: [] });
   const zmenStav = (p: Partial<StavZbierky>) => setStav((x) => { const n = { ...x, ...p }; ulozStav(idZbierky, n); return n; });
 
-  const uloz = async () => { await ulozCentralnuZbierku(strankaId, d); setZmenene(false); toast("Centrálna zbierka je uložená"); };
+  const uloz = async () => { const e = await ulozCentralnuZbierku(strankaId, d); if (e) { toast(e); return; } setZmenene(false); toast("Centrálna zbierka je uložená"); };
   const ulozBtn = <button type="button" onClick={() => void uloz()} aria-disabled={!zmenene} style={{ height: 50, padding: "0 22px", border: "none", borderRadius: 14, background: zmenene ? "var(--green)" : "#CFC9BC", color: zmenene ? "#fff" : "#6B6C62", cursor: zmenene ? "pointer" : "default", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, flex: ph ? 1 : "none" }}>Uložiť zmeny</button>;
   const nazovZb = `${nazov} — celá organizácia`;
 

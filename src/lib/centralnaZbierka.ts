@@ -64,9 +64,14 @@ export async function nacitajCentralnuZbierku(stranka: string): Promise<Centraln
   }
   return centralnaZPamate(stranka);
 }
-export async function ulozCentralnuZbierku(stranka: string, c: CentralnaZbierka): Promise<void> {
+/** OPRAVY 313: vráti chybu ako text (Správa ju ukáže pri poli), inak null */
+export async function ulozCentralnuZbierku(stranka: string, c: CentralnaZbierka): Promise<string | null> {
   pamat.set(stranka, c); zmena();
-  if (supabase) await supabase.from("profil_stranky").upsert({ stranka, centralna: await bezDataUrl(c, "stranky"), centralna_cas: new Date().toISOString() }, { onConflict: "stranka" });
+  if (!supabase) return null;
+  let cista: CentralnaZbierka;
+  try { cista = await bezDataUrl(c, "stranky"); } catch { return "Fotku sa nepodarilo nahrať. Skúste znova."; }
+  const { error } = await supabase.from("profil_stranky").upsert({ stranka, centralna: cista, centralna_cas: new Date().toISOString() }, { onConflict: "stranka" }).then((x) => x, () => ({ error: { message: "" } }));
+  return error ? "Nepodarilo sa uložiť na server. Skontrolujte pripojenie." : null;
 }
 
 /** KARTA 56B · hlavná zbierka farnosti beží (spustená). Bez záznamu alebo pred Spustiť = nebeží. */

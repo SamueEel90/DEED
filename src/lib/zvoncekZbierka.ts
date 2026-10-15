@@ -5,7 +5,7 @@
 // Dary idú ku každej omši zvlášť (zvoncekOmse.ts, OPRAVY 289) na účet farnosti.
 // ============================================================
 import { useSyncExternalStore } from "react";
-import { nacitajStav, ulozStav } from "@/features/viera/stav";
+import { nacitajStav, ulozStavIsto } from "@/features/viera/stav";
 import { bezDataUrl } from "./uploadFoto";
 import type { MediumZbierky } from "./novaZbierka";
 
@@ -38,12 +38,20 @@ export function useZvoncek(stranka: string): NastavenieZvoncek {
 }
 let casovac: number | undefined;
 /** uloží hneď do pamäte; do úložiska po 600 ms, fotky najprv do Storage */
-export function ulozZvoncek(stranka: string, n: NastavenieZvoncek) {
+// OPRAVY 313: zápis, na ktorý sa dá čakať — všetky zmeny v rámci 600 ms dostanú ten istý výsledok (chyba ako text alebo null)
+let cakaju: ((e: string | null) => void)[] = [];
+export function ulozZvoncek(stranka: string, n: NastavenieZvoncek): Promise<string | null> {
   pamat.set(stranka, n); zmena();
   window.clearTimeout(casovac);
+  const p = new Promise<string | null>((res) => { cakaju.push(res); });
   casovac = window.setTimeout(() => {
-    void bezDataUrl(n, "stranky").then((c) => { ulozStav(OBLAST, stranka, c); if (pamat.get(stranka) === n) pamat.set(stranka, c); }, () => ulozStav(OBLAST, stranka, { ...n, media: n.media.filter((m) => !/^data:/.test(m.src)) }));
+    const r = cakaju; cakaju = [];
+    const hotovo = (e: string | null) => r.forEach((f) => f(e));
+    void bezDataUrl(n, "stranky").then(
+      async (c) => { const e = await ulozStavIsto(OBLAST, stranka, c); if (pamat.get(stranka) === n) pamat.set(stranka, c); hotovo(e); },
+      async () => { await ulozStavIsto(OBLAST, stranka, { ...n, media: n.media.filter((m) => !/^data:/.test(m.src)) }); hotovo("Fotku sa nepodarilo nahrať. Skúste znova."); });
   }, 600);
+  return p;
 }
 /** OPRAVY 289: poďakovanie v riadku Hlavnej zbierky — farárovo, inak podľa cirkvi (číselník, 0091) */
 export const podakovanieZvoncek = (n: Pick<NastavenieZvoncek, "podakovanie">, slova: { podakovanie: string }) => n.podakovanie?.trim() || slova.podakovanie;
