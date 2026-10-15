@@ -2,9 +2,9 @@
 // Beží vždy len jedna zbierka; po zapečatení sa nedá meniť nič. Centrálny QR tvorcu sa nikde neukazuje —
 // len QR bežiacej dvojice tvorca + zbierka.
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { usePouzivatel } from "@/lib/pouzivatel";
 import { DeedQr } from "@/components/deedqr";
-import { ohlasZbierku, nacitajRetaz, zapecatRetaz, zrusRetaz, beziaca, verejneBeziace, zbierkaVRetazi, zaokruhliPct, useZmenyRetaze, type StavVRetazi, type ZbierkaVRetazi } from "@/lib/retaz";
+import { ohlasZbierku, nacitajRetaz, pripravRetaz, zapecatRetaz, zrusRetaz, beziaca, verejneBeziace, zbierkaVRetazi, zaokruhliPct, useZmenyRetaze, type Retaz, type Strana, type StavVRetazi, type ZbierkaVRetazi } from "@/lib/retaz";
+import { KartaStrany, ZnakStrany, StitStrany, useRobiRetaz } from "./StranaZmluvy";
 import { Harok } from "./Zdielat";
 import PodrzTlacidlo from "./PodrzTlacidlo";
 import { potvrditTuknutim } from "./Platba";
@@ -62,17 +62,40 @@ export function PercentaRetaze({ pct, onPct }: { pct: number; onPct: (v: number)
   </>);
 }
 
-export function RetazDobraHarok({ zbierka, onClose }: { zbierka: { id: string; nazov: string; org?: string; ciel?: number | null; vyzbierane?: number }; onClose: () => void }) {
+/** OPRAVY 290 · balík 8 (A): percentá v otvorenom riadku radu — 10 · 25 · 50 · 100 %, posuvník 5–100 po 5, „Z daru 10 € …“ */
+function PercentaRiadku({ pct, onPct }: { pct: number; onPct: (v: number) => void }) {
+  return (<>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6 }}>
+      {[10, 25, 50, 100].map((p) => { const on = pct === p; return (
+        <button key={p} type="button" onClick={() => onPct(p)} aria-pressed={on} style={{ height: 44, borderRadius: 12, border: `1.5px solid ${on ? "var(--green)" : "var(--fieldBd)"}`, background: on ? "var(--green)" : "var(--field)", color: on ? "#fff" : "var(--ink)", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>{p} %</button>); })}
+    </div>
+    <input type="range" min={5} max={100} step={5} value={pct} aria-label="Percento pre zbierku" onChange={(e) => onPct(+e.target.value)} style={{ width: "100%", height: 28, margin: 0, accentColor: "var(--green)" }} />
+    <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ink2)" }}>
+      {pct >= 100 ? <>Z daru 10 € pôjde celých <b style={{ color: "var(--ink)" }}>{e2(10)}</b> zbierke.</>
+        : <>Z daru 10 € pôjde <b style={{ color: "var(--ink)" }}>{e2(pct / 10)}</b> zbierke a <b style={{ color: "var(--ink)" }}>{e2(10 - pct / 10)}</b> vám.</>}
+    </div>
+  </>);
+}
+const nadpisZmluvy: CSSProperties = { fontSize: 13.5, fontWeight: 800, color: "var(--gInk)" };
+const datum = (ms: number) => { const d = new Date(ms); return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`; };
+
+export function RetazDobraHarok({ zbierka, onClose }: { zbierka: { id: string; nazov: string; org?: string; ciel?: number | null; vyzbierane?: number; strana?: Strana }; onClose: () => void }) {
   const zbierkaId = zbierka.id;
   // zbierka, z ktorej sa reťaz otvára, je v rade prvá (aj keď nie je v katalógu)
-  useState(() => ohlasZbierku(zbierka.id, { nazov: zbierka.nazov, org: zbierka.org ?? "", ciel: zbierka.ciel ?? null, zaklad: zbierka.vyzbierane ?? 0 }));
+  useState(() => ohlasZbierku(zbierka.id, { nazov: zbierka.nazov, org: zbierka.org ?? "", ciel: zbierka.ciel ?? null, zaklad: zbierka.vyzbierane ?? 0, strana: zbierka.strana }));
   useZmenyRetaze();
-  const ja = usePouzivatel();
-  const meno = `${ja.meno || "Ty"}${ja.priezvisko ? ` ${ja.priezvisko[0].toUpperCase()}.` : ""}`;
+  const robiTeraz = useRobiRetaz();
   const retaz = nacitajRetaz();
+  const robi = retaz?.robi ?? robiTeraz;
+  const menoKratko = robi.meno;
   const [krok, setKrok] = useState<Krok>(() => (nacitajRetaz() ? "bezi" : "nastavenie"));
   const [rad, setRad] = useState<VRade[]>(() => (zbierkaVRetazi(zbierkaId)?.aktivna ? [{ zbierkaId, pct: 25 }] : []));
+  const [otv, setOtv] = useState<string | null>(() => (zbierkaVRetazi(zbierkaId)?.aktivna ? zbierkaId : null));
   const [hladaj, setHladaj] = useState("");
+  // OPRAVY 290 · balík 8 (A4): zlyhanie má tvár — pripravená reťaz (jedno id) sa po výpadku uloží raz
+  const [chyst, setChyst] = useState<Retaz | null>(null);
+  const [chyba, setChyba] = useState<string | null>(null);
+  const [uklada, setUklada] = useState(false);
   const podrz = !potvrditTuknutim();
   const obalRef = useRef<HTMLDivElement>(null);
   useEffect(() => { const sc = obalRef.current?.parentElement; if (sc) sc.scrollTop = 0; }, [krok]);
@@ -84,46 +107,48 @@ export function RetazDobraHarok({ zbierka, onClose }: { zbierka: { id: string; n
     setRad((r) => r.map((x, j) => (j === i ? { ...x, pct } : x)));
   };
   const posun = (i: number, d: number) => setRad((r) => { const q = [...r], j = i + d; if (j < 0 || j >= q.length) return r; [q[i], q[j]] = [q[j], q[i]]; return q; });
-  const stitokDarcu = (pct: number, id: string | null) => (id ? `${pct} % → ${z(id)?.nazov ?? ""}` : `100 % → ${meno}`);
+  const stitokDarcu = (pct: number, id: string | null) => (id ? `${pct} % → ${z(id)?.strana.meno ?? z(id)?.nazov ?? ""}` : `100 % → ${menoKratko}`);
+  const malyTl: CSSProperties = { flex: 1, minWidth: 0, height: 44, borderRadius: 12, border: "none", background: "var(--btn)", color: "var(--ink)", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 };
 
-  let obsah: ReactNode, titul = "Reťaz dobra", pod = "Nastav rad zbierok a percentá";
+  let obsah: ReactNode, titul = "Reťaz dobra", pod = "Časť z každého daru pošlete ďalej";
   if (krok === "nastavenie") {
     obsah = (
       <>
-        <div style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>Z každého daru, ktorý dostaneš, pošleš časť zbierke. Zbierky idú v rade za sebou: ďalšia začne, až keď sa predošlá naplní alebo skončí.</div>
+        <KartaStrany s={robi} />
+        <div style={nadpisZmluvy}>vzdáva sa časti z každého daru, v tomto poradí:</div>
         {rad.map((x, i) => {
           const zb = z(x.zbierkaId);
           if (!zb) return null;
-          const [, bg, ink] = STAV[i === 0 ? "bezi" : "rad"];
+          const o = otv === x.zbierkaId;
           const bezTerminu = !zb.ciel && i < rad.length - 1;
           return (
-            <div key={x.zbierkaId} style={{ ...karta, padding: 14, display: "flex", flexDirection: "column", gap: 12 }}>
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+            <div key={x.zbierkaId} style={{ ...karta, border: `1px solid ${o ? "var(--gBd)" : "var(--cardBd)"}`, padding: o ? 14 : "12px 14px", display: "flex", flexDirection: "column", gap: 12 }}>
+              <button type="button" onClick={() => setOtv(o ? null : x.zbierkaId)} aria-expanded={o}
+                style={{ display: "flex", alignItems: "center", gap: 10, padding: 0, border: "none", background: "transparent", cursor: "pointer", textAlign: "left", color: "var(--ink)", fontFamily: "inherit" }}>
                 <Cislo n={i + 1} prve={i === 0} />
                 <span style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ display: "block", fontSize: 15, fontWeight: 800, lineHeight: 1.3 }}>{zb.nazov}</span>
-                  <span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)", marginTop: 1 }}>{zb.org}</span>
-                  <Stitok t={i === 0 ? "Beží hneď po zapečatení" : `Čaká · začne po ${z(rad[i - 1].zbierkaId)?.nazov ?? ""}`} bg={bg} ink={ink} />
+                  <span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)", marginTop: 1 }}>{zb.strana.meno} · {cielTxt(zb)}</span>
                 </span>
-                <span style={{ display: "flex", flex: "none", color: "var(--ink2)" }}>
-                  {[[-1, "Posunúť vyššie", "m6 15 6-6 6 6", i === 0], [1, "Posunúť nižšie", "m6 9 6 6 6-6", i === rad.length - 1]].map(([d, l, p, off]) => (
-                    <button key={l as string} type="button" aria-label={l as string} onClick={() => posun(i, d as number)}
-                      style={{ width: 40, height: 44, border: "none", background: "transparent", cursor: "pointer", color: "inherit", opacity: off ? .3 : 1, display: "flex", alignItems: "center", justifyContent: "center" }}><Ikonka d={p as string} /></button>))}
-                  <button type="button" aria-label="Odobrať" onClick={() => setRad((r) => r.filter((_, j) => j !== i))}
-                    style={{ width: 40, height: 44, border: "none", background: "transparent", cursor: "pointer", color: "var(--ink3)", display: "flex", alignItems: "center", justifyContent: "center" }}><Ikonka d="M18 6 6 18M6 6l12 12" /></button>
-                </span>
-              </div>
-              <Pruh z={zb} />
-              <PercentaRetaze pct={x.pct} onPct={(v) => nastavPct(i, v)} />
-              {bezTerminu && <Info>Nemá cieľ ani termín. Zbierky za ňou začnú, až keď ju majiteľ uzavrie.</Info>}
+                <span style={{ flex: "none", fontSize: 18, fontWeight: 800, color: "var(--gInk)", fontVariantNumeric: "tabular-nums" }}>{x.pct} %</span>
+              </button>
+              {o && <>
+                <PercentaRiadku pct={x.pct} onPct={(v) => nastavPct(i, v)} />
+                {bezTerminu && <Info>Nemá cieľ ani termín. Zbierky za ňou začnú, až keď ju organizátor uzavrie.</Info>}
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button type="button" onClick={() => posun(i, -1)} disabled={i === 0} style={{ ...malyTl, opacity: i === 0 ? 0.4 : 1 }}><Ikonka d="m6 15 6-6 6 6" />Vyššie</button>
+                  <button type="button" onClick={() => posun(i, 1)} disabled={i === rad.length - 1} style={{ ...malyTl, opacity: i === rad.length - 1 ? 0.4 : 1 }}><Ikonka d="m6 9 6 6 6-6" />Nižšie</button>
+                  <button type="button" onClick={() => { setRad((r) => r.filter((_, j) => j !== i)); setOtv(null); }} style={malyTl}>Odobrať</button>
+                </div>
+              </>}
             </div>
           );
         })}
-        {rad.length === 0 && <div style={{ padding: 16, borderRadius: 18, border: "1.5px dashed var(--fieldBd)", fontSize: 14, lineHeight: 1.5, color: "var(--ink3)", textAlign: "center" }}>Rad je prázdny. Pridaj aspoň jednu zbierku.</div>}
+        {rad.length === 0 && <div style={{ padding: 16, borderRadius: 18, border: "1.5px dashed var(--fieldBd)", fontSize: 14, lineHeight: 1.5, color: "var(--ink3)", textAlign: "center" }}>Rad je prázdny. Pridajte aspoň jednu zbierku.</div>}
         <button type="button" onClick={() => setKrok("vyber")} style={{ height: 50, borderRadius: 14, border: "1.5px dashed var(--gBd)", background: "transparent", color: "var(--gInk)", fontSize: 14.5, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "inherit" }}>
-          <Ikonka d="M12 5v14M5 12h14" />Pridať zbierku do radu</button>
-        <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)" }}>Keď sa skončia všetky zbierky v rade, z každého daru ide 100 % tebe. Zbierka, ktorú medzitým uzavrú, sa preskočí.</div>
-        <Tlacidlo label="Pokračovať na zhrnutie" disabled={!rad.length} onClick={() => setKrok("zhrnutie")} />
+          <Ikonka d="M12 5v14M5 12h14" />Pridať zbierku</button>
+        <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)" }}>Potom 100 % vám. Zbierka, ktorú medzitým uzavrú, sa preskočí.</div>
+        <Tlacidlo label="Pokračovať na zmluvu" disabled={!rad.length} onClick={() => { setChyst(null); setChyba(null); setKrok("zhrnutie"); }} />
       </>
     );
   } else if (krok === "vyber") {
@@ -135,11 +160,11 @@ export function RetazDobraHarok({ zbierka, onClose }: { zbierka: { id: string; n
         <input value={hladaj} onChange={(e) => setHladaj(e.target.value)} placeholder="Hľadať zbierku" aria-label="Hľadať zbierku"
           style={{ height: 48, padding: "0 14px", borderRadius: 13, border: "1.5px solid var(--fieldBd)", background: "var(--field)", fontSize: 15, color: "var(--ink)", outline: "none", fontFamily: "inherit" }} />
         {zoznam.map((x) => (
-          <button key={x.id} type="button" onClick={() => { setRad((r) => [...r, { zbierkaId: x.id, pct: 25 }]); setHladaj(""); setKrok("nastavenie"); }}
+          <button key={x.id} type="button" onClick={() => { setRad((r) => [...r, { zbierkaId: x.id, pct: 25 }]); setOtv(x.id); setHladaj(""); setKrok("nastavenie"); }}
             style={{ ...karta, borderRadius: 16, textAlign: "left", padding: "12px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, color: "var(--ink)", fontFamily: "inherit" }}>
             <span style={{ flex: 1, minWidth: 0 }}>
               <span style={{ display: "block", fontSize: 15, fontWeight: 800, lineHeight: 1.3 }}>{x.nazov}</span>
-              <span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)", marginTop: 2 }}>{x.org} · {cielTxt(x)}</span>
+              <span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)", marginTop: 2 }}>{x.strana.meno} · {cielTxt(x)}</span>
             </span>
             <span style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--gSoft)", color: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Ikonka d="M12 5v14M5 12h14" /></span>
           </button>))}
@@ -148,49 +173,78 @@ export function RetazDobraHarok({ zbierka, onClose }: { zbierka: { id: string; n
       </>
     );
   } else if (krok === "zhrnutie") {
-    titul = "Zhrnutie reťaze"; pod = "Skontroluj pred zapečatením";
-    const zapecatTeraz = () => { buzz([10, 40, 18]); zapecatRetaz(rad); setKrok("bezi"); };
+    titul = "Zmluva"; pod = "Skontrolujte a zapečaťte";
+    const org = rad.map((x) => z(x.zbierkaId)).filter((x): x is ZbierkaVRetazi => !!x);
+    const zapecatTeraz = async () => {
+      if (uklada) return;
+      const r = chyst ?? pripravRetaz(rad, robiTeraz);
+      setChyst(r); setUklada(true); setChyba(null);
+      const e = await zapecatRetaz(r);
+      setUklada(false);
+      if (e) { buzz([30, 60, 30]); setChyba(e); return; }
+      buzz([10, 40, 18]); setChyst(null); setKrok("bezi");
+    };
     obsah = (
       <>
-        <div style={nadpis}>TAKTO TO UVIDÍ DARCA POD QR</div>
-        <div style={{ alignSelf: "center", padding: "10px 18px", borderRadius: 999, background: "#1D211B", color: "#F1ECE1", fontSize: 15, fontWeight: 800 }}>{stitokDarcu(rad[0]?.pct ?? 100, rad[0]?.zbierkaId ?? null)}</div>
-        <div style={{ ...nadpis, marginTop: 6 }}>RAD ZBIEROK</div>
-        {rad.map((x, i) => (
-          <div key={x.zbierkaId} style={{ ...karta, borderRadius: 16, display: "flex", alignItems: "center", gap: 10, padding: "12px 14px" }}>
-            <Cislo n={i + 1} prve={i === 0} />
+        <div style={nadpis}>ZMLUVA MEDZI</div>
+        <KartaStrany s={robi} />
+        <div style={{ ...nadpisZmluvy, display: "flex", alignItems: "flex-start", gap: 8 }}><span aria-hidden="true">↓</span><span>vzdáva sa časti z každého daru, v tomto poradí</span></div>
+        {rad.map((x, i) => { const zb = z(x.zbierkaId); if (!zb) return null; return (
+          <div key={x.zbierkaId} style={{ ...karta, borderRadius: 16, border: `1px solid ${i === 0 ? "var(--gBd)" : "var(--cardBd)"}`, display: "flex", alignItems: "center", gap: 10, padding: "12px 14px" }}>
+            <span style={{ flex: "none", width: 18, fontSize: 13, fontWeight: 800, color: "var(--ink3)" }}>{i + 1}</span>
+            <ZnakStrany s={zb.strana} size={40} />
             <span style={{ flex: 1, minWidth: 0 }}>
-              <span style={{ display: "block", fontSize: 14.5, fontWeight: 800 }}>{z(x.zbierkaId)?.nazov}</span>
-              <span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{i === 0 ? "beží hneď po zapečatení" : `začne po ${z(rad[i - 1].zbierkaId)?.nazov ?? ""}`}</span>
+              <span style={{ display: "block", fontSize: 14.5, fontWeight: 800 }}>{zb.strana.meno}</span>
+              <span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{zb.nazov}</span>
             </span>
-            <span style={{ fontSize: 16, fontWeight: 800, color: "var(--gInk)", fontVariantNumeric: "tabular-nums" }}>{x.pct} %</span>
-          </div>))}
+            <span style={{ flex: "none", fontSize: 16, fontWeight: 800, color: "var(--gInk)", fontVariantNumeric: "tabular-nums" }}>{x.pct} %</span>
+            <span style={{ flex: "none", lineHeight: 0 }}><StitStrany s={zb.strana} h={34} /></span>
+          </div>); })}
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 16, border: "1.5px dashed var(--fieldBd)" }}>
-          <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: "var(--ink2)" }}>Potom ty</span>
+          <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: "var(--ink2)" }}>Potom {robi.meno}</span>
           <span style={{ fontSize: 16, fontWeight: 800, color: "var(--ink2)" }}>100 %</span>
         </div>
-        <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ink2)" }}>Majiteľ každej zbierky dostane oznámenie, že si ho zaradil do reťaze, a môže to zdieľať.</div>
+        <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ink2)" }}>
+          {org.length === 1 ? `Zapečatí sa medzi vami a ${org[0].strana.meno}. Po zapečatení to nikto nezmení. Keď sa zbierka naplní alebo skončí, z každého daru pôjde 100 % vám.`
+            : `Zapečatí sa medzi vami a každým z nich. Po zapečatení to nikto nezmení. Keď sa zbierka naplní alebo skončí, QR sám prejde na ďalšiu.`}
+          {` ${org.length === 1 ? "Organizátor dostane" : `Všetci ${org.length} organizátori dostanú`} oznámenie.`}
+        </div>
+        <div style={nadpis}>DARCA POD QR UVIDÍ</div>
+        <div style={{ alignSelf: "flex-start", padding: "9px 16px", borderRadius: 999, background: "#1D211B", color: "#F1ECE1", fontSize: 14.5, fontWeight: 800 }}>{stitokDarcu(rad[0]?.pct ?? 100, rad[0]?.zbierkaId ?? null)}</div>
+        {chyba && <div role="alert" style={{ padding: "12px 14px", borderRadius: 14, background: "var(--errBg, #F2E3DC)", border: "2px solid var(--cRed, #A34A2A)", display: "flex", flexDirection: "column", gap: 2 }}>
+          <b style={{ fontSize: 15.5, color: "var(--cRed, #A34A2A)" }}>Neuložilo sa</b>
+          <span style={{ fontSize: 14, color: "var(--ink2)" }}>{chyba}</span>
+        </div>}
         <div style={{ display: "flex", gap: 10, alignItems: "stretch" }}>
-          <Tlacidlo label="Späť" druhe onClick={() => setKrok("nastavenie")} />
+          <Tlacidlo label="Späť" druhe onClick={() => { setChyba(null); setKrok("nastavenie"); }} />
           <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-            {podrz ? <PodrzTlacidlo label="Podrž a zapečať" onConfirm={zapecatTeraz} /> : <Tlacidlo label="Zapečatiť" onClick={zapecatTeraz} />}
+            {chyba ? <Tlacidlo label={uklada ? "Ukladá sa…" : "Skúsiť znova"} disabled={uklada} onClick={() => void zapecatTeraz()} />
+              : podrz ? <PodrzTlacidlo key={uklada ? "u" : "p"} label={uklada ? "Ukladá sa…" : "Podržte a zapečaťte"} onConfirm={() => void zapecatTeraz()} />
+              : <Tlacidlo label={uklada ? "Ukladá sa…" : "Zapečatiť"} disabled={uklada} onClick={() => void zapecatTeraz()} />}
           </div>
         </div>
-        <div style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--ink3)", textAlign: "center" }}>Po zapečatení sa reťaz nedá meniť. Vždy si môžeš vytvoriť novú.</div>
+        <div style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--ink3)", textAlign: "center" }}>Po zapečatení sa reťaz nedá meniť. Vždy si môžete vytvoriť novú.</div>
       </>
     );
   } else if (retaz) {
-    titul = "Tvoja reťaz beží"; pod = "Darcovia vidia, kam ide ich dar";
+    titul = "Reťaz beží"; pod = `Zapečatené ${datum(retaz.zapecatene)}`;
     const b = beziaca(retaz);
     const idx = b ? retaz.polozky.indexOf(b) : retaz.polozky.length;
+    const n = retaz.polozky.length;
     obsah = (
       <>
+        <KartaStrany s={robi} />
+        {/* PLACEBO — oznámenia organizátorom posiela server až v časti B (balík 8); dovtedy len „Zapečatené ✓“ */}
+        <div role="status" style={{ padding: "12px 14px", borderRadius: 14, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 14, fontWeight: 800, color: "var(--gInk)" }}>
+          Zapečatené ✓ s {n === 1 ? z(retaz.polozky[0].zbierkaId)?.strana.meno ?? "organizátorom" : `${n} organizátormi`} · {datum(retaz.zapecatene)}
+        </div>
         <div style={{ ...karta, borderRadius: 20, display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "18px 14px" }}>
-          {/* QR bežiacej dvojice tvorca + zbierka (centrálny QR tvorcu sa nezobrazuje) */}
+          {/* QR reťaze (D++R) — jeden pre celú reťaz, mení sa sám podľa bežiacej zbierky */}
           <span style={{ background: "#fff", padding: 10, borderRadius: 16, lineHeight: 0 }}>
             <DeedQr data={`https://deed.sk/r/${retaz.id}${b ? `/${b.zbierkaId}` : ""}`} odznak="D++" retaz size={180} />
           </span>
           <div style={{ padding: "9px 16px", borderRadius: 999, background: "#1D211B", color: "#F1ECE1", fontSize: 14.5, fontWeight: 800, textAlign: "center" }}>{stitokDarcu(b?.pct ?? 100, b?.zbierkaId ?? null)}</div>
-          <div style={{ fontSize: 12.5, color: "var(--ink3)", fontVariantNumeric: "tabular-nums" }}>Dostal si {e2(retaz.dostal)} · zbierkam poslané {e2(retaz.poslane)}</div>
+          <div style={{ fontSize: 12.5, color: "var(--ink3)", fontVariantNumeric: "tabular-nums" }}>Dostali ste {e2(retaz.dostal)} · ďalej poslané {e2(retaz.poslane)}</div>
         </div>
         <div style={nadpis}>RAD ZBIEROK</div>
         {retaz.polozky.map((x, i) => {
@@ -200,9 +254,11 @@ export function RetazDobraHarok({ zbierka, onClose }: { zbierka: { id: string; n
           return (
             <div key={x.zbierkaId} style={{ ...karta, borderRadius: 16, border: `1px solid ${x.stav === "bezi" ? "var(--gBd)" : "var(--cardBd)"}`, opacity: koniec ? .7 : 1, display: "flex", flexDirection: "column", gap: 8, padding: "12px 14px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {zb && <ZnakStrany s={zb.strana} size={36} />}
                 <span style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ display: "block", fontSize: 14.5, fontWeight: 800 }}>{zb?.nazov ?? x.zbierkaId}</span>
-                  <Stitok t={x.stav === "caka" ? `Čaká · ${i - idx}. v rade` : t} bg={bg} ink={ink} />
+                  <span style={{ display: "block", fontSize: 14.5, fontWeight: 800 }}>{zb?.strana.meno ?? x.zbierkaId}</span>
+                  {zb && <span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{zb.nazov}</span>}
+                  <Stitok t={x.stav === "caka" ? `Čaká · ${i - idx + 1}. v rade` : t} bg={bg} ink={ink} />
                 </span>
                 <span style={{ fontSize: 16, fontWeight: 800, color: "var(--gInk)", fontVariantNumeric: "tabular-nums" }}>{x.pct} %</span>
               </div>

@@ -16,13 +16,20 @@ export const zaokruhliPct = (v: number) => Math.min(100, Math.max(RETAZ_PCT_MIN,
 
 export type StavVRetazi = "caka" | "bezi" | "naplnena" | "skoncila" | "preskocena";
 export interface PolozkaRetaze { zbierkaId: string; pct: number; stav: StavVRetazi; poslane: number; snap?: Znama }
-export interface Retaz { id: string; zapecatene: number; polozky: PolozkaRetaze[]; dostal: number; poslane: number; vlastnik?: string }
+export interface Retaz { id: string; zapecatene: number; polozky: PolozkaRetaze[]; dostal: number; poslane: number; vlastnik?: string;
+  /** OPRAVY 290: kto reťaz robí (karta ako na profile, štít z jeho profilu) */ robi?: Strana }
+
+/** OPRAVY 290 · balík 8 — strana zmluvy: kto reťaz robí alebo kto zbierku organizuje. Štít sa ťahá z profilu:
+ *  osoba / Help / tvorca / farnosť = hlavný štít DEED, charita = DEED Care, firma = DEED Partner. */
+export type DruhStrany = "osoba" | "help" | "tvorca" | "charita" | "firma" | "farnost";
+export interface Strana { druh: DruhStrany; meno: string; iniciala: string; foto?: string; mesto?: string; overeny?: boolean; stit: string; /** riadok pod menom (napr. „farár · Farnosť Trenčín“) */ pod?: string }
+export const inicialy = (meno: string) => meno.replace(/[^\p{L}\s]/gu, " ").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toLocaleUpperCase("sk-SK")).join("") || "?";
 
 /** zbierka, ako ju vidí tvorca pri výbere a v rade */
-export interface ZbierkaVRetazi { id: string; nazov: string; org: string; ciel: number | null; vyzbierane: number; aktivna: boolean }
+export interface ZbierkaVRetazi { id: string; nazov: string; org: string; ciel: number | null; vyzbierane: number; aktivna: boolean; /** organizátor so štítom */ strana: Strana }
 
 /** zbierka mimo katalógu (napr. karta z feedu) — appka ju ohlási, keď z nej otvára reťaz */
-export type Znama = { nazov: string; org: string; ciel: number | null; zaklad: number };
+export type Znama = { nazov: string; org: string; ciel: number | null; zaklad: number; strana?: Strana };
 const ZNAME = new Map<string, Znama>();
 export const ohlasZbierku = (id: string, z: Znama) => { ZNAME.set(id, z); };
 
@@ -31,9 +38,12 @@ export function zbierkaVRetazi(id: string): ZbierkaVRetazi | null {
   const z = najdiZbierku(id);
   if (!z) {
     const x = ZNAME.get(id);
-    return x ? { id, nazov: x.nazov, org: x.org, ciel: x.ciel, vyzbierane: x.zaklad + zive, aktivna: true } : null;
+    return x ? { id, nazov: x.nazov, org: x.org, ciel: x.ciel, vyzbierane: x.zaklad + zive, aktivna: true,
+      strana: x.strana ?? { druh: "charita", meno: x.org || x.nazov, iniciala: inicialy(x.org || x.nazov), stit: "Bronze" } } : null;
   }
-  return { id, nazov: z.nazov, org: z.ziadatel.typ === "org" ? z.ziadatel.meno : `Pomoc · ${z.lok}`, ciel: z.ciel > 0 ? z.ciel : null, vyzbierane: z.vyzbierane + zive, aktivna: z.stav === "aktivna" };
+  const zi = z.ziadatel, org = zi.typ === "org";
+  return { id, nazov: z.nazov, org: org ? zi.meno : `Pomoc · ${z.lok}`, ciel: z.ciel > 0 ? z.ciel : null, vyzbierane: z.vyzbierane + zive, aktivna: z.stav === "aktivna",
+    strana: { druh: org ? "charita" : "help", meno: zi.meno, iniciala: inicialy(zi.meno), foto: zi.foto || undefined, mesto: zi.lok, overeny: zi.overeny, stit: zi.level } };
 }
 /** výber: len verejné bežiace zbierky (súkromnú len cez odkaz — nie tu) */
 export const verejneBeziace = (): ZbierkaVRetazi[] =>
@@ -64,15 +74,20 @@ function uloz(r: Retaz | null) {
   ulozLokalne(s);
   void zapisDoUctu(s);
 }
+/** TESTOVACIE (balík 8 · C): „Vypnúť sieť pri zapečatení“ — ďalšie zapečatenie zlyhá ako bez internetu */
+let vypadokTest = false;
+export const nastavVypadokTest = (on: boolean) => { vypadokTest = on; zmena(); };
+export const vypadokTestZapnuty = () => vypadokTest;
 
 // ---- účet (0080b) ----
 let vUcte: string | null = null;
-async function zapisDoUctu(r: Retaz | null) {
-  if (!supabase || !vUcte) return;
+/** zápis do účtu; vráti chybu (nikdy ticho) — bez účtu / databázy null */
+async function zapisDoUctu(r: Retaz | null): Promise<string | null> {
+  if (!supabase || !vUcte) return null;
   const { error } = r
     ? await supabase.from("moja_retaz").upsert({ data: r }, { onConflict: "ucet_id" })
     : await supabase.from("moja_retaz").delete().eq("ucet_id", vUcte);
-  if (error) console.warn("Reťaz sa nepodarilo uložiť do účtu", error.message);
+  return error ? "Server reťaz neprijal." : null;
 }
 /** po prihlásení: rad z účtu má prednosť; keď v účte nie je, doplní sa lokálny (ak nie je cudzí) */
 async function synchronizujRetaz(ucetId: string) {
@@ -107,13 +122,22 @@ function posun(r: Retaz): Retaz {
 
 export const beziaca = (r: Retaz) => r.polozky.find((x) => x.stav === "bezi") ?? null;
 
-/** zapečatí rad — odvtedy sa nemení; všetky QR dvojice vzniknú naraz */
-export function zapecatRetaz(polozky: { zbierkaId: string; pct: number }[]): Retaz {
-  const r = posun({ id: `rt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, zapecatene: Date.now(), dostal: 0, poslane: 0,
+/** pripraví zapečatenú reťaz (id vznikne raz — opakované zapečatenie po výpadku ju uloží len raz) */
+export function pripravRetaz(polozky: { zbierkaId: string; pct: number }[], robi: Strana): Retaz {
+  return posun({ id: `rt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, zapecatene: Date.now(), dostal: 0, poslane: 0, robi,
     polozky: polozky.map((x) => ({ zbierkaId: x.zbierkaId, pct: zaokruhliPct(x.pct), stav: "caka" as const, poslane: 0,
       ...(ZNAME.has(x.zbierkaId) ? { snap: ZNAME.get(x.zbierkaId) } : {}) })) });
-  uloz(r);
-  return r;
+}
+/** zapečatí rad — odvtedy sa nemení. Najprv účet (pravda je v DB), až potom zariadenie.
+ *  Zlyhanie vráti text chyby a reťaz ostane nezapečatená (appka ukáže Neuložilo sa · Skúsiť znova). */
+export async function zapecatRetaz(r: Retaz): Promise<string | null> {
+  const nedostupne = "Nie ste pripojený na internet. Reťaz zatiaľ nie je zapečatená.";
+  if (vypadokTest || (typeof navigator !== "undefined" && navigator.onLine === false)) return nedostupne;
+  const s = vUcte ? { ...r, vlastnik: vUcte } : r;
+  const chyba = await zapisDoUctu(s).catch(() => "Server reťaz neprijal.");
+  if (chyba) return `${chyba} Reťaz zatiaľ nie je zapečatená.`;
+  ulozLokalne(s);
+  return null;
 }
 /** „Vytvoriť novú reťaz" — stará sa uzavrie (tu: zabudne), nová sa nastavuje od nuly */
 export const zrusRetaz = () => uloz(null);

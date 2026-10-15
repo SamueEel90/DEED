@@ -165,7 +165,7 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, 
       {harok === "pravidelna" && <PravidelnaHarok refId={refId} nazov={nazov} registrovany={registrovany} zbierka={false} onClose={() => setHarok(null)} />}
       {harok === "zdielat" && <ZdielatHarok id={refId} nazov={nazov} organizacia={profil.meno} obrazok={sektor.foto} onClose={() => setHarok(null)} />}
       {harok === "podporit" && <PodporitDeedHarok registrovany={registrovany} onClose={() => setHarok(null)} />}
-      {harok === "retaz" && <RetazDobraHarok zbierka={{ id: refId, nazov, org: profil.meno, ciel: null, vyzbierane: zaklad }} onClose={() => setHarok(null)} />}
+      {harok === "retaz" && <RetazDobraHarok zbierka={{ id: refId, nazov, org: profil.meno, ciel: null, vyzbierane: zaklad, strana: { druh: profil.typ === "firma" || profil.typ === "tvorca" || profil.typ === "farnost" ? profil.typ : "charita", meno: profil.meno, iniciala: profil.iniciala, mesto: typeof profil.mesto === "string" ? profil.mesto : undefined, overeny: true, stit: profil.stit } }} onClose={() => setHarok(null)} />}
     </div>
   );
 }

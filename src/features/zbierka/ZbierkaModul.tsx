@@ -28,6 +28,7 @@ import { firmaPreDorovnanie } from "@/lib/podpory";
 import { PravidelnaHarok } from "./PravidelnaHarok";
 import { PrispietZaFarnost } from "./FarnostPrispela";
 import { RetazDobraHarok } from "./RetazDobra";
+import { inicialy } from "@/lib/retaz";
 import { DorovnanieFirmyHarok } from "./DorovnanieFirmy";
 import { STUPNE, nastavDevTempo, useDevTempo, type Stupen } from "./tempoStupen";
 import type { TempoRezim } from "./Tempo";
@@ -269,7 +270,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
       {harok === "zdielat" && <ZdielatHarok id={zbierka.id} nazov={zbierka.nazov} organizacia={zbierka.organizacia?.meno}
         obrazok={zbierka.media?.find((m) => m.typ === "foto")?.src} onClose={() => setHarok(null)} />}
       {harok === "podporit" && <PodporitDeedHarok registrovany={registrovany} onClose={() => setHarok(null)} />}
-      {harok === "retaz" && <RetazDobraHarok zbierka={{ id: zbierka.id, nazov: zbierka.nazov, org: zbierka.organizacia?.meno, ciel, vyzbierane: zbierka.vyzbierane }} onClose={() => setHarok(null)} />}
+      {harok === "retaz" && <RetazDobraHarok zbierka={{ id: zbierka.id, nazov: zbierka.nazov, org: zbierka.organizacia?.meno, ciel, vyzbierane: zbierka.vyzbierane, strana: zbierka.organizacia ? { druh: "charita", meno: zbierka.organizacia.meno, iniciala: inicialy(zbierka.organizacia.meno), foto: zbierka.organizacia.obrazok, mesto: zbierka.organizacia.mesto, overeny: true, stit: zbierka.organizacia.stit } : undefined }} onClose={() => setHarok(null)} />}
 
       {/* pripojené položky — vždy rovnaké poradie, odpojené chýbajú úplne */}
       {/* karta 15 — mobil: jeden stĺpec v pevnom poradí · PC (≥ 1024): vľavo obsah, vpravo modul 420 px (sticky) */}

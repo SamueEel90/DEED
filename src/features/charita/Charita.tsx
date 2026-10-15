@@ -81,6 +81,8 @@ type ZbierkaDetail = {
   karma?: string;
   volunteer?: boolean;   // bez finančného cieľa → CTA „Zapojiť sa"
   orgProfil?: boolean;   // autor je organizácia/charita (inak osoba) — pre cudzí profil
+  /** balík 8 A: meno organizátora, keď sa líši od názvu zbierky (zmluva Reťaze) */
+  org?: string;
 };
 
 // fixné karty feedu (top/mala/zapoj/material) — obsah raz, použije sa na kartu aj detail
@@ -114,7 +116,7 @@ const zoItem = (it: CharitaFeedItem): ZbierkaDetail => ({
   id: String(it.id), nazov: it.nazov || "Zbierka", emoji: it.emoji || "💛", accent: K.gold,
   badge: it.badgeL, tag: it.tag, tagCol: K.gold, overena: it.overena, orgProfil: true,
   popis: it.popis || "", vyzbierane: it.vyzbierane, ciel: it.ciel,
-  ludia: it.podpora, fotky: it.fotky, lok: it.lok, karma: "Silver",
+  ludia: it.podpora, fotky: it.fotky, lok: it.lok, karma: "Silver", org: it.orgNazov,
 });
 
 // ZbierkaDetail → záznam obľúbených (bookmark)
@@ -155,7 +157,7 @@ export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
   // pod-obrazovka = vrstva histórie → browser Back sa vráti o krok (nie von z appky)
   useVrstva(screen !== "feed" || !!cesta.aktualny, () => (cesta.aktualny ? cesta.spat() : setScreen("feed")), screen);
 
-  const otvorZbierku = (z: ZbierkaDetail) => cesta.otvor(z.nazov, { typ: "zbierka", z, org: z.orgProfil ? z.nazov : undefined });
+  const otvorZbierku = (z: ZbierkaDetail) => cesta.otvor(z.nazov, { typ: "zbierka", z, org: z.orgProfil ? z.org ?? z.nazov : undefined });
   const krokCesty = () => {
     const krok = cesta.aktualny!;
     const spatNazov = cesta.predosly?.nazov ?? "Tvoj feed";
