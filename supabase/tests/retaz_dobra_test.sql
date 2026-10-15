@@ -1,5 +1,5 @@
 -- ============================================================
--- Test 0093 — Reťaz dobra na serveri: zapečatenie, oznámenia, podiely v ledgeri na cent, posun radu, 100 % tvorcovi
+-- Test 0093 + 0094 — Reťaz dobra na serveri: zapečatenie, oznámenia, podiely v ledgeri na cent, posun radu, 100 % tvorcovi, stránky, Testovanie
 -- Všetko beží v transakcii a na konci sa vráti (ROLLBACK). Každý riadok musí mať ok = t.
 -- ============================================================
 begin;
