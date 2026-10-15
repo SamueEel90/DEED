@@ -891,8 +891,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
       </div>
     </>);
   const kalOkno = kalOtv && <CelaObrazovka label="Omše a kalendár" onZavri={() => setKalOtv(false)}>
-    <div className="nastenka-farnosti" style={{ ...PREMENNE, ["--nf-linia" as string]: farbaLinie, flex: 1, minHeight: 0, overflowY: "auto", background: BG, color: INK, padding: "16px clamp(16px,4vw,40px) 32px" } as CSSProperties}>
-      <div style={{ maxWidth: 900, margin: "0 auto" }}><TyzdenFarnosti strankaId={strankaId} slovo={SLF.omsa} siroka cas={cas} miestaF={miestaF} mojKostol={jeHl ? MF.mojKostol : null} /></div>
+    <div className="nastenka-farnosti" style={{ ...PREMENNE, ["--nf-linia" as string]: farbaLinie, flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", background: BG, color: INK, padding: "16px clamp(16px,4vw,40px) 32px" } as CSSProperties}>
+      <div style={{ maxWidth: 900, margin: "0 auto", minWidth: 0 }}><TyzdenFarnosti strankaId={strankaId} slovo={SLF.omsa} siroka={siroka} okno cas={cas} miestaF={miestaF} mojKostol={jeHl ? MF.mojKostol : null} /></div>
     </div>
   </CelaObrazovka>;
   const kronikaTelo = kronika && (prazdna
@@ -2161,7 +2161,10 @@ function RiadokZbierky({ stitok, farba, nazov, obr, refId, ciel, pct: pct0, datu
 
 /** OPRAVY 220/221: päta „Tento týždeň vo farnosti" — všetko zaškrtnuté v Čo uvidia ľudia, podľa času, dnešok čierny, zrušená prečiarknutá.
  *  PC celý týždeň otvorený; mobil a tablet zbalené na dnes a zajtra + „Celý týždeň ⌄". Celý mesiac › · Vytlačiť ›. */
-function TyzdenFarnosti({ strankaId, slovo, siroka, cas, miestaF, mojKostol, bezNadpisu }: { strankaId: string; slovo: string; siroka: boolean; cas: Date; /** OPRAVY 245: v zbalenom bloku nadpis nesie riadok */ bezNadpisu?: boolean;
+/** OPRAVY 309: krátky názov kostola (Farský · Notre Dame · sv. Anny) */
+const kratkyKostol = (n: string) => { const x = n.trim(); if (/^farsk/i.test(x)) return "Farský"; return x.replace(/^(Rímskokatolícky\s+|Gréckokatolícky\s+)?(Kostol|Kaplnka|Chrám|Bazilika|Katedrála)\s+/i, "").trim() || x; };
+function TyzdenFarnosti({ strankaId, slovo, siroka, cas, miestaF, mojKostol, bezNadpisu, okno }: { strankaId: string; slovo: string; siroka: boolean; cas: Date; /** OPRAVY 245: v zbalenom bloku nadpis nesie riadok */ bezNadpisu?: boolean;
+  /** OPRAVY 309: okno Omše a kalendár — od dnes (minulé dni nie), na mobile deň pod sebou, nič nevyteká do boku */ okno?: boolean;
   /** KARTA 62: miesta farnosti — pri 2+ miestach „· názov miesta“ a čipy Všetky · miesta */ miestaF: Miesto[]; /** „Môj kostol“ — kalendár sa otvorí s jeho čipom */ mojKostol?: string | null }) {
   const kal = useKalendar(strankaId);
   const k = kostolKal(strankaId), VJ = kal.verejne;
@@ -2180,9 +2183,34 @@ function TyzdenFarnosti({ strankaId, slovo, siroka, cas, miestaF, mojKostol, bez
   const iDnes = t0.findIndex((d) => d.key === dnes);
   // OPRAVY 247: deň bez omše, udalosti a zmeny úradných hodín sa neukáže
   const plny = (d: (typeof t0)[number]) => { const v = k.uradne?.[d.key] as { zrus?: boolean; od?: string; do?: string } | undefined; return d.o.length > 0 || !!(v && (v.zrus || (v.od && v.do))); };
-  const dni = (siroka || cely ? t0 : [...t0, ...t1].slice(Math.max(0, iDnes)).filter(plny).slice(0, 2)).filter(plny);
+  const dni = okno ? [...t0, ...t1].filter((d) => d.key >= dnes).slice(0, 7).filter(plny)
+    : (siroka || cely ? t0 : [...t0, ...t1].slice(Math.max(0, iDnes)).filter(plny).slice(0, 2)).filter(plny);
   const riadok = (d: (typeof t0)[number], pozn?: string) => {
     const dt = zIso(d.key), dn = d.key === dnes;
+    if (!siroka) { // OPRAVY 309: mobil (okno Omše a kalendár aj blok na Nástenke) — hore dátum a deň, pod tým časy na celú šírku; pri Všetky každý kostol vlastný riadok
+      const vedlajsi = dn ? { color: "inherit", opacity: 0.88 } : { color: INK2 };
+      const ozn = (o: (typeof d.o)[number]) => { const ix = o.s.indexOf(slovo); return ix < 0 ? { hl: o.s, dr: "" } : { hl: slovo, dr: (o.s.slice(0, ix) + o.s.slice(ix + slovo.length)).replace(/^\s*·\s*|\s+$/g, "").replace(/^\s+/, "") }; };
+      const kost = viac && !vyb ? [...new Set(d.o.map((o) => (o as { k?: string }).k ?? ""))] : [];
+      return (
+        <div key={d.key} style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px", borderRadius: 14, background: dn ? "var(--nf-plne)" : KARTA, color: dn ? "var(--nf-plneInk)" : INK, overflow: "hidden" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}><Datum d={dt} /><b style={{ fontSize: 16, minWidth: 0 }}>{pozn ? `${pozn} · ${d.w}` : dn ? `dnes · ${d.w}` : d.w}</b></span>
+          {d.o.length === 0 ? <span style={{ fontSize: 15, ...vedlajsi }}>bez {slovo.replace(/^sv\. /, "")}</span>
+            : kost.length > 1 ? kost.map((kn) => { const l = d.o.filter((o) => ((o as { k?: string }).k ?? "") === kn); return (
+              <span key={kn} style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: "2px 10px", minWidth: 0 }}>
+                <span style={{ fontSize: 15, fontWeight: 800, ...vedlajsi }}>{kratkyKostol(kn)}</span>
+                {l.map((o, i) => <b key={i} style={{ fontSize: 20, fontVariantNumeric: "tabular-nums", textDecoration: o.z ? "line-through" : "none", opacity: o.z ? 0.6 : 1 }}>{o.t}</b>)}
+              </span>); })
+            : d.o.map((o, i) => { const { hl, dr } = ozn(o), kn = (o as { k?: string }).k; return (
+              <span key={i} style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0, textDecoration: o.z ? "line-through" : "none", opacity: o.z ? 0.6 : 1 }}>
+                <span style={{ display: "flex", alignItems: "baseline", gap: 8, minWidth: 0, whiteSpace: "nowrap" }}>
+                  <b style={{ flex: "none", fontSize: 20, fontVariantNumeric: "tabular-nums" }}>{o.t}</b>
+                  <span style={{ fontSize: 15, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>· {hl}{dr ? <span style={{ fontSize: 13.5, ...vedlajsi }}> {dr}</span> : null}</span>
+                </span>
+                {kn ? <span style={{ fontSize: 14, fontWeight: 700, ...vedlajsi }}>{kratkyKostol(kn)}</span> : null}
+              </span>); })}
+          {(() => { const v = k.uradne?.[d.key]; return v && (v.zrus || (v.od && v.do)) ? <span style={{ fontSize: 14, fontWeight: 700, color: dn ? "inherit" : "var(--nf-cervena, #A3341F)" }}>{v.zrus ? "úradné hodiny zrušené" : `úradné hodiny zmenené na ${textCasu(v)}`}</span> : null; })()}
+        </div>);
+    }
     return (
       <div key={d.key} style={{ display: "grid", gridTemplateColumns: siroka ? "150px minmax(0,1fr)" : "auto minmax(0,1fr)", gap: siroka ? 20 : 12, alignItems: siroka ? "center" : "flex-start", padding: siroka ? "12px 16px" : "10px 12px", borderRadius: 14, background: dn ? "var(--nf-plne)" : KARTA, color: dn ? "var(--nf-plneInk)" : INK }}>
         <span style={{ display: "flex", alignItems: "center", gap: 12 }}><Datum d={dt} />{siroka && <span style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.3 }}>{dn ? "dnes" : d.w}</span>}</span>
@@ -2212,7 +2240,7 @@ function TyzdenFarnosti({ strankaId, slovo, siroka, cas, miestaF, mojKostol, bez
           <button key={id ?? "vsetky"} type="button" role="radio" aria-checked={on} onClick={() => setVyb(id)} style={{ minHeight: 40, padding: "0 14px", borderRadius: 20, border: `1.5px solid ${on ? "var(--nf-plne)" : LINKA}`, background: on ? "var(--nf-plne)" : PAPIER, color: on ? "var(--nf-plneInk)" : INK, fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, cursor: "pointer" }}>{n}</button>); })}
       </div>}
       {dni.map((d) => riadok(d, siroka || cely ? undefined : d.key === dnes ? "dnes" : d.key === iso(new Date(zIso(dnes).getTime() + 864e5)) ? "zajtra" : undefined))}
-      {!siroka && <button type="button" onClick={() => setCely(!cely)} aria-expanded={cely} style={{ minHeight: 48, borderRadius: 12, border: `1.5px solid ${ZELENA}`, background: "transparent", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, color: "var(--nf-gInk)", cursor: "pointer" }}>{cely ? "Zbaliť ⌃" : "Celý týždeň ⌄"}</button>}
+      {!siroka && !okno && <button type="button" onClick={() => setCely(!cely)} aria-expanded={cely} style={{ minHeight: 48, borderRadius: 12, border: `1.5px solid ${ZELENA}`, background: "transparent", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, color: "var(--nf-gInk)", cursor: "pointer" }}>{cely ? "Zbaliť ⌃" : "Celý týždeň ⌄"}</button>}
       <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
         <button type="button" onClick={() => setMesiac(true)} style={tl}>Celý mesiac ›</button>
         <button type="button" onClick={tlac} style={tl}>Vytlačiť ›</button>
