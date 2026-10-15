@@ -108,6 +108,7 @@ set role authenticated;
 select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-0000000093c1', false);
 insert into t select 'strana tvorcu: moja retaz', (public.retaz_strany(null)->>'id') = 'rt-t93';
 insert into t select 'oznamy organizatorom: 3 pri zapecateni + 1 na rade', jsonb_array_length(public.retaz_oznamy('rt-t93')) = 4;
+insert into t select 'stav: organizator a vyzbierane', (select j->'polozky'->0->>'org' = 'Charita A' and (j->'polozky'->0->>'vyzbierane')::numeric = 22.50 from (select public.retaz_stav('rt-t93') j) x);
 insert into t select 'oznamy: komu = stranka', (public.retaz_oznamy('rt-t93')->0->>'komu') = 'Charita A';
 select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-0000000093d1', false);
 do $$ begin

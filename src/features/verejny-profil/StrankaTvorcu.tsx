@@ -15,7 +15,11 @@ import { DOK, PortalVp, klikKarta } from "./casti";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { ModulPlatby } from "./ModulProfilu";
 import { Citacka, NAKUP_MAX, NakupPanel, OdchodHarok, Prehravac } from "./ObsahTvorcu";
-import { PRUH, useVsetkyNaKonci } from "./charitaCasti";
+import { PRUH, useVsetkyNaKonci, type PolCh } from "./charitaCasti";
+import { RetazNaStrankeTvorcu } from "@/features/zbierka/RetazStranky";
+import { najdiZbierku } from "@/lib/zbierky";
+import { darcoviaPre } from "@/lib/darcovia";
+import type { ZbierkaTvorcu } from "@/lib/retaz";
 
 const PC = "(min-width: 1200px)";
 function usePc() {
@@ -36,7 +40,8 @@ function Nadpis({ t, s }: { t: string; s?: string }) {
   return <span style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", paddingTop: 12 }}><b style={{ fontSize: 12, letterSpacing: ".1em", color: "var(--acc)" }}>{t}</b>{s && <span style={{ fontSize: 13, color: "var(--ink3)" }}>{s}</span>}</span>;
 }
 
-export function StrankaTvorcu({ profil, onBack, onStream, onDetail }: { profil: TestProfil; onBack: () => void; onStream: (streamId: string) => void; /** ťuk na kartu zbierky = detail s modulom */ onDetail: (z: TestZbierka) => void }) {
+export function StrankaTvorcu({ profil, onBack, onStream, onDetail, onZaznam }: { profil: TestProfil; onBack: () => void; onStream: (streamId: string) => void; /** ťuk na kartu zbierky = detail s modulom */ onDetail: (z: TestZbierka) => void;
+  /** balík 8 C · 7: ukončená zbierka z mojej reťaze = jej stránka bez platobného modulu */ onZaznam?: (p: PolCh) => void }) {
   const pc = usePc();
   const ts = useTestStav();
   const d = ts.prazdny ? { ...vyprazdni(TVORCA_DATA), naZivo: undefined, skolenie: undefined } : TVORCA_DATA; // OPRAVY 147: testovací prázdny profil
@@ -136,6 +141,17 @@ export function StrankaTvorcu({ profil, onBack, onStream, onDetail }: { profil: 
       </div>
     </div>
   );
+
+  // balík 8 C · 7: Teraz podporujem reťazou (len bežiaca) · Ukončené v mojej reťazi (výsledok a darcovia cez môj QR)
+  const naTestZbierku = (z: ZbierkaTvorcu, ukoncena: boolean): TestZbierka => {
+    const k = najdiZbierku(z.zbierkaId);
+    return { id: z.zbierkaId, nazov: z.nazov, popis: k?.popis ?? "", mesto: profil.mesto, foto: k?.foto ?? "", vyzbierane: z.vyzbierane, ciel: z.ciel ?? undefined, ludia: darcoviaPre(z.zbierkaId).length,
+      stav: ukoncena ? "ukoncena" : z.ciel ? "bezi" : "dlhodoba", zodpoveda: z.org || undefined,
+      ...(ukoncena && z.kedy ? { skoncila: new Date(z.kedy).toLocaleDateString("sk-SK") } : {}) };
+  };
+  const retazBlok = <RetazNaStrankeTvorcu stranka={profil.k} meno={profil.meno} onBezi={(z) => onDetail(naTestZbierku(z, false))}
+    onUkoncena={(z) => { const t = naTestZbierku(z, true), d0 = new Date(z.kedy || Date.now());
+      onZaznam?.({ id: z.zbierkaId, typ: "zb", d: `${d0.getDate()}.`, m: "", rok: d0.getFullYear(), nazov: z.nazov, s: "", foto: t.foto, zbierka: t, bezDokladov: true }); }} />;
 
   const rady = d.rady.length > 0 && <>
     <Nadpis t="RADY ZADARMO" s={pc ? "čítaj a pozeraj hneď" : undefined} />
@@ -252,7 +268,7 @@ export function StrankaTvorcu({ profil, onBack, onStream, onDetail }: { profil: 
       {titulka}{kov}
       <div style={{ padding: "22px 32px 120px", display: "grid", gridTemplateColumns: "minmax(0,1fr) 400px", gap: 32, alignItems: "start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
-          {cisla}{naZivo}{streamy}{iskry}{rady}{yt}{platene}{charity}{akcie}
+          {cisla}{naZivo}{retazBlok}{streamy}{iskry}{rady}{yt}{platene}{charity}{akcie}
         </div>
         <aside style={{ position: "sticky", top: 20, display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -278,7 +294,7 @@ export function StrankaTvorcu({ profil, onBack, onStream, onDetail }: { profil: 
         {titulka}{kov}
         <div style={{ padding: `14px 16px ${DOK + 90}px`, display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ display: "flex", gap: 10 }}>{sledTl}</div>
-          {cisla}{naZivo}{streamy}{iskry}{rady}{yt}{platene}
+          {cisla}{naZivo}{retazBlok}{streamy}{iskry}{rady}{yt}{platene}
           {skolenie && <><Nadpis t="ONLINE ŠKOLENIE" />{skolenie}</>}
           {charity}{akcie}
         </div>

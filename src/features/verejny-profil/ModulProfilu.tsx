@@ -21,6 +21,7 @@ import { ZdielatHarok } from "@/features/zbierka/Zdielat";
 import { PravidelnaHarok } from "@/features/zbierka/PravidelnaHarok";
 import { PodporitDeedHarok } from "@/features/zbierka/PodporitDeed";
 import { RetazDobraHarok } from "@/features/zbierka/RetazDobra";
+import { PodporujuRetazou } from "@/features/zbierka/RetazStranky";
 import { SvetlusikInfo, SvetlusikKarta } from "@/components/SvetlusikInfo";
 import "@/styles/platba.css";
 import "@/styles/animacie.css";
@@ -153,6 +154,7 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, 
       {sektor.mesacne != null && sektor.mesacne > 0 && <div style={{ margin: "8px 2px 0", fontSize: 13.5, fontWeight: 600, color: "var(--green)" }}>{sektor.mesacne.toLocaleString("sk-SK")} {sektor.mesacne === 1 ? "človek podporuje" : sektor.mesacne >= 2 && sektor.mesacne <= 4 ? "ľudia podporujú" : "ľudí podporuje"} mesačne</div>}
       {!bezObjektu && <Oblubene polozka={{ refId, typ: "charita", modul: "charity", nazov }} />}
       <RetazRiadok onClick={() => setHarok("retaz")} />
+      <PodporujuRetazou zbierkaId={refId} />
       {veta && uvidisOdkaz && <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: 18, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 14, lineHeight: 1.5, color: "var(--ink)", textWrap: "pretty" } as CSSProperties}>{veta}
         {uvidisOdkaz && <button type="button" onClick={uvidisOdkaz.onClick} style={{ display: "block", minHeight: 44, margin: "-6px 0 -12px", padding: 0, border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", textAlign: "left", fontSize: 13.5, fontWeight: 800, color: "var(--green)", fontFamily: "inherit" }}>{uvidisOdkaz.text} ›</button>}
       </div>}

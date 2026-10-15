@@ -6,6 +6,7 @@
 --    každé oznámenie má kópiu v retaz_oznam (Testovanie: „Ukázať oznámenia organizátorov“ ich ukáže tvorcovi).
 --  · retaz_dar s p_test: testovací dar prichádza od iného, neregistrovaného darcu (tvorca si ho môže poslať sám),
 --    meno darcu ostane (napr. „Testovací darca“). Ostrý dar bez zmeny.
+--  · retaz_stav: položka nesie aj organizátora (org, org_stranka) a vyzbierané zbierky (stránka tvorcu).
 -- Nové:
 --  · retaz_podporuju(zbierka) — stránka zbierky: kto ju podporuje reťazou a koľko už poslal.
 --  · retaz_strany(stránka) — stránka tvorcu: posledná reťaz stránky (bez stránky moja), bežiaca má prednosť.
@@ -220,6 +221,30 @@ begin
 end $$;
 revoke all on function public.retaz_dar(text, text, numeric, text, text, text, boolean) from public;
 grant execute on function public.retaz_dar(text, text, numeric, text, text, text, boolean) to anon, authenticated, service_role;
+
+-- stav reťaze (0093) + organizátor zbierky (stránka alebo meno z profilu) a vyzbierané — pre stránku tvorcu
+create or replace function public.retaz_stav(p_retaz text) returns jsonb
+  language sql stable security definer set search_path = public as $$
+  select jsonb_build_object('id', r.id, 'meno', r.meno, 'robi', r.robi, 'stranka', r.stranka,
+    'zapecatena', r.zapecatena, 'ukoncena', r.ukoncena,
+    'moja', r.ucet_id = public.moj_ucet() or (r.stranka is not null and public.spravujem_stranku(r.stranka)),
+    'dostal', coalesce((select sum(pl.cista_suma) from public.retaz_platba rp join public.platba pl on pl.id = rp.platba_id
+                         where rp.retaz = r.id and pl.mena = 'EUR'), 0),
+    'polozky', coalesce((select jsonb_agg(jsonb_build_object('poradie', p.poradie, 'zbierka', p.zbierka, 'nazov', z.nazov,
+                 'pct', p.pct, 'stav', p.stav, 'zmena', p.zmena, 'ciel', z.ciel, 'vyzbierane', public.retaz_vyzbierane(p.zbierka),
+                 'org_stranka', z.stranka,
+                 'org', coalesce((select s.nazov from public.stranka s where s.id = z.stranka),
+                                 (select nullif(trim(concat_ws(' ', pr.meno, pr.priezvisko)), '') from public.profil pr where pr.ucet_id = p.ucet)),
+                 'poslane', coalesce((select sum(case when po.storno_pre is null then po.suma else -po.suma end)
+                                        from public.retaz_platba rp join public.pohyb po on po.platba_id = rp.platba_id
+                                       where rp.retaz = r.id and rp.zbierka = p.zbierka and po.mena = 'EUR'
+                                         and po.typ in ('dar', 'vratenie') and p.ucet in (po.ucet_kredit, po.ucet_debet)), 0))
+                 order by p.poradie)
+               from public.retaz_polozka p join public.zbierka z on z.id = p.zbierka where p.retaz = r.id), '[]'::jsonb))
+    from public.retaz r where r.id = p_retaz
+$$;
+revoke all on function public.retaz_stav(text) from public;
+grant execute on function public.retaz_stav(text) to anon, authenticated, service_role;
 
 -- ---------- 7 · stránky (balík 8 C) ----------
 -- stránka zbierky: kto ju podporuje reťazou (bežiace aj skončené podiely; blok „Podporujú reťazou“ berie len bezi)

@@ -6,6 +6,7 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { ludiaPomohli } from "./hlasky";
 import { TempoDarov, type TempoRezim } from "./Tempo";
 import { PrispievateliaFarnosti, useUsekyOrganizacii, ZLATA_USEK, VLASTNE_USEK } from "./FarnostPrispela";
+import { PrispievateliaRetazou, useUsekyRetaze } from "./RetazStranky";
 
 // míľniky: počíta systém sám, nikto ich nenastavuje
 const MILNIKY = [100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000];
@@ -98,6 +99,7 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, ko
   const ukazSumy = useUkazSumy();
   const suma = (cezTvorcu ? 0 : zaklad) + dary.reduce((a, r) => a + r.suma, 0);
   const org = useUsekyOrganizacii(refId);
+  const ret = useUsekyRetaze(refId); // balík 8 C: podiel z reťaze = zelená s pásikmi (firmy → reťaze → ľudia)
   // OPRAVY 222: dary organizácií (farnosť, vlastné peniaze) nie sú ľudia
   const ludia = Math.max(0, (cezTvorcu ? 0 : ludiaZaklad) + dary.filter((r) => !r.firma).length - (cezTvorcu ? 0 : org.darovOrg));
   const nadpisVyzbierane = cezTvorcu ? `Vyzbierané cez ${cezTvorcu.menoAkuzativ}` : "Vyzbierané";
@@ -144,8 +146,9 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, ko
             <span style={{ marginLeft: "auto", fontSize: 18, fontWeight: 800, color: "var(--green)", fontVariantNumeric: "tabular-nums" }}>{pct}{"\u00A0"}%</span>
           </span>
         </div>
-        <Pruh podiel={suma / ciel!} vyska={10} koniec={koniecPruhu} useky={[{ w: org.vlastne / ciel!, farba: VLASTNE_USEK }, { w: org.cudzie / ciel!, farba: ZLATA_USEK }].filter((u) => u.w > 0)} />
+        <Pruh podiel={suma / ciel!} vyska={10} koniec={koniecPruhu} useky={[{ w: org.vlastne / ciel!, farba: VLASTNE_USEK }, { w: org.cudzie / ciel!, farba: ZLATA_USEK }, ...ret.useky.map((u) => ({ w: u.suma / ciel!, farba: u.farba }))].filter((u) => u.w > 0)} />
         <PrispievateliaFarnosti refId={refId} />
+        <PrispievateliaRetazou refId={refId} />
         <TempoDarov refId={refId} rezim={tempo} />
         <Ludia pocet={ludia} org={org.organizacii} />
       </div>
@@ -175,7 +178,8 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, ko
       <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink3)" }}>{nadpisVyzbierane}</div>
       <div style={{ ...velka, marginTop: 2 }} data-zb-suma={refId}>{eur(zobrazena)}</div>
       {dnes > 0 && <div style={{ fontSize: 13, fontWeight: 700, color: "var(--green)", marginTop: 4 }}>dnes +{eur(dnes)}</div>}
-      <div style={{ marginTop: 12 }}><Pruh podiel={zakladMilnika} vyska={6} blik={oslava || undefined} koniec={koniecPruhu} /></div>
+      <div style={{ marginTop: 12 }}><Pruh podiel={zakladMilnika} vyska={6} blik={oslava || undefined} koniec={koniecPruhu}
+        useky={cezTvorcu || oslava ? [] : ret.useky.map((u) => ({ w: u.suma / dalsi, farba: u.farba })).filter((u) => u.w > 0)} /></div>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 8, fontSize: 12.5, fontWeight: 700, color: "var(--ink3)" }}>
         <span>{dosiahnuty ? `míľnik ${eur(dosiahnuty)} dosiahnutý` : "prvý míľnik"}</span>
         <span>ďalší míľnik <span style={{ color: "var(--green)" }}>{eur(dalsi)}</span></span>
@@ -188,6 +192,7 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, ko
         </div>
       )}
       {!cezTvorcu && <PrispievateliaFarnosti refId={refId} />}
+      {!cezTvorcu && <PrispievateliaRetazou refId={refId} />}
       <TempoDarov refId={refId} rezim={tempo} cezTvorcu={cezTvorcu?.id} />
       <Ludia pocet={ludia} fanusikov={!!cezTvorcu} org={cezTvorcu ? 0 : org.organizacii} />
     </div>

@@ -6,6 +6,8 @@ import { DeedQr } from "@/components/deedqr";
 import { ohlasZbierku, obnovRetaz, nacitajRetaz, pripravRetaz, zapecatRetaz, zrusRetaz, beziaca, verejneBeziace, zbierkaVRetazi, zaokruhliPct, useZmenyRetaze, type Retaz, type Strana, type StavVRetazi, type ZbierkaVRetazi } from "@/lib/retaz";
 import { KartaStrany, ZnakStrany, StitStrany, useRobiRetaz } from "./StranaZmluvy";
 import { useMojeStranky } from "@/lib/mojeStranky";
+import { TESTOVACIA } from "@/lib/testovacia";
+import { TestovanieRetaze } from "./RetazStranky";
 import { Harok } from "./Zdielat";
 import PodrzTlacidlo from "./PodrzTlacidlo";
 import { potvrditTuknutim } from "./Platba";
@@ -290,5 +292,8 @@ export function RetazDobraHarok({ zbierka, onClose }: { zbierka: { id: string; n
       </span>
     </>
   );
-  return <Harok onClose={onClose} hlavicka={hlavicka}><div ref={obalRef} style={{ display: "flex", flexDirection: "column", gap: 12 }}>{obsah}</div></Harok>;
+  return <Harok onClose={onClose} hlavicka={hlavicka}><div ref={obalRef} style={{ display: "flex", flexDirection: "column", gap: 12 }}>{obsah}
+    {/* balík 8 C · 10: Testovanie v plnej miere — len testovací režim */}
+    {TESTOVACIA && krok !== "vyber" && <TestovanieRetaze onOdznova={() => { setChyst(null); setChyba(null); setKrok("nastavenie"); }} />}
+  </div></Harok>;
 }
