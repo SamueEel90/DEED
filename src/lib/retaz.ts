@@ -9,6 +9,7 @@ import { useEffect, useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
 import { ZBIERKY, najdiZbierku } from "./zbierky";
 import { darcoviaPre } from "./darcovia";
+import { idZbierkyDB, objektZbierky } from "./darZbierky";
 
 export const RETAZ_PCT_MIN = 5, RETAZ_PCT_KROK = 5;
 /** percento vždy 5–100 po 5 (27 → 25, 28 → 30) */
@@ -138,7 +139,7 @@ export async function zapecatRetaz(r: Retaz): Promise<string | null> {
   let s: Retaz = vUcte ? { ...r, vlastnik: vUcte } : r;
   if (supabase && vUcte) {
     // balík 8 B: split-config na serveri (0093) — rovnaké id = tá istá reťaz, oznámenia organizátorom posiela server
-    const { data, error } = await supabase.rpc("retaz_zapecat", { p_id: r.id, p_polozky: r.polozky.map((x) => ({ zbierka: x.zbierkaId, pct: x.pct })),
+    const { data, error } = await supabase.rpc("retaz_zapecat", { p_id: r.id, p_polozky: r.polozky.map((x) => polozkaPreServer(x.zbierkaId, x.pct)),
       p_stranka: r.stranka ?? null, p_robi: r.robi ?? null }).then((x) => x, () => ({ data: null, error: { message: "" } }));
     if (error) return `${chybaServera(error.message)} Reťaz zatiaľ nie je zapečatená.`;
     s = zoServera({ ...s, naServeri: true }, data as StavServera);
@@ -156,6 +157,11 @@ export const zrusRetaz = () => {
 };
 
 // ---- balík 8 B: stav radu a podiely vedie server (0093), appka ho len zobrazí ----
+/** zbierka stránky v module (napr. oprava strechy farnosti) má v DB id „<stránka>:<ref>“ — riadok vznikne pri zapečatení */
+function polozkaPreServer(zbierkaId: string, pct: number) {
+  const o = objektZbierky(zbierkaId), id = idZbierkyDB(zbierkaId) ?? zbierkaId;
+  return o ? { zbierka: id, pct, stranka: o.stranka, nazov: o.nazov } : { zbierka: id, pct };
+}
 type StavServera = { dostal: number; polozky: { zbierka: string; stav: StavVRetazi; poslane: number }[] } | null;
 const chybaServera = (m: string) => {
   const x = /Zbierka (.+) nie je v DEED/.exec(m)?.[1] ?? /Zbierka (.+) nie je verejná/.exec(m)?.[1];
@@ -165,8 +171,7 @@ const chybaServera = (m: string) => {
 };
 function zoServera(r: Retaz, st: StavServera): Retaz {
   if (!st || !Array.isArray(st.polozky)) return r;
-  const m = new Map(st.polozky.map((x) => [x.zbierka, x]));
-  const polozky = r.polozky.map((x) => { const y = m.get(x.zbierkaId); return y ? { ...x, stav: y.stav, poslane: Number(y.poslane) || 0 } : x; });
+  const polozky = r.polozky.map((x, i) => { const y = st.polozky[i]; return y ? { ...x, stav: y.stav, poslane: Number(y.poslane) || 0 } : x; }); // poradie = poradie na serveri
   return { ...r, polozky, dostal: Number(st.dostal) || 0, poslane: polozky.reduce((a, x) => a + x.poslane, 0) };
 }
 /** obnoví rad zo servera (posun radu vyhodnotí server); bez servera nič */

@@ -20,6 +20,8 @@ export const DEED_ZA_EUR = 100;
 // hlavná / sektorová zbierka stránky: obrazovka, ktorá ju ukazuje, povie, ku ktorej stránke patrí
 const objekty = new Map<string, ObjektZbierky>();
 export function naviazObjekt(refId: string, o: ObjektZbierky) { if (!/^zb-/.test(refId)) objekty.set(refId, o); }
+/** balík 8 B: zbierka stránky v module, ak ju obrazovka naviazala (reťaz ju pošle serveru so stránkou) */
+export const objektZbierky = (refId: string): ObjektZbierky | undefined => objekty.get(refId);
 
 /** id zbierky v databáze, alebo null, ak dar nepatrí zbierke stránky */
 // OPRAVY 289: zvončeková zbierka omše „<stránka>-zv-<kostol>-RRRR-MM-DD-HHMM“ — v ledgeri „<stránka>:<refId>“, okno určí server (0091)

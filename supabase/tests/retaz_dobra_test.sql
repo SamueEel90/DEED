@@ -129,5 +129,22 @@ exception when others then insert into t values ('dar na ukoncenu retaz odmietne
 end $$;
 reset role;
 
+-- ---- zbierka farnosti v module (sektor): riadok vznikne pri zapečatení; zvončeková omša nie ----
+insert into public.stranka (id, ucet_id, typ, nazov, testovacia) values ('t93-far','7e57c100-0000-0000-0000-0000000093b1','farnost','Farnosť Test 93',true);
+set role authenticated;
+select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-0000000093c1', false);
+do $$ begin
+  perform public.retaz_zapecat('rt-zv', '[{"zbierka":"t93-far:t93-far-zv-0-2026-10-18-0900","pct":25,"stranka":"t93-far"}]');
+  insert into t values ('zvoncekova omsa odmietne', false);
+exception when others then insert into t values ('zvoncekova omsa odmietne', sqlerrm like '%nie je v DEED%');
+end $$;
+select public.retaz_zapecat('rt-far', '[{"zbierka":"t93-far:oprava-strechy","pct":50,"stranka":"t93-far","nazov":"Oprava strechy"}]');
+select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-0000000093d1', false);
+select public.retaz_dar('rt-far', 'r93-7', 10, 'EUR', 'fiat', null, false);
+reset role;
+insert into t select 'sektor farnosti: riadok vznikol', (select typ = 'sektor' and nazov = 'Oprava strechy' and stranka = 't93-far' from public.zbierka where id = 't93-far:oprava-strechy');
+insert into t select 'sektor farnosti bezi v retazi', (select stav = 'bezi' from public.retaz_polozka where retaz = 'rt-far' and poradie = 1);
+insert into t select 'sektor farnosti: 5 € farnosti (bez tvorcu)', (select vyzbierane = 5 from public.v_zbierka_vyzbierane where zbierka = 't93-far:oprava-strechy' and mena = 'EUR');
+
 select ok, c from t order by ok, c;
 rollback;

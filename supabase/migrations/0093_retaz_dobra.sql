@@ -14,8 +14,10 @@
 --    Keď rad prejde na ďalšiu zbierku, jej organizátor dostane oznámenie „Ste na rade“.
 --  · Platba reťaze patrí bežiacej zbierke (platba.zbierka), podiel tvorcu sa do zbierky nepočíta:
 --    v_zbierka_vyzbierane a zbierka_dary vynechajú pohyby tvorcu z platieb reťaze (retaz_platba).
--- Pravidlá: jedna bežiaca reťaz na účet; percentá 5–100 po 5; len verejné bežiace zbierky
--- (zapečatené, nie okno farnosti, nie súkromná zbierka s príjemcom — rodina, pohreb); vlastná zbierka nie.
+-- Pravidlá: jedna bežiaca reťaz na účet; percentá 5–100 po 5; len verejné bežiace zbierky:
+-- zapečatená zbierka alebo zbierka stránky v module (hlavná / sektorová, napr. oprava strechy farnosti — riadok
+-- vznikne pri zapečatení ako pri prvom dare, 0077). Nie zvončeková zbierka omše (-zv-, mení sa každou omšou),
+-- nie súkromná zbierka s príjemcom (rodina, pohreb); vlastná zbierka nie.
 -- Reťaz robí osoba (môj účet) alebo stránka, ktorú spravujem (p_stranka) — peniaze tvorcu idú na jej účet.
 -- ============================================================
 begin;
@@ -212,7 +214,7 @@ revoke all on function public.retaz_obnov(text) from public;
 grant execute on function public.retaz_obnov(text) to anon, authenticated, service_role;
 
 -- ---------- 5 · zapečatenie ----------
--- p_polozky: [{zbierka, pct}] v poradí radu
+-- p_polozky: [{zbierka, pct, stranka?, nazov?}] v poradí radu (stranka a nazov pri zbierke stránky v module)
 create or replace function public.retaz_zapecat(p_id text, p_polozky jsonb, p_stranka text default null, p_robi jsonb default null)
   returns jsonb
   language plpgsql volatile security definer set search_path = public as $$
@@ -258,10 +260,22 @@ begin
       raise exception 'Percento je 5 až 100 po 5.' using errcode = '22023', detail = 'retaz_pct';
     end if;
     select * into v_z from public.zbierka where id = e->>'zbierka';
-    if not found then
+    -- zbierka stránky v module (hlavná / sektorová): riadok vznikne teraz, ako pri prvom dare (0077)
+    if not found and coalesce(e->>'stranka', '') <> '' and (e->>'zbierka') like (e->>'stranka') || ':%' and (e->>'zbierka') not like '%-zv-%' then
+      select * into v_s from public.stranka where id = e->>'stranka';
+      if found then
+        insert into public.zbierka (id, nazov, modul, typ, stav, stranka, ucet_id)
+          values (e->>'zbierka', coalesce(nullif(trim(e->>'nazov'), ''), 'Hlavná zbierka'),
+                  case when v_s.typ = 'farnost' then 'nabozenstvo' else 'charity' end,
+                  case when e->>'zbierka' = v_s.id || ':hlavna' then 'hlavna' else 'sektor' end, 'aktivna', v_s.id, v_s.ucet_id)
+          on conflict (id) do nothing;
+        select * into v_z from public.zbierka where id = e->>'zbierka';
+      end if;
+    end if;
+    if v_z.id is null then
       raise exception 'Zbierka % nie je v DEED.', coalesce(e->>'zbierka', '?') using errcode = 'P0002', detail = 'zbierka_neexistuje';
     end if;
-    if v_z.stav <> 'aktivna' or v_z.zapecatena is null or coalesce(v_z.typ, '') in ('hlavna', 'sektor')
+    if v_z.stav <> 'aktivna' or (v_z.zapecatena is null and coalesce(v_z.typ, '') not in ('hlavna', 'sektor')) or v_z.id like '%-zv-%'
        or exists (select 1 from public.zbierka_podiel where zbierka = v_z.id and druh = 'prijemca') then
       raise exception 'Zbierka % nie je verejná bežiaca zbierka.', v_z.nazov using errcode = '22023', detail = 'zbierka_nie_verejna';
     end if;
