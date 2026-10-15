@@ -704,6 +704,11 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   const kOmse = maOmse && omseDni.length > 0 && <SvateOmse matna={matna} maly={!k3} onCely={() => setKalOtv(true)} dni={omseDni} />;
   // --- Pomôž ---
   const pomObsah = pomoz.map((u) => { const b = brigadyF.find((x) => x.id === u.id); return <PomozKarta key={u.id} stitok={(b?.druh ?? "Brigáda").toLocaleUpperCase("sk-SK")} kedy={b?.dat ? kedyBrigady(b.dat, "") : undefined} t={u.t} txt={u.txt ? <Viac text={u.txt} velkost={15.5} /> : undefined} kde={u.od || undefined} cas={b?.cas || undefined} akcia={u.pz > 0 ? <div className="kronika-pomoz" style={{ display: "flex", flexDirection: "column", gap: 6 }}>{pozvat(u)}</div> : undefined} />; });
+  const kPomoz = pomoz.length > 0 && <div data-blok="pom" style={{ display: "flex", flexDirection: "column", gap: 12, scrollMarginTop: 16 }}>{KN(nzB("pom", "Pomôž"))}{pomObsah}</div>;
+  // --- Naše kostoly ---
+  const kKostoly = miestaF.length > 1 && (k3
+    ? <NaseKostolyBlok strankaId={strankaId} miesta={miestaF} siroka pc={false} stlpec onMiesto={setMiesto} styl={{ display: "flex", flexDirection: "column", gap: 14, scrollMarginTop: 16 }} nadpis={(n) => KN(n)} />
+    : zbK("kostoly", "Naše kostoly", S.kostoly, <NaseKostolyBlok strankaId={strankaId} miesta={miestaF} siroka={siroka} pc={false} onMiesto={setMiesto} styl={{ display: "flex", flexDirection: "column", gap: 12 }} nadpis={() => null} />));
   // --- Tento týždeň + DNES ---
   const dnesBox = (casyDna(dnesD) || zmenaT) ? <div style={{ padding: "16px 20px", borderRadius: 18, background: PAPIER, border: `1px solid ${LINKA}`, display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
     <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".12em", color: "var(--nf-gInk)" }}>● DNES · {DNW_V[dvt(dnesD)]}</span>
@@ -918,7 +923,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
     pom: pomoz.length > 0 && sekcia("pom", nzB("pom", "Pomôž"), S.pom, k3 ? <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 16 }}>{pomObsah}</div> : pomObsah),
     kostoly: miestaF.length > 1 && sekcia("kostoly", "Naše kostoly", S.kostoly, <NaseKostolyBlok strankaId={strankaId} miesta={miestaF} siroka={siroka} pc={false} onMiesto={setMiesto} styl={{ display: "flex", flexDirection: "column", gap: 12 }} nadpis={() => null} />),
   };
-  const kStredEl = poradieB.filter((id) => id !== "zbierky").map((id) => <Fragment key={id}>{kStred[id]}</Fragment>);
+  // Kronika PC: ľavý panel je pevný (Zbierky, Naše kostoly, Sväté omše, Pomôž) — v strede len ostatné bloky
+  const kStredEl = poradieB.filter((id) => id !== "zbierky" && !(k3 && (id === "pom" || id === "kostoly"))).map((id) => <Fragment key={id}>{kStred[id]}</Fragment>);
   const kronikaTelo = kronika && (prazdna
     ? <div style={{ display: "flex", flexDirection: "column", background: PAPIER }}>{profilKronika}<div style={{ padding: k3 ? "28px 28px 64px" : "20px 18px 48px" }}><span style={{ fontSize: 17, color: INK3 }}>Farnosť tu zatiaľ nič nezverejnila.</span></div></div>
     : k3
@@ -926,7 +932,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
         <aside style={{ flex: "none", width: "clamp(320px,30vw,440px)", borderRight: "2px solid var(--nf-linia)", background: PAPIER, display: "flex", flexDirection: "column" }}>
           {profilKronika}
           <div style={{ padding: "20px 28px 48px", display: "flex", flexDirection: "column", gap: 0 }}>
-            {[kZbierky, kOmse].filter(Boolean).map((x, i) => <div key={i} style={{ paddingTop: 20, marginTop: i ? 20 : 0, borderTop: "2px solid var(--nf-linia)" }}>{x}</div>)}
+            {[kZbierky, kKostoly, kOmse, kPomoz].filter(Boolean).map((x, i) => <div key={i} style={{ paddingTop: 20, marginTop: i ? 20 : 0, borderTop: "2px solid var(--nf-linia)" }}>{x}</div>)}
           </div>
         </aside>
         <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
