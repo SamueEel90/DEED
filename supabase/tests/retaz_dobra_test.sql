@@ -50,12 +50,12 @@ reset role;
 insert into t select 'zapecatena, prva bezi', (select j->'polozky'->0->>'stav' = 'bezi' and j->'polozky'->1->>'stav' = 'caka' and j->'polozky'->2->>'stav' = 'caka' from s1);
 insert into t select 'meno tvorcu z profilu', (select meno = 'Martin Konaľ' from public.retaz where id = 'rt-t93');
 insert into t select 'opakovane zapecatenie: 3 polozky', (select count(*) = 3 from public.retaz_polozka where retaz = 'rt-t93');
-insert into t select 'oznamenie A pri zapecateni (2 zbierky)', (select count(*) = 2 from public.notifikacia where ucet_id = '7e57c100-0000-0000-0000-0000000093a1' and titul = 'Reťaz dobra');
-insert into t select 'oznamenie B text', exists (select 1 from public.notifikacia where ucet_id = '7e57c100-0000-0000-0000-0000000093b1' and titul = 'Reťaz dobra'
-  and text = 'Martin Konaľ posiela 10 % z každého daru na vašu zbierku Zima, keď na ňu príde rad (3. v poradí).');
+insert into t select 'oznamenie A pri zapecateni (2 zbierky)', (select count(*) = 2 from public.notifikacia where ucet_id = '7e57c100-0000-0000-0000-0000000093a1' and titul = 'Nová reťaz dobra');
+insert into t select 'oznamenie B text', exists (select 1 from public.notifikacia where ucet_id = '7e57c100-0000-0000-0000-0000000093b1' and titul = 'Nová reťaz dobra'
+  and text = 'Martin Konaľ posiela 10 % z každého daru na vašu zbierku Zima. Ste 3. v rade.');
 insert into t select 'oznamenie A text prva', exists (select 1 from public.notifikacia where ucet_id = '7e57c100-0000-0000-0000-0000000093a1'
-  and text = 'Martin Konaľ posiela 25 % z každého daru na vašu zbierku Strecha.');
-insert into t select 'pri zapecateni nikto nie je na rade', not exists (select 1 from public.notifikacia where titul like '%ste na rade');
+  and text = 'Martin Konaľ posiela 25 % z každého daru na vašu zbierku Strecha. Ste 1. v rade.');
+insert into t select 'pri zapecateni nikto nie je na rade', not exists (select 1 from public.notifikacia where titul = 'Ste na rade');
 do $$ begin
   update public.retaz_polozka set pct = 50 where retaz = 'rt-t93' and poradie = 1;
   insert into t values ('pct sa po zapecateni nemeni', false);
@@ -90,14 +90,32 @@ insert into t select 'zbierka 1 naplnena', (select stav = 'naplnena' from public
 insert into t select 'zbierka 3 preskocena', (select stav = 'preskocena' from public.retaz_polozka where retaz = 'rt-t93' and poradie = 2);
 insert into t select 'zbierka 2 bezi', (select stav = 'bezi' from public.retaz_polozka where retaz = 'rt-t93' and poradie = 3);
 insert into t select 'B dostal Ste na rade', exists (select 1 from public.notifikacia where ucet_id = '7e57c100-0000-0000-0000-0000000093b1'
-  and titul = 'Reťaz dobra · ste na rade' and text like 'Vaša zbierka Zima je teraz v reťazi na rade.%');
-insert into t select 'A (preskocena) Ste na rade nedostal', not exists (select 1 from public.notifikacia where ucet_id = '7e57c100-0000-0000-0000-0000000093a1' and titul like '%ste na rade');
+  and titul = 'Ste na rade' and text = 'Martin Konaľ teraz posiela 10 % z každého daru na vašu zbierku Zima.');
+insert into t select 'A (preskocena) Ste na rade nedostal', not exists (select 1 from public.notifikacia where ucet_id = '7e57c100-0000-0000-0000-0000000093a1' and titul = 'Ste na rade');
 set role authenticated;
 select public.retaz_dar('rt-t93', 'r93-3', 10, 'EUR', 'fiat', null, false);
 reset role;
 insert into t select 'dalsi dar tecie zbierke 2: 1,00 + 9,00', (select bool_and(case when po.ucet_kredit = '7e57c100-0000-0000-0000-0000000093b1' then po.suma = 1.00 else po.suma = 9.00 end)
   and count(*) = 2 from public.pohyb po join public.platba pl on pl.id = po.platba_id where pl.idem_kluc = 'r93-3' and po.typ = 'dar');
-insert into t select 'nikto Ste na rade druhy raz', (select count(*) = 1 from public.notifikacia where titul like '%ste na rade');
+insert into t select 'nikto Ste na rade druhy raz', (select count(*) = 1 from public.notifikacia where titul = 'Ste na rade');
+-- stránky (balík 8 C)
+insert into t select 'podporuju zbierku 2: Martin Konal bezi 10 %, poslane 1', (select jsonb_array_length(j) = 1 and (j->0->>'bezi')::boolean and (j->0->>'pct')::int = 10
+  and (j->0->>'poslane')::numeric = 1 and j->0->>'meno' = 'Martin Konaľ' from (select public.retaz_podporuju('t93-z2') j) x);
+insert into t select 'podporuju zbierku 1: naplnena, poslane 22,50, nebezi', (select not (j->0->>'bezi')::boolean and (j->0->>'poslane')::numeric = 22.50 from (select public.retaz_podporuju('t93-z1') j) x);
+insert into t select 'darcovia cez QR pri zbierke 1: 2 dary, Jana 10 €', (select (j->>'pocet')::int = 2 and j->'dary' @> '[{"meno":"Jana","suma":10}]'::jsonb
+  from (select public.retaz_darcovia('rt-t93', 't93-z1') j) x);
+set role authenticated;
+select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-0000000093c1', false);
+insert into t select 'strana tvorcu: moja retaz', (public.retaz_strany(null)->>'id') = 'rt-t93';
+insert into t select 'oznamy organizatorom: 3 pri zapecateni + 1 na rade', jsonb_array_length(public.retaz_oznamy('rt-t93')) = 4;
+insert into t select 'oznamy: komu = stranka', (public.retaz_oznamy('rt-t93')->0->>'komu') = 'Charita A';
+select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-0000000093d1', false);
+do $$ begin
+  perform public.retaz_oznamy('rt-t93');
+  insert into t values ('oznamy cudzej retaze odmietne', false);
+exception when others then insert into t values ('oznamy cudzej retaze odmietne', sqlerrm like 'Táto reťaz nie je vaša%');
+end $$;
+reset role;
 
 -- ---- zbierku 2 ukončili → skončila; ďalší dar 100 % tvorcovi ----
 update public.zbierka set stav = 'ukoncena' where id = 't93-z2';
@@ -145,6 +163,32 @@ reset role;
 insert into t select 'sektor farnosti: riadok vznikol', (select typ = 'sektor' and nazov = 'Oprava strechy' and stranka = 't93-far' from public.zbierka where id = 't93-far:oprava-strechy');
 insert into t select 'sektor farnosti bezi v retazi', (select stav = 'bezi' from public.retaz_polozka where retaz = 'rt-far' and poradie = 1);
 insert into t select 'sektor farnosti: 5 € farnosti (bez tvorcu)', (select vyzbierane = 5 from public.v_zbierka_vyzbierane where zbierka = 't93-far:oprava-strechy' and mena = 'EUR');
+
+-- ---- Testovanie (balík 8 C): naplnila sa / ďalšiu uzavreli, testovací dar od iného darcu ----
+insert into public.zbierka (id, nazov, modul, typ, stav, stranka, ucet_id, zapecatena, ciel) values
+ ('t93-z4','Okná','charity','zbierka','aktivna','t93-a','7e57c100-0000-0000-0000-0000000093a1', now(), 900),
+ ('t93-z5','Dvere','charity','zbierka','aktivna','t93-b','7e57c100-0000-0000-0000-0000000093b1', now(), 900),
+ ('t93-z6','Strecha 2','charity','zbierka','aktivna','t93-a','7e57c100-0000-0000-0000-0000000093a1', now(), 900);
+set role authenticated;
+select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-0000000093c1', false);
+select public.retaz_zapecat('rt-tt', '[{"zbierka":"t93-z4","pct":20},{"zbierka":"t93-z5","pct":30},{"zbierka":"t93-z6","pct":40}]');
+select public.retaz_dar('rt-tt', 'r93-t1', 10, 'EUR', 'fiat', 'Testovací darca', true);
+select public.retaz_test('rt-tt', 'uzavreli');
+create temp table tt as select public.retaz_test('rt-tt', 'naplnena') as j;
+reset role;
+insert into t select 'test dar tvorcu: od iného darcu, s menom', (select odosielatel is null and odosielatel_text = 'Testovací darca' from public.platba where idem_kluc = 'r93-t1');
+insert into t select 'test dar: 2 € zbierke 4', (select sum(po.suma) = 2 from public.pohyb po join public.platba pl on pl.id = po.platba_id where pl.idem_kluc = 'r93-t1' and po.ucet_kredit = '7e57c100-0000-0000-0000-0000000093a1');
+insert into t select 'test uzavreli: 5 preskocena', (select stav = 'preskocena' from public.retaz_polozka where retaz = 'rt-tt' and poradie = 2);
+insert into t select 'test naplnila: 4 naplnena, 6 bezi', (select j->'polozky'->0->>'stav' = 'naplnena' and j->'polozky'->2->>'stav' = 'bezi' from tt);
+insert into t select 'test naplnila: A Ste na rade (Strecha 2)', exists (select 1 from public.retaz_oznam where retaz = 'rt-tt' and titul = 'Ste na rade' and zbierka = 't93-z6');
+set role authenticated;
+select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-0000000093d1', false);
+do $$ begin
+  perform public.retaz_test('rt-tt', 'naplnena');
+  insert into t values ('test cudzej retaze odmietne', false);
+exception when others then insert into t values ('test cudzej retaze odmietne', sqlerrm like 'Táto reťaz nie je vaša%');
+end $$;
+reset role;
 
 select ok, c from t order by ok, c;
 rollback;
