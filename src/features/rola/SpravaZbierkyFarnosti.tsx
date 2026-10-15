@@ -16,6 +16,7 @@ import { AnoNie } from "@/components/AnoNie";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { nacitajStav, ulozStavIsto, useZmenySpravy, type StavZbierky, type PodakovanieZbierky } from "@/lib/zbierkaSprava";
 import { pridajOznamDarcom } from "@/lib/oznamyDarcom";
+import { PodrzZmaz } from "@/components/HromadnyVyber";
 import { VlastnePeniaze } from "./VlastnePeniaze";
 import { SumyPriDarcoch } from "./SumyPriDarcoch";
 import { sumaEur } from "@/lib/suma";
@@ -83,6 +84,13 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat, menoSt
   const [dakUklada, setDakUklada] = useState(false);
   const zmenDak = (p: Partial<PodakovanieZbierky>) => { setDakSprava(null); setDak((x) => ({ ...x, ...p })); };
   const plneDak = !!cistyText(dak.popis) || !!cistyText(dak.popis2) || dak.media.length > 0;
+  // Martin 15. 10.: ukončená zbierka s poďakovaním je na stránke, kým ju farár nezmaže (v Archíve ostáva)
+  const naStranke = !aktivna && !!ulozeneDak?.ulozene && !ulozeneDak.zmazane;
+  const zmazZoStranky = async () => {
+    const st = stav0(); if (!st.podakovanie) return;
+    const e = await ulozStavIsto(z.id, { ...st, podakovanie: { ...st.podakovanie, zmazane: new Date().toISOString() } });
+    setDakSprava(e ? { ok: false, t: `Neuložilo sa. ${e}` } : { ok: true, t: "Zbierka už nie je na stránke farnosti ✓ V Archíve ostáva aj s poďakovaním." });
+  };
   const ulozDak = async (ukoncit: boolean) => {
     if (dakUklada) return;
     if (!plneDak && !ukoncit) { setDakSprava({ ok: false, t: "Napíšte poďakovanie alebo pridajte fotky." }); return; }
@@ -90,14 +98,14 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat, menoSt
     const st = stav0(), teraz = new Date().toISOString();
     const posli = plneDak && poslat && !st.podakovanie?.poslane;
     if (plneDak) {
-      const e = await ulozStavIsto(z.id, { ...st, podakovanie: { ...dak, ulozene: teraz, poslane: st.podakovanie?.poslane ?? (posli ? teraz : undefined) } });
+      const e = await ulozStavIsto(z.id, { ...st, podakovanie: { ...dak, ulozene: teraz, poslane: st.podakovanie?.poslane ?? (posli ? teraz : undefined), zmazane: st.podakovanie?.zmazane } });
       if (e) { setDakUklada(false); setDakSprava({ ok: false, t: `Neuložilo sa. ${e}` }); return; }
       // upozornenie každému darcovi (raz) — oznam_darcom (0081b)
       if (posli) pridajOznamDarcom({ zbierkaId: z.id, typ: "vysledok", text: `Poďakovanie · ${z.nazov || "zbierka"}: ${cistyText(dak.popis || dak.popis2).slice(0, 300)}` });
     }
     if (ukoncit) {
       try { await ukonciZbierku(stranka, z.id); setHotovo(true); } catch (e) { setDakSprava({ ok: false, t: e instanceof Error ? e.message : "Zbierku sa nepodarilo ukončiť." }); }
-    } else setDakSprava({ ok: true, t: `Poďakovanie je uložené ✓${aktivna ? " Na stránke sa ukáže, keď zbierku ukončíte." : " Je na stránke farnosti pri zbierke."}${posli ? " Darcovia dostali upozornenie." : ""}` });
+    } else setDakSprava({ ok: true, t: `Poďakovanie je uložené ✓${aktivna ? " Na stránke sa ukáže, keď zbierku ukončíte." : ulozeneDak?.zmazane ? "" : " Je na stránke farnosti pri zbierke."}${posli ? " Darcovia dostali upozornenie." : ""}` });
     setDakUklada(false);
   };
 
@@ -217,6 +225,11 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat, menoSt
             <b style={{ fontSize: 15 }}>Uložiť poďakovanie</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>zbierka beží ďalej</span></button>
           <div style={{ ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo label={plneDak ? "Podržte a ukončite s poďakovaním" : "Podržte a ukončite"} trvanie={1500} disabled={dakUklada} onConfirm={() => { void ulozDak(true); }} /></div>
         </div> : <button type="button" disabled={dakUklada} onClick={() => void ulozDak(false)} style={{ minHeight: 56, border: "none", borderRadius: 16, background: "var(--green)", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "#fff", boxShadow: "none" }}>Uložiť poďakovanie</button>}
+        {naStranke && <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 12, borderTop: "1px solid var(--cardBd)" }}>
+          <b style={{ fontSize: 15 }}>Zbierka je na stránke farnosti s poďakovaním</b>
+          <span style={textK}>Nechajte ju tam, koľko chcete. Keď ju zmažete zo stránky, v Archíve ostane aj s poďakovaním.</span>
+          <div><PodrzZmaz label="Podržte a zmažte zo stránky" onZmaz={() => { void zmazZoStranky(); }} /></div>
+        </div>}
         <span style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ink3)" }}>{aktivna ? "Ukončenie sa nedá vrátiť: dary sem prestanú chodiť, počítadlo ostane na stránke. " : ""}Poďakovanie sa dá doplniť aj neskôr, keď už je zbierka v Archíve (napríklad keď je oprava hotová).</span>
       </section>))}
   </>);

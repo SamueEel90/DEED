@@ -291,7 +291,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   const druh = (z: SpustenaZbierka) => z.farnost?.druh ?? "farnost";
   // OPRAVY 314 (C): ukončená zbierka farnosti s poďakovaním ostáva na stránke — UKONČENÁ, Vyzbierali sme, ĎAKUJEME, darcovia, bez platobného modulu
   useZmenySpravy();
-  const dakZb = (z: SpustenaZbierka): PodakovanieZbierky | null => { const d = stavSpravyZbierky(z.id)?.podakovanie; return d?.ulozene ? d : null; };
+  const dakZb = (z: SpustenaZbierka): PodakovanieZbierky | null => { const d = stavSpravyZbierky(z.id)?.podakovanie; return d?.ulozene && !d.zmazane ? d : null; };
   const zbUkon = zbierkyStrankyZPamate(strankaId).filter((z) => z.stav === "ukoncena" && druh(z) === "farnost" && !!dakZb(z));
   const zbFar = [...zb.filter((z) => druh(z) === "farnost"), ...zbUkon], zbIne = zb.filter((z) => druh(z) === "ine");
   const ukon = (z: SpustenaZbierka) => z.stav === "ukoncena";

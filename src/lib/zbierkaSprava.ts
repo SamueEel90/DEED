@@ -120,7 +120,8 @@ export interface StavZbierky {
   podakovanie?: PodakovanieZbierky;
 }
 export interface PodakovanieZbierky { popis: string; popis2: string; media: import("./novaZbierka").MediumZbierky[];
-  /** kedy sa uložilo (ISO) — bez neho sa na stránke neukáže */ ulozene?: string; /** kedy dostali darcovia upozornenie (ISO) — posiela sa raz */ poslane?: string }
+  /** kedy sa uložilo (ISO) — bez neho sa na stránke neukáže */ ulozene?: string; /** kedy dostali darcovia upozornenie (ISO) — posiela sa raz */ poslane?: string;
+  /** Martin 15. 10.: farár ho nechá na stránke, koľko chce, potom ho zo stránky zmaže (ISO); v Archíve ostáva */ zmazane?: string }
 export interface ObsahZbierky { popis: string; popis2: string; media: import("./novaZbierka").MediumZbierky[]; sada: number; eurc: boolean; sadaE: number }
 
 // ---- úložisko + reaktivita ----
