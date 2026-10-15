@@ -6,6 +6,7 @@
 import { U } from "@/theme";
 import type { StitUroven } from "@/features/zbierka/Pole";
 import { menoBezMena } from "./darcovia";
+import { VIDEO_NAKUP } from "@/lib/ukazkoveVideo";
 
 export type Mesto = "Trenčín" | "Prešov" | "Bratislava";
 export const MESTA: Mesto[] = ["Trenčín", "Prešov", "Bratislava"];
@@ -275,7 +276,7 @@ const CHARITA: TestProfil = {
     "Trenčín": { dlazdica: "Trenčín: 940 € v septembri", minulyMesiac: "V Trenčíne v septembri: 520 € jedlo · 280 € opravy · 140 € doprava", uvidis: "Uvidíš rozpis každý mesiac", rozpis: [["jedlo", 55], ["opravy", 30], ["doprava", 15]] },
     "Prešov": { dlazdica: "Prešov: 680 € v septembri", minulyMesiac: "V Prešove v septembri: 410 € jedlo · 180 € opravy · 90 € doprava", uvidis: "Uvidíš rozpis každý mesiac", rozpis: [["jedlo", 62], ["opravy", 25], ["doprava", 13]] },
     "Bratislava": { dlazdica: "Bratislava: 1 120 € v septembri", minulyMesiac: "V Bratislave v septembri: 600 € jedlo · 320 € oblečenie · 200 € doprava", uvidis: "Uvidíš rozpis každý mesiac", rozpis: [["jedlo", 54], ["oblečenie", 28], ["doprava", 18]] },
-  }, { mesiac: 3120, mesacne: 143, galeria: [{ typ: "foto", src: F.jedlo, popis: "Piatkové varenie na Mierovom námestí" }, { typ: "foto", src: F.strecha, popis: "Oprava strechy v Zlatovciach" }, { typ: "foto", src: F.bundy, popis: "Deky do nocľahárne" }, { typ: "foto", src: F.seniori, popis: "Nákup pre seniora" }, { typ: "video", src: "/video/nakup.mp4" }], kam: "Kam treba najviac. Minulý mesiac v {m}: 1 200 teplých jedál, 2 opravy striech, 40 diek do nocľahárne.", tipy: [[5, "2 teplé obedy každý týždeň"], [10, "nákup pre seniora"], [20, "noc v teple 4× do mesiaca"]] }),
+  }, { mesiac: 3120, mesacne: 143, galeria: [{ typ: "foto", src: F.jedlo, popis: "Piatkové varenie na Mierovom námestí" }, { typ: "foto", src: F.strecha, popis: "Oprava strechy v Zlatovciach" }, { typ: "foto", src: F.bundy, popis: "Deky do nocľahárne" }, { typ: "foto", src: F.seniori, popis: "Nákup pre seniora" }, { typ: "video", src: VIDEO_NAKUP }], kam: "Kam treba najviac. Minulý mesiac v {m}: 1 200 teplých jedál, 2 opravy striech, 40 diek do nocľahárne.", tipy: [[5, "2 teplé obedy každý týždeň"], [10, "nákup pre seniora"], [20, "noc v teple 4× do mesiaca"]] }),
   sektory: [
     sektor("s-seniori", "Seniori", "sektor", F.seniori, 8400, 96, {
       "Trenčín": { dlazdica: "Trenčín: nákup pre 12", minulyMesiac: "V Trenčíne sme každý piatok nakúpili 12 seniorom zo Sihote.", uvidis: "Uvidíš mená ulíc a počet seniorov", rozpis: [["nákupy", 70], ["doprava", 30]] },
