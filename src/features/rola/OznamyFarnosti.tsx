@@ -38,7 +38,7 @@ import { zapisEditora, zapisZPayloadu } from "@/lib/editorStat";
 import { useMiesta } from "@/lib/miestaFarnosti";
 import { UpozornitSledujucich, NastavenieUpozorneni } from "./UpozornitSledujucich";
 import { useNastavenieUpoz } from "@/lib/upozorneniaFarnosti";
-import { Volby } from "@/components/Volby";
+import { Volby, kartaVolby, FajkaVolby } from "@/components/Volby";
 
 type Druh = 0 | 1 | 2; // Krátky oznam · Udalosť · Oznámenie
 const DRUHY: [string, string][] = [
@@ -76,8 +76,7 @@ const ZLATA = "#C9A24A";
 const karta: CSSProperties = { borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)" };
 const lbl: CSSProperties = { fontSize: 15, fontWeight: 800, color: "var(--ink)" };
 const pole: CSSProperties = { height: 50, padding: "0 14px", borderRadius: 12, background: "var(--field)", border: "1px solid var(--cardBd)", fontFamily: "inherit", fontSize: 15.5, fontWeight: 600, color: "var(--ink)", outline: "none", width: "100%", boxSizing: "border-box" };
-const radio = (on: boolean) => <span aria-hidden="true" style={{ width: 22, height: 22, flex: "none", borderRadius: "50%", border: `2px solid ${on ? "var(--green)" : "#A8A396"}`, display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--green)", opacity: on ? 1 : 0 }} /></span>;
-const kartaVolby = (on: boolean): CSSProperties => ({ display: "flex", alignItems: "center", gap: 14, minHeight: 58, padding: "10px 14px", borderRadius: 14, border: on ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: on ? "var(--gSoft)" : "var(--field)", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" });
+const volbaKarta = (on: boolean): CSSProperties => ({ display: "flex", alignItems: "center", gap: 14, minHeight: 58, padding: "10px 36px 10px 14px", borderRadius: 14, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none", ...kartaVolby(on) });
 const iniciy = (m: string) => m.split(/\s+/).filter((w) => w.length > 1).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "F";
 const DEN_MS = 864e5;
 const terazMs = () => Date.now();
@@ -424,8 +423,8 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   const druhyEl = (
     <div role="radiogroup" aria-label="Čo chcete oznámiť" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {DRUHY.map(([t, s], i) => { const on = dr === i; return (
-        <button key={t} type="button" role="radio" aria-checked={on} onClick={() => vyberDruh(i as Druh)} style={kartaVolby(on)}>
-          {radio(on)}<span style={{ flex: 1, minWidth: 0 }}><b style={{ display: "block", fontSize: 15.5, color: on ? "var(--gInk)" : "var(--ink)" }}>{t}</b><span style={{ display: "block", fontSize: 13, color: "var(--ink3)" }}>{s}</span></span>
+        <button key={t} type="button" role="radio" aria-checked={on} onClick={() => vyberDruh(i as Druh)} style={volbaKarta(on)}>
+          <FajkaVolby on={on} /><span style={{ flex: 1, minWidth: 0 }}><b style={{ display: "block", fontSize: 15.5, color: on ? "var(--gInk)" : "var(--ink)" }}>{t}</b><span style={{ display: "block", fontSize: 13, color: "var(--ink3)" }}>{s}</span></span>
         </button>); })}
     </div>);
   const zmenitEl = (
@@ -494,7 +493,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       <span style={{ fontSize: 13, color: "var(--ink3)" }}>Potom oznam sám zmizne. Zmazať ho môžete aj skôr.</span></div>}
     {dr !== 2 && <div role="radiogroup" aria-label="Pozvať ľudí" style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={lbl}>Pozvať ľudí</span>
       {POZVANIA.map(([t, s], i) => { const on = pozv === i; return (
-        <button key={t} type="button" role="radio" aria-checked={on} onClick={() => setPozv(i)} style={kartaVolby(on)}>{radio(on)}<span style={{ flex: 1, minWidth: 0 }}><b style={{ display: "block", fontSize: 14.5 }}>{t}</b><span style={{ display: "block", fontSize: 13, lineHeight: 1.4, color: "var(--ink3)" }}>{s}</span></span></button>); })}
+        <button key={t} type="button" role="radio" aria-checked={on} onClick={() => setPozv(i)} style={volbaKarta(on)}><FajkaVolby on={on} /><span style={{ flex: 1, minWidth: 0 }}><b style={{ display: "block", fontSize: 14.5 }}>{t}</b><span style={{ display: "block", fontSize: 13, lineHeight: 1.4, color: "var(--ink3)" }}>{s}</span></span></button>); })}
       {pozv === 2 && <label style={{ display: "flex", alignItems: "center", gap: 12 }}><span style={{ fontSize: 14, fontWeight: 800 }}>Koľko ľudí najviac</span>
         <input inputMode="numeric" value={limit} onChange={(e) => setLimit(e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="bez limitu" aria-label="Koľko ľudí najviac" style={{ ...pole, width: 140, height: 46 }} /></label>}
     </div>}

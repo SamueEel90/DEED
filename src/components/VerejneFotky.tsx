@@ -2,6 +2,7 @@
 // Hore kategórie a hľadanie, pod tým mriežka: najprv náš výber (verejne_fotky_vyber), potom fotobanky (/api/fotky).
 // Ťuk = vybrať (výber drží okno galérie), pri každej fotke autor a zdroj. Uloženie k nám robí okno pri „Pridať".
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { cipFiltra } from "@/components/Volby";
 import { ChybaFotiek, hladajFotky, KATEGORIE_FOTIEK, vyberFotiek, ZDROJ_NAZOV, type KategoriaFotiek, type VerejnaFotka } from "@/lib/verejneFotky";
 
 export const klucFotky = (f: VerejnaFotka) => `${f.zdroj}:${f.id}`;
@@ -54,7 +55,7 @@ export function PanelVerejnychFotiek({ uzke, vyb, onTukni }: { uzke: boolean; /*
   const hladaj = () => { const t = q.trim(); if (t) hladajNovo(null, t); };
   const vsetky = [...nase, ...banky];
 
-  const cip = (on: boolean): CSSProperties => ({ flex: "none", height: 40, padding: "0 14px", borderRadius: 20, border: on ? "1.5px solid var(--green)" : "1px solid var(--cardBd)", background: on ? "var(--gSoft)" : "var(--field)", color: on ? "var(--gInk)" : "var(--ink2)", fontFamily: "inherit", fontSize: 14, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" });
+  const cip = (on: boolean): CSSProperties => ({ flex: "none", height: 40, padding: "0 14px", borderRadius: 20, border: on ? "1.5px solid var(--green)" : "1px solid var(--cardBd)", background: on ? "var(--gSoft)" : "var(--field)", color: on ? "var(--gInk)" : "var(--ink2)", fontFamily: "inherit", fontSize: 14, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap", ...cipFiltra(on) });
   return <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
     <form onSubmit={(e) => { e.preventDefault(); hladaj(); }} style={{ display: "flex", gap: 8 }}>
       <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Hľadať, napr. sviečka, hory, chlieb" aria-label="Hľadať verejné fotky"

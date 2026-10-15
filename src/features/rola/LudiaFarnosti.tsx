@@ -6,6 +6,7 @@
 // PLACEBO — karta 61 §1: pozvánky (e-mail, QR odkaz 48 h, Prijať / Potvrdiť) sú zatiaľ len v zozname, práva rolí server ešte nevynucuje.
 // ============================================================
 import { DeedZnacka } from "@/components/DeedZnacka";
+import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { citajNastavenie, maNastavenie, zapisNastavenie, useZmenyNastaveni } from "@/lib/nastaveniaStranky";
 import { useSlovaFarnosti } from "@/lib/mojeFarnosti";
@@ -125,8 +126,8 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children }
       <b style={{ fontSize: 15.5 }}>1. Čo bude robiť</b>
       <div role="radiogroup" aria-label="Rola" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {ROLY.map(([t, s], i) => { const on = i === nr; return (
-          <button key={t} type="button" role="radio" aria-checked={on} onClick={() => { setNr(i); setPoz(null); }} style={{ minHeight: 56, padding: "8px 14px", borderRadius: 14, border: on ? `2px solid ${ZELENA}` : "1px solid var(--cardBd)", background: on ? "var(--gSoft)" : "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
-            <span aria-hidden="true" style={{ width: 20, height: 20, flex: "none", borderRadius: "50%", border: `2px solid ${on ? ZELENA : "#A8A396"}`, display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: ZELENA, opacity: on ? 1 : 0 }} /></span>
+          <button key={t} type="button" role="radio" aria-checked={on} onClick={() => { setNr(i); setPoz(null); }} style={{ minHeight: 56, padding: "8px 36px 8px 14px", borderRadius: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", ...kartaVolby(on) }}>
+            <FajkaVolby on={on} />
             <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15 }}>{t}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>{s}</span></span>
           </button>); })}
       </div>

@@ -5,6 +5,7 @@
 // Prototyp „Sprava farnosti - prvy prichod" → Zbierky → ťuk na zbierku.
 // ============================================================
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { SADY, SADY_EURC, upravZbierku, ukonciZbierku, cielCislo, type SpustenaZbierka } from "@/lib/novaZbierka";
 import { darcoviaPre, identitaDarcu, relCas, useZmenyDarov } from "@/lib/darcovia";
 import { usePouzivatel } from "@/lib/pouzivatel";
@@ -68,7 +69,8 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat, menoSt
   const volby = (sady: [string, number[]][], cur: number, set: (i: number) => void, mena: string, od = 0) => (
     <div role="radiogroup" style={{ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : "repeat(3,minmax(0,1fr))", gap: 8 }}>
       {sady.map(([t, a], i0) => { const i = i0 + od, on = cur === i; return (
-        <button key={t} type="button" role="radio" aria-checked={on} onClick={() => set(i)} style={{ minHeight: 62, padding: "8px 14px", borderRadius: 14, border: on ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: on ? "var(--gSoft)" : "var(--field)", cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", flexDirection: "column", gap: 2, color: "var(--ink)", boxShadow: "none" }}>
+        <button key={t} type="button" role="radio" aria-checked={on} onClick={() => set(i)} style={{ minHeight: 62, padding: "8px 36px 8px 14px", borderRadius: 14, cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", flexDirection: "column", gap: 2, color: "var(--ink)", boxShadow: "none", ...kartaVolby(on) }}>
+          <FajkaVolby on={on} />
           <b style={{ fontSize: 15 }}>{t}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>{a.map(cis).join(" · ")} {mena}</span>
         </button>); })}
     </div>);

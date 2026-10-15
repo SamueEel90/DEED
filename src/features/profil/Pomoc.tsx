@@ -1,6 +1,7 @@
 // KARTA 24 · 2k (OPRAVY 50) · Pomoc: Časté otázky · Napísať podpore · Nahlásiť problém (+ Zatras telefónom a nahlás).
 // Otázky a odpovede v produkcii zo servera (tím ich upraví bez novej verzie appky). Správy podpore a nahlásenia → server.
 import { sZnackou } from "@/components/DeedZnacka";
+import { cipFiltra } from "@/components/Volby";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useNastaveniaAppky, zmenNastavenia } from "@/lib/nastaveniaAppky";
 import { toast } from "@/components/toast";
@@ -55,7 +56,7 @@ export function CasteOtazky({ onBack, onPodpora, z }: { onBack: () => void; onPo
 
 // ======================= spoločné: téma, text, príloha, hotovo =======================
 const Cip = ({ on, onClick, children }: { on: boolean; onClick: () => void; children: string }) => (
-  <button type="button" role="radio" aria-checked={on} onClick={onClick} style={{ minHeight: 44, padding: "0 14px", borderRadius: 22, border: `1px solid ${on ? "var(--gBd)" : "var(--d-cardBd, var(--cardBd))"}`, boxShadow: "none", background: on ? "var(--gSoft)" : "var(--field)", color: on ? "var(--gInk)" : "var(--d-ink2, var(--ink2))", fontSize: 14.5, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>{children}</button>);
+  <button type="button" role="radio" aria-checked={on} onClick={onClick} style={{ minHeight: 44, padding: "0 14px", borderRadius: 22, border: `1px solid ${on ? "var(--gBd)" : "var(--d-cardBd, var(--cardBd))"}`, boxShadow: "none", background: on ? "var(--gSoft)" : "var(--field)", color: on ? "var(--gInk)" : "var(--d-ink2, var(--ink2))", fontSize: 14.5, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", ...cipFiltra(on) }}>{children}</button>);
 
 function Priloha({ text, subor, setSubor }: { text: string; subor: File | null; setSubor: (f: File | null) => void }) {
   const inp = useRef<HTMLInputElement>(null);

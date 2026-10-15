@@ -2,6 +2,7 @@
 // prepojené krypto účty) → Darované tento rok → Posledné pohyby → Ďalšie pohyby → Výpisy v PDF.
 // Bez emoji, bez rozmazania, bez červenej. Reťazová časť a Moja reťaz sem nepatria.
 import { useEffect, useState, type ReactNode } from "react";
+import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { nacitajZostatok, dobitPenazenku } from "@/lib/osobne";
 import { KURZ_DEED_ZA_EUR, KURZ_EURC_ZA_EUR } from "@/lib/kurz";
@@ -181,8 +182,8 @@ function DobitHarok({ mena, onClose, onDobite }: { mena: Mena; onClose: () => vo
       <div style={{ textAlign: "center", fontSize: 15, color: "var(--ink2)" }}>{t("penazenka.dostanes")} <b style={{ color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{dostanes}</b></div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {([["sepa", t("penazenka.prevodSepa"), t("penazenka.sepaPopis")], ["karta", t("penazenka.kartou"), t("penazenka.kartouPopis")]] as const).map(([k, l, s]) => { const on = sposob === k; return (
-          <div key={k} onClick={() => setSposob(k)} role="radio" aria-checked={on} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 56, padding: "8px 14px", borderRadius: 14, cursor: "pointer", background: on ? "var(--gSoft)" : "var(--card)", border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}` }}>
-            <span style={{ width: 20, height: 20, borderRadius: "50%", flex: "none", border: `2px solid ${on ? "var(--green)" : "#A8A396"}`, display: "flex", alignItems: "center", justifyContent: "center", boxSizing: "border-box" }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--green)", opacity: on ? 1 : 0 }} /></span>
+          <div key={k} onClick={() => setSposob(k)} role="radio" aria-checked={on} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 56, padding: "8px 14px", borderRadius: 14, cursor: "pointer", background: on ? "var(--gSoft)" : "var(--card)", border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, ...kartaVolby(on), paddingRight: 36 }}>
+            <FajkaVolby on={on} />
             <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 15, fontWeight: 700 }}>{l}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{s}</span></span>
           </div>); })}
       </div>

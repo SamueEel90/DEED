@@ -5,6 +5,7 @@
 // Zoznam overovateľov v okolí zatiaľ nie je — PLACEBO — karta 56E (tlačidlo ukáže „pripravujeme").
 // ============================================================
 import { useEffect, useRef, useState } from "react";
+import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { SpatTlacidlo } from "@/components/cesta";
 import "@/styles/platba.css";
 
@@ -61,7 +62,8 @@ export function SukromneZbierky({ onBack, desktop }: { onBack: () => void; deskt
       <div style={lbl}>AKÉ ZBIERKY SA DAJÚ ZALOŽIŤ</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {DRUHY.map((k) => { const on = d === k; return (
-          <button key={k} type="button" aria-pressed={on} onClick={() => setD(k)} style={{ textAlign: "left", fontFamily: "inherit", cursor: "pointer", padding: "12px 14px", borderRadius: 16, border: `1.5px solid ${on ? "var(--green)" : "var(--cardBd)"}`, background: on ? "var(--gSoft)" : "var(--card)", color: "var(--ink)" }}>
+          <button key={k} type="button" aria-pressed={on} onClick={() => setD(k)} style={{ textAlign: "left", fontFamily: "inherit", cursor: "pointer", padding: "12px 14px", borderRadius: 16, border: `1.5px solid ${on ? "var(--green)" : "var(--cardBd)"}`, background: on ? "var(--gSoft)" : "var(--card)", color: "var(--ink)", ...kartaVolby(on), paddingRight: 36 }}>
+            <FajkaVolby on={on} />
             <span style={{ display: "block", fontSize: 15.5, fontWeight: 800, color: on ? "var(--green)" : "var(--ink)" }}>{D[k][0]}</span>
             <span style={{ display: "block", fontSize: 13.5, color: "var(--ink2)", marginTop: 2 }}>{D[k][1]}</span>
           </button>); })}

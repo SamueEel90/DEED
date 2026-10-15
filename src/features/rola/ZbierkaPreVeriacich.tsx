@@ -27,7 +27,7 @@ import { FormularOznamu, VyberSablony, chybaOznamu, popisOznamu, prazdneUdaje, p
 import { hladajPrijemcov, type PrijemcaDeed } from "@/lib/prijemcoviDeed";
 import { SADY_EUR, SADY_EURC } from "@/lib/sadyDarov";
 import { AnoNie } from "@/components/AnoNie";
-import { Volby } from "@/components/Volby";
+import { Volby, kartaVolby, FajkaVolby } from "@/components/Volby";
 import {
   spustiZbierku, noveIdZbierky, prazdnaZbierka, PODIEL_MAX, PODIEL_KROK, PODIEL_STROP_EUR, PODELIT_MAX, PODELIT_MIN, PODELIT_KROK,
   type SpustenaZbierka, type ZbierkaFarnosti, type PodielZbierky } from "@/lib/novaZbierka";
@@ -48,8 +48,7 @@ const pole: CSSProperties = { height: 48, padding: "0 14px", borderRadius: 12, b
 const lab: CSSProperties = { fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" };
 const tlZ: CSSProperties = { height: 50, padding: "0 20px", border: "none", borderRadius: 14, background: "#4B7A35", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "#fff", boxShadow: "none" };
 const tlO: CSSProperties = { height: 50, padding: "0 18px", borderRadius: 14, border: "1px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--ink2)", boxShadow: "none" };
-const volbaSt = (on: boolean): CSSProperties => ({ minHeight: 64, padding: "10px 14px", borderRadius: 14, border: `${on ? 2 : 1.5}px solid ${on ? "var(--green)" : "var(--cardBd)"}`, background: on ? "var(--gSoft)" : "var(--field)", cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 12, color: "var(--ink)", boxShadow: "none" });
-const Bodka = ({ on }: { on: boolean }) => <span aria-hidden="true" style={{ flex: "none", width: 20, height: 20, borderRadius: "50%", border: `2px solid ${on ? "var(--green)" : "var(--ink4, #A8A396)"}`, background: on ? "var(--green)" : "transparent", boxShadow: on ? "inset 0 0 0 3px var(--gSoft)" : "none" }} />;
+const volbaSt = (on: boolean): CSSProperties => ({ minHeight: 64, padding: "10px 36px 10px 14px", borderRadius: 14, cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 12, color: "var(--ink)", boxShadow: "none", ...kartaVolby(on) });
 
 /** KARTA 57 A.1: horné ‹ Späť v Správe — „spat" = krok späť vybavený, „zavriet" = zavrieť zbierku, „nic" = po zapečatení */
 export type SpatZbierky = () => "spat" | "zavriet" | "nic";
@@ -338,7 +337,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
           {existujuce.length ? <div role="radiogroup" aria-label="Oznámenia na stránke" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {existujuce.map((x) => { const on = vybrany === x.id; return (
               <button key={x.id} type="button" role="radio" aria-checked={on} onClick={() => setVybrany(x.id)} style={volbaSt(on)}>
-                <Bodka on={on} /><span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}><b style={{ fontSize: 15 }}>{x.nazov ?? "Oznámenie"}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>{[x.komunita && `pridal ${x.komunita}`, x.vytvorene && new Date(x.vytvorene).toLocaleDateString("sk-SK")].filter(Boolean).join(" · ")}</span></span>
+                <FajkaVolby on={on} /><span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}><b style={{ fontSize: 15 }}>{x.nazov ?? "Oznámenie"}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>{[x.komunita && `pridal ${x.komunita}`, x.vytvorene && new Date(x.vytvorene).toLocaleDateString("sk-SK")].filter(Boolean).join(" · ")}</span></span>
               </button>); })}
           </div> : <div style={{ padding: "14px 16px", borderRadius: 14, background: "var(--field)", border: "1px solid var(--cardBd)", display: "flex", flexDirection: "column", gap: 6 }}>
             <b style={{ fontSize: 15 }}>Na stránke farnosti zatiaľ nie je žiadne {T.ozn}</b>
@@ -417,7 +416,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
         <div role="radiogroup" aria-label="Zvyšok" style={{ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : "repeat(2,minmax(0,1fr))", gap: 10 }}>
           {([[false, "Nechať si celý zvyšok", `všetko ide ${T.prijD}`], [true, "Podeliť sa", "s overenou stránkou alebo žiadosťou"]] as [boolean, string, string][]).map(([v, t, s]) => (
             <button key={t} type="button" role="radio" aria-checked={podelit === v} onClick={() => setPodelit(v)} style={volbaSt(podelit === v)}>
-              <Bodka on={podelit === v} /><span style={{ display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15 }}>{t}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>{s}</span></span>
+              <FajkaVolby on={podelit === v} /><span style={{ display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15 }}>{t}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>{s}</span></span>
             </button>))}
         </div>
         {podelit && <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: 14, borderRadius: 16, background: "var(--panel)", border: "1px solid var(--cardBd)" }}>
@@ -435,7 +434,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
           {spolu.length < PODELIT_MAX ? <>
             <input value={hladaj} onChange={(e) => setHladaj(e.target.value)} placeholder="+ Vybrať zo zoznamu · napíšte názov" aria-label="Vybrať zo zoznamu" style={pole} disabled={prijemcovi < PODELIT_MIN} />
             {vysledky.map((p) => (
-              <button key={p.id} type="button" onClick={() => pridajSpolu(p)} style={{ ...volbaSt(false), minHeight: 52 }}>
+              <button key={p.id} type="button" onClick={() => pridajSpolu(p)} style={{ ...volbaSt(false), minHeight: 52, padding: "10px 14px", border: "1.5px solid var(--cardBd)" }}>
                 <span style={{ display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 14.5 }}>{p.nazov}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{p.popis}</span></span>
               </button>))}
             <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Len tí, ktorí sú registrovaní v DEED+. Žiadny voľný účet.</span>
@@ -447,6 +446,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
           <div role="radiogroup" aria-label="Rýchle sumy v eurách" style={{ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : "repeat(3,minmax(0,1fr))", gap: 8 }}>
             {Object.values(SADY_EUR).map((x, i) => (
               <button key={x.label} type="button" role="radio" aria-checked={sada === i} onClick={() => setSada(i)} style={{ ...volbaSt(sada === i), flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
+                <FajkaVolby on={sada === i} />
                 <b style={{ fontSize: 15 }}>{x.label}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>{x.sumy.join(" · ")} €</span>
               </button>))}
           </div>
@@ -458,6 +458,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
             <div role="radiogroup" aria-label="Rýchle sumy v EURC" style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 }}>
               {(["drobne", "stredne"] as const).map((k) => { const i = Object.keys(SADY_EURC).indexOf(k), x = SADY_EURC[k]; return (
                 <button key={k} type="button" role="radio" aria-checked={sadaE === i} onClick={() => setSadaE(i)} style={{ ...volbaSt(sadaE === i), flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
+                  <FajkaVolby on={sadaE === i} />
                   <b style={{ fontSize: 15 }}>{x.label}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>{x.sumy.join(" · ")} EURC</span>
                 </button>); })}
             </div>

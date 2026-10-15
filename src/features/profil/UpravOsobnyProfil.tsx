@@ -2,6 +2,7 @@
 // Poradie: Fotky · Meno (zamknuté) · Ako sa ukážeš pri dare · Miesto, kde sa zdržiavam · O mne · Súkromie · [Uložiť].
 // Uložiť je zašednuté, kým nie je zmena alebo chýba ulica či mesto.
 import { useEffect, useState, type ReactNode } from "react";
+import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { nacitajPredvolbu, ulozPredvolbu, type VerziaIdentity } from "@/lib/darcovia";
 import { nacitajOsobny, ulozOsobny, type OsobnyProfil } from "@/lib/osobnyProfil";
@@ -102,8 +103,8 @@ export function UpravOsobnyProfil({ onClose }: { onClose: () => void }) {
               {MOZNOSTI.map(([k, t, s]) => {
                 const on = e.verzia === k;
                 return (
-                  <div key={k} onClick={() => set("verzia", k)} role="radio" aria-checked={on} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 50, padding: "8px 14px", borderRadius: 14, cursor: "pointer", background: on ? "var(--gSoft)" : "var(--card)", border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}` }}>
-                    <span style={{ width: 20, height: 20, borderRadius: "50%", flex: "none", border: `2px solid ${on ? "var(--green)" : "#A8A396"}`, display: "flex", alignItems: "center", justifyContent: "center", boxSizing: "border-box" }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--green)", opacity: on ? 1 : 0 }} /></span>
+                  <div key={k} onClick={() => set("verzia", k)} role="radio" aria-checked={on} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 50, padding: "8px 14px", borderRadius: 14, cursor: "pointer", background: on ? "var(--gSoft)" : "var(--card)", border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, ...kartaVolby(on), paddingRight: 36 }}>
+                    <FajkaVolby on={on} />
                     <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 15, fontWeight: 700 }}>{t}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{s}</span></span>
                   </div>);
               })}

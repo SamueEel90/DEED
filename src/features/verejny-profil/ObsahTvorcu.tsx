@@ -2,6 +2,7 @@
 // Čítačka článku (nadpis, autor, obrázok, text, Späť) · náš prehrávač videa (celá šírka, zástupné video)
 // · hárok „Odchádzaš z DEED+ · {platforma}" (Pokračovať otvorí odkaz v novom okne, Zostať zavrie).
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { PortalVp } from "./casti";
 import { PRUH } from "./charitaCasti";
 
@@ -90,8 +91,8 @@ export function NakupPanel({ cena, drzText, onHotovo, onZrus }: { cena: number; 
       <div role="radiogroup" aria-label="Spôsob platby" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         {([["Apple Pay", "uložená karta"], ["DeeD", "z peňaženky"]] as const).map(([t, s], k) => {
           const sel = sp === k;
-          return <button key={t} type="button" role="radio" aria-checked={sel} onClick={() => setSp(k)} style={{ height: 48, borderRadius: 14, border: sel ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: sel ? "var(--gSoft)" : "var(--field)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "var(--ink)", boxShadow: "none", fontFamily: "inherit" }}>
-            <b style={{ fontSize: 14 }}>{t}</b><span style={{ fontSize: 11, color: "var(--ink3)" }}>{s}</span></button>;
+          return <button key={t} type="button" role="radio" aria-checked={sel} onClick={() => setSp(k)} style={{ height: 48, borderRadius: 14, border: sel ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: sel ? "var(--gSoft)" : "var(--field)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "var(--ink)", boxShadow: "none", fontFamily: "inherit", ...kartaVolby(sel) }}>
+            <FajkaVolby on={sel} /><b style={{ fontSize: 14 }}>{t}</b><span style={{ fontSize: 11, color: "var(--ink3)" }}>{s}</span></button>;
         })}
       </div>
       <button type="button" onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); zacni(); }} onPointerUp={pusti} onPointerCancel={pusti}

@@ -1,6 +1,7 @@
 // KARTA 48 · spoločné diely Správy zbierky a Správy centrálnej a sektorov (1 : 1 podľa prototypov).
 // Hlavička „Ukladá sa samo", pás dorovnania, záložky, Stav, Ako budú ľudia darovať, Zapečatené, QR na plagát, Štatistiky.
 import { useState, type CSSProperties, type ReactNode } from "react";
+import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { DeedQr } from "@/components/deedqr";
 import { kopiruj } from "@/lib/zdielanie";
 import { SADY, SADY_EURC } from "@/lib/novaZbierka";
@@ -69,7 +70,8 @@ function Vyber<K extends string | number | boolean>({ moznosti, value, onChange,
   return (
     <div role="radiogroup" style={{ display: "grid", gridTemplateColumns: `repeat(${stlpce},minmax(0,1fr))`, gap: 8 }}>
       {moznosti.map((o) => { const on = value === o.k; return (
-        <button key={String(o.k)} type="button" role="radio" aria-checked={on} onClick={() => onChange(o.k)} style={{ minHeight: vyska, borderRadius: 14, border: on ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: on ? "var(--gSoft)" : "var(--field)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, color: "var(--ink)", fontFamily: "inherit", boxShadow: "none", padding: "0 6px" }}>
+        <button key={String(o.k)} type="button" role="radio" aria-checked={on} onClick={() => onChange(o.k)} style={{ minHeight: vyska, borderRadius: 14, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, color: "var(--ink)", fontFamily: "inherit", boxShadow: "none", padding: "0 6px", ...kartaVolby(on) }}>
+          <FajkaVolby on={on} />
           <b style={{ fontSize: o.s ? 14.5 : 15 }}>{o.t}</b>{o.s && <span style={{ fontSize: 12.5, color: "var(--ink3)", fontVariantNumeric: "tabular-nums" }}>{o.s}</span>}
         </button>); })}
     </div>);

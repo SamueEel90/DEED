@@ -4,6 +4,7 @@
 // OPRAVY 142: neregistrovaný bez e-mailu — len SEPA inkaso (IBAN + meno majiteľa), len mesačne, najviac 100 €,
 // vždy Anonymný darca, zruší ho vo svojom bankovníctve. Registrovaný ako doteraz, bez limitu.
 import { DeedZnacka } from "@/components/DeedZnacka";
+import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { useState, type ReactNode } from "react";
 import { zaregistrujKluc, zmenene } from "@/lib/mojeData";
 import { usePouzivatel } from "@/lib/pouzivatel";
@@ -36,8 +37,6 @@ const dalsia = (d: Date, p: Perioda) => { const n = new Date(d); if (p === "tyzd
 
 const nadpis = (t: string, mt = 8) => <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".05em", color: "var(--ink3)", marginTop: mt }}>{t}</div>;
 const vyber = (on: boolean) => ({ background: on ? "var(--gSoft)" : "var(--card)", border: `1.5px solid ${on ? "var(--green)" : "var(--cardBd)"}`, color: on ? "var(--gInk)" : "var(--ink)" });
-const bodka = (on: boolean) => (
-  <span style={{ flex: "none", width: 22, height: 22, borderRadius: "50%", border: `1.5px solid ${on ? "var(--green)" : "var(--chkBd)"}`, background: on ? "var(--green)" : "transparent", color: "#fff", fontSize: 12, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{on ? "✓" : ""}</span>);
 const pole = { height: 50, padding: "0 14px", borderRadius: 13, border: "1px solid var(--fieldBd)", background: "var(--field)", fontSize: 15.5, color: "var(--ink)", outline: "none", fontFamily: "inherit", minWidth: 0 } as const;
 
 export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka = true, suma: sumaOd }: {
@@ -131,7 +130,8 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka =
           {nadpis("MENA", 0)}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             {([["EUR", "€ EUR", "karta alebo prevod"], ["EURC", "EURC", "z peňaženky · bez poplatku"]] as const).map(([k, t, d]) => (
-              <button key={k} type="button" onClick={() => setMena(k)} style={{ ...vyber(mena === k), padding: "10px 12px", borderRadius: 14, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
+              <button key={k} type="button" onClick={() => setMena(k)} style={{ ...vyber(mena === k), padding: "10px 12px", borderRadius: 14, cursor: "pointer", textAlign: "left", fontFamily: "inherit", ...kartaVolby(mena === k), paddingRight: 36 }}>
+                <FajkaVolby on={mena === k} />
                 <span style={{ display: "block", fontSize: 15.5, fontWeight: 800 }}>{t}</span><span style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--ink3)" }}>{d}</span>
               </button>))}
           </div>
@@ -171,12 +171,12 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka =
            ["sepa", registrovany ? "SEPA inkaso · SK31 •••• 4421" : "SEPA inkaso z tvojho účtu", "bez poplatku · pripísanie do 1 prac. dňa"]] as const).map(([k, t, d]) => {
           const zak = k === "karta" && (mala || host), on = sp === k;
           return (
-            <button key={k} type="button" onClick={() => { if (!zak) setSposob(k); }} style={{ ...vyber(on), display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 18, textAlign: "left", cursor: zak ? "not-allowed" : "pointer", opacity: zak ? .45 : 1, color: "var(--ink)", fontFamily: "inherit" }}>
+            <button key={k} type="button" onClick={() => { if (!zak) setSposob(k); }} style={{ ...vyber(on), display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 18, textAlign: "left", cursor: zak ? "not-allowed" : "pointer", opacity: zak ? .45 : 1, color: "var(--ink)", fontFamily: "inherit", ...kartaVolby(on), paddingRight: 36 }}>
+              <FajkaVolby on={on} />
               {k === "karta"
                 ? <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><rect x="2.5" y="5" width="19" height="14" rx="2.5" /><path d="M2.5 10h19M6.5 15h4" /></svg>
                 : <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 10l9-6 9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18" /></svg>}
               <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 15.5, fontWeight: 800 }}>{t}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)", marginTop: 1 }}>{k === "karta" && host ? "Kartou len s účtom. Inkaso zrušíš vo svojej banke." : d}</span></span>
-              {bodka(on)}
             </button>);
         })}
         {mala && !host && <div style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--ink3)", padding: "0 4px" }}>Pri sume pod 3 € ponúkame len prevod, lebo poplatok za kartu by pri každej platbe zjedol veľkú časť daru.</div>}

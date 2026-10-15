@@ -3,6 +3,7 @@
 // → „Podrž a zaplať X €" (0,9 s) · Zrušiť → zelené potvrdenie s odkazom na faktúru (PDF).
 // Bez fakturačných údajov sa platba nespustí: „Najprv doplňte fakturačné údaje ›".
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { vystavFakturu, otvorFakturu, type FakturaOrg } from "@/lib/fakturyOrg";
 import { fakturacneUdaje } from "./NastaveniaCharity";
 
@@ -40,7 +41,8 @@ export function PlatbaOrganizacie({ co, cena, onZaplatene, onZrus, onUdaje }: {
         <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink3)" }}>Platí organizácia, nie zbierka. Z vyzbieraných peňazí sa nič neberie. Faktúru vystavíme na {ud.nazov} a príde na {ud.email}.</span>
         <div role="radiogroup" aria-label="Spôsob platby" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {SPOSOBY.map(([t, s], i) => { const on = sp === i; return (
-            <button key={t} type="button" role="radio" aria-checked={on} onClick={() => setSp(i)} style={{ height: 52, borderRadius: 14, border: on ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: on ? "var(--gSoft)" : "var(--field)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "var(--ink)", boxShadow: "none", fontFamily: "inherit" }}>
+            <button key={t} type="button" role="radio" aria-checked={on} onClick={() => setSp(i)} style={{ height: 52, padding: "0 32px", borderRadius: 14, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "var(--ink)", boxShadow: "none", fontFamily: "inherit", ...kartaVolby(on) }}>
+              <FajkaVolby on={on} />
               <b style={{ fontSize: 14 }}>{t}</b><span style={{ fontSize: 11.5, color: "var(--ink3)" }}>{s}</span>
             </button>); })}
         </div>

@@ -3,6 +3,7 @@
 // PredplatnePas = stav hore v Prehľade (a v Nastaveniach), PredplatneFarnosti = Predplatné a platba (3 kroky).
 // ============================================================
 import { miesta, useMiesta, nazovDruhu } from "@/lib/miestaFarnosti";
+import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useZmenyNastaveni, citajNastavenie, maNastavenie } from "@/lib/nastaveniaStranky";
 import { predplatne, ulozPredplatne, stavPredplatneho, koniecSkusobneho, cenaMiest, dniText, dniDo, datumText, DEN, GRACE_DNI, CENA_HLAVNY, CENA_FIL1, CENA_FIL } from "@/lib/predplatneFarnosti";
@@ -120,7 +121,8 @@ export function PredplatneFarnosti({ strankaId, meno, mobil, onUdaje, onMiesta }
     <span id="pred-platba" style={{ ...kick, scrollMarginTop: 80 }}>3 · AKO CHCETE PLATIŤ</span>
     <div role="radiogroup" aria-label="Ako chcete platiť" style={{ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : "repeat(2,minmax(0,1fr))", gap: 10 }}>
       {([["Mesačne", `${eur(mesSpolu)} / mesiac`, "Platíte každý mesiac, zrušiť môžete kedykoľvek."], ["Ročne", `${eur(prvyRok ? mesSpolu * 12 : mesSpolu * 10)} / rok`, prvyRok ? "Jedna faktúra na rok. Prvé 2 mesiace zadarmo ste už dostali, prvý rok je plná suma." : "2 mesiace zadarmo pri ročnej platbe. Jedna faktúra na rok."]] as const).map(([t, c, s], i) => { const on = vyb === i; return (
-        <button key={t} type="button" role="radio" aria-checked={on} onClick={() => setVyb(i)} style={{ minHeight: 84, padding: "12px 14px", borderRadius: 16, border: on ? `2px solid ${ZELENA}` : "1px solid var(--cardBd)", background: on ? "var(--gSoft)" : "var(--field)", cursor: "pointer", display: "flex", flexDirection: "column", gap: 4, textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
+        <button key={t} type="button" role="radio" aria-checked={on} onClick={() => setVyb(i)} style={{ minHeight: 84, padding: "12px 36px 12px 14px", borderRadius: 16, cursor: "pointer", display: "flex", flexDirection: "column", gap: 4, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", ...kartaVolby(on) }}>
+          <FajkaVolby on={on} />
           <span style={{ display: "flex", justifyContent: "space-between", gap: 8 }}><b style={{ fontSize: 16 }}>{t}</b><b style={{ fontSize: 16 }}>{c}</b></span>
           <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>{s}</span>
         </button>); })}

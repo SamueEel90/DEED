@@ -2,6 +2,7 @@
 // Obrazovka = hlava (Späť + kapitoly) · obsah (vstup .35 s) · päta (zelené tlačidlo 58 px + druhá voľba 44 px).
 // Svetlúšik: veľký so žiarou (Vitaj, Hotovo s radosťou a iskrami) alebo bublina (najviac 3 na registráciu).
 import { useEffect, useId, useRef, type CSSProperties, type ReactNode } from "react";
+import { cipFiltra } from "@/components/Volby";
 import { USE_SUPABASE } from "@/lib/supabase";
 import "@/styles/platba.css";
 import "@/styles/registracia.css";
@@ -215,7 +216,7 @@ export function Cipy({ cipy, vybrane, onPrepni }: { cipy: string[]; vybrane: str
         const on = vybrane.includes(t);
         return (
           <button key={t} type="button" aria-pressed={on} onClick={() => { vibruj(5); onPrepni(t); }}
-            style={{ minHeight: 44, padding: "0 16px", borderRadius: 22, background: on ? "var(--gSoft)" : "var(--card)", border: `1.5px solid ${on ? "var(--green)" : "var(--cardBd)"}`, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontSize: 14.5, fontWeight: 700, color: on ? "var(--gInk)" : "var(--ink2)", fontFamily: "inherit" }}>{t}</button>);
+            style={{ minHeight: 44, padding: "0 16px", borderRadius: 22, background: on ? "var(--gSoft)" : "var(--card)", border: `1.5px solid ${on ? "var(--green)" : "var(--cardBd)"}`, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontSize: 14.5, fontWeight: 700, color: on ? "var(--gInk)" : "var(--ink2)", fontFamily: "inherit", ...cipFiltra(on) }}>{t}</button>);
       })}
     </div>
   );

@@ -3,6 +3,7 @@
 // Dary a skutky ostávajú (anonymne, ak si to user zvolí). Odovzdanie správy zbierok BLOKUJE pokračovanie.
 // Server (napojenie neskôr): uspanie, 30-dňová lehota, e-mail s „Nebol som to ja", zákaz nového účtu s tým istým menom.
 import { useState } from "react";
+import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { signOut } from "@/lib/auth";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { useVazbyOsoby } from "@/lib/zamestnanci";
@@ -95,9 +96,9 @@ export function ZrusitUcet({ onClose }: { onClose: () => void }) {
         <div style={{ fontSize: 14.5, color: "var(--ink2)" }}>{t("zrusit.over.uvod")}</div>
         <div role="radiogroup" aria-label={t("zrusit.over.aria")} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {MOZ.map(([k, nazov, s]) => { const on = ov === k; return (
-            <button key={k} type="button" role="radio" aria-checked={on} onClick={() => over(k)} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 60, padding: "8px 14px", borderRadius: 14, border: `1px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, background: on ? "var(--gSoft)" : "var(--card)", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
+            <button key={k} type="button" role="radio" aria-checked={on} onClick={() => over(k)} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 60, padding: "8px 14px", borderRadius: 14, border: `1px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, background: on ? "var(--gSoft)" : "var(--card)", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", ...kartaVolby(on), paddingRight: 36 }}>
+              <FajkaVolby on={on} />
               <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 15, fontWeight: 800 }}>{nazov}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{on && overujem ? t("zrusit.over.overujem") : on && overene ? t("zrusit.over.overene") : s}</span></span>
-              <span aria-hidden="true" style={{ width: 22, height: 22, borderRadius: "50%", flex: "none", border: `2px solid ${on ? "var(--green)" : "var(--chkBd)"}`, display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ width: 11, height: 11, borderRadius: "50%", background: "var(--green)", opacity: on ? 1 : 0 }} /></span>
             </button>); })}
         </div>
         {ov === "sms" && !overene && (

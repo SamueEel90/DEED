@@ -4,6 +4,7 @@
 // Zoznam: prihlásení s menami (mená vidí len farár a koordinátor), Upraviť, Podržte · zmazať. Pri tábore prihlasuje rodič.
 // ============================================================
 import { useMiesta } from "@/lib/miestaFarnosti";
+import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { VyberKostola, platnyKostol, kdeNaStranke, INE_MIESTO } from "./VyberKostola";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useStretnutia, ulozStretnutie, zmazStretnutie, skoncilo, DRUHY_STRETNUTIA, type Stretnutie } from "@/lib/detiMladez";
@@ -138,8 +139,8 @@ export function DetiMladezFarnosti({ strankaId, mobil }: { strankaId: string; mo
           <span style={lab}>Pozvať ľudí</span>
           <div role="radiogroup" aria-label="Pozvať ľudí" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {POZV.map(([t, s], i) => { const a = f.pz === i; return (
-              <button key={t} type="button" role="radio" aria-checked={a} onClick={() => setF({ pz: i as 0 | 1 | 2 })} style={{ minHeight: 56, padding: "8px 14px", borderRadius: 14, border: a ? `2px solid ${ZELENA}` : "1px solid var(--cardBd)", background: a ? "var(--gSoft)" : "var(--field)", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
-                <span aria-hidden="true" style={{ width: 20, height: 20, flex: "none", borderRadius: "50%", border: `2px solid ${a ? ZELENA : "#A8A396"}`, display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: ZELENA, opacity: a ? 1 : 0 }} /></span>
+              <button key={t} type="button" role="radio" aria-checked={a} onClick={() => setF({ pz: i as 0 | 1 | 2 })} style={{ minHeight: 56, padding: "8px 36px 8px 14px", borderRadius: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", ...kartaVolby(a) }}>
+                <FajkaVolby on={a} />
                 <span style={{ display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15 }}>{t}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>{s}</span></span>
               </button>); })}
           </div>

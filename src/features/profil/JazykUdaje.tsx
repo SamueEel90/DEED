@@ -1,5 +1,6 @@
 // KARTA 24 · 2g Jazyk · 2h Stiahnuť moje údaje — obrazovky sprava z Nastavení (OPRAVY 39). Zamestnávateľ je v profile (Zamestnavatel.tsx).
 import { useT } from "@/i18n";
+import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { useNastaveniaAppky, zmenNastavenia } from "@/lib/nastaveniaAppky";
@@ -82,10 +83,10 @@ export function JazykObrazovka({ onBack }: { onBack: () => void }) {
       {/* pevné English — nikdy sa neprekladá (záchrana, keď niekto omylom zmení jazyk) */}
       <div lang="en" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <button type="button" role="radio" aria-checked={en} onClick={() => vyber("English")}
-          style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 60, padding: "8px 14px", borderRadius: 16, cursor: "pointer", textAlign: "left", fontFamily: "inherit", boxShadow: "none", background: en ? "var(--gSoft)" : "var(--d-card, var(--card))", border: `1.5px solid ${en ? "var(--gBd)" : "var(--bBd)"}`, color: "var(--d-ink, var(--ink))" }}>
+          style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 60, padding: "8px 14px", borderRadius: 16, cursor: "pointer", textAlign: "left", fontFamily: "inherit", boxShadow: "none", background: en ? "var(--gSoft)" : "var(--d-card, var(--card))", border: `1.5px solid ${en ? "var(--gBd)" : "var(--bBd)"}`, color: "var(--d-ink, var(--ink))", ...kartaVolby(en), paddingRight: 36 }}>
+          <FajkaVolby on={en} />
           <span style={{ width: 38, height: 38, borderRadius: 11, background: "var(--bSoft)", color: "var(--blue)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none", fontSize: 13, fontWeight: 800 }}>EN</span>
-          <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 16, fontWeight: 800 }}>English</span><span style={{ display: "block", fontSize: 12.5, color: "var(--d-ink3, var(--ink3))" }}>Lost in another language? Tap here.</span></span>
-          <Radio on={en} /></button>
+          <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 16, fontWeight: 800 }}>English</span><span style={{ display: "block", fontSize: 12.5, color: "var(--d-ink3, var(--ink3))" }}>Lost in another language? Tap here.</span></span></button>
         <div style={{ fontSize: 12, lineHeight: 1.45, color: "var(--d-ink3, var(--ink3))", padding: "0 2px" }}>This line always stays in English.</div>
       </div>
       {hladPole(q, setQ, t("jazyk.hladat"))}

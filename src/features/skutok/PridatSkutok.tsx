@@ -3,6 +3,7 @@
 // 6 krokov: Sám / So skupinou (→ bežný / skutok ako dar) · Opíš · AI kontroluje · Ešte pár otázok · Náhľad · Hotovo.
 // AI = existujúce ohodnot() (POST /api/score, verdikt ok / doplnit / zamietnut) — backend sa nemení.
 import { zapisCin } from "@/lib/vyzvy";
+import { kartaVolby, FajkaVolby, cipFiltra } from "@/components/Volby";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
@@ -75,7 +76,7 @@ function Zaskrt({ on, onClick, children, zarovnaj = "center" }: { on: boolean; o
 }
 const Cip = ({ on, onClick, children }: { on: boolean; onClick: () => void; children: ReactNode }) => (
   <button type="button" aria-pressed={on} onClick={onClick} style={{ display: "flex", alignItems: "center", minHeight: 44, padding: "0 14px", borderRadius: 22, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-    background: on ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, color: on ? "var(--gInk)" : "var(--ink2)" }}>{children}</button>);
+    background: on ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, color: on ? "var(--gInk)" : "var(--ink2)", ...cipFiltra(on) }}>{children}</button>);
 const Poznamka = ({ farba, children }: { farba: "gold" | "blue" | "green"; children: ReactNode }) => {
   const f = { gold: ["var(--goldBg)", "var(--goldBd)"], blue: ["var(--bSoft)", "var(--bBd)"], green: ["var(--gSoft)", "var(--gBd)"] }[farba];
   return <div style={{ padding: "10px 12px", borderRadius: 13, background: f[0], border: `1px solid ${f[1]}`, fontSize: 13, lineHeight: 1.5, color: "var(--ink2)" }}>{children}</div>;
@@ -570,8 +571,8 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
             </label>
             {q && !viditelne.length && <div style={{ padding: "8px 2px", fontSize: 13, color: "var(--ink3)" }}>{o("Nič sme nenašli. Skús iný názov alebo číslo, napr. 47 821.", "Nič sme nenašli. Skúste iný názov alebo číslo, napr. 47 821.")}</div>}
             {viditelne.map((z) => { const i = darZ.findIndex((x) => x.id === z.id), c = i >= 0; return (
-              <button type="button" role="checkbox" aria-checked={c} key={z.id} onClick={() => prepniZ(z)} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 52, padding: "6px 12px", borderRadius: 13, cursor: "pointer", background: c ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${c ? "var(--gBd)" : "var(--cardBd)"}`, textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
-                <span aria-hidden="true" style={{ width: 22, height: 22, borderRadius: 7, flex: "none", border: `2px solid ${c ? "var(--green)" : "var(--chkBd)"}`, background: c ? "var(--green)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>{c && <Ik d={IK.fajka} s={13} w={3} />}</span>
+              <button type="button" role="checkbox" aria-checked={c} key={z.id} onClick={() => prepniZ(z)} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 52, padding: "6px 12px", borderRadius: 13, cursor: "pointer", background: c ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${c ? "var(--gBd)" : "var(--cardBd)"}`, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", ...kartaVolby(c), paddingRight: 36 }}>
+                <FajkaVolby on={c} />
                 <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 14.5, fontWeight: 700 }}>{z.nazov}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}><span style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{z.cislo}</span> · {z.org}</span></span>
                 {c && <span style={{ flex: "none", padding: "3px 8px", borderRadius: 8, background: i === 0 ? "var(--goldBg)" : "var(--card)", color: i === 0 ? "var(--gold)" : "var(--ink3)", fontSize: 12, fontWeight: 800, whiteSpace: "nowrap" }}>{i === 0 ? "hlavná" : `${i + 1}. v poradí`}</span>}
               </button>); })}
@@ -833,8 +834,8 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
         <div role="radiogroup" aria-label="Kam pôjdu peniaze" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {([["centralna", "Na našu centrálnu zbierku · celá organizácia", pr.centralna ? pr.centralna.nazov : "Centrálnu zbierku zatiaľ nemáte."], ["ina", "Na zbierku inej charity", inaZ ? `${inaZ.nazov} · ${inaZ.org}` : "Vyberiete zbierku podľa názvu alebo čísla."], ["bez", "Bez platobného modulu", "Skutok len ukazuje, čo ste urobili. Peniaze sa pri ňom nezbierajú."]] as const).map(([k, t, x]) => {
             const c = kam === k, vyp = k === "centralna" && !pr.centralna; return (
-            <button type="button" role="radio" aria-checked={c} aria-disabled={vyp} key={k} onClick={() => { if (!vyp) setKam(k); }} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 56, padding: "8px 12px", borderRadius: 13, cursor: vyp ? "default" : "pointer", opacity: vyp ? 0.55 : 1, background: c ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${c ? "var(--gBd)" : "var(--cardBd)"}`, textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
-              <span aria-hidden="true" style={{ width: 20, height: 20, borderRadius: "50%", flex: "none", border: `2px solid ${c ? "var(--green)" : "var(--chkBd)"}`, display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--green)", opacity: c ? 1 : 0 }} /></span>
+            <button type="button" role="radio" aria-checked={c} aria-disabled={vyp} key={k} onClick={() => { if (!vyp) setKam(k); }} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 56, padding: "8px 12px", borderRadius: 13, cursor: vyp ? "default" : "pointer", opacity: vyp ? 0.55 : 1, background: c ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${c ? "var(--gBd)" : "var(--cardBd)"}`, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", ...kartaVolby(c), paddingRight: 36 }}>
+              <FajkaVolby on={c} />
               <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 15, fontWeight: 800 }}>{t}</span><span style={{ display: "block", fontSize: 12.5, lineHeight: 1.4, color: "var(--ink3)" }}>{x}</span></span>
             </button>); })}
         </div>
@@ -845,9 +846,9 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
           </label>
           {(() => { const qq = normalizuj(kamQ); const l = vsetkyZ.filter((z) => z.org !== pr.autor && (!qq || normalizuj(z.nazov).includes(qq) || normalizuj(z.org).includes(qq) || normalizuj(z.cislo).includes(qq))).slice(0, qq ? 8 : 3);
             return l.length ? l.map((z) => { const c = inaZ?.id === z.id; return (
-              <button type="button" role="radio" aria-checked={c} key={z.id} onClick={() => setInaZ(z)} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 52, padding: "6px 12px", borderRadius: 13, cursor: "pointer", background: c ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${c ? "var(--gBd)" : "var(--cardBd)"}`, textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
+              <button type="button" role="radio" aria-checked={c} key={z.id} onClick={() => setInaZ(z)} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 52, padding: "6px 12px", borderRadius: 13, cursor: "pointer", background: c ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${c ? "var(--gBd)" : "var(--cardBd)"}`, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", ...kartaVolby(c), paddingRight: 36 }}>
+                <FajkaVolby on={c} />
                 <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 14.5, fontWeight: 700 }}>{z.nazov}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}><span style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{z.cislo}</span> · {z.org}</span></span>
-                {c && <span style={{ color: "var(--green)", display: "flex" }}><Ik d={IK.fajka} s={18} w={2.6} /></span>}
               </button>); }) : <div style={{ padding: "8px 2px", fontSize: 13, color: "var(--ink3)" }}>Nič sme nenašli. Skúste iný názov alebo číslo, napr. 47 821.</div>; })()}
         </div>}
       </div>
@@ -990,8 +991,8 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
           {rz.open && !rz.hot && <div className="pf-rise" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <div role="radiogroup" aria-label="Zbierka pre reťaz" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {nasZbierky.map((z) => { const c = rz.z?.id === z.id; return (
-                <button type="button" role="radio" aria-checked={c} key={z.id} onClick={() => setRz((r) => ({ ...r, z }))} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 52, padding: "8px 12px", borderRadius: 13, cursor: "pointer", background: c ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${c ? "var(--gBd)" : "var(--cardBd)"}`, textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
-                  <span aria-hidden="true" style={{ width: 20, height: 20, borderRadius: "50%", flex: "none", border: `2px solid ${c ? "var(--green)" : "var(--chkBd)"}`, display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--green)", opacity: c ? 1 : 0 }} /></span>
+                <button type="button" role="radio" aria-checked={c} key={z.id} onClick={() => setRz((r) => ({ ...r, z }))} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 52, padding: "8px 12px", borderRadius: 13, cursor: "pointer", background: c ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${c ? "var(--gBd)" : "var(--cardBd)"}`, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", ...kartaVolby(c), paddingRight: 36 }}>
+                  <FajkaVolby on={c} />
                   <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 14.5, fontWeight: 700 }}>{z.nazov}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{z.org}</span></span>
                 </button>); })}
             </div>

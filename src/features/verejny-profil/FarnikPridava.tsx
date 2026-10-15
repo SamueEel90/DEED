@@ -10,6 +10,7 @@
 // Modlím sa s vami, Úprimnú sústrasť, ··· Nahlásiť, „Upraviť · moje" (len autor).
 // ============================================================
 import { useZamokVrstvy } from "@/lib/zamokVrstvy";
+import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { CasPole } from "@/components/CasPole";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -467,10 +468,9 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   };
   const casZly = casChyba && <span role="alert" style={{ fontSize: 13, fontWeight: 700, color: "var(--cRed, #A3341F)" }}>Takýto čas neexistuje. Píšte napríklad 15:00.</span>;
   const ramGal = (el: ReactNode) => <div style={{ borderRadius: 22, boxShadow: zle("gal") ? `0 0 0 2px ${ZLATA}` : "none" }}>{el}</div>;
-  const radio = (on: boolean) => <span aria-hidden="true" style={{ width: 22, height: 22, flex: "none", borderRadius: "50%", border: `2px solid ${on ? "var(--green)" : "#A8A396"}`, display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: on ? "var(--green)" : "transparent" }} /></span>;
   const volba = (on: boolean, t: string, sub: string, tap: () => void) => (
-    <button key={t} type="button" role="radio" aria-checked={on} onClick={tap} style={{ minHeight: 60, padding: "10px 14px", borderRadius: 14, border: on ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: on ? "var(--gSoft)" : "var(--field)", cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 12, color: "var(--ink)" }}>
-      {radio(on)}<span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15.5 }}>{t}</b><span style={{ fontSize: 13.5, lineHeight: 1.4, color: "var(--ink3)" }}>{sub}</span></span>
+    <button key={t} type="button" role="radio" aria-checked={on} onClick={tap} style={{ minHeight: 60, padding: "10px 14px", borderRadius: 14, border: on ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: on ? "var(--gSoft)" : "var(--field)", cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 12, color: "var(--ink)", ...kartaVolby(on), paddingRight: 36 }}>
+      <FajkaVolby on={on} /><span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15.5 }}>{t}</b><span style={{ fontSize: 13.5, lineHeight: 1.4, color: "var(--ink3)" }}>{sub}</span></span>
     </button>);
   const pozvanie = (nadpis: ReactNode) => <>
     {nadpis}

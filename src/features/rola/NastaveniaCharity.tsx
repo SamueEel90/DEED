@@ -5,6 +5,7 @@
 // Stav obrazoviek sa ukladá do účtu stránky (nastavenia_stranky, migrácia 0050) — lib/nastaveniaStranky.
 // ============================================================
 import { RichTextInput } from "@/components/richtext";
+import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { cistyText } from "@/lib/richtext";
 import { useEffect, useState } from "react";
 import { toast } from "@/components/toast";
@@ -153,13 +154,14 @@ const SADY_EUR_PORADIE: SadaEur[] = ["drobne", "stredne", "vyssie"];
 export function ObrEur({ mobil }: { mobil: boolean }) {
   const [sada, setSada] = useState<SadaEur>(() => nacitajSady("charita").eur);
   const [rz, setRz] = usePamat<number>("eu.r", 1);
-  const vyber = (on: boolean): React.CSSProperties => ({ minHeight: 64, padding: "8px 10px", borderRadius: 14, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, textAlign: "center", background: on ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, color: on ? "var(--gInk)" : "var(--ink)" });
+  const vyber = (on: boolean): React.CSSProperties => ({ minHeight: 64, padding: "8px 30px", borderRadius: 14, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, textAlign: "center", color: on ? "var(--gInk)" : "var(--ink)", ...kartaVolby(on) });
   return (
     <section style={{ ...krt, borderRadius: 20, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
       <span style={{ fontSize: 15.5, fontWeight: 800 }}>Rýchle sumy v eurách</span>
       <div role="radiogroup" style={{ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : "repeat(3,minmax(0,1fr))", gap: 8 }}>
         {SADY_EUR_PORADIE.map((k) => (
           <button key={k} role="radio" aria-checked={k === sada} onClick={() => { setSada(k); ulozSady("charita", { ...nacitajSady("charita"), eur: k }); }} style={vyber(k === sada)}>
+            <FajkaVolby on={k === sada} />
             <span style={{ fontSize: 15, fontWeight: 800 }}>{SADY_EUR[k].label}</span><span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink3)" }}>{SADY_EUR[k].sumy.join(" · ")} €</span></button>))}
       </div>
       <Segment volby={[[0, "Rovnaké pri všetkých zbierkach"], [1, "Vyberiem pri každej zbierke"]]} hodnota={rz} onZmena={setRz} stlpce={mobil ? 1 : 2} />
@@ -177,7 +179,7 @@ export function ObrEurc({ mobil }: { mobil: boolean }) {
   const [sada, setSada] = useState<SadaEurc>(() => nacitajSady("charita").eurc);
   const [rz, setRz] = usePamat<number>("ek.r", 1);
   const [pv, setPv] = usePamat<boolean>("ek.prav", false);
-  const vyber = (on: boolean): React.CSSProperties => ({ minHeight: 64, padding: "8px 10px", borderRadius: 14, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, textAlign: "center", background: on ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, color: on ? "var(--gInk)" : "var(--ink)" });
+  const vyber = (on: boolean): React.CSSProperties => ({ minHeight: 64, padding: "8px 30px", borderRadius: 14, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, textAlign: "center", color: on ? "var(--gInk)" : "var(--ink)", ...kartaVolby(on) });
   const sek: React.CSSProperties = { ...krt, borderRadius: 20, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 };
   return (<>
     <section style={sek}>
@@ -185,6 +187,7 @@ export function ObrEurc({ mobil }: { mobil: boolean }) {
       <div role="radiogroup" style={{ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : "repeat(3,minmax(0,1fr))", gap: 8 }}>
         {([["Nie", "nikde"], ["Áno", "pri všetkých zbierkach"], ["Podľa zbierky", "vyberiem pri každej"]] as const).map(([t, s], i) => (
           <button key={t} role="radio" aria-checked={i === p} onClick={() => { setP(i); ulozKryptoOrg("charita", i !== 0); }} style={vyber(i === p)}>
+            <FajkaVolby on={i === p} />
             <span style={{ fontSize: 15, fontWeight: 800 }}>{t}</span><span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink3)" }}>{s}</span></button>))}
       </div>
       <span style={pozn}>EURC je digitálne euro 1 : 1. Keď vyberiete Nie, dary v krypte sa nezobrazia v žiadnej zbierke.</span>
@@ -195,6 +198,7 @@ export function ObrEurc({ mobil }: { mobil: boolean }) {
         <div role="radiogroup" style={{ display: "grid", gridTemplateColumns: mobil ? "repeat(2,minmax(0,1fr))" : "repeat(4,minmax(0,1fr))", gap: 8 }}>
           {SADY_PORADIE.map((k) => (
             <button key={k} role="radio" aria-checked={k === sada} onClick={() => { setSada(k); ulozSady("charita", { ...nacitajSady("charita"), eurc: k }); }} style={vyber(k === sada)}>
+              <FajkaVolby on={k === sada} />
               <span style={{ fontSize: 15, fontWeight: 800 }}>{SADY_EURC[k].label}</span><span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink3)" }}>{SADY_EURC[k].sumy.map((v) => v.toLocaleString("sk-SK")).join(" · ")}</span></button>))}
         </div>
         <Segment volby={[[0, "Rovnaké pri všetkých zbierkach"], [1, "Vyberiem pri každej zbierke"]]} hodnota={rz} onZmena={setRz} stlpce={mobil ? 1 : 2} />

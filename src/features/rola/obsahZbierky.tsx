@@ -4,6 +4,7 @@
 // Používa Nová zbierka (karta 37) aj Centrálna zbierka (karta 39 · bod 3).
 // ============================================================
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { createPortal } from "react-dom";
 import { RichTextInput } from "@/components/richtext";
 import { spracujFotku } from "@/lib/obrazok";
@@ -48,11 +49,13 @@ export const Media = ({ m, style }: { m: MediumZbierky; style?: CSSProperties })
   : <img src={m.src} alt="" draggable={false} style={{ width: "100%", height: "100%", display: "block", ...vzhlad(m), ...style }} />;
 
 export function Volby<K extends string | number | boolean>({ moznosti, value, onChange, stlpce = 2, vyska = 72 }: { moznosti: { k: K; t: string; s?: string; zamok?: boolean; vpravo?: string }[]; value: K | null; onChange: (k: K) => void; stlpce?: number; vyska?: number }) {
+  const sPopisom = moznosti.some((o) => !!o.s); // OPRAVY 288 doplnok: karty s popisom = rám + ✓ (kartaVolby), krátke voľby ostávajú
   return (
     <div style={{ display: "grid", gridTemplateColumns: `repeat(${stlpce},minmax(0,1fr))`, gap: 10 }}>
       {moznosti.map((o) => { const on = !o.zamok && value === o.k; return (
         <button key={String(o.k)} type="button" aria-pressed={on} aria-disabled={o.zamok} onClick={() => { if (!o.zamok) onChange(o.k); }}
-          style={{ ...vyber(on), ...(o.zamok ? { color: "var(--ink3)", opacity: 0.6, cursor: "not-allowed" } : { cursor: "pointer" }), minHeight: vyska, padding: "12px 16px", borderRadius: 14, fontFamily: "inherit", textAlign: o.vpravo ? "left" : "left", display: "flex", alignItems: "center", gap: 10 }}>
+          style={{ ...vyber(on), ...(o.zamok ? { color: "var(--ink3)", opacity: 0.6, cursor: "not-allowed" } : { cursor: "pointer" }), minHeight: vyska, padding: sPopisom ? "12px 36px 12px 16px" : "12px 16px", borderRadius: 14, fontFamily: "inherit", textAlign: o.vpravo ? "left" : "left", display: "flex", alignItems: "center", gap: 10, ...(sPopisom ? kartaVolby(on) : {}) }}>
+          {sPopisom && <FajkaVolby on={on} />}
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
             <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 15, fontWeight: 800 }}>{o.t}{o.zamok && <Zamok />}</span>
             {o.s && <span style={{ fontSize: 12.5, fontWeight: 700, lineHeight: 1.35, color: on ? "var(--gInk)" : "var(--ink3)" }}>{o.s}</span>}

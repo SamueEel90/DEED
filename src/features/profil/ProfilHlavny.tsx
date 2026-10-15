@@ -2,6 +2,7 @@
 // Hlavička · karta identity · karta štítu · karma (len vlastník) · čísla · dlaždice 2 × 3 · Moje záujmy (10 oblastí).
 // Bez L-úrovní, percent, emoji a anglických názvov štítov.
 import { MojeStranky, KonasAkoLista } from "./MojeStranky";
+import { cipFiltra } from "@/components/Volby";
 import type { Stranka } from "@/lib/mojeStranky";
 import { useT } from "@/i18n";
 import { prelozObsah } from "@/i18n/obsah";
@@ -206,7 +207,7 @@ export function MojeZaujmy() {
                   const cur = cela(o.oblast) ? o.podpolozky.slice() : vybrane(o.oblast).slice();
                   const nx = cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p];
                   nastav(o.oblast, nx.length === o.podpolozky.length ? ["*"] : nx);
-                }} style={{ display: "flex", alignItems: "center", minHeight: 40, padding: "0 14px", borderRadius: 20, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", background: on ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, color: on ? "var(--gInk)" : "var(--ink2)" }}>{prelozObsah(p, t)}</button>);
+                }} style={{ display: "flex", alignItems: "center", minHeight: 40, padding: "0 14px", borderRadius: 20, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", background: on ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, color: on ? "var(--gInk)" : "var(--ink2)", ...cipFiltra(on) }}>{prelozObsah(p, t)}</button>);
             })}
           </div>
           <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)" }}>{t("profil.zaujmy.napoveda")}</div>

@@ -6,6 +6,7 @@
 // Zverejnenie vždy podržaním (ten istý diel ako platba). Oznam ide sledujúcim po 5 min, verejný a výzva hneď.
 // ============================================================
 import { CasPole, sNulou } from "@/components/CasPole";
+import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { RichTextInput } from "@/components/richtext";
 import { sanitizujHtml } from "@/lib/richtext";
@@ -243,7 +244,6 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
 
   // ---- Nový oznam ----
   const vyber = (on: boolean): CSSProperties => ({ background: on ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${on ? "var(--gBd)" : "#CFC9BC"}` });
-  const radio = (on: boolean) => <span style={{ width: 22, height: 22, flex: "none", borderRadius: "50%", border: `2px solid ${on ? "var(--green)" : "#BDB6A8"}`, display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--green)", opacity: on ? 1 : 0 }} /></span>;
   const lbl: CSSProperties = { fontSize: 15, fontWeight: 800, color: "var(--ink)" };
   const nadpisPh = druh === "vyzva" ? "Napríklad: Hľadáme darcov krvi skupiny 0 negatívna" : druh === "verejny" ? "Napríklad: Beh pre svetlo · rodinný beh v parku" : "Napríklad: Zajtra výdaj od 14:00";
   const kam: [string, string] = druh === "oznam" ? ["Na váš profil a sledujúcim", "Príde tým, čo vás sledujú. Na nástenku mesta ani do okolia nejde."]
@@ -260,8 +260,8 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
       <span style={{ fontSize: 17, fontWeight: 800 }}>Čo chcete oznámiť</span>
       {DRUHY.map(([k, t, s]) => { const lock = zamknuty(k), on = druh === k && !lock; return (
         <button key={k} type="button" role="radio" aria-checked={on} aria-disabled={lock} onClick={() => { if (!lock && !uprava) zmen({ druh: k }); }}
-          style={{ ...vyber(on), display: "flex", alignItems: "center", gap: 14, minHeight: 64, padding: "10px 14px", borderRadius: 14, cursor: lock || uprava ? "default" : "pointer", opacity: lock ? 0.55 : 1, textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
-          {radio(on)}
+          style={{ display: "flex", alignItems: "center", gap: 14, minHeight: 64, padding: "10px 36px 10px 14px", borderRadius: 14, cursor: lock || uprava ? "default" : "pointer", opacity: lock ? 0.55 : 1, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", ...kartaVolby(on) }}>
+          <FajkaVolby on={on} />
           <span style={{ flex: 1, minWidth: 0 }}>
             <span style={{ display: "flex", alignItems: "center", gap: 8 }}><b style={{ fontSize: 15.5 }}>{t}</b>{lock && <span style={{ flex: "none", whiteSpace: "nowrap", height: 22, padding: "0 8px", borderRadius: 11, border: "1px solid var(--cardBd)", fontSize: 11.5, fontWeight: 800, color: "var(--ink3)", display: "flex", alignItems: "center" }}>od P1</span>}</span>
             <span style={{ display: "block", fontSize: 13, lineHeight: 1.45, color: "var(--ink3)" }}>{s}</span>
@@ -308,8 +308,8 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
       </>}
       {(druh === "oznam" || druh === "verejny") && <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={lbl}>Pozvať ľudí</span>
         {POZVANIA.map(([k, t, s]) => { const on = f.pozvanie === k; return (
-          <button key={k} type="button" role="radio" aria-checked={on} onClick={() => zmen({ pozvanie: k })} style={{ ...vyber(on), display: "flex", alignItems: "center", gap: 12, minHeight: 56, padding: "8px 14px", borderRadius: 14, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
-            {radio(on)}<span style={{ flex: 1, minWidth: 0 }}><b style={{ display: "block", fontSize: 14.5 }}>{t}</b><span style={{ display: "block", fontSize: 13, lineHeight: 1.4, color: "var(--ink3)" }}>{s}</span></span></button>); })}
+          <button key={k} type="button" role="radio" aria-checked={on} onClick={() => zmen({ pozvanie: k })} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 56, padding: "8px 36px 8px 14px", borderRadius: 14, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", ...kartaVolby(on) }}>
+            <FajkaVolby on={on} /><span style={{ flex: 1, minWidth: 0 }}><b style={{ display: "block", fontSize: 14.5 }}>{t}</b><span style={{ display: "block", fontSize: 13, lineHeight: 1.4, color: "var(--ink3)" }}>{s}</span></span></button>); })}
         {f.pozvanie === "zavazne" && <label style={{ display: "flex", alignItems: "center", gap: 12 }}><span style={{ fontSize: 14, fontWeight: 800 }}>Koľko ľudí najviac</span>
           <input inputMode="numeric" value={f.limit} onChange={(e) => zmen({ limit: e.target.value.replace(/\D/g, "").slice(0, 5) })} placeholder="bez limitu" aria-label="Koľko ľudí najviac" style={{ ...pole, width: 140, height: 46 }} /></label>}
       </div>}

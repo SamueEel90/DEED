@@ -5,6 +5,7 @@
 // Editor, orez, logo a kontakt = existujúce RichTextInput, OrezFotky, lib/obrazok, kontakt.tsx.
 // ============================================================
 import { useVerejnyProfilOtvoreny } from "@/features/verejny-profil/otvor";
+import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { RichTextInput } from "@/components/richtext";
@@ -329,8 +330,8 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
     <span style={{ ...poznamka, marginTop: -4 }}>Máte logo farnosti? Ak nie, vytvoríme znak z iniciál.</span>
     <div role="radiogroup" aria-label="Logo" style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>
       {([[false, "Mám logo", "nahrám obrázok"], [true, "Nemám logo", "iniciály v kruhu alebo štvorci"]] as [boolean, string, string][]).map(([v, t, s]) => { const on = !!p.bezLoga === v; return (
-        <button key={t} type="button" role="radio" aria-checked={on} onClick={() => zmen({ bezLoga: v })} style={{ minHeight: 64, padding: "10px 14px", borderRadius: 14, cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 10, background: on ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${on ? "var(--green)" : "var(--cardBd)"}`, color: on ? "var(--gInk)" : "var(--ink)" }}>
-          <span aria-hidden="true" style={{ flex: "none", width: 20, height: 20, borderRadius: "50%", border: `2px solid ${on ? "var(--green)" : "var(--ink4)"}`, background: on ? "var(--green)" : "transparent", boxShadow: on ? "inset 0 0 0 3px var(--gSoft)" : "none" }} />
+        <button key={t} type="button" role="radio" aria-checked={on} onClick={() => zmen({ bezLoga: v })} style={{ minHeight: 64, padding: "10px 36px 10px 14px", borderRadius: 14, cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 10, color: on ? "var(--gInk)" : "var(--ink)", ...kartaVolby(on) }}>
+          <FajkaVolby on={on} />
           <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}><b style={{ fontSize: 15 }}>{t}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{s}</span></span>
         </button>); })}
     </div>

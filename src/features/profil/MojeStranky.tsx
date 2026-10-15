@@ -1,6 +1,7 @@
 // OPRAVY 75 · Moje stránky (nad štítom), Konáš ako, Režim prezentácie, DEV simulácia (len testovacia verzia).
 // Nahrádza „Môj DEED+ firemný" v module Charita. Horná lišta dostane v strede 2 tlačidlá (KonasAkoLista).
 import { useEffect, useRef, useState } from "react";
+import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { toast } from "@/components/toast";
 import { useLayout } from "@/components/context";
 import { usePouzivatel } from "@/lib/pouzivatel";
@@ -115,7 +116,8 @@ export function KonasAkoLista() {
           <div style={{ padding: "6px 8px", fontSize: 11.5, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" }}>{t("stranky.konasAko")}</div>
           {zoznam.map((o) => { const on = !st.prezentacia && st.ako === o.k; return (
             <button key={o.k} type="button" role="menuitemradio" aria-checked={on} onClick={() => { nastavAko(o.k); setOtv(false); }}
-              style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, minHeight: 50, padding: "6px 8px", borderRadius: 12, border: "none", boxShadow: "none", background: on ? "var(--gSoft)" : "transparent", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
+              style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, minHeight: 50, padding: "6px 8px", borderRadius: 12, border: "none", boxShadow: "none", background: on ? "var(--gSoft)" : "transparent", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", ...kartaVolby(on), paddingRight: 36 }}>
+              <FajkaVolby on={on} />
               <span style={{ width: 34, height: 34, borderRadius: 10, background: o.bg, color: o.c, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, flex: "none" }}>{o.i}</span>
               <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 14, fontWeight: 800 }}>{o.n}</span><span style={{ display: "block", fontSize: 12, color: "var(--ink3)" }}>{o.s}</span></span>
             </button>); })}

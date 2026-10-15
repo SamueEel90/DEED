@@ -3,6 +3,7 @@
 // Zoznam: 18 cirkví a náboženských spoločností registrovaných v SR (lib/mojeFarnosti CIRKVI).
 // ============================================================
 import { useEffect, useState } from "react";
+import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { CIRKVI, RODINY_CIRKVI, skratkaCirkvi, nacitajCirkevFarnosti, nastavCirkevFarnosti } from "@/lib/mojeFarnosti";
 
 export function CirkevFarnosti({ strankaId, mobil, toast }: { strankaId: string; mobil?: boolean; toast: (t: string) => void }) {
@@ -28,7 +29,8 @@ export function CirkevFarnosti({ strankaId, mobil, toast }: { strankaId: string;
         <div key={r} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".07em", color: "var(--ink3)", paddingTop: 4 }}>{r}</span>
           {CIRKVI.filter((x) => x[3] === ri).map(([k, n, popis]) => { const on = k === kod; return (
-            <button key={k} type="button" aria-pressed={on} onClick={() => vyber(k)} style={{ minHeight: 52, padding: "6px 12px", borderRadius: 12, border: `1.5px solid ${on ? "var(--green)" : "var(--cardBd)"}`, background: on ? "var(--gSoft)" : "var(--field)", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
+            <button key={k} type="button" aria-pressed={on} onClick={() => vyber(k)} style={{ minHeight: 52, padding: "6px 36px 6px 12px", borderRadius: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 10, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", ...kartaVolby(on) }}>
+              <FajkaVolby on={on} />
               <span style={{ flex: "none", minWidth: 52, fontSize: 12.5, fontWeight: 800, color: "var(--ink2)" }}>{skratkaCirkvi(k)}</span>
               <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}><b style={{ fontSize: 14 }}>{n}</b><span style={{ fontSize: 12, color: "var(--ink3)" }}>{popis}</span></span>
             </button>); })}

@@ -2,6 +2,7 @@
 // Zablokovaní ľudia, Súhlasy (+ detail povinného súhlasu) a hlášky pri prihlásení (6. zariadenie, nové zariadenie,
 // 24 h obmedzenie). Overovanie kódov, zoznam zariadení a znenia súhlasov bude držať server — tu je appková časť.
 import { TESTOVACIA } from "@/lib/testovacia";
+import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { Prepinac } from "./nastUi";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { zaregistrujKluc, zmenene } from "@/lib/mojeData";
@@ -36,14 +37,12 @@ const Prep = Prepinac; // karta 25: vypnutý prepínač viditeľný aj v tmavej
 const Hotovo = ({ children }: { children: ReactNode }) => <div role="status" style={{ display: "flex", gap: 10, alignItems: "center", padding: "12px 14px", borderRadius: 14, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 14.5, fontWeight: 700, color: "var(--gInk)" }}><Ik d={IK.fajka} w={2.6} />{children}</div>;
 function Volba({ on, onClick, t, s, ikona }: { on: boolean; onClick: () => void; t: string; s?: string; ikona?: string }) {
   return (
-    <button type="button" role="radio" aria-checked={on} onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 58, padding: "8px 14px", borderRadius: 14, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", background: on ? "var(--gSoft)" : "var(--card)", border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}` }}>
+    <button type="button" role="radio" aria-checked={on} onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 58, padding: "8px 14px", borderRadius: 14, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", background: on ? "var(--gSoft)" : "var(--card)", border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, ...kartaVolby(on), paddingRight: 36 }}>
+      <FajkaVolby on={on} />
       {ikona && <span style={{ width: 38, height: 38, borderRadius: 11, background: "var(--bSoft)", color: "var(--blue)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Ik d={ikona} s={19} /></span>}
-      {!ikona && <Radio on={on} />}
       <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 16, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{t}</span>{s && <span style={{ display: "block", fontSize: 13, color: "var(--ink3)" }}>{s}</span>}</span>
-      {ikona && <Radio on={on} />}
     </button>);
 }
-const Radio = ({ on }: { on: boolean }) => <span aria-hidden="true" style={{ width: 22, height: 22, borderRadius: "50%", flex: "none", border: `2px solid ${on ? "var(--green)" : "var(--chkBd)"}`, display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ width: 11, height: 11, borderRadius: "50%", background: "var(--green)", opacity: on ? 1 : 0 }} /></span>;
 
 /** obrazovka, ktorá príde sprava (Späť vráti na Nastavenia) */
 export function ObrazovkaSprava({ titul, aria, onBack, children, z = 135, zavriet = 0 }: { titul: ReactNode; /** názov pre čítačky, keď titul nie je text */ aria?: string; onBack: () => void; children: ReactNode; z?: number; /** zvýšenie = zasunúť a zavrieť (napr. po výbere) */ zavriet?: number }) {

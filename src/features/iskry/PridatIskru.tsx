@@ -6,6 +6,7 @@
 // TODO (server): nahratie videa, uloženie Iskry, kvóta charity, vypálenie QR do videa pri stiahnutí.
 // ============================================================
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { createPortal } from "react-dom";
 import { useLayout } from "@/components/context";
 import { toast } from "@/components/toast";
@@ -213,7 +214,6 @@ function PridatIskru() {
 
   // ---------- vzhľad ----------
   const vyber = (on: boolean): CSSProperties => ({ background: on ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}` });
-  const radio = (on: boolean) => <span aria-hidden="true" style={{ width: 22, height: 22, flex: "none", marginTop: 1, borderRadius: "50%", border: `2px solid ${on ? "var(--green)" : "#9C978B"}`, display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--green)", opacity: on ? 1 : 0 }} /></span>;
   const zaskrt = (on: boolean, t: ReactNode, s: ReactNode, tap: () => void) => (
     <button type="button" role="checkbox" aria-checked={on} onClick={tap} style={{ ...vyber(on), display: "flex", alignItems: "flex-start", gap: 12, minHeight: 56, padding: "12px 14px", borderRadius: 14, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
       <span aria-hidden="true" style={{ width: 24, height: 24, flex: "none", borderRadius: 7, border: `2px solid ${on ? "var(--green)" : "#9C978B"}`, background: on ? "var(--green)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ opacity: on ? 1 : 0, display: "flex" }}><Ik d={IK.fajka} s={14} w={3} c="#fff" /></span></span>
@@ -262,7 +262,7 @@ function PridatIskru() {
           <button key={t} type="button" role="radio" aria-checked={on} onClick={() => { setDruh((i + 1) as DruhIskry); if (i + 1 !== DZ) { setVlastnaZb(null); setVidTyp(null); setFirmaK(null); } }} style={{ minHeight: 44, padding: "0 16px", borderRadius: 22, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: on ? 800 : 600, background: on ? "#2F5E3A" : "transparent", border: `1.5px solid ${on ? "#2F5E3A" : "var(--fieldBd)"}`, color: on ? "#fff" : "var(--ink)" }}>{t}</button>); })}
       </div></div>
     {druh === DZ && <ZbierkyVyber o={o} vidTyp={vidTyp} onTyp={(t) => { setVidTyp(t); setVlastnaZb(null); setFirmaK(null); }} priebeh={priebeh} onPriebeh={setPriebeh}
-      bezice={mojeZb} ukoncene={ukonceneZb} firmy={firmy} firmaK={firmaK} onFirma={(f) => { setFirmaK(f); setVlastnaZb(null); }} zbierka={vlastnaZb} onZbierka={setVlastnaZb} radio={radio} vyber={vyber} />}
+      bezice={mojeZb} ukoncene={ukonceneZb} firmy={firmy} firmaK={firmaK} onFirma={(f) => { setFirmaK(f); setVlastnaZb(null); }} zbierka={vlastnaZb} onZbierka={setVlastnaZb} />}
   </>);
   else if (k === 2 && druh === DZ) obsah = (<>
     <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>{vidTyp === "vyzva" ? "Pod videom bude tlačidlo Darovať. Celý dar pôjde na zbierku." : o("Je to poďakovanie, pod videom nebude Darovať, ale Sledovať tvoju stránku.", "Je to poďakovanie, pod videom nebude Darovať, ale Sledovať vašu stránku.")}</span>
@@ -281,8 +281,8 @@ function PridatIskru() {
       <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>{o("Pod videom bude tlačidlo Darovať. Vyber, kam pôjdu peniaze.", "Pod videom bude tlačidlo Darovať. Vyberte, kam pôjdu peniaze.")}</span>
       <div role="radiogroup" aria-label="Kam pôjdu peniaze" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {P.map(([kk, t, x]) => { const on = pen === kk; return (
-          <button key={kk} type="button" role="radio" aria-checked={on} onClick={() => { setPen(kk); setZb(null); setQ(""); }} style={{ ...vyber(on), display: "flex", alignItems: "flex-start", gap: 12, minHeight: 64, padding: "12px 14px", borderRadius: 16, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
-            {radio(on)}<span style={{ display: "flex", flexDirection: "column", gap: 3 }}><b style={{ fontSize: 15 }}>{t}</b><span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink3)" }}>{x}</span></span></button>); })}
+          <button key={kk} type="button" role="radio" aria-checked={on} onClick={() => { setPen(kk); setZb(null); setQ(""); }} style={{ display: "flex", alignItems: "flex-start", gap: 12, minHeight: 64, padding: "12px 14px", borderRadius: 16, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", ...kartaVolby(on), paddingRight: 36 }}>
+            <FajkaVolby on={on} /><span style={{ display: "flex", flexDirection: "column", gap: 3 }}><b style={{ fontSize: 15 }}>{t}</b><span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink3)" }}>{x}</span></span></button>); })}
       </div>
       {ukazZb && <div className="pf-rise" style={{ display: "flex", flexDirection: "column", gap: 8, padding: 14, borderRadius: 16, background: "var(--card)" }}>
         <b style={{ fontSize: 14.5 }}>{zb ? o("Zbierka, ktorej pomôžeš", "Vybraná zbierka") : o("Vyber zbierku, ktorej pomôžeš", "Vyberte zbierku inej charity")}</b>
@@ -381,11 +381,10 @@ function PridatIskru() {
 const MES = ["JAN", "FEB", "MAR", "APR", "MÁJ", "JÚN", "JÚL", "AUG", "SEP", "OKT", "NOV", "DEC"];
 
 // ---------- OPRAVY 138/2 · druh Zbierky: „Aké video?" (3 veľké voľby, 56 px) a výber zbierky / firmy ----------
-function ZbierkyVyber({ o, vidTyp, onTyp, priebeh, onPriebeh, bezice, ukoncene, firmy, firmaK, onFirma, zbierka, onZbierka, radio, vyber }: {
+function ZbierkyVyber({ o, vidTyp, onTyp, priebeh, onPriebeh, bezice, ukoncene, firmy, firmaK, onFirma, zbierka, onZbierka }: {
   o: (ty: string, vy: string) => string; vidTyp: "vyzva" | "dakujeme" | "firme" | null; onTyp: (t: "vyzva" | "dakujeme" | "firme") => void;
   priebeh: boolean; onPriebeh: (p: boolean) => void; bezice: TestZbierka[]; ukoncene: TestZbierka[]; firmy: { f: TestProfil; zb: TestZbierka[] }[];
   firmaK: string | null; onFirma: (k: string) => void; zbierka: TestZbierka | null; onZbierka: (z: TestZbierka) => void;
-  radio: (on: boolean) => ReactNode; vyber: (on: boolean) => CSSProperties;
 }) {
   const TYPY: ["vyzva" | "dakujeme" | "firme", string, string, number][] = [
     ["vyzva", "Výzva alebo priebeh", "K bežiacej zbierke", bezice.length],
@@ -395,8 +394,8 @@ function ZbierkyVyber({ o, vidTyp, onTyp, priebeh, onPriebeh, bezice, ukoncene, 
   const meno = (f: TestProfil) => f.meno.replace(/\s+s\.\s?r\.\s?o\.$/, "");
   const zoznam = vidTyp === "vyzva" ? bezice : vidTyp === "dakujeme" ? ukoncene : vidTyp === "firme" && firmaK ? (firmy.find((x) => x.f.k === firmaK)?.zb ?? []) : [];
   const riadok = (on: boolean, t: string, s: string, tap: () => void, key: string) => (
-    <button key={key} type="button" role="radio" aria-checked={on} onClick={tap} style={{ ...vyber(on), display: "flex", alignItems: "flex-start", gap: 12, minHeight: 56, padding: "10px 12px", borderRadius: 12, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
-      {radio(on)}<span style={{ display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 14 }}>{t}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{s}</span></span>
+    <button key={key} type="button" role="radio" aria-checked={on} onClick={tap} style={{ display: "flex", alignItems: "flex-start", gap: 12, minHeight: 56, padding: "10px 12px", borderRadius: 12, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", ...kartaVolby(on), paddingRight: 36 }}>
+      <FajkaVolby on={on} /><span style={{ display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 14 }}>{t}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{s}</span></span>
     </button>);
   const sumaZb = (z: TestZbierka) => z.stav === "ukoncena" ? `skončila ${z.skoncila ?? ""} · ${eurT(z.vyzbierane)}` : z.ciel ? `${eurT(z.vyzbierane)} z ${eurT(z.ciel)}` : eurT(z.vyzbierane);
   return (
@@ -405,8 +404,8 @@ function ZbierkyVyber({ o, vidTyp, onTyp, priebeh, onPriebeh, bezice, ukoncene, 
       <div role="radiogroup" aria-label="Aké video" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {TYPY.map(([k, t, s, n]) => { const on = vidTyp === k, off = !n; return (
           <button key={k} type="button" role="radio" aria-checked={on} aria-disabled={off} onClick={() => { if (!off) onTyp(k); }}
-            style={{ ...vyber(on), display: "flex", alignItems: "center", gap: 12, minHeight: 56, padding: "8px 14px", borderRadius: 14, cursor: off ? "default" : "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", opacity: off ? 0.5 : 1 }}>
-            {radio(on)}<span style={{ display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15 }}>{t}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{off ? (k === "firme" ? o("Žiadna firma zatiaľ pri tvojich zbierkach nepomáhala", "Žiadna firma zatiaľ pri vašich zbierkach nepomáhala") : "Žiadna takáto zbierka") : s}</span></span>
+            style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 56, padding: "8px 14px", borderRadius: 14, cursor: off ? "default" : "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", opacity: off ? 0.5 : 1, ...kartaVolby(on), paddingRight: 36 }}>
+            <FajkaVolby on={on} /><span style={{ display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15 }}>{t}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{off ? (k === "firme" ? o("Žiadna firma zatiaľ pri tvojich zbierkach nepomáhala", "Žiadna firma zatiaľ pri vašich zbierkach nepomáhala") : "Žiadna takáto zbierka") : s}</span></span>
           </button>); })}
       </div>
       {vidTyp === "vyzva" && <div role="radiogroup" aria-label="Štítok" style={{ display: "flex", gap: 2, padding: 3, borderRadius: 12, background: "var(--field)", border: "1px solid var(--cardBd)" }}>
@@ -435,8 +434,8 @@ const tlVed: CSSProperties = { flex: 1, minHeight: 48, borderRadius: 14, border:
 function ZbierkaRiadok({ z, on, onClick }: { z: ZbierkaVRetazi; on: boolean; onClick: () => void }) {
   const p = z.ciel ? Math.min(1, z.vyzbierane / z.ciel) : 0;
   return (
-    <button type="button" onClick={onClick} aria-pressed={on} style={{ display: "flex", flexDirection: "column", gap: 6, minHeight: 56, padding: "10px 12px", borderRadius: 12, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", background: on ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}` }}>
-      <span style={{ display: "flex", alignItems: "baseline", gap: 8, width: "100%" }}><b style={{ flex: 1, fontSize: 14 }}>{z.nazov}</b><span style={{ fontSize: 12, color: "var(--ink3)" }}>{z.ciel ? `vyzbierané ${Math.round(p * 100)} %` : z.org}</span></span>
+    <button type="button" onClick={onClick} aria-pressed={on} style={{ display: "flex", flexDirection: "column", gap: 6, minHeight: 56, padding: "10px 12px", borderRadius: 12, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", background: on ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, ...kartaVolby(on), paddingRight: 36 }}>
+      <FajkaVolby on={on} /><span style={{ display: "flex", alignItems: "baseline", gap: 8, width: "100%" }}><b style={{ flex: 1, fontSize: 14 }}>{z.nazov}</b><span style={{ fontSize: 12, color: "var(--ink3)" }}>{z.ciel ? `vyzbierané ${Math.round(p * 100)} %` : z.org}</span></span>
       {z.ciel ? <span style={{ display: "block", width: "100%", height: 4, borderRadius: 2, background: "var(--track)", overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: "100%", background: "#6BA34A", transformOrigin: "left", transform: `scaleX(${p})` }} /></span> : null}
     </button>);
 }
