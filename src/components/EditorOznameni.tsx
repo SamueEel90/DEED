@@ -105,7 +105,9 @@ export const EditorOznameni = forwardRef<EditorApi, { cfg: CfgEditora; onSend: (
       } catch { /* iframe ešte nie je pripravený */ }
     };
     const vyber = (l: string[]) => { setGalOtv(false); const s = l[0]; if (s) void naDataUrl(s).then((d) => { try { okno()?.edNastavFotku?.(d); } catch { /* editor zatvorený */ } }); };
-    const galeria = galOtv && <OknoGalerie zdroj={zdroj} vybrane={[]} zostava={1} onZavri={() => setGalOtv(false)} onVyber={vyber} />;
+    // Editor A: jedno okno Vybrať fotku — Z telefónu · Moje fotky · Verejné fotky
+    const zTel = (f: File) => { setGalOtv(false); const r = new FileReader(); r.onload = () => { try { okno()?.edNastavFotku?.(String(r.result)); } catch { /* editor zatvorený */ } }; r.readAsDataURL(f); };
+    const galeria = galOtv && <OknoGalerie zdroj={zdroj} vybrane={[]} zostava={1} onZavri={() => setGalOtv(false)} onVyber={vyber} zTelefonu={zTel} />;
     const posunNa = (y?: number | null) => { const el = telo.current, f = fr.current; if (el && f && y != null) el.scrollTo({ top: Math.max(0, f.offsetTop + y - 12), behavior: "smooth" }); };
     // náhľad na celú plochu: editor dostane rozmer plochy, po zatvorení to isté miesto a to isté pole
     useLayoutEffect(() => {

@@ -181,7 +181,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
         rozluckaMiesto: str("rm"), rozluckaDatum: str("rd"), rozluckaCas: str("rc"), foto: p.foto ?? undefined, editor: p },
       vytvorene: teraz(), platnostDni: 7 });
     setEdKon(null); ulozStav("partekoncept", stranka, null); setEdMob(false);
-    setNaStranke(vlastnePrispevkyVsetky(stranka)); setRezim("je"); setVybrany(id); setUlozT(`Parte ${meno} je uložené ✓`);
+    setNaStranke(vlastnePrispevkyVsetky(stranka)); setRezim("je"); setVybrany(id); setUlozT(`Parte uložené ✓ · ${meno}`); /* Editor A: v kroku 2 „Parte uložené ✓“ */
   };
   const edCfg = { typ: "parte" as const, sektor: "viera" as const, rezim: "rychly" as const, bezTlace: true, qrObrazok: qrSrc, miesta: ["v Dome smútku", "vo farskom kostole", "na miestnom cintoríne"], kontext: { zbierka: "pohreb", stranka }, navrh: edKon };
   const edSpat = () => { if (!edRef.current?.krokSpat()) setEdMob(false); };

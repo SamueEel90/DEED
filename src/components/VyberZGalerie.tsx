@@ -4,7 +4,7 @@
 // OPRAVY 254: okno má dve záložky — Moje fotky (zdroj z kontextu) · Verejné fotky (bod 254: náš výber + fotobanky cez /api/fotky,
 // vybrané uloží server k nám cez /api/fotky/uloz; fotobanky hľadá len správca stránky, ostatní vidia náš výber).
 // Bez kontextu je len záložka Verejné fotky. Verejná fotka = ilustračná (súhlas ľudí na fotkách sa nepýta, štítok sa neukazuje).
-import { createContext, useContext, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { PanelVerejnychFotiek, klucFotky } from "./VerejneFotky";
 import { ulozFotku, type VerejnaFotka } from "@/lib/verejneFotky";
@@ -48,9 +48,11 @@ export function TlacidloGalerie({ zdroj, vybrane, zostava, onVyber, style }: {
 }
 
 /** okno Vybrať fotku · OPRAVY 258: aj Editor oznámení (jedna fotka) */
-export function OknoGalerie({ zdroj, vybrane, zostava, onZavri, onVyber }: { zdroj: ZdrojFotiek | null; vybrane: string[]; zostava: number; onZavri: () => void; onVyber: (l: string[]) => void }) {
+export function OknoGalerie({ zdroj, vybrane, zostava, onZavri, onVyber, zTelefonu }: { zdroj: ZdrojFotiek | null; vybrane: string[]; zostava: number; onZavri: () => void; onVyber: (l: string[]) => void;
+  /** Editor A: prvá záložka Z telefónu (fotka zo zariadenia) — jedno okno Z telefónu · Moje fotky · Verejné fotky */ zTelefonu?: (f: File) => void }) {
   const moje = useMemo(() => (zdroj ? zdroj.fotky() : []), [zdroj]);
-  const [tab, setTab] = useState<"moje" | "verejne">(zdroj ? "moje" : "verejne");
+  const [tab, setTab] = useState<"tel" | "moje" | "verejne">(zTelefonu ? "tel" : zdroj ? "moje" : "verejne");
+  const subor = useRef<HTMLInputElement>(null);
   const fotky = moje;
   const [vyb, setVyb] = useState<string[]>([]);
   const [vybV, setVybV] = useState<VerejnaFotka[]>([]); // bod 254: vybrané verejné fotky (server ich uloží k nám pri Pridať)
@@ -101,11 +103,15 @@ export function OknoGalerie({ zdroj, vybrane, zostava, onZavri, onVyber }: { zdr
           <button type="button" onClick={onZavri} aria-label="Zavrieť" style={{ flex: "none", width: 44, height: 44, borderRadius: "50%", border: "none", background: "var(--btn)", color: "var(--ink)", cursor: "pointer", fontSize: 22, lineHeight: 1 }}>×</button>
         </div>
         <div role="tablist" aria-label="Odkiaľ fotky" style={{ display: "flex", gap: 4, margin: "4px 20px 8px", padding: 4, borderRadius: 14, background: "var(--btn)" }}>
-          {([...(zdroj ? [["moje", "Moje fotky"]] : []), ["verejne", "Verejné fotky"]] as [("moje" | "verejne"), string][]).map(([k, t]) => (
-            <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)} style={{ flex: 1, minHeight: 44, border: "none", borderRadius: 11, background: tab === k ? "var(--card)" : "transparent", color: tab === k ? "var(--ink)" : "var(--ink3)", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer", boxShadow: "none" }}>{t}</button>))}
+          {([...(zTelefonu ? [["tel", "Z telefónu"]] : []), ...(zdroj ? [["moje", "Moje fotky"]] : []), ["verejne", "Verejné fotky"]] as [("tel" | "moje" | "verejne"), string][]).map(([k, t]) => (
+            <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => { setTab(k); if (k === "tel") subor.current?.click(); }} style={{ flex: 1, minHeight: 44, border: "none", borderRadius: 11, background: tab === k ? "var(--card)" : "transparent", color: tab === k ? "var(--ink)" : "var(--ink3)", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer", boxShadow: "none" }}>{t}</button>))}
         </div>
         <div style={{ flex: 1, overflowY: "auto", padding: "6px 20px 16px" }}>
-          {tab === "verejne" ? <PanelVerejnychFotiek uzke={uzke} vyb={vybV.map(klucFotky)} onTukni={tukniV} /> : fotky.length === 0
+          <input ref={subor} type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f && zTelefonu) zTelefonu(f); }} />
+          {tab === "tel" ? <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "14px 0" }}>
+            <button type="button" onClick={() => subor.current?.click()} style={{ ...tl, height: 60, background: "var(--green)", color: "#fff" }}>Vybrať fotku z telefónu ›</button>
+            <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>Otvoria sa fotky vo vašom telefóne alebo počítači. Vyberte jednu.</span>
+          </div> : tab === "verejne" ? <PanelVerejnychFotiek uzke={uzke} vyb={vybV.map(klucFotky)} onTukni={tukniV} /> : fotky.length === 0
             ? <p style={{ margin: "18px 0", fontSize: 15, lineHeight: 1.5, color: "var(--ink2)" }}>{zdroj?.prazdne}</p>
             : <div style={{ display: "grid", gridTemplateColumns: `repeat(${uzke ? 3 : 4}, minmax(0,1fr))`, gap: 8 }}>
               {fotky.map((src, i) => {

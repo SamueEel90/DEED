@@ -659,7 +659,7 @@ function TopPruh({ radius, onDetail }: { radius: OkruhKod; onDetail: (id: string
       ) : (
         /* mobil: dominantné karty (veľké ako bežné príspevky) v horizontálnom snap-carousele.
            Šírka 88 % → ďalšia karta vždy „vykúka" (jasný signál, že sa dá skrolovať). */
-        <div style={{ display: "flex", gap: SPACE.sm, overflowX: "auto", scrollSnapType: "x proximity", WebkitOverflowScrolling: "touch", touchAction: "pan-x", overscrollBehaviorX: "contain", padding: `0 ${SPACE.gutter}px ${SPACE.xs}px` }}>
+        <div style={{ display: "flex", gap: SPACE.sm, overflowX: "auto", scrollSnapType: "x proximity", WebkitOverflowScrolling: "touch", touchAction: "pan-x pan-y", overscrollBehaviorX: "contain", padding: `0 ${SPACE.gutter}px ${SPACE.xs}px` }}>
           {vidno.map((it) => (
             <div key={it.id} style={{ flex: "0 0 88%", scrollSnapAlign: "start", minWidth: 0 }}>
               <DomovKarta it={it} wide onDetail={() => onDetail(it.id)} />

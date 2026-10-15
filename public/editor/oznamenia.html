@@ -1018,7 +1018,7 @@ body.ram[data-pg=osoba] .step[data-s=udaje] [id^=fs]>fieldset:not(:first-child){
 body.ram[data-pg=udaje2] .step[data-s=udaje] [id^=fs]>fieldset:first-child{display:none}
 body.ram:not([data-pg=ozdoby]):not(.rychly) #qrPrep,body.ram.rychly:not([data-pg=vzhlad]) #qrPrep{display:none!important}
 /* rady do boku */
-.rad{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;touch-action:pan-x;overscroll-behavior-x:contain;scrollbar-width:none;gap:10px;padding:6px 2px 8px}
+.rad{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;touch-action:pan-x pan-y;overscroll-behavior-x:contain;scrollbar-width:none;gap:10px;padding:6px 2px 8px}
 .rad::-webkit-scrollbar{display:none}
 body.ram fieldset,body.ram .step{min-width:0;max-width:100%}
 .rad>*{flex:none;scroll-snap-align:start}
@@ -1145,10 +1145,6 @@ function postav(){if(hotove||!ram())return;hotove=true;
  seg("bw",null,[["Čiernobielo",true],["Farebne",false]]);
  seg("vekOn","Uviesť vek",[["Áno",true],["Nie",false]]);
  seg("neskor",null,[["Poznáme termín",false],["Doplníme neskôr",true]]);
- /* fotka: Vybrať fotku */
- const fl=$("foto").closest("label");fl.classList.add("ram-skry");
- const fr=document.createElement("div");fr.className="foto-riadok len-ram";fr.innerHTML='<span class="foto-k" id="fotoK"></span><button type="button" class="btn ghost" id="btnFotoVyb">Vybrať fotku</button>';fl.before(fr);
- $("btnFotoVyb").onclick=()=>$("foto").click();
  document.querySelectorAll(".step[data-s=vzhlad] p.hint").forEach(p=>{if(/posuniete/.test(p.textContent))p.classList.add("ram-skry")});
  /* citát ako jeden riadok */
  ["cit","sCit","jCit"].forEach(id=>{const q=$("pk_"+id);if(!q)return;const pk=q.closest(".pick"),pl=pk.querySelector(".plab");if(pl)pl.classList.add("ram-skry");
@@ -1182,7 +1178,7 @@ function ui303(){if(!ram())return;postav();
  $("colsCap").textContent=`${C[st.col][0]} (vybraté)`;
  document.querySelectorAll(".seg-riadok").forEach(w=>{const cb=$(w.id.slice(4));if(!cb)return;w.querySelectorAll(".seg button").forEach(b=>b.setAttribute("aria-pressed",String(cb.checked===!!b.dataset.v)))});
  const sv=$("seg_vekOn");if(sv)sv.firstChild.textContent=`Uviesť vek · ${$("vekTxt").textContent||"–"}`;
- $("fotoK").style.backgroundImage=st.foto?`url("${st.foto}")`:"";const fz=$("fz").closest("label");if(fz)fz.classList.toggle("ram-skry",!st.foto);
+ const fz=$("fz").closest("label");if(fz)fz.classList.toggle("ram-skry",!st.foto);
  /* dátumy podľa Muž / Žena, Bol nám, + vlastný */
  const z=st.sex==="z",lt=(id,tx)=>{const e=$(id),l=e&&e.closest("label");if(l&&l.firstChild&&l.firstChild.nodeType===3)l.firstChild.textContent=tx};
  if(st.typ==="parte"){lt("nar",z?"Narodila sa":"Narodil sa");lt("umr",z?"Zomrela":"Zomrel")}
@@ -1260,4 +1256,15 @@ const _ss=showStep;showStep=function(){const r=_ss.apply(this,arguments);const h
 const bb=$("btnBack"),_b=bb.onclick;bb.onclick=function(){if(kroky()[STEP]==="hotovo"&&ULOZ&&ULOZ!=="caka"){window.edUpravit();return}return _b.apply(this,arguments)};
 if(typeof window.edStav303==="function"){const _st=window.edStav303;window.edStav303=function(){return Object.assign(_st(),{uloz:ULOZ,hotovoText:CFG.hotovoText||""})}}
 const _ie=window.initEditor;window.initEditor=function(){ULOZ=null;VYS={};const r=_ie.apply(this,arguments);karta();return r};
+})();</script>
+<style>/* Editor A (Martin 15. 10.): Vybrať fotku = jedno okno appky Z telefónu · Moje fotky · Verejné fotky, PC aj mobil */.skry-f{display:none!important}</style>
+<script>(function(){
+const $=id=>document.getElementById(id);
+function fotoRiadok(){const fl=$("foto")&&$("foto").closest("label");if(!fl)return;let fr=$("fotoRiadok");const app=typeof CFG.onVyberFotku==="function",ram=document.body.classList.contains("ram");
+ if(!fr){fr=document.createElement("div");fr.id="fotoRiadok";fr.className="foto-riadok";fr.innerHTML='<span class="foto-k" id="fotoK"></span><button type="button" class="btn ghost" id="btnFotoVyb">Vybrať fotku</button>';fl.before(fr);
+  $("btnFotoVyb").onclick=()=>{if(typeof CFG.onVyberFotku==="function"){try{CFG.onVyberFotku()}catch(e){}}else $("foto").click()}}
+ fr.hidden=!app&&!ram;fl.classList.toggle("skry-f",app||ram);const g=$("btnGal");if(g)g.classList.toggle("skry-f",app);
+ $("fotoK").style.backgroundImage=st.foto?`url("${st.foto}")`:""}
+const _r=render;render=function(){const r=_r.apply(this,arguments);try{fotoRiadok()}catch(e){}return r};
+const _ie=window.initEditor;window.initEditor=function(){const r=_ie.apply(this,arguments);try{fotoRiadok()}catch(e){}return r};
 })();</script>
