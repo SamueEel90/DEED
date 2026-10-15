@@ -6,6 +6,7 @@
 import { U } from "@/theme";
 import { tint } from "@/lib/ui";
 import type { GoodPolozka, KategoriaKonfig, Kategoria, Udalost, UdalostZdroj, Domena } from "@/types";
+import { VIDEO_NAKUP } from "@/lib/ukazkoveVideo";
 
 // ---- kategórie — earthy hue + theme-aware tinty (bg/bg2/bd z hue, fungujú v oboch režimoch) ----
 const kk = (c: string, label?: string): KategoriaKonfig => ({ c, bg: tint(c, .12), bg2: tint(c, .2), bd: tint(c, .34), label });
@@ -27,7 +28,7 @@ export const POLOZKY: GoodPolozka[] = [
     titul: "Spravila som veľký nákup pani Helene (84) — sama už ťažké tašky neunesie.",
     popis: "Pani Helena z vedľajšieho vchodu je po operácii bedrového kĺbu a do obchodu sa sama nedostane. Spísali sme zoznam, nakúpila som a doniesla jej to až do bytu. Celý nákup je natočený ako dôkaz — pozri video.",
     emoji: "🛒", suma: 64, lajky: 47, vyznam: "Overený skutok",
-    video: "/video/nakup.mp4",
+    video: VIDEO_NAKUP,
     fotky: [U("photo-1542838132-92c53300491e")] },
 
   { id: 1, typ: "skutok", velkost: "big", kat: "Komunita", media: "video", overene: true,
