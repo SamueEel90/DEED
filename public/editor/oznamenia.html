@@ -1241,8 +1241,8 @@ function karta(){postav();const k=$("hotKarta"),typ=TYP[st.typ]||"Oznámenie",bl
  if(ULOZ==="caka"){k.innerHTML='<div class="hk hk-caka" role="status"><b class="hk-s">Ukladá sa…</b></div>';return}
  if(ULOZ==="chyba"){k.innerHTML='<div class="hk hk-chyba" role="alert"><b class="hk-t">Neuložilo sa</b><span class="hk-s"></span><button type="button" class="btn primary" id="hkZnova">Skúsiť znova</button></div>';
   k.querySelector(".hk-s").textContent=(VYS.chyba?VYS.chyba.replace(/\s*$/,"")+" ":"")+"Rozpísané ostáva, nič sa nestratilo.";$("hkZnova").onclick=()=>window.edZnova();return}
- k.innerHTML=`<div class="hk hk-ok" role="status"><div class="hk-hl"><div class="hk-mini" id="hkMini"></div><div><b class="hk-t">${VYS.uprava?"Zmeny sú uložené ✓":"Zverejnené ✓"}</b><span class="hk-s"></span></div></div>${typeof CFG.onPozriet==="function"?'<button type="button" class="btn primary" id="hkPozriet" style="min-height:58px;font-size:18px">Pozrieť na stránke ›</button>':""}</div>`;
- k.querySelector(".hk-s").textContent=`${typ} je na stránke farnosti v ${blok}.`;
+ k.innerHTML=`<div class="hk hk-ok" role="status"><div class="hk-hl"><div class="hk-mini" id="hkMini"></div><div><b class="hk-t">${VYS.caka?"Odoslané · čaká na schválenie":VYS.uprava?"Zmeny sú uložené ✓":"Zverejnené ✓"}</b><span class="hk-s"></span></div></div>${typeof CFG.onPozriet==="function"&&!VYS.caka?'<button type="button" class="btn primary" id="hkPozriet" style="min-height:58px;font-size:18px">Pozrieť na stránke ›</button>':""}</div>`;
+ k.querySelector(".hk-s").textContent=VYS.caka?"Farár ho pozrie a zverejní. Dáme vám vedieť.":`${typ} je na stránke farnosti v ${blok}.`;/* OPRAVY 310 */
  const p=$("p"),c=p.cloneNode(true);c.id="";c.style.transform="";c.style.width="420px";c.querySelectorAll(".ph").forEach(x=>x.remove());c.style.maxWidth="none";c.style.boxShadow="none";$("hkMini").appendChild(c);c.style.transformOrigin="0 0";c.style.transform=`scale(${72/420})`;
  const pz=$("hkPozriet");if(pz)pz.onclick=()=>{try{CFG.onPozriet()}catch(e){}}}
 function hl(){try{window.edHlas&&window.edHlas()}catch(e){}}

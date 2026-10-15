@@ -32,7 +32,7 @@ export interface EditorApi {
   /** OPRAVY 301: výsledok uloženia — editor ukáže kartu Zverejnené ✓ (blok = kde na stránke) alebo Neuložilo sa · Skúsiť znova */
   vysledok: (v: VysledokUlozenia) => void;
 }
-export interface VysledokUlozenia { ok: boolean; uprava?: boolean; blok?: string; chyba?: string }
+export interface VysledokUlozenia { ok: boolean; uprava?: boolean; blok?: string; chyba?: string; /** OPRAVY 310: Po schválení — čaká na farára */ caka?: boolean }
 type Vysledok = { ok: boolean; y?: number | null };
 type OknoEditora = Window & { initEditor?: (c: unknown) => void; edKrokSpat?: () => boolean; edNahlad?: (o?: { verejny?: boolean; w?: number }) => Promise<string>;
   /** OPRAVY 258: rám na mobile */ edDalej?: () => Vysledok; edHotovo?: () => Vysledok; edNahladRam?: (on: boolean, w: number, h: number) => void; edUlozKoncept?: () => void;

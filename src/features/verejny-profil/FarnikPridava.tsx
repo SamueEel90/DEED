@@ -16,7 +16,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSPro
 import { createPortal } from "react-dom";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { nacitajSelfAdd } from "@/features/viera/UserOznamy";
-import { DRUHY_FARNIKA, CEZ_EDITOR, BLOK_DRUHU, nacitajSmie, smie, odFarnikov, zapisOdFarnikaIsto, zmazOdFarnika, prepniVPolozke, pocetSus, useOdFarnikov, useCerstveOdFarnikov, PLATI_VERIACI, vyprsal, type DruhFarnika, type PolozkaFarnika, type FormularVeriaceho } from "@/lib/odFarnikov";
+import { DRUHY_FARNIKA, CEZ_EDITOR, BLOK_DRUHU, nacitajSmie, smie, stupen, naStranke as jeNaStranke, pridajMojeCakajuce, odFarnikov, zapisOdFarnikaIsto, zmazOdFarnika, prepniVPolozke, pocetSus, useOdFarnikov, useCerstveOdFarnikov, PLATI_VERIACI, vyprsal, type DruhFarnika, type PolozkaFarnika, type FormularVeriaceho } from "@/lib/odFarnikov";
 import { dokonciCas, CAS_OK, pekny } from "@/lib/kalendarFarnosti";
 import { bezDataUrl } from "@/lib/uploadFoto";
 import type { MediumZbierky } from "@/lib/novaZbierka";
@@ -185,7 +185,7 @@ export function OdFarnikov({ strankaId, novy, pad, fab }: { strankaId: string; n
   const kto = klucJa(ja), reg = ja.typ !== "pasivny";
   const [flt, setFlt] = useState<Filter>("vse");
   const [velke, setVelke] = useState<PolozkaFarnika | null>(null);
-  const vsetko = odFarnikov(strankaId).filter((x) => x.k !== "umysel" && platne(x)); // úmysel na omšu vidí len farár (v Správe)
+  const vsetko = odFarnikov(strankaId).filter((x) => x.k !== "umysel" && jeNaStranke(x) && platne(x)); // OPRAVY 310: čakajúce nie // úmysel na omšu vidí len farár (v Správe)
   const alba = vsetko.filter((x) => x.k === "fotky" && x.fotky?.length);
   const list = vsetko.filter((x) => !(x.k === "fotky" && x.fotky?.length));
   const zobraz = list.filter((x) => vFiltri(flt, x));
@@ -270,7 +270,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   const qrStr = useQrObrazok(odkazQrStranky(strankaId));
   const self = nacitajSelfAdd(strankaId), sm = nacitajSmie(strankaId);
   const povol = DRUHY_FARNIKA.filter((d) => smie(sm, d.k));
-  const pop = self.poplatok || 0;
+  const pop = 0; // OPRAVY 310: poplatok za oznam zrušený — všetko zadarmo (self.poplatok sa ignoruje)
   const [sheet, setSheet] = useState(false);
   const fabRez = useFabRezim();
   useEffect(() => { const f = () => setSheet(true); window.addEventListener("deed:farnik-pridaj", f); return () => window.removeEventListener("deed:farnik-pridaj", f); }, []);
@@ -295,6 +295,8 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     window.clearTimeout(okTm.current); okTm.current = window.setTimeout(() => setOk(null), 9000);
     if (druh !== "umysel") onPozriet(id);
   };
+  /** OPRAVY 310: Po schválení — „Odoslané · čaká na schválenie“ */
+  const odoslane = () => { setOk({ t: "Odoslané · čaká na schválenie", s: "Farár váš príspevok pozrie a zverejní. Dáme vám vedieť." }); window.clearTimeout(okTm.current); okTm.current = window.setTimeout(() => setOk(null), 12000); };
   const edRef = useRef<EditorApi>(null);
   const zavri = () => { setK(null); setHotovo(null); setEdId(null); };
   /** ‹ Späť na stránku farnosti — po uloženom oznámení z editora hláška a posun k bloku */
@@ -365,6 +367,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     const anon = k === "modlitba" && f.anon;
     const t = k === "modlitba" ? (anon ? "Prosím o modlitbu" : `${ja.celeMeno || "Veriaci"} prosí o modlitbu`) : f.nad.trim();
     const povodny = edId ? odFarnikov(strankaId).find((x) => x.id === edId) : undefined;
+    const caka = !povodny && stupen(sm, k) === "schvalenie"; // OPRAVY 310: Po schválení — na stránku až keď farár zverejní
     const zaklad: PolozkaFarnika = {
       ...(povodny ?? {}), id: povodny?.id ?? `f${teraz().toString(36)}`, k, t, s, kto: anon ? "Bohu známy veriaci" : ja.celeMeno || "Veriaci", cas: povodny?.cas ?? teraz(),
       autor: kto, mesto: ja.mesto, anon: k === "modlitba" ? anon : undefined, f: ff, autorFoto: anon ? undefined : povodny?.autorFoto ?? ja.foto ?? undefined,
@@ -373,7 +376,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
       popisy: (k === "fotky" || k === "udalost" || k === "oznam") && fotky.some((m) => m.popis) ? fotky.map((m) => m.popis ?? "") : k === "fotky" ? fotky.map((m) => m.popis ?? "") : undefined, text: k === "fotky" ? txt || undefined : undefined,
       pozv: k === "udalost" || k === "fotky" ? pz : undefined, limit: k === "udalost" || k === "fotky" ? limitN : undefined,
       dalsia: k === "fotky" && pz ? [fmtD(f.datum), CAS_OK(c) ? pekny(c) : ""].filter(Boolean).join(" · ") : undefined,
-      upravene: povodny ? true : undefined };
+      upravene: povodny ? true : undefined, stav: caka ? "caka" : povodny?.stav };
     // E.3: fotky natrvalo (Storage), nie data URL
     let it: PolozkaFarnika;
     try { it = await bezDataUrl(zaklad, "od-veriacich"); } catch (e) { toast(e instanceof Error ? e.message : "Fotky sa nepodarilo uložiť."); setUklada(false); return; }
@@ -383,7 +386,9 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     if (!povodny) zmazKoncept(KONV);
     // OPRAVY 170: udalosť veriaceho sa do kalendára farnosti nezapisuje
     // KARTA 57C §2: formulár sa zavrie, dole hláška a stránka sa posunie k bloku
-    setChyba(false); setUklada(false); zavri(); naStranke(it.id, k, !!povodny);
+    setChyba(false); setUklada(false); zavri();
+    if (caka) { pridajMojeCakajuce({ stranka: strankaId, id: it.id, t: it.t || druhT(k), cas: it.cas }); odoslane(); return; }
+    naStranke(it.id, k, !!povodny);
   };
   const zverejni = () => { if (ch.length) { setChyba(true); return; } void uloz(); };
 
@@ -402,7 +407,8 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     let it: PolozkaFarnika;
     const povId = edId ?? hotovo; // OPRAVY 301: po zverejnení Upraviť = úprava toho istého
     const povodny = povId ? odFarnikov(strankaId).find((y) => y.id === povId) : undefined; // OPRAVY 190: úprava ponechá id aj reakcie
-    try { it = await bezDataUrl<PolozkaFarnika>({ ...(povodny ?? {}), id: povodny?.id ?? `f${teraz().toString(36)}`, k, t: t || druhT(k), s, kto: povodny?.kto ?? (ja.celeMeno || "Veriaci"), cas: povodny?.cas ?? teraz(), autor: povodny?.autor ?? kto, mesto: povodny?.mesto ?? ja.mesto, autorFoto: povodny?.autorFoto ?? ja.foto ?? undefined, editor: p, obr: obr || undefined,
+    const caka = povodny ? povodny.stav === "caka" : stupen(sm, k) === "schvalenie"; // OPRAVY 310
+    try { it = await bezDataUrl<PolozkaFarnika>({ ...(povodny ?? {}), id: povodny?.id ?? `f${teraz().toString(36)}`, k, t: t || druhT(k), s, kto: povodny?.kto ?? (ja.celeMeno || "Veriaci"), cas: povodny?.cas ?? teraz(), autor: povodny?.autor ?? kto, mesto: povodny?.mesto ?? ja.mesto, autorFoto: povodny?.autorFoto ?? ja.foto ?? undefined, editor: p, obr: obr || undefined, stav: caka ? "caka" : povodny?.stav,
       // OPRAVY 212: svadba a jubileum majú aj galériu (Editor oznámení len na obrázok pozvánky)
       ...(k === "svadba" || k === "ine" ? { fotky: fotky.length ? fotky.map((m) => m.src) : undefined, popisy: fotky.some((m) => m.popis) ? fotky.map((m) => m.popis ?? "") : undefined } : {}) }, "od-veriacich"); }
     catch (e) { edRef.current?.vysledok({ ok: false, chyba: e instanceof Error ? e.message : "Oznámenie sa nepodarilo uložiť." }); return; }
@@ -411,7 +417,8 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     konceptEd.delete(`${strankaId}|${k}`);
     setHotovo(it.id);
     // OPRAVY 301: karta Zverejnené ✓ v editore (namiesto krátkej hlášky)
-    edRef.current?.vysledok({ ok: true, uprava: !!povodny, blok: BLOK_DRUHU[k]?.[1] });
+    if (caka && !povodny) pridajMojeCakajuce({ stranka: strankaId, id: it.id, t: it.t, cas: it.cas });
+    edRef.current?.vysledok({ ok: true, uprava: !!povodny, blok: BLOK_DRUHU[k]?.[1], caka });
   };
 
   // OPRAVY 278: + vždy plávajúce vpravo dole, 58 px, zelený prechod — rovnaké vo všetkých vzhľadoch, PC aj mobil

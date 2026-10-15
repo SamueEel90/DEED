@@ -24,6 +24,8 @@ import { useVazbyOsoby } from "@/lib/zamestnanci";
 import { dataFirmy, useMojaFirma } from "@/lib/mojaFirma";
 import "@/styles/platba.css";
 import { MojeFarnostiUpozornenia } from "./MojeFarnostiUpozornenia";
+import { mojeCakajuce, obnovMojeCakajuce, odFarnikov, useOdFarnikov } from "@/lib/odFarnikov";
+import { nazovFarnosti } from "@/lib/mojeFarnosti";
 
 export { NOTIFY } from "./mock";
 
@@ -85,7 +87,19 @@ export function Zvoncek({ color = "var(--c-textSec)", toast }: { color?: string;
   const odFirmy: Notifikacia[] = firmy.flatMap((v, fi) => dataFirmy(v.firmaUcet).oznamy.filter((o) => !mf.vybavene.includes(o.id)).map((o, i) => ({
     id: 900000 + fi * 50 + i, kat: "firma" as const, den: "Dnes", cas: v.firma, ikona: o.typ === "kontrola" ? "otaz" as const : o.typ === "akcia" ? "kal" as const : "srd" as const,
     ton: o.typ === "kontrola" ? "gold" as const : "g" as const, titul: o.t, text: `${v.firma} · ${o.s}`, nove: o.typ === "kontrola" })));
-  const vsetky = [...oznamyNaRiadky(oznamy), ...odFirmy, ...zakladne];
+  // OPRAVY 310: príspevok, ktorý čakal na schválenie — „Farár zverejnil váš príspevok“ / „Farár príspevok nezverejnil.“
+  useOdFarnikov();
+  useEffect(() => { obnovMojeCakajuce(); }, [otvor]);
+  const odFarara: Notifikacia[] = mojeCakajuce().flatMap((c, i) => {
+    const x = odFarnikov(c.stranka).find((y) => y.id === c.id);
+    if (!x || x.stav === "caka" || !x.rozhodnute) return [];
+    const d = new Date(x.rozhodnute), dni = Math.round((new Date(new Date().toDateString()).getTime() - new Date(d.toDateString()).getTime()) / 86400000);
+    const zver = !x.stav;
+    return [{ id: 800000 + i, kat: "ludia" as const, ikona: zver ? "ok" as const : "namiet" as const, ton: zver ? "g" as const : "gold" as const,
+      den: dni <= 0 ? "Dnes" : dni === 1 ? "Včera" : `${d.getDate()}. ${d.getMonth() + 1}.`, cas: relCas(x.rozhodnute),
+      titul: zver ? "Farár zverejnil váš príspevok ›" : "Farár príspevok nezverejnil.", text: `${c.t} · ${nazovFarnosti(c.stranka) || "farnosť"}`, nove: true }];
+  });
+  const vsetky = [...odFarara, ...oznamyNaRiadky(oznamy), ...odFirmy, ...zakladne];
   const nove = vsetky.filter((n) => n.nove && !prec.includes(n.id)).length;
   const oznac = (id: number) => setPrec((p) => { const n = p.includes(id) ? p : [...p, id]; ulozPrec(n); return n; });
   const zavri = () => { setOtvor(false); requestAnimationFrame(() => tlacidlo.current?.focus()); };

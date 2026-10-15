@@ -50,7 +50,7 @@ import { useKalendar, kostolKal, omseDna, polozkyDna, druhPolozky, minuty, iso, 
 import { sumaEur } from "@/lib/suma";
 import { prihovory, odkazyVidei, useZmenyPrihovoru, naZivo, onlineOmse, onlineVDen, type Prihovor } from "@/lib/prihovor";
 import { PrihovorVelky, StarsiePrihovory, OdkazyVidei, ZvukPas } from "./VypocujSi";
-import { odFarnikov, useOdFarnikov, useCerstveOdFarnikov, prepniVPolozke, vyprsal, pocetSus, type PolozkaFarnika, type PoleReakcie } from "@/lib/odFarnikov";
+import { odFarnikov, useOdFarnikov, useCerstveOdFarnikov, prepniVPolozke, vyprsal, pocetSus, naStranke, type PolozkaFarnika, type PoleReakcie } from "@/lib/odFarnikov";
 import { reakcieF, prepniReakciuF, useReakcieF, useCerstveReakcieF, type PoleReakcieF } from "@/lib/reakcieFarnosti";
 import { vlastnePrispevky, vlastnePrispevkyVsetky, type VieraFeedItem } from "@/features/viera/mock";
 import { usePrispevkySync } from "@/features/viera/prispevkyDB";
@@ -312,7 +312,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
 
   // ---------- zdroje oznamov ----------
   const OZ = vlastnePrispevky(strankaId);
-  const OD = odFarnikov(strankaId).filter((x) => x.k !== "umysel" && !vyprsal(x, terazMs()) && !(x.k === "udalost" && x.f?.datum && x.f.datum < vc));
+  const OD = odFarnikov(strankaId).filter((x) => x.k !== "umysel" && naStranke(x) /* OPRAVY 310: čakajúce na schválenie nie */ && !vyprsal(x, terazMs()) && !(x.k === "udalost" && x.f?.datum && x.f.datum < vc));
   // OPRAVY 196: hore pri všetkom od veriaceho kruh (fotka alebo začiatočné písmeno) a meno z profilu; ťuk otvorí jeho profil
   const hlavickaAutora = (x: PolozkaFarnika) => {
     const anon = !!x.anon || /Bohu známy/.test(x.kto), meno = anon ? "Bohu známy veriaci" : x.kto || "Veriaci";
