@@ -17,7 +17,9 @@ export const zaokruhliPct = (v: number) => Math.min(100, Math.max(RETAZ_PCT_MIN,
 export type StavVRetazi = "caka" | "bezi" | "naplnena" | "skoncila" | "preskocena";
 export interface PolozkaRetaze { zbierkaId: string; pct: number; stav: StavVRetazi; poslane: number; snap?: Znama }
 export interface Retaz { id: string; zapecatene: number; polozky: PolozkaRetaze[]; dostal: number; poslane: number; vlastnik?: string;
-  /** OPRAVY 290: kto reťaz robí (karta ako na profile, štít z jeho profilu) */ robi?: Strana }
+  /** OPRAVY 290: kto reťaz robí (karta ako na profile, štít z jeho profilu) */ robi?: Strana;
+  /** balík 8 B: reťaz robí stránka (Konáš ako) — peniaze tvorcu idú na jej účet */ stranka?: string;
+  /** balík 8 B: zapečatená na serveri (0093) — organizátori dostali oznámenie, rad a podiely vedie server */ naServeri?: boolean }
 
 /** OPRAVY 290 · balík 8 — strana zmluvy: kto reťaz robí alebo kto zbierku organizuje. Štít sa ťahá z profilu:
  *  osoba / Help / tvorca / farnosť = hlavný štít DEED, charita = DEED Care, firma = DEED Partner. */
@@ -62,7 +64,7 @@ export function nacitajRetaz(): Retaz | null {
     if (!s) return null;
     const r = JSON.parse(s) as Retaz;
     r.polozky.forEach((x) => { if (x.snap && !ZNAME.has(x.zbierkaId)) ZNAME.set(x.zbierkaId, x.snap); });
-    return posun(r);
+    return r.naServeri ? r : posun(r); // balík 8 B: zapečatenú na serveri posúva len server
   } catch { return null; }
 }
 function ulozLokalne(r: Retaz | null) {
@@ -96,7 +98,7 @@ async function synchronizujRetaz(ucetId: string) {
   if (error) return; // tabuľka ešte nebeží (0080b) → ostáva lokálne
   vUcte = ucetId;
   const db = (data?.data ?? null) as Retaz | null;
-  if (db) { ulozLokalne({ ...db, vlastnik: ucetId }); return; }
+  if (db) { ulozLokalne({ ...db, vlastnik: ucetId }); void obnovRetaz(); return; }
   let lok: Retaz | null = null;
   try { lok = JSON.parse(localStorage.getItem(KLUC) || "null") as Retaz | null; } catch { /* LS */ }
   if (lok && lok.vlastnik && lok.vlastnik !== ucetId) { ulozLokalne(null); return; } // cudzí rad z tohto prehliadača nepreberaj
@@ -123,8 +125,8 @@ function posun(r: Retaz): Retaz {
 export const beziaca = (r: Retaz) => r.polozky.find((x) => x.stav === "bezi") ?? null;
 
 /** pripraví zapečatenú reťaz (id vznikne raz — opakované zapečatenie po výpadku ju uloží len raz) */
-export function pripravRetaz(polozky: { zbierkaId: string; pct: number }[], robi: Strana): Retaz {
-  return posun({ id: `rt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, zapecatene: Date.now(), dostal: 0, poslane: 0, robi,
+export function pripravRetaz(polozky: { zbierkaId: string; pct: number }[], robi: Strana, stranka?: string): Retaz {
+  return posun({ id: `rt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, zapecatene: Date.now(), dostal: 0, poslane: 0, robi, ...(stranka ? { stranka } : {}),
     polozky: polozky.map((x) => ({ zbierkaId: x.zbierkaId, pct: zaokruhliPct(x.pct), stav: "caka" as const, poslane: 0,
       ...(ZNAME.has(x.zbierkaId) ? { snap: ZNAME.get(x.zbierkaId) } : {}) })) });
 }
@@ -133,22 +135,46 @@ export function pripravRetaz(polozky: { zbierkaId: string; pct: number }[], robi
 export async function zapecatRetaz(r: Retaz): Promise<string | null> {
   const nedostupne = "Nie ste pripojený na internet. Reťaz zatiaľ nie je zapečatená.";
   if (vypadokTest || (typeof navigator !== "undefined" && navigator.onLine === false)) return nedostupne;
-  const s = vUcte ? { ...r, vlastnik: vUcte } : r;
+  let s: Retaz = vUcte ? { ...r, vlastnik: vUcte } : r;
+  if (supabase && vUcte) {
+    // balík 8 B: split-config na serveri (0093) — rovnaké id = tá istá reťaz, oznámenia organizátorom posiela server
+    const { data, error } = await supabase.rpc("retaz_zapecat", { p_id: r.id, p_polozky: r.polozky.map((x) => ({ zbierka: x.zbierkaId, pct: x.pct })),
+      p_stranka: r.stranka ?? null, p_robi: r.robi ?? null }).then((x) => x, () => ({ data: null, error: { message: "" } }));
+    if (error) return `${chybaServera(error.message)} Reťaz zatiaľ nie je zapečatená.`;
+    s = zoServera({ ...s, naServeri: true }, data as StavServera);
+  }
   const chyba = await zapisDoUctu(s).catch(() => "Server reťaz neprijal.");
   if (chyba) return `${chyba} Reťaz zatiaľ nie je zapečatená.`;
   ulozLokalne(s);
   return null;
 }
-/** „Vytvoriť novú reťaz" — stará sa uzavrie (tu: zabudne), nová sa nastavuje od nuly */
-export const zrusRetaz = () => uloz(null);
-
-/** dar tvorcovi → koľko ide bežiacej zbierke (dar na ceste sa pripíše pôvodnej) */
-export function darTvorcovi(eur: number): { zbierkaId: string | null; doZbierky: number } {
+/** „Vytvoriť novú reťaz" — stará sa uzavrie (na serveri skončí), nová sa nastavuje od nuly */
+export const zrusRetaz = () => {
   const r = nacitajRetaz();
-  if (!r) return { zbierkaId: null, doZbierky: 0 };
-  const b = beziaca(r);
-  const doZbierky = b ? Math.round(eur * b.pct) / 100 : 0;
-  uloz({ ...r, dostal: r.dostal + eur, poslane: r.poslane + doZbierky,
-    polozky: r.polozky.map((x) => (b && x.zbierkaId === b.zbierkaId ? { ...x, poslane: x.poslane + doZbierky } : x)) });
-  return { zbierkaId: b?.zbierkaId ?? null, doZbierky };
+  if (supabase && vUcte && r?.naServeri) void supabase.rpc("retaz_ukonci", { p_stranka: r.stranka ?? null }).then(() => undefined, () => undefined);
+  uloz(null);
+};
+
+// ---- balík 8 B: stav radu a podiely vedie server (0093), appka ho len zobrazí ----
+type StavServera = { dostal: number; polozky: { zbierka: string; stav: StavVRetazi; poslane: number }[] } | null;
+const chybaServera = (m: string) => {
+  const x = /Zbierka (.+) nie je v DEED/.exec(m)?.[1] ?? /Zbierka (.+) nie je verejná/.exec(m)?.[1];
+  if (x) return `Zbierka ${zbierkaVRetazi(x)?.nazov ?? x} sa do reťaze dať nedá.`;
+  if (/Vlastnú zbierku/.test(m)) return "Vlastnú zbierku do reťaze dať nejde.";
+  return m && !/fetch|network/i.test(m) ? "Server reťaz neprijal." : "Nie ste pripojený na internet.";
+};
+function zoServera(r: Retaz, st: StavServera): Retaz {
+  if (!st || !Array.isArray(st.polozky)) return r;
+  const m = new Map(st.polozky.map((x) => [x.zbierka, x]));
+  const polozky = r.polozky.map((x) => { const y = m.get(x.zbierkaId); return y ? { ...x, stav: y.stav, poslane: Number(y.poslane) || 0 } : x; });
+  return { ...r, polozky, dostal: Number(st.dostal) || 0, poslane: polozky.reduce((a, x) => a + x.poslane, 0) };
 }
+/** obnoví rad zo servera (posun radu vyhodnotí server); bez servera nič */
+export async function obnovRetaz(): Promise<void> {
+  const r = nacitajRetaz();
+  if (!supabase || !r?.naServeri) return;
+  const { data, error } = await supabase.rpc("retaz_obnov", { p_retaz: r.id }).then((x) => x, () => ({ data: null, error: true }));
+  if (error || !data) return;
+  ulozLokalne(zoServera(r, data as StavServera));
+}
+// balík 8 B: rozdelenie daru na QR reťaze robí server (retaz_dar, 0093) — appka ho nepočíta

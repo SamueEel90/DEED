@@ -3,8 +3,9 @@
 // len QR bežiacej dvojice tvorca + zbierka.
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { DeedQr } from "@/components/deedqr";
-import { ohlasZbierku, nacitajRetaz, pripravRetaz, zapecatRetaz, zrusRetaz, beziaca, verejneBeziace, zbierkaVRetazi, zaokruhliPct, useZmenyRetaze, type Retaz, type Strana, type StavVRetazi, type ZbierkaVRetazi } from "@/lib/retaz";
+import { ohlasZbierku, obnovRetaz, nacitajRetaz, pripravRetaz, zapecatRetaz, zrusRetaz, beziaca, verejneBeziace, zbierkaVRetazi, zaokruhliPct, useZmenyRetaze, type Retaz, type Strana, type StavVRetazi, type ZbierkaVRetazi } from "@/lib/retaz";
 import { KartaStrany, ZnakStrany, StitStrany, useRobiRetaz } from "./StranaZmluvy";
+import { useMojeStranky } from "@/lib/mojeStranky";
 import { Harok } from "./Zdielat";
 import PodrzTlacidlo from "./PodrzTlacidlo";
 import { potvrditTuknutim } from "./Platba";
@@ -85,6 +86,8 @@ export function RetazDobraHarok({ zbierka, onClose }: { zbierka: { id: string; n
   useState(() => ohlasZbierku(zbierka.id, { nazov: zbierka.nazov, org: zbierka.org ?? "", ciel: zbierka.ciel ?? null, zaklad: zbierka.vyzbierane ?? 0, strana: zbierka.strana }));
   useZmenyRetaze();
   const robiTeraz = useRobiRetaz();
+  const { ako } = useMojeStranky();
+  useEffect(() => { void obnovRetaz(); }, []); // balík 8 B: rad posúva server
   const retaz = nacitajRetaz();
   const robi = retaz?.robi ?? robiTeraz;
   const menoKratko = robi.meno;
@@ -177,7 +180,7 @@ export function RetazDobraHarok({ zbierka, onClose }: { zbierka: { id: string; n
     const org = rad.map((x) => z(x.zbierkaId)).filter((x): x is ZbierkaVRetazi => !!x);
     const zapecatTeraz = async () => {
       if (uklada) return;
-      const r = chyst ?? pripravRetaz(rad, robiTeraz);
+      const r = chyst ?? pripravRetaz(rad, robiTeraz, ako !== "ja" ? ako : undefined);
       setChyst(r); setUklada(true); setChyba(null);
       const e = await zapecatRetaz(r);
       setUklada(false);
@@ -230,13 +233,15 @@ export function RetazDobraHarok({ zbierka, onClose }: { zbierka: { id: string; n
     titul = "Reťaz beží"; pod = `Zapečatené ${datum(retaz.zapecatene)}`;
     const b = beziaca(retaz);
     const idx = b ? retaz.polozky.indexOf(b) : retaz.polozky.length;
-    const n = retaz.polozky.length;
+    const nOrg = new Set(retaz.polozky.map((x) => z(x.zbierkaId)?.strana.meno ?? x.zbierkaId)).size;
     obsah = (
       <>
         <KartaStrany s={robi} />
-        {/* PLACEBO — oznámenia organizátorom posiela server až v časti B (balík 8); dovtedy len „Zapečatené ✓“ */}
+        {/* balík 8 B: oznámenie organizátorom posiela server pri zapečatení (0093); bez servera len „Zapečatené ✓“ */}
         <div role="status" style={{ padding: "12px 14px", borderRadius: 14, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 14, fontWeight: 800, color: "var(--gInk)" }}>
-          Zapečatené ✓ s {n === 1 ? z(retaz.polozky[0].zbierkaId)?.strana.meno ?? "organizátorom" : `${n} organizátormi`} · {datum(retaz.zapecatene)}
+          {retaz.naServeri
+            ? <>Zapečatené ✓ oznámili sme to {nOrg === 1 ? z(retaz.polozky[0].zbierkaId)?.strana.meno ?? "organizátorovi" : `${nOrg} organizátorom`} · {datum(retaz.zapecatene)}</>
+            : <>Zapečatené ✓ s {nOrg === 1 ? z(retaz.polozky[0].zbierkaId)?.strana.meno ?? "organizátorom" : `${nOrg} organizátormi`} · {datum(retaz.zapecatene)}</>}
         </div>
         <div style={{ ...karta, borderRadius: 20, display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "18px 14px" }}>
           {/* QR reťaze (D++R) — jeden pre celú reťaz, mení sa sám podľa bežiacej zbierky */}
