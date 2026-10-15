@@ -43,7 +43,7 @@ import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import { ZmensenyModul } from "@/features/zbierka/ZmensenyModul";
 import type { TestProfil, TestSektor } from "@/lib/testProfily";
 import { kedyBrigady } from "@/features/rola/BrigadyFarnosti";
-import { useDarcovia, sucetDarov, relCas, nastavCiste, identitaDarcu, SumyDarcovKontext, SektorDarcuKontext } from "@/lib/darcovia";
+import { useDarcovia, sucetDarov, relCas, nastavCiste, identitaDarcu, zobrazenaSuma, useUkazSumy, SumyDarcovKontext, SektorDarcuKontext } from "@/lib/darcovia";
 import { useZvoncekOkno, nadpisOkna } from "@/lib/zvoncekOmse";
 import { nacitajZbierkyStranky, zbierkyStrankyZPamate, useZmenyZbierok, cielCislo, type SpustenaZbierka } from "@/lib/novaZbierka";
 import { useKalendar, kostolKal, omseDna, polozkyDna, druhPolozky, minuty, iso, dvt, nazovOmse, rozsahTyzdna } from "@/lib/kalendarFarnosti";
@@ -1945,6 +1945,7 @@ function FotoCela({ src, onZavri }: { src: string; onZavri: () => void }) {
 function DarcoviaDetailu({ refId, n }: { refId: string; n: number }) {
   const dary = useDarcovia(refId);
   const ja = usePouzivatel();
+  const ukazSumy = useUkazSumy(); // OPRAVY 311: „Ukázať sumy pri darcoch: Áno“ zo Správy (pod 2 € len meno)
   const [vsetci, setVsetci] = useState(false);
   const zobraz = vsetci ? dary : dary.slice(0, n);
   return (
@@ -1956,7 +1957,7 @@ function DarcoviaDetailu({ refId, n }: { refId: string; n: number }) {
       {dary.length === 0 && <span style={{ fontSize: 15, color: INK3, padding: "10px 0", borderTop: `1px solid ${LINKA}` }}>Zatiaľ tu nie je žiadny dar.</span>}
       {zobraz.map((d) => <span key={d.id} style={{ display: "flex", alignItems: "baseline", gap: 10, padding: "10px 0", borderTop: `1px solid ${LINKA}`, fontSize: 15.5 }}>
         <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{identitaDarcu(d, ja, "viera")}</span>
-        {d.omsa && <b style={{ flex: "none", fontVariantNumeric: "tabular-nums" }}>{sumaEur(d.suma)}</b>}
+        {(d.omsa || ukazSumy) && zobrazenaSuma(d) && <b style={{ flex: "none", fontVariantNumeric: "tabular-nums" }}>{zobrazenaSuma(d)}</b>}
         <span style={{ flex: "none", fontSize: 13.5, color: INK3 }}>{relCas(d.cas)}</span>
       </span>)}
       {dary.length > n && <button type="button" onClick={() => setVsetci((v) => !v)} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--nf-gInk)", cursor: "pointer", boxShadow: "none" }}>

@@ -101,12 +101,10 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat, menoSt
       {/* OPRAVY 222 · B: vlastné peniaze do vlastnej zbierky (len farár, zbierka s vlastným účtom) */}
       {aktivna && (z.farnost?.druh ?? "farnost") === "farnost" && !!z.ucet && <VlastnePeniaze stranka={stranka} menoStranky={menoStranky ?? "Farnosť"} refId={z.id} toast={toast} />}
       <section style={kartaK}>
-        <div style={{ display: "grid", gridTemplateColumns: mobil ? "repeat(2,minmax(0,1fr))" : "repeat(4,minmax(0,1fr))", gap: 10 }}>
+        {/* OPRAVY 311: len skutočné súčty zo servera; Cez rýchle tlačidlá / vlastnú sumu skryté, kým dar nenesie, odkiaľ prišiel */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>
           {ramec(["Vyzbierané", ciel ? `${eur(suma)} z ${eur(ciel)}` : eur(suma), "cez DEED+"])}
           {ramec(["Darcov", cis(darcov), darcov ? "ľudí darovalo" : "zatiaľ nikto"])}
-          {/* PLACEBO — karta 56D: dar zatiaľ nenesie, či prišiel cez rýchle tlačidlo alebo vlastnú sumu */}
-          {ramec(["Cez rýchle tlačidlá", "—", "pripravujeme"])}
-          {ramec(["Cez vlastnú sumu", "—", "pripravujeme"])}
         </div>
       </section>
       {/* Martin 13. 10.: sumy pri darcoch zapína farár (len zbierka farnosti; súkromné nikdy) */}
