@@ -3,6 +3,7 @@
 // Profil, logo a percento = profil_stranky (ako charita), pripnuté = sprava_piny, hlavná zbierka = profil_stranky.centralna.
 // Omše, oznamy a nastavenia farnosti z modulu Viera (stav.ts — localStorage + zrkadlo naboz_stav) pod kľúčom stránky.
 import { cielSpravyPre } from "@/lib/mojeStranky";
+import { UsporiadatStranku } from "./UsporiadatStranku";
 import { FarbaLinii } from "./FarbaLinii";
 import { VzhladStranky } from "./VzhladStranky";
 import { KostolyMiesta } from "./KostolyMiesta";
@@ -129,6 +130,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const [zbBlok, setZbBlok] = useState(false);
   const [noveOk, setNoveOk] = useState<string | null>(null);
   const [zbOtv, setZbOtv] = useState<string | null>(null);
+  const [uspOtv, setUspOtv] = useState(false); // OPRAVY 292
   const [pz, setPz] = useState(false);
   const [pzT, setPzT] = useState(""); // OPRAVY 185: text Späť podľa kroku zbierky // OPRAVY 161: postup zbierky pre veriacich
   const [archOtv, setArchOtv] = useState(false); // KARTA 57 A.8: archív zbalený
@@ -143,7 +145,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   // OPRAVY 186: obrazovka Nastavení (ako pri charite) — n:<id>
   const [nId, setNId] = useState("");
   useEffect(() => { void nacitajNastavenia(strankaId); }, [strankaId]);
-  const go = (k: Sub) => { setSub(k); setPridat(false); setPinOtv(false); setOznamyHore(0); };
+  const go = (k: Sub) => { setUspOtv(false); setSub(k); setPridat(false); setPinOtv(false); setOznamyHore(0); };
 
   // KARTA 56D §1: profil stránky (profil_stranky) — karta vľavo, percento, „Dokončiť profil"
   const [prof, setProf] = useState(() => profilZPamate(strankaId));
@@ -572,7 +574,14 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     stav={bezi ? { t: "Teraz vedie na hlavnú zbierku", zelena: true } : { t: "Teraz vedie na profil farnosti", zelena: false }}
     popis="Jeden QR na dvere kostola. Dostali ste ho pri registrácii a nikdy sa nemení. Keď spustíte hlavnú zbierku, ten istý QR povedie rovno na ňu. Netreba nič tlačiť znova." />;
   const kick = (t: string) => <span style={mobil ? { ...kicker, letterSpacing: ".07em", padding: "4px 2px 0" } : kicker}>{t}</span>;
-  const nastroje = <>{nadpis("Nástroje a štatistiky", "Sledujúci, darcovia, QR do kostola, viditeľnosť súm")}{kick("ŠTATISTIKY")}{statistikyL}{kick("NÁSTROJE")}{qrFarnosti}{viditKarta}{nastrojeL}</>;
+  // OPRAVY 292: Usporiadať stránku — v Nástrojoch, nie v Nastaveniach (aby si farár omylom nič nepokazil)
+  const usporiadatKarta = (
+    <button type="button" onClick={() => setUspOtv(true)} style={{ ...karta, borderRadius: mobil ? 18 : 22, padding: mobil ? "12px 14px" : "16px 20px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none", width: "100%" }}>
+      <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15.5 }}>Usporiadať stránku</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>poradie blokov, ukázať alebo skryť, nadpisy · pre všetky vzhľady</span></span>
+      <span aria-hidden="true" style={{ flex: "none", fontSize: 18, color: "var(--ink3)" }}>›</span>
+    </button>);
+  const nastroje = uspOtv ? <UsporiadatStranku strankaId={strankaId} mobil={mobil} onSpat={() => setUspOtv(false)} />
+    : <>{nadpis("Nástroje a štatistiky", "Sledujúci, darcovia, QR do kostola, viditeľnosť súm")}{kick("ŠTATISTIKY")}{statistikyL}{kick("NÁSTROJE")}{usporiadatKarta}{qrFarnosti}{viditKarta}{nastrojeL}</>;
   // KARTA 57 B.4: Peňaženka je hore v Nastaveniach (z menu PC vypadla)
   const nastavenia = <>{nadpis("Nastavenia", "Ako pri charite, bez programov a faktúr za vyššie programy")}
     <button type="button" onClick={() => go("penazenka")} style={{ flex: "none", minHeight: 60, padding: "8px 16px", borderRadius: mobil ? 18 : 22, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" }}>

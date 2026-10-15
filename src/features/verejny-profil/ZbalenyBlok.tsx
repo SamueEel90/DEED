@@ -8,10 +8,15 @@ import { useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 
 /** otvorené bloky stránky — po načítaní je všetko zbalené */
-export function useZbaleneBloky() {
-  const [otv, setOtv] = useState<ReadonlySet<string>>(() => new Set());
-  const prepni = (id: string) => setOtv((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
-  const otvor = (id: string) => setOtv((s) => (s.has(id) ? s : new Set(s).add(id)));
+/** OPRAVY 292 (7): s kľúčom si zariadenie pamätá, ktoré bloky boli naposledy otvorené (localStorage, len toto zariadenie) */
+export function useZbaleneBloky(pamat?: string) {
+  const [otv, setOtv] = useState<ReadonlySet<string>>(() => {
+    if (!pamat) return new Set();
+    try { const l = JSON.parse(localStorage.getItem(pamat) ?? "[]"); return new Set(Array.isArray(l) ? l.filter((x): x is string => typeof x === "string") : []); } catch { return new Set(); }
+  });
+  const uloz = (n: ReadonlySet<string>) => { if (pamat) try { localStorage.setItem(pamat, JSON.stringify([...n])); } catch { /* LS */ } return n; };
+  const prepni = (id: string) => setOtv((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return uloz(n); });
+  const otvor = (id: string) => setOtv((s) => (s.has(id) ? s : uloz(new Set(s).add(id))));
   return { otv, prepni, otvor };
 }
 

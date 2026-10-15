@@ -60,3 +60,18 @@ export async function zapisVerejne(stranka: string, kluc: string, hodnota: unkno
   const { error } = await supabase.from("nastavenia_stranky").upsert({ stranka, verejne: n }, { onConflict: "stranka" });
   if (error) toast("Nastavenie sa nepodarilo uložiť — platí len na tomto zariadení.");
 }
+
+/** OPRAVY 292: zápis, ktorého zlyhanie má tvár (Správa ukáže chybu na mieste) — vráti chybu ako text alebo null */
+export async function zapisVerejneIsto(stranka: string, kluc: string, hodnota: unknown): Promise<string | null> {
+  await nacitajVerejne(stranka);
+  lokalne.get(stranka)?.add(kluc);
+  const stare = pamat.get(stranka) ?? {};
+  const n = { ...stare, [kluc]: hodnota };
+  pamat.set(stranka, n);
+  zmena();
+  if (!supabase) return null;
+  await pripojTestovaciuStranku(stranka);
+  const { error } = await supabase.from("nastavenia_stranky").upsert({ stranka, verejne: n }, { onConflict: "stranka" }).then((x) => x, () => ({ error: { message: "" } }));
+  if (error) { pamat.set(stranka, { ...(pamat.get(stranka) ?? {}), [kluc]: stare[kluc] }); zmena(); return "Neuložilo sa na server. Skontrolujte pripojenie a skúste znova."; }
+  return null;
+}
