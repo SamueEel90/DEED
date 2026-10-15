@@ -15,22 +15,34 @@ const zmena = () => { ver++; posl.forEach((f) => f()); };
 
 export const verejneZPamate = (stranka: string): Verejne | undefined => pamat.get(stranka);
 
-/** načíta verejné nastavenia stránky (raz; ďalšie volania čakajú na ten istý dotaz) */
-export function nacitajVerejne(stranka: string): Promise<void> {
+/** OPRAVY 308: nastavenia farára (vzhľad Kronika …) sa čítajú zo servera pri každom otvorení stránky — pamäť len na prvé
+ *  vykreslenie. Predtým sa načítali raz za beh appky a stará pamäť mala prednosť pred serverom (nové až po reštarte). */
+const nacitane = new Map<string, number>(); // kedy prišla odpoveď servera
+const lokalne = new Map<string, Set<string>>(); // kľúče zapísané tu, kým beží načítanie (tie majú prednosť)
+const CERSTVE_MS = 15_000;
+/** načíta verejné nastavenia stránky; súbežné volania čakajú na ten istý dotaz, čerstvé (15 s) sa nečítajú znova */
+export function nacitajVerejne(stranka: string, nanovo = false): Promise<void> {
   if (!supabase) return Promise.resolve();
   const bezi = nacitava.get(stranka);
   if (bezi) return bezi;
+  if (!nanovo && Date.now() - (nacitane.get(stranka) ?? 0) < CERSTVE_MS) return Promise.resolve();
+  lokalne.set(stranka, new Set());
   const p = (async () => {
-    const { data, error } = await supabase!.from("nastavenia_stranky_verejne").select("verejne").eq("stranka", stranka).maybeSingle();
-    if (error) { nacitava.delete(stranka); return; } // pohľad ešte nebeží (0070b) → ostáva localStorage
-    pamat.set(stranka, { ...((data?.verejne as Verejne | null) ?? {}), ...(pamat.get(stranka) ?? {}) }); // lokálna zmena počas načítania má prednosť
-    zmena();
+    const { data, error } = await supabase!.from("nastavenia_stranky_verejne").select("verejne").eq("stranka", stranka).maybeSingle().then((x) => x, () => ({ data: null, error: { message: "siet" } }));
+    nacitava.delete(stranka);
+    if (error) return; // bez spojenia / pohľad ešte nebeží (0070b) → ostáva posledné známe
+    const tu = lokalne.get(stranka) ?? new Set<string>(), stare = pamat.get(stranka) ?? {}, server = (data?.verejne as Verejne | null) ?? {};
+    const n: Verejne = { ...server };
+    tu.forEach((k) => { n[k] = stare[k]; });
+    lokalne.delete(stranka);
+    nacitane.set(stranka, Date.now());
+    if (JSON.stringify(n) !== JSON.stringify(stare)) { pamat.set(stranka, n); zmena(); } else pamat.set(stranka, n);
   })();
   nacitava.set(stranka, p);
   return p;
 }
 
-/** komponent sa prekreslí, keď prídu (alebo sa zmenia) verejné nastavenia stránky */
+/** komponent sa prekreslí, keď prídu (alebo sa zmenia) verejné nastavenia stránky; pri otvorení načíta aktuálne zo servera */
 export function useVerejneNastavenia(stranka: string | undefined): void {
   useSyncExternalStore((f) => { posl.add(f); return () => posl.delete(f); }, () => ver, () => 0);
   useEffect(() => { if (stranka) void nacitajVerejne(stranka); }, [stranka]);
@@ -39,6 +51,7 @@ export function useVerejneNastavenia(stranka: string | undefined): void {
 /** zapíše jednu hodnotu; do DB ide celý objekt `verejne` stránky (súkromné `data` ostáva) */
 export async function zapisVerejne(stranka: string, kluc: string, hodnota: unknown): Promise<void> {
   await nacitajVerejne(stranka); // nech sa neprepíšu hodnoty, ktoré v DB už sú
+  lokalne.get(stranka)?.add(kluc);
   const n = { ...(pamat.get(stranka) ?? {}), [kluc]: hodnota };
   pamat.set(stranka, n);
   zmena();
