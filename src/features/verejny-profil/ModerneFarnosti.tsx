@@ -58,9 +58,9 @@ export function usePas<T extends HTMLElement = HTMLDivElement>(zvisle?: boolean)
   };
   return [ref, posun];
 }
-/** vodorovný pás kariet so scroll-snap; posledná karta vykúka */
+/** vodorovný pás kariet so scroll-snap; posledná karta vykúka · OPRAVY 303: natívne posúvanie (proximity, pan-x), žiadny vlastný ťah */
 export function PasX({ pasRef, gap = 16, children }: { pasRef: RefObject<HTMLDivElement>; gap?: number; children: ReactNode }) {
-  return <div ref={pasRef} className="md-pas" style={{ display: "flex", gap, overflowX: "auto", scrollSnapType: "x mandatory", scrollbarWidth: "none", overscrollBehaviorX: "contain", paddingBottom: 2, minWidth: 0 }}>{children}</div>;
+  return <div ref={pasRef} className="md-pas" style={{ display: "flex", gap, overflowX: "auto", WebkitOverflowScrolling: "touch", scrollSnapType: "x proximity", touchAction: "pan-x", scrollbarWidth: "none", overscrollBehaviorX: "contain", paddingBottom: 2, minWidth: 0 }}>{children}</div>;
 }
 /** šírka karty v pase: n kariet na šírku pri medzere g */
 export const sirkaKarty = (n: number, g = 16): CSSProperties => ({ flex: "none", width: `calc((100% - ${Math.floor(n) * g}px) / ${n})`, scrollSnapAlign: "start", minWidth: 0 });

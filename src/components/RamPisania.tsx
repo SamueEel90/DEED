@@ -31,7 +31,7 @@ function useViditelne() {
 
 const OKO = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></svg>;
 
-export function RamPisania({ nazov, kroky, onSpat, onNahlad, nahlad, onZavriNahlad, nahladObsah, dole, chyba, teloRef, vrstva, children }: {
+export function RamPisania({ nazov, kroky, onSpat, onNahlad, nahlad, onZavriNahlad, nahladObsah, dole, chyba, teloRef, vrstva, children, stred, spatText = "‹ Späť", pas }: {
   /** čo sa píše (Parte, Blahoželanie…) */ nazov: string;
   /** krok (od 0) a počet krokov; bez = jeden krok */ kroky?: { i: number; n: number };
   onSpat: () => void; onNahlad?: () => void;
@@ -39,6 +39,8 @@ export function RamPisania({ nazov, kroky, onSpat, onNahlad, nahlad, onZavriNahl
   /** obsah náhľadu (bez = náhľad kreslí obsah tela sám, napr. editor v iframe) */ nahladObsah?: ReactNode;
   /** pevne dole */ dole?: ReactNode; chyba?: string;
   teloRef: RefObject<HTMLDivElement>; /** nad rámom (hláška) */ vrstva?: ReactNode; children: ReactNode;
+  /** OPRAVY 303: hlavička editora — ‹ Späť · „Parte · 2 z 5“ v strede · diely krokov (bez PÍŠETE a Náhľadu) */ stred?: string; spatText?: string;
+  /** OPRAVY 303: pás pod hlavičkou, neroluje sa (náhľad 64 px) */ pas?: ReactNode;
 }) {
   const v = useViditelne();
   // stránka pod rámom sa nehýbe, žiadne obnovenie ťahom
@@ -58,7 +60,16 @@ export function RamPisania({ nazov, kroky, onSpat, onNahlad, nahlad, onZavriNahl
             <span style={{ minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".1em", color: "var(--gInk)" }}>NÁHĽAD</span><b style={{ fontSize: 17 }}>Takto to uvidia ľudia</b></span>
             <button type="button" onClick={onZavriNahlad} style={{ ...tl, minHeight: 48, padding: "0 18px", border: "none", background: "var(--ink)", color: "var(--bg)", fontSize: 16 }}>× Zavrieť</button>
           </div>
-        ) : <>
+        ) : stred != null ? <>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 10 }}>
+            <button type="button" onClick={onSpat} style={{ ...tl, justifySelf: "start", border: "1.5px solid var(--cardBd)", background: "transparent", color: "var(--ink)" }}>{spatText}</button>
+            <b style={{ fontSize: 17, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textAlign: "center" }}>{stred}</b>
+            <span />
+          </div>
+          {kroky && kroky.n > 1 && <div aria-hidden="true" style={{ display: "grid", gridTemplateColumns: `repeat(${kroky.n},1fr)`, gap: 6 }}>
+            {Array.from({ length: kroky.n }, (_, i) => <span key={i} style={{ height: 5, borderRadius: 3, background: i <= kroky.i ? "#8DB866" : "var(--cardBd)" }} />)}
+          </div>}
+        </> : <>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <button type="button" onClick={onSpat} style={{ ...tl, border: "1.5px solid var(--cardBd)", background: "transparent", color: "var(--ink)" }}>‹ Späť</button>
             <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
@@ -72,6 +83,7 @@ export function RamPisania({ nazov, kroky, onSpat, onNahlad, nahlad, onZavriNahl
           </div>}
         </>}
       </div>
+      {pas && !nahlad && <div style={{ flex: "none", borderBottom: "1px solid var(--cardBd)" }}>{pas}</div>}
       <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
         <div ref={teloRef} style={{ position: "absolute", inset: 0, overflowY: nahlad && !nahladObsah ? "hidden" : "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch", background: nahlad && !nahladObsah ? "#14110B" : undefined }}>{children}</div>
         {nahlad && nahladObsah && <div style={{ position: "absolute", inset: 0, overflowY: "auto", overscrollBehavior: "contain", background: "#14110B", padding: 20, boxSizing: "border-box", display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -79,7 +91,7 @@ export function RamPisania({ nazov, kroky, onSpat, onNahlad, nahlad, onZavriNahl
         </div>}
       </div>
       {nahlad ? <span style={{ flex: "none", padding: "12px 16px calc(14px + env(safe-area-inset-bottom, 0px))", fontSize: 14.5, color: "var(--ink3)", textAlign: "center" }}>Zatvoríte a ste späť pri poli, kde ste skončili.</span>
-        : (dole || chyba) && <div style={{ flex: "none", padding: "12px 16px calc(14px + env(safe-area-inset-bottom, 0px))", borderTop: "1px solid var(--cardBd)", display: "flex", flexDirection: "column", gap: 10 }}>
+        : (dole || chyba) && <div style={{ flex: "none", padding: stred != null ? "12px 16px calc(12px + env(safe-area-inset-bottom, 0px))" : "12px 16px calc(14px + env(safe-area-inset-bottom, 0px))", borderTop: "1px solid var(--cardBd)", display: "flex", flexDirection: "column", gap: 10 }}>
           {chyba && <span role="alert" style={{ padding: "10px 14px", borderRadius: 12, background: "var(--goldBg)", border: "1.5px solid var(--goldBd)", fontSize: 15, fontWeight: 800, color: "var(--ink)" }}>{chyba}</span>}
           {dole}
         </div>}

@@ -7,7 +7,8 @@
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { OknoGalerie, useZdrojFotiek } from "@/components/VyberZGalerie";
 import { createPortal } from "react-dom";
-import { DoleKroky, RamPisania, useRamPisania } from "@/components/RamPisania";
+import { RamPisania, useRamPisania } from "@/components/RamPisania";
+import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 
 export type TypEditora = "parte" | "svadba" | "jubileum" | "blahozelanie";
 export interface PayloadEditora {
@@ -32,9 +33,12 @@ export interface EditorApi {
 type Vysledok = { ok: boolean; y?: number | null };
 type OknoEditora = Window & { initEditor?: (c: unknown) => void; edKrokSpat?: () => boolean; edNahlad?: (o?: { verejny?: boolean }) => Promise<string>;
   /** OPRAVY 258: rám na mobile */ edDalej?: () => Vysledok; edHotovo?: () => Vysledok; edNahladRam?: (on: boolean, w: number, h: number) => void; edUlozKoncept?: () => void;
-  edAktivne?: () => HTMLElement | null; edNastavFotku?: (src: string) => void };
+  edAktivne?: () => HTMLElement | null; edNastavFotku?: (src: string) => void;
+  /** OPRAVY 303: Kontrola — Podržte a zverejnite, upozorniť na nezaškrtnuté */ edZverejni?: () => Vysledok; edUkazKontrolu?: () => void };
 /** krok editora (OPRAVY 258) */
-interface StavKroku { i: number; n: number; nazvy: string[]; typ: string; hotovo: boolean; ulozene: boolean; kontrola: boolean }
+interface StavKroku { i: number; n: number; nazvy: string[]; typ: string; hotovo: boolean; ulozene: boolean; kontrola: boolean;
+  /** OPRAVY 303: stránka (koho, vzhlad, ozdoby, osoba, udaje2, udaje, kontrola, hotovo), poradie medzi stránkami, kam ďalej, návrat na Kontrolu, zaškrtnuté, miniatúra */
+  kluc?: string; strana?: number; strany?: number; dalsi?: string | null; navrat?: boolean; kOk?: boolean; rychly?: boolean; mini?: { bg?: string; ac?: string } }
 /** OPRAVY 258: rám na mobile — extra = nad poľami editora (napr. Fotky), vrstva = hláška nad rámom; onZavri (prop) = Späť z 1. kroku, rozpísané sa uloží ako koncept
  *  OPRAVY 299: s `ram` na PC (≥ 1024, mimo rámu) to isté okno ako u veriaceho: hore „‹ Späť …“, vľavo nastavenie, vpravo živý náhľad (jeden komponent pre farára aj veriaceho) */
 export interface RamEditora { extra?: ReactNode; vrstva?: ReactNode }
@@ -77,6 +81,8 @@ export const EditorOznameni = forwardRef<EditorApi, { cfg: CfgEditora; onSend: (
     const telo = useRef<HTMLDivElement>(null);
     const spat = useRef<{ top: number; el: HTMLElement | null }>({ top: 0, el: null });
     const krokI = useRef(-1);
+    const krokJ = useRef("");
+    const otvorNahlad = () => { let a: HTMLElement | null = null; try { a = okno()?.edAktivne?.() ?? null; a?.blur(); } catch { /* */ } spat.current = { top: telo.current?.scrollTop || 1, el: a }; setNahl(true); };
     const naNacitanie = () => {
       try {
         const { navrh, ...zvysok } = cfg;
@@ -84,7 +90,8 @@ export const EditorOznameni = forwardRef<EditorApi, { cfg: CfgEditora; onSend: (
           onSend: (p: PayloadEditora) => { if (p.stav === "hotovo") ulozeneRef.current = true; posli.current(p); },
           onVyberFotku: () => setGalOtv(true), fotkyTlacidlo: zdroj ? zdroj.tlacidlo : "Vybrať z verejných fotiek ›",
           ...(ram ? { ram: true, tema: document.documentElement.classList.contains("dark") ? "dark" : "light",
-            onKrok: (k: StavKroku) => { setKrok(k); if (k.i !== krokI.current) { krokI.current = k.i; setChyba(""); telo.current?.scrollTo({ top: 0 }); } },
+            onKrok: (k: StavKroku) => { const j = JSON.stringify(k); if (j === krokJ.current) return; krokJ.current = j; setKrok(k); if (k.i !== krokI.current) { krokI.current = k.i; setChyba(""); telo.current?.scrollTo({ top: 0 }); } },
+            onCelaObrazovka: () => otvorNahlad(),
             onVyska: (h: number) => setVyska(h), onChyba: (t: string) => setChyba(t) } : {}) });
       } catch { /* iframe ešte nie je pripravený */ }
     };
@@ -121,12 +128,29 @@ export const EditorOznameni = forwardRef<EditorApi, { cfg: CfgEditora; onSend: (
     if (!ram) return <>{iframe}{galeria}</>;
     const zavri = () => { try { okno()?.edUlozKoncept?.(); } catch { /* */ } onZavri?.(); };
     const spatKrok = () => { if (krok?.ulozene || !okno()?.edKrokSpat?.()) zavri(); };
-    const otvorNahlad = () => { let a: HTMLElement | null = null; try { a = okno()?.edAktivne?.() ?? null; a?.blur(); } catch { /* */ } spat.current = { top: telo.current?.scrollTop || 1, el: a }; setNahl(true); };
     const dalej = () => { const w = okno(); if (!w) return; const r = krok?.hotovo ? w.edHotovo?.() : w.edDalej?.(); if (r && (krok?.hotovo || !r.ok)) posunNa(r.y); };
+    // OPRAVY 303: hlavička „Parte · 2 z 5“, od 3. stránky pás náhľadu 64 px, dole jedno tlačidlo, ktoré hovorí kam; Kontrola = Podržte a zverejnite
+    const k = krok;
+    const stred = !k ? title : k.kluc === "kontrola" ? "Kontrola" : k.kluc === "hotovo" ? k.typ : k.strana ? `${k.typ} · ${k.strana} z ${k.strany}` : k.typ;
+    const diely = k?.strana && k.strany ? { i: k.strana - 1, n: k.strany } : undefined;
+    const POD: Record<string, string> = { ozdoby: "mení sa hneď", osoba: "mení sa, ako píšete", udaje: "mení sa, ako píšete", udaje2: "skontrolujte pred uložením" };
+    const pas = k?.kluc && POD[k.kluc] && (k.kluc !== "udaje" || k.rychly) ? (
+      <div style={{ height: 64, boxSizing: "border-box", padding: "0 16px", display: "flex", alignItems: "center", gap: 12 }}>
+        <span aria-hidden="true" style={{ width: 34, height: 48, flex: "none", borderRadius: 4, background: k.mini?.bg || "#fff", boxShadow: `inset 0 -4px 0 ${k.mini?.ac || "#888"}`, border: "1px solid var(--cardBd)" }} />
+        <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><b style={{ fontSize: 15.5 }}>Náhľad</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>{POD[k.kluc]}</span></span>
+        <button type="button" onClick={otvorNahlad} style={{ flex: "none", minHeight: 44, padding: "0 14px", borderRadius: 12, border: "1.5px solid var(--gBd)", background: "transparent", color: "var(--gInk)", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, boxShadow: "none" }}>Pozrieť ⤢</button>
+      </div>) : undefined;
+    const tlB = { width: "100%", minHeight: 56, border: "none", borderRadius: 14, fontFamily: "inherit", fontSize: 16.5, fontWeight: 800, cursor: "pointer", boxShadow: "none" } as const;
+    const zverejni = () => { const r = okno()?.edZverejni?.(); if (r && !r.ok) posunNa(r.y); };
+    const dole = !k ? null : k.kluc === "kontrola" ? <>
+      {k.kOk ? <div style={{ ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo label="Podržte a zverejnite" trvanie={1500} onConfirm={zverejni} /></div>
+        : <button type="button" onClick={() => { try { okno()?.edUkazKontrolu?.(); } catch { /* */ } }} style={{ ...tlB, background: "var(--btn)", color: "var(--ink2)" }}>Podržte a zverejnite</button>}
+      <span style={{ fontSize: 13, color: "var(--ink3)", textAlign: "center" }}>{k.kOk ? "Podržte prst na tlačidle, kým sa nenaplní." : "Tlačidlo je aktívne až po zaškrtnutí."}</span>
+    </> : k.hotovo ? <button type="button" onClick={dalej} disabled={k.ulozene} style={{ ...tlB, background: k.ulozene ? "var(--btn)" : "#4B7A35", color: k.ulozene ? "var(--ink2)" : "#fff", cursor: k.ulozene ? "default" : "pointer" }}>{k.ulozene ? "Uložené ✓" : "Hotovo · uložiť"}</button>
+      : <button type="button" onClick={dalej} style={{ ...tlB, background: "#4B7A35", color: "#fff" }}>{k.navrat ? "Späť na kontrolu ›" : k.dalsi ? `Pokračovať · ${k.dalsi} ›` : "Skontrolovať a uložiť ›"}</button>;
     return (
-      <RamPisania nazov={krok?.typ || title} kroky={krok ? { i: krok.i, n: krok.n } : undefined} onSpat={spatKrok} onNahlad={() => otvorNahlad()} nahlad={nahl} onZavriNahlad={() => setNahl(false)}
-        chyba={chyba} teloRef={telo} vrstva={<>{ram.vrstva}{galeria}</>}
-        dole={krok && <DoleKroky i={krok.i} onSpat={() => { try { okno()?.edKrokSpat?.(); } catch { /* */ } }} onDalej={dalej} dalej={krok.hotovo ? (krok.ulozene ? "Uložené ✓" : "Hotovo · uložiť") : "Pokračovať ›"} zakazane={krok.hotovo && krok.ulozene} />}>
+      <RamPisania nazov={k?.typ || title} stred={stred} kroky={diely} onSpat={spatKrok} nahlad={nahl} onZavriNahlad={() => setNahl(false)} pas={pas}
+        chyba={chyba} teloRef={telo} vrstva={<>{ram.vrstva}{galeria}</>} dole={dole}>
         {ram.extra && <div style={{ display: nahl ? "none" : undefined }}>{ram.extra}</div>}
         {iframe}
       </RamPisania>);
