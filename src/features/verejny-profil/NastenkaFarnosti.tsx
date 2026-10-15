@@ -69,7 +69,7 @@ import { useLayout } from "@/components/context";
 
 import "@/styles/nastenka.css";
 import { useObrazokNavrhu, type PayloadEditora } from "@/components/EditorOznameni";
-import { ParteMedailon, TvarOznamu, PARTE, SVADBA, JUBILEUM, BLAHOZELANIE, ZAKLAD, BORDOVA, symbolCirkvi, kickerTvaru, SERIF_TVARU, type Paleta } from "./Medailony";
+import { ParteMedailon, ZnackaReakcie, TvarOznamu, PARTE, SVADBA, JUBILEUM, BLAHOZELANIE, ZAKLAD, BORDOVA, symbolCirkvi, kickerTvaru, SERIF_TVARU, type Paleta } from "./Medailony";
 import { Darcovia } from "@/features/zbierka/Riadky";
 import { useQrObrazok } from "@/lib/qrObrazok";
 import { useAutorNaStranke, type AutorF } from "@/lib/autorFarnosti";
@@ -775,16 +775,22 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
         </button>); })}
     </div>}
   </>);
-  // OPRAVY 275: karta Teš sa — celý hárok na výšku (uložený obrázok s fotkou, nič orezané), pod ním meno, roky, dátum a Blahoželám
+  // OPRAVY 300: na karte nie je Blahoželám ani Kondolovať — v rohu hárku malá značka s počtom (moje = zelená ✓), tlačidlo až v detaile
+  const znTes = (t: Tes) => t.ine ? null : <ZnackaReakcie n={t.r.zoznam.length} ja={t.r.zoznam.includes(kto)} ikona={t.druh === "svadba" ? "obrucky" : "srdce"} popis={t.dakuje ? "Ďakujú" : "Blahoželá"} />;
+  const znSpom = (sp: Spom, kraj?: number) => {
+    const l = [...new Set([...(reakcieF(strankaId, sp.zb?.id ?? sp.id).sustrast ?? []), ...(sp.x?.sustrast ?? [])])];
+    return <ZnackaReakcie n={Math.max(l.length, sp.x ? pocetSus(sp.x) : 0)} ja={l.includes(kto)} popis="Sústrasť" kraj={kraj} />;
+  };
+  // OPRAVY 275: karta Teš sa — celý hárok na výšku (uložený obrázok s fotkou, nič orezané), pod ním meno, roky, dátum
   const tesKarta = (t: Tes, styl: CSSProperties) => {
     const d = t.datum && /^\d{4}-\d{2}-\d{2}/.test(t.datum) ? zIso(t.datum.slice(0, 10)) : t.it?.vytvorene ? new Date(t.it.vytvorene) : t.x?.cas ? new Date(t.x.cas) : undefined;
     const st = t.ine ? "OZNÁMENIE" : t.druh === "svadba" ? "SVADBA" : t.druh === "jubileum" ? "JUBILEUM" : t.dakuje ? "POĎAKOVANIE" : "BLAHOŽELANIE";
     const obr = (t.x ? obrVer(t.x) || undefined : undefined) ?? (t.it ? obrFar(t.it) || undefined : undefined) ?? t.foto ?? t.it?.fotky?.find(ziveObr);
     const roky = t.druh === "jubileum" && t.vek ? `${t.vek} ${rokyT(Number(t.vek)).toLocaleLowerCase("sk-SK")}` : "";
-    const jaV = t.r.zoznam.includes(kto), n = t.r.zoznam.length;
     return (
       <div key={t.id} data-oz={t.id} style={{ ...styl, minWidth: 0, padding: 12, borderRadius: 20, background: KARTA, color: INK, display: "flex", flexDirection: "column", gap: 10, boxSizing: "border-box" }}>
-        <button type="button" onClick={() => setTes(t)} aria-label={`${t.ine ? t.nadpis : t.meno} · otvoriť`} style={{ width: "100%", aspectRatio: "2 / 3", border: "none", padding: 0, borderRadius: 10, overflow: "hidden", background: obr ? "#fff" : PAPIER, cursor: "zoom-in", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <button type="button" onClick={() => setTes(t)} aria-label={`${t.ine ? t.nadpis : t.meno} · otvoriť`} style={{ position: "relative", width: "100%", aspectRatio: "2 / 3", border: "none", padding: 0, borderRadius: 10, overflow: "hidden", background: obr ? "#fff" : PAPIER, cursor: "zoom-in", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {znTes(t)}
           {obr ? <img src={obr} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
             : <span style={{ pointerEvents: "none" }}><TvarOznamu tvar={t.druh === "svadba" ? "kruh" : t.druh === "jubileum" ? "kosostvorec" : "stvorec"} pal={t.pal} label={t.meno} onTap={() => undefined}><ObsahTvaru t={t} /></TvarOznamu></span>}
         </button>
@@ -793,7 +799,6 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
           <b style={{ fontSize: 18, lineHeight: 1.25, overflowWrap: "anywhere" }}>{t.ine ? t.nadpis : t.meno}</b>
           {roky && <span style={{ fontSize: 15, color: INK2 }}>{roky}</span>}
         </span>
-        {!t.ine && <button type="button" aria-pressed={jaV} onClick={t.r.prepni} style={{ ...tlacR(jaV, true), whiteSpace: "normal" }}>{jaV ? (t.dakuje ? "Ďakujete ✓" : "Blahoželáte ✓") : t.dakuje ? "Ďakujem" : "Blahoželám"}{n ? ` · ${n}` : ""}</button>}
       </div>);
   };
   // --- Teš sa s nami: karty vedľa seba (PC 2–3 v rade), mobil na celú šírku ---
@@ -806,7 +811,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   const kSpom = maSpom && sekcia("spom", "Spomíname", S.spom, <>
     <div style={{ display: "flex", flexDirection: "column", borderTop: "1px solid color-mix(in srgb,var(--nf-linka) 70%,transparent)" }}>
       {spomienky.map((sp) => { const n = sp.x ? pocetSus(sp.x) : (reakcieF(strankaId, sp.zb?.id ?? sp.id).sustrast ?? []).length; return (
-        <SpomZapis key={sp.id} oz={sp.id} foto={sp.foto} siva={sp.siva} symbol={symbol} meno={sp.d.meno} roky={rokyParte(sp.d.nar, sp.d.umr)} rozlucka={[rozluckaT(sp.d.rd, sp.d.rc), sp.d.rm].filter(Boolean).join(" · ")} zbierka={!!sp.zb} sustrast={n} onTap={() => setParte(sp)} />); })}
+        <SpomZapis key={sp.id} oz={sp.id} foto={sp.foto} siva={sp.siva} znacka={znSpom(sp, -6)} symbol={symbol} meno={sp.d.meno} roky={rokyParte(sp.d.nar, sp.d.umr)} rozlucka={[rozluckaT(sp.d.rd, sp.d.rc), sp.d.rm].filter(Boolean).join(" · ")} zbierka={!!sp.zb} sustrast={n} onTap={() => setParte(sp)} />); })}
     </div>
   </>, { pozadie: "var(--nf-spom)" });
   // --- Od veriacich ---
@@ -1092,7 +1097,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   const mTes = <PasX pasRef={pasTes} gap={14}>{tesy.map((t) => tesKarta(t, { flex: "none", scrollSnapAlign: "start", width: mob && !mt ? "calc(100% - 2px)" : 210 }))}</PasX>; // OPRAVY 275: celý hárok na výšku
   const spomZoznam = (vo2: boolean) => zoznamY(pasSpom, spomienky.map((sp) => { const n = sp.x ? pocetSus(sp.x) : (reakcieF(strankaId, sp.zb?.id ?? sp.id).sustrast ?? []).length; return (
     <div key={sp.id} data-oz={sp.id} style={{ flex: "none", scrollSnapAlign: "start", padding: "0 16px", borderRadius: 20, background: KARTA }}>
-      <SpomZapis foto={sp.foto} siva={sp.siva} symbol={symbol} meno={sp.d.meno} roky={rokyParte(sp.d.nar, sp.d.umr)} rozlucka={[rozluckaT(sp.d.rd, sp.d.rc), sp.d.rm].filter(Boolean).join(" · ")} zbierka={!!sp.zb} sustrast={n} onTap={() => setParte(sp)} />
+      <SpomZapis foto={sp.foto} siva={sp.siva} znacka={znSpom(sp, -6)} symbol={symbol} meno={sp.d.meno} roky={rokyParte(sp.d.nar, sp.d.umr)} rozlucka={[rozluckaT(sp.d.rd, sp.d.rc), sp.d.rm].filter(Boolean).join(" · ")} zbierka={!!sp.zb} sustrast={n} onTap={() => setParte(sp)} />
     </div>); }), vo2);
   const mVer = <div style={{ display: "grid", gridTemplateColumns: mt ? "repeat(2,minmax(0,1fr))" : "minmax(0,1fr)", gap: 14 }}>{oznVer.map((x) => (
     <div key={x.id} data-oz={x.id} style={{ padding: 20, borderRadius: 20, background: KARTA, display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
@@ -1549,14 +1554,13 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
       {/* ---------- Teš sa s nami (OPRAVY 205: tvar podľa druhu, bez tlačidiel; Blahoželám a zoznam po ťuknutí) ---------- */}
       {maTes && blokN("tes", "Teš sa s nami", "Svadby, jubileá a poďakovania. Ťuknite a zablahoželajte.", S.tes, <>
         <div style={{ flex: "999 1 520px", minWidth: 0, ...mriezkaTvarov }}>
-          {tesy.map((t) => <div key={t.id} data-oz={t.id} style={zmensi}><TvarOznamu tvar={t.druh === "svadba" ? "kruh" : t.druh === "jubileum" ? "kosostvorec" : "stvorec"} pal={t.pal} label={`${t.meno} · otvoriť`}
+          {tesy.map((t) => <div key={t.id} data-oz={t.id} style={{ ...zmensi, position: "relative" }}>{znTes(t)}<TvarOznamu tvar={t.druh === "svadba" ? "kruh" : t.druh === "jubileum" ? "kosostvorec" : "stvorec"} pal={t.pal} label={`${t.meno} · otvoriť`}
             onTap={() => setTes(t)} pod={<>
               {t.ine && t.foto && <span style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, textAlign: "center", maxWidth: 220 }}>
                 <span style={kickerTvaru(t.pal.ac)}>OZNÁMENIE</span>
                 <i style={{ fontFamily: SERIF_TVARU, fontSize: 19, lineHeight: 1.2, ...riadkyMax(3) }}>{sestSlov(t.nadpis)}</i>
               </span>}
               {t.x ? hlavickaAutora(t.x) : t.zb ? null : hlavickaFar(t.af)}
-              {!t.ine && t.r.zoznam.length > 0 && <span style={{ fontSize: 14, color: INK2 }}>{reakT(!!t.dakuje, t.r.zoznam.length)}</span>}
             </>}><ObsahTvaru t={t} /></TvarOznamu></div>)}
         </div>
       </>)}
@@ -1564,7 +1568,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
       {/* ---------- Spomíname (OPRAVY 205: medailóny bez tlačidiel, ťuk = parte a zbierka rodiny) ---------- */}
       {maSpom && blokN("spom", "Spomíname", "Parte a spomienky. Ťuknite na medailón, otvorí sa parte a zbierka rodiny.", S.spom, <>
         <div style={{ flex: "999 1 520px", minWidth: 0, ...mriezkaTvarov }}>
-          {spomienky.map((sp) => <div key={sp.id} data-oz={sp.id} style={zmensi}><ParteMedailon pal={sp.pal} foto={sp.foto} siva={sp.siva} symbol={symbol} meno={sp.d.meno}
+          {spomienky.map((sp) => <div key={sp.id} data-oz={sp.id} style={zmensi}><ParteMedailon pal={sp.pal} foto={sp.foto} siva={sp.siva} znacka={znSpom(sp)} symbol={symbol} meno={sp.d.meno}
             roky={rokyParte(sp.d.nar, sp.d.umr)} rozlucka={rozluckaT(sp.d.rd, sp.d.rc)} zbierka={!!sp.zb} onTap={() => setParte(sp)} /></div>)}
         </div>
       </>, "var(--nf-spom)")}

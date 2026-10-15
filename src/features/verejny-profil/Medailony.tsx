@@ -64,14 +64,24 @@ const ZLATY_RAM = "linear-gradient(160deg,#E3C77E,#A9822F 55%,#E3C77E)";
 export const symbolCirkvi = (kod: string) => (kod === "PC" ? "☦" : kod === "ÚZŽNO" ? "✡" : "✝");
 
 /** 1a · medailón Spomíname */
-export function ParteMedailon({ pal, foto, symbol, meno, roky, rozlucka, zbierka, onTap, siva }: {
+/** OPRAVY 300: malá značka v rohu hárku / medailónu — počet blahoželaní (sústrastí); moje = zelená s ✓; pri 0 nič. Tlačidlo je až v detaile. */
+export function ZnackaReakcie({ n, ja, ikona = "srdce", popis, kraj = 8 }: { n: number; ja: boolean; ikona?: "srdce" | "obrucky"; popis: string; /** odsadenie od rohu (záporné = cez okraj) */ kraj?: number }) {
+  if (!n) return null;
+  const ik = ja ? <span aria-hidden="true" style={{ fontSize: 14, lineHeight: 1 }}>✓</span>
+    : ikona === "obrucky" ? <svg width="16" height="12" viewBox="0 0 24 16" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true"><circle cx="8.5" cy="8" r="6" /><circle cx="15.5" cy="8" r="6" /></svg>
+    : <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7-4.4-9.3-9A5 5 0 0 1 12 6a5 5 0 0 1 9.3 6c-2.3 4.6-9.3 9-9.3 9z" /></svg>;
+  return <span role="img" aria-label={`${popis}: ${n}${ja ? ", aj vy" : ""}`} style={{ position: "absolute", top: kraj, right: kraj, zIndex: 2, height: 28, minWidth: 28, padding: "0 8px", boxSizing: "border-box", borderRadius: 14, background: ja ? "#4B7A35" : "rgba(20,17,11,.82)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 13, fontWeight: 800, pointerEvents: "none" }}>{ik}{n}</span>;
+}
+
+export function ParteMedailon({ pal, foto, symbol, meno, roky, rozlucka, zbierka, onTap, siva, znacka }: {
   pal: Paleta; foto?: string; symbol: string; meno: string; roky: string; rozlucka: string; zbierka: boolean; onTap: () => void;
-  /** OPRAVY 302: v editore Čiernobielo — fotka aj v medailóne čiernobiela */ siva?: boolean;
+  /** OPRAVY 302: v editore Čiernobielo — fotka aj v medailóne čiernobiela */ siva?: boolean; /** OPRAVY 300: značka sústrastí v rohu */ znacka?: ReactNode;
 }) {
   return (
     <button type="button" onClick={onTap} aria-label={`${meno} · otvoriť parte${zbierka ? " a zbierku rodiny" : ""}`}
       style={{ width: 220, maxWidth: "100%", border: "none", background: "transparent", padding: 0, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, color: "var(--nf-ink)", fontFamily: "inherit" }}>
-      <span style={{ width: 200, height: 256, borderRadius: "50%", padding: 6, background: ZLATY_RAM, boxSizing: "border-box", display: "block" }}>
+      <span style={{ position: "relative", width: 200, height: 256, borderRadius: "50%", padding: 6, background: ZLATY_RAM, boxSizing: "border-box", display: "block" }}>
+        {znacka}
         <span style={{ width: "100%", height: "100%", borderRadius: "50%", padding: foto ? 5 : 0, background: foto ? pal.bg : "transparent", boxSizing: "border-box", display: "block" }}>
           {foto ? <img src={foto} alt="" style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover", display: "block", filter: siva ? "grayscale(1)" : undefined }} />
             : <span style={{ width: "100%", height: "100%", borderRadius: "50%", background: pal.bg, color: pal.fg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: SERIF, outline: `1px solid ${pal.ac}`, outlineOffset: -12, textAlign: "center", padding: "0 22px", boxSizing: "border-box" }}>
