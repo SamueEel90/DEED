@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { PortalVp } from "./casti";
 import { PRUH } from "./charitaCasti";
+import { VIDEO_NAKUP } from "@/lib/ukazkoveVideo";
 
 const tlSpat: CSSProperties = { alignSelf: "flex-start", height: 44, padding: "0 14px 0 8px", border: "1px solid var(--cardBd)", borderRadius: 14, background: "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontSize: 14, fontWeight: 800, color: "var(--ink)", boxShadow: "none", fontFamily: "inherit" };
 function Spat({ onClick }: { onClick: () => void }) {
@@ -32,7 +33,7 @@ export function Citacka({ pc, nadpis, autor, foto, text, onBack }: { pc: boolean
 }
 
 /** náš prehrávač videa na celú šírku (zatiaľ zástupné video) */
-export function Prehravac({ pc, nadpis, autor, src = "/video/nakup.mp4", onBack }: { pc: boolean; nadpis: string; autor: string; src?: string; onBack: () => void }) {
+export function Prehravac({ pc, nadpis, autor, src = VIDEO_NAKUP, onBack }: { pc: boolean; nadpis: string; autor: string; src?: string; onBack: () => void }) {
   return (
     <Obrazovka pc={pc}>
       <Spat onClick={onBack} />
