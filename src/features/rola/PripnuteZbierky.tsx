@@ -6,8 +6,9 @@
 import { useEffect, useState } from "react";
 import { hladajZbierky, pripni, odopni, usePripnute, useCezStranku, type ZbierkaNaPripnutie } from "@/lib/pripnuteZbierky";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
+import { sumaEur } from "@/lib/suma";
 
-const eur = (n: number) => `${Math.round(n).toLocaleString("sk-SK")} €`;
+const eur = (n: number) => `${sumaEur(Math.round(n))}`;
 const bez = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 export const chipPripnutej = (z: Pick<ZbierkaNaPripnutie, "zdroj" | "kto" | "ukazkova">) => (z.ukazkova ? "UKÁŽKA · " : "") + (z.zdroj === "charita" ? `ZBIERKA CHARITY · ${z.kto.toUpperCase()}` : `HELP · ${z.kto.toUpperCase()}`);
 export const farbaPripnutej = (z: Pick<ZbierkaNaPripnutie, "zdroj">) => (z.zdroj === "charita" ? "#2F7A78" : "#8A6A1F");

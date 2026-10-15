@@ -15,6 +15,7 @@ import { Znacka } from "@/components/znacka";
 import { pridajDar } from "@/lib/darcovia";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import type { Kanal } from "@/types";
+import { sumaEur } from "@/lib/suma";
 
 const DAR_REF = "deed-platforma"; // spoločný kľúč darov pre platformu
 const vlastna: CSSProperties = { width: "100%", height: 46, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, background: C.surface2, color: C.text, fontWeight: 700, fontSize: 13.5, fontFamily: "inherit", cursor: "pointer" };
@@ -69,7 +70,7 @@ function PodporitDeedSheet({ toast, onClose }: { toast?: (m: string) => void; on
               border: `1px solid ${v === 100 ? tint("var(--a-green)", .5) : C.line}`, color: C.text,
             }}>
               <span style={{ fontSize: 16, fontWeight: 800, color: v === 100 ? "var(--a-green)" : C.text }}>{v}<span style={{ fontSize: 9, fontWeight: 700, color: C.textTer, marginLeft: 3 }}>DeeD</span></span>
-              <span style={{ fontSize: 10, fontWeight: 600, color: C.textTer, marginTop: 3 }}>≈ {(v * 0.01).toLocaleString("sk", { minimumFractionDigits: 2 })} €</span>
+              <span style={{ fontSize: 10, fontWeight: 600, color: C.textTer, marginTop: 3 }}>≈ {sumaEur((v * 0.01))}</span>
             </button>
           ))}
         </div>

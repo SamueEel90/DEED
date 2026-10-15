@@ -5,6 +5,7 @@ import { useDarcovia } from "@/lib/darcovia";
 import { StityRad } from "@/components/stit";
 import { stityOblastiSubjektu } from "@/lib/stityOblasti";
 import type { StitUroven } from "./Pole";
+import { sumaEur } from "@/lib/suma";
 
 export type TvorcaData = {
   id: string;
@@ -20,7 +21,7 @@ export type TvorcaData = {
   stit: StitUroven;
 };
 
-const eK = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })}\u00A0€`;
+const eK = (n: number) => `${sumaEur(n)}`;
 
 export function KamIdeDar({ nazovZbierky, fotoZbierky, tvorca, onStrankaTvorcu }: { nazovZbierky: string; fotoZbierky?: string; tvorca: TvorcaData; onStrankaTvorcu?: () => void }) {
   const [otv, setOtv] = useState(false);

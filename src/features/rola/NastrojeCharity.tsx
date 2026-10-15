@@ -22,9 +22,10 @@ import { zbierkyOrg } from "./obsah";
 import { SUBJEKTY } from "./mock";
 import { useVidea, ulozVidea, videiTentoMesiac, VIDEO_ORG_CFG, type VideoOrg } from "./videa";
 import { TIER_LABEL, nacitajCentralnu, nacitajViditelnost, ulozViditelnost, type Tier, type Viditelnost } from "./stav";
+import { sumaEur } from "@/lib/suma";
 
 const ZELENA = "var(--a-green)";
-const eur = (n: number) => `${n.toLocaleString("sk", { maximumFractionDigits: 2 })} €`;
+const eur = (n: number) => `${sumaEur(n)}`;
 const input: CSSProperties = { width: "100%", boxSizing: "border-box", background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, color: C.text, fontSize: 13, fontFamily: "inherit", outline: "none" };
 const btnHlavny: CSSProperties = { width: "100%", height: 46, borderRadius: RADIUS.sm, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 800, fontSize: 14, background: ZELENA, color: "#06281d" };
 const btnDruhy: CSSProperties = { width: "100%", height: 42, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, background: "transparent", color: C.textSec };

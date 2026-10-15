@@ -46,6 +46,7 @@ import { useDarcovia, sucetDarov, relCas, nastavCiste, SumyDarcovKontext, Sektor
 import { useZvoncekOkno, suhrnHlavnej, menaOkna, nadpisOkna, riadokOmse } from "@/lib/zvoncekOmse";
 import { nacitajZbierkyStranky, zbierkyStrankyZPamate, useZmenyZbierok, cielCislo, type SpustenaZbierka } from "@/lib/novaZbierka";
 import { useKalendar, kostolKal, omseDna, polozkyDna, druhPolozky, minuty, iso, dvt, nazovOmse, rozsahTyzdna } from "@/lib/kalendarFarnosti";
+import { sumaEur } from "@/lib/suma";
 import { prihovory, odkazyVidei, useZmenyPrihovoru, naZivo, onlineOmse, onlineVDen, type Prihovor } from "@/lib/prihovor";
 import { PrihovorVelky, StarsiePrihovory, OdkazyVidei, ZvukPas } from "./VypocujSi";
 import { odFarnikov, useOdFarnikov, useCerstveOdFarnikov, prepniVPolozke, vyprsal, pocetSus, type PolozkaFarnika, type PoleReakcie } from "@/lib/odFarnikov";
@@ -90,7 +91,7 @@ const DNW = ["pondelok", "utorok", "streda", "štvrtok", "piatok", "sobota", "ne
 const DNW_V = ["PONDELOK", "UTOROK", "STREDA", "ŠTVRTOK", "PIATOK", "SOBOTA", "NEDEĽA"];
 const ludi = (n: number) => `${n} ${n === 1 ? "človek" : n >= 2 && n <= 4 ? "ľudia" : "ľudí"}`;
 const fotiek = (n: number) => `${n} ${n === 1 ? "fotka" : n >= 2 && n <= 4 ? "fotky" : "fotiek"}`;
-const eur = (n: number) => `${Math.round(n).toLocaleString("sk-SK")} €`;
+const eur = (n: number) => `${sumaEur(Math.round(n))}`;
 const dd = (ms: number) => { const d = new Date(ms); return `${d.getDate()}. ${d.getMonth() + 1}.`; };
 const zIso = (s: string) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
 const terazMs = () => Date.now();

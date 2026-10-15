@@ -17,6 +17,7 @@ import { TESTOVACIA } from "@/lib/testovacia";
 import { useFakturyOrg, otvorFakturu, type FakturaOrg } from "@/lib/fakturyOrg";
 import { maNastavenie, citajNastavenie, zapisNastavenie, useZmenyNastaveni } from "@/lib/nastaveniaStranky";
 import { nacitajKryptoOrg, ulozKryptoOrg, nacitajSady, ulozSady, type Tier, type TypStranky, CENNIK_TYPU, TYP_NAZOV, TIER_LABEL, TIER_POPIS } from "./stav";
+import { sumaEur } from "@/lib/suma";
 
 // ---------- nastavenia v účte stránky (OPRAVY 88 · migrácia 0050) ----------
 // Oznámenia, EURC, údaje, súhlasy, správcovia, zariadenia… — jeden záznam na stránku, ukladá sa samo.
@@ -84,7 +85,7 @@ const stlpec: React.CSSProperties = { minWidth: 0, display: "flex", flexDirectio
 // 1 · Čo chcete dostávať
 // ============================================================
 type Nf = Record<string, boolean | number | string>;
-const eur = (n: number) => n.toLocaleString("sk-SK") + " €";
+const eur = (n: number) => sumaEur(n);
 /** farnost (OPRAVY 186): bez dokladov, navyše oznam od veriaceho, prihlásený na udalosť / brigádu, nový úmysel; bez ukážkového e-mailu */
 export function ObrOznamenia({ mobil, farnost }: { mobil: boolean; farnost?: boolean }) {
   const [nf, setNf] = usePamat<Nf>("nf", {});
@@ -447,7 +448,7 @@ const POR: [string, [string, ...string[]][]][] = [
   ["Dosah a pobočky", [["Dosah — štvrť, mesto, kraj", A, A, A, A], ["Pobočiek", "1", "5", "10", "bez limitu"], ["Prednosť vo vyhľadávaní", "", "", "", A]]],
   ["Iskra a prehľady", [["Komu sme pomohli — výsledky", A, A, A, A], ["Upútavky na zbierky v Iskre", "", "", A, A], ["Prehľad darcov a súm", A, A, A, A], ["Ročný výpis činnosti", A, A, A, A], ["Export pre granty", "", "", "", A]]],
 ];
-const f2 = (n: number) => n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 }) + " €";
+const f2 = (n: number) => sumaEur(n);
 /** KARTA 36: spolok — jedna cena (cenník charity, stĺpec Spolok) */
 const JEDNA_CENA: Partial<Record<TypStranky, { m: number; r: number; zlava: string; f: string[] } | null>> = {
   spolok: { m: 10, r: 100, zlava: "−16,7 %", f: ["Profil, karma a štít", "2 zbierky naraz: stála na členské + 1", "Členské ako stála zbierka, zoznam kto zaplatil", "Skupina členov — správca pozve, člen prijme pozvanie", "Členovia pridávajú sami: brigáda, fotky, oznam", "Oznamy a inzerát", "1 Iskra mesačne"] },
@@ -594,7 +595,7 @@ export function ObrFaktury({ mobil, tier, otvor }: { mobil: boolean; tier: Tier;
               <span style={{ fontSize: 15, fontWeight: 800, color: "var(--ink)" }}>FA {f.cislo}</span>
               <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{f.co} · {denFa(f.datum)}</span>
             </span>
-            <b style={{ fontSize: 15, color: "var(--ink)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{f.suma.toLocaleString("sk-SK")} €</b>{SIPKA}
+            <b style={{ fontSize: 15, color: "var(--ink)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{sumaEur(f.suma)}</b>{SIPKA}
           </button>))}
       </div> : <div style={{ ...krt, padding: 16, fontSize: 15, color: "var(--ink2)" }}>Zatiaľ žiadne faktúry.</div>}
       <span style={pozn}>{ud ? `Každá faktúra príde aj e-mailom na ${ud.email}. ` : "Chýbajú fakturačné údaje, bez nich platba nezačne. "}Faktúra je ku každej platbe DEED+: program, topovanie, predĺženie, doplnky. Dar faktúru nemá.</span>

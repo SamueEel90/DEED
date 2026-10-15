@@ -15,6 +15,7 @@ import type { KanalPlatby } from "./Sumy";
 import { PodakovaniePoDare } from "./AnimovaneKomponenty";
 import { hlaskaPoDare } from "./hlasky";
 import { milnikyPre } from "./KartaStavu";
+import { sumaEur } from "@/lib/suma";
 
 export type SposobEur = "karta" | "sepa";
 /** meno: čo darca vybral do zoznamu darcov (0084 ho zapíše k daru); bez mena = undefined */
@@ -32,8 +33,8 @@ const KLUC_TUK = "deed.platba.potvrditTuknutim";
 export const potvrditTuknutim = () => { try { return localStorage.getItem(KLUC_TUK) === "1"; } catch { return false; } };
 export const nastavPotvrditTuknutim = (v: boolean) => { try { localStorage.setItem(KLUC_TUK, v ? "1" : "0"); } catch { /* LS */ } };
 
-const e2 = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\u00A0€`;
-const eK = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })}\u00A0€`;
+const e2 = (n: number) => `${sumaEur(n)}`;
+const eK = (n: number) => `${sumaEur(n)}`;
 const jednotka = (k: KanalPlatby) => (k === "eur" ? "€" : k === "deed" ? "DeeD" : "EURC");
 const vSume = (n: number, k: KanalPlatby) => (k === "eur" ? eK(n) : `${n.toLocaleString("sk-SK", { maximumFractionDigits: 2 })} ${jednotka(k)}`);
 

@@ -61,6 +61,7 @@ import { centralnaZPamate, nacitajCentralnuZbierku, useZmenyCentralnej } from "@
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import type { OrgPole, StitUroven } from "@/features/zbierka/Pole";
 import type { ZbierkaData } from "@/features/zbierka/ZbierkaModul";
+import { sumaEur } from "@/lib/suma";
 import { useScrollEl } from "@/components/context";
 
 /*
@@ -100,7 +101,7 @@ function ziva<T extends { id: string; vyzbierane: number; darcovia: number }>(z:
 function PodporiliFirmy({ zbierkaId, onFirma }: { zbierkaId: string; /** číslo účtu firmy */ onFirma: (firma: string) => void }) {
   const podpory = usePodporyZbierky(zbierkaId);
   if (!podpory.length) return null;
-  const eur = (n: number) => `${n.toLocaleString("sk-SK", { maximumFractionDigits: 2 })} €`;
+  const eur = (n: number) => `${sumaEur(n)}`;
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: SPACE.xs, marginBottom: SPACE.sm }}>
       {podpory.map((x) => (
@@ -146,7 +147,7 @@ export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack
   const coverSrc = fotky.cover ?? s.cover;
   // „Všetko" — virtuálny tab navrchu (pred Kampane/Skutky/Talent…): zoskupí položky zo všetkých sekcií
   // len to, čo má entita v aktuálnom programe — ten istý výpočet ako prehľad v správe
-  const eurSk = (n: number) => `${n.toLocaleString("sk-SK", { maximumFractionDigits: 2 })} €`;
+  const eurSk = (n: number) => `${sumaEur(n)}`;
   const mojeTabyZaklad = verejneTaby(pozicia, tier).map((t) => (ts.prazdny ? { ...t, polozky: [] } : t));
   // Zbierky, ktoré si firma pripla tým, že na ne dala — bežiace sú „Podporujeme",
   // ukončené a stiahnuté spadnú do „Komu sme pomohli" (história ostáva navždy).
@@ -398,7 +399,7 @@ export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack
         <div {...pressable(() => setZbalenaCentralna(false), profilCentralnej.nazov)}
           style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, cursor: "pointer" }}>
           <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profilCentralnej.nazov}</div>
-          <span style={{ flex: "none", fontSize: 13, fontWeight: 800, color: "var(--a-green)" }}>{Math.round(sucetDarov(CENTRALNA_ID).suma).toLocaleString("sk")} €</span>
+          <span style={{ flex: "none", fontSize: 13, fontWeight: 800, color: "var(--a-green)" }}>{sumaEur(Math.round(sucetDarov(CENTRALNA_ID).suma))}</span>
         </div>
       ) : (
         <>
@@ -539,7 +540,7 @@ export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack
                       <span style={{ fontSize: 24, lineHeight: 1 }}>✓</span>
                       <div>
                         <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: ".03em" }}>ZBIERKA UKONČENÁ — CIEĽ SPLNENÝ</div>
-                        <div style={{ fontSize: 12.5, fontWeight: 600, opacity: .92 }}>{z.vyzbierane.toLocaleString("sk")} € od {z.darcovia} darcov{z.dokaz ? " · doložené dokladmi nižšie" : ""}</div>
+                        <div style={{ fontSize: 12.5, fontWeight: 600, opacity: .92 }}>{sumaEur(z.vyzbierane)} od {z.darcovia} darcov{z.dokaz ? " · doložené dokladmi nižšie" : ""}</div>
                       </div>
                     </div>
                     {z.dokaz && <DokazBlok dokaz={z.dokaz} vyzbierane={z.vyzbierane} />}
@@ -593,7 +594,7 @@ export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack
         <span style={{ flex: 1, height: 4, borderRadius: 3, background: "rgba(var(--glass-rgb),.12)", overflow: "hidden" }}>
           <span style={{ display: "block", height: "100%", width: `${Math.min(100, Math.round(z.vyzbierane / z.ciel * 100))}%`, background: z.stav === "ukoncena" ? "var(--a-info)" : "var(--a-green)" }} />
         </span>
-        <span style={{ flex: "none", fontSize: 10.5, fontWeight: 700, color: C.textTer }}>{z.vyzbierane.toLocaleString("sk")} / {z.ciel.toLocaleString("sk")} €</span>
+        <span style={{ flex: "none", fontSize: 10.5, fontWeight: 700, color: C.textTer }}>{sumaEur(z.vyzbierane)} / {sumaEur(z.ciel)}</span>
       </div>
     );
     if (p.video) return <div style={{ fontSize: 11, fontWeight: 700, color: C.textSec, marginTop: 3 }}>▶ video · {p.video.dlzka}</div>;

@@ -7,6 +7,7 @@ import { jePdf, otvorDoklad } from "@/lib/doklad";
 import type { Dokaz } from "@/lib/zbierky";
 import { jeVideo, useVideoUrl } from "@/lib/videoUloz";
 import type { CSSProperties } from "react";
+import { sumaEur } from "@/lib/suma";
 
 /** fotka alebo video dôkazu (video z úložiska „idb:…") */
 export function MediaNahlad({ src, popis, ovladanie, style }: { src: string; popis: string; ovladanie?: boolean; style?: CSSProperties }) {
@@ -16,7 +17,7 @@ export function MediaNahlad({ src, popis, ovladanie, style }: { src: string; pop
   return <video src={url} controls={ovladanie} muted={!ovladanie} playsInline preload="metadata" style={{ ...style, background: "#000" }} />;
 }
 
-const eur = (n: number) => n.toLocaleString("sk", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 }) + " €";
+const eur = (n: number) => sumaEur(n);
 
 export function DokazBlok({ dokaz, vyzbierane, odberatel = "Svetlo pomoci o.z." }: { dokaz: Dokaz; vyzbierane?: number; odberatel?: string }) {
   const [otvoreny, setOtvoreny] = useState<number | null>(null);

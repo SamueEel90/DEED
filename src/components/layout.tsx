@@ -15,6 +15,7 @@ import { Znacka } from "@/components/znacka";
 import { IkonaMenu, IkonaPlay, IkonaDoska, IkonaPlus, IkonaPin, IkonaSipDole, IkonaFajka } from "@/components/icons";
 import { Hmat } from "@/components/ui";
 import { Tip } from "@/components/tooltip";
+import { sumaEur } from "@/lib/suma";
 
 // ============================================================
 // SPOLOČNÉ UI KOMPONENTY (hlavička, výbery, modaly, toasty)
@@ -286,7 +287,7 @@ export function MoniBar({ vyzbierane = 0, ciel = 0, ludia, mini, zFirmy }: { vyz
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: mini ? 12 : 13 }}>
-        <span style={{ fontWeight: 600 }}>{vyzbierane.toLocaleString("sk")} € <span style={{ color: C.textTer, fontWeight: 400 }}>z {ciel.toLocaleString("sk")} €</span></span>
+        <span style={{ fontWeight: 600 }}>{sumaEur(vyzbierane)} <span style={{ color: C.textTer, fontWeight: 400 }}>z {sumaEur(ciel)}</span></span>
         <span style={{ color: C.textTer }}>{pct} %</span>
       </div>
       <div style={{ height: h, background: "rgba(var(--glass-rgb),.1)", borderRadius: 99, overflow: "hidden", marginTop: SPACE.xs }}>

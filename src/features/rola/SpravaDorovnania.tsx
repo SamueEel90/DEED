@@ -22,8 +22,9 @@ import { useUkazky, ukazkyTeraz } from "@/lib/testStav";
 import { RichTextInput } from "@/components/richtext";
 import { cistyText } from "@/lib/richtext";
 import { predvyplnOznam } from "./NovyOznam";
+import { sumaEur } from "@/lib/suma";
 
-const eur = (n: number) => `${(Math.round(n * 100) / 100).toLocaleString("sk-SK")} €`;
+const eur = (n: number) => `${sumaEur((Math.round(n * 100) / 100))}`;
 const den = (t: number) => { const d = new Date(t); return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`; };
 const denK = (t: number) => { const d = new Date(t); return `${d.getDate()}. ${d.getMonth() + 1}.`; };
 const ini = (f: string) => { const w = f.split(/\s+/).filter((x) => x && !/\./.test(x)); return (w.length > 1 ? w[0][0] + w[w.length - 1][0] : (w[0] ?? "?").slice(0, 2)).toUpperCase(); };
@@ -76,7 +77,7 @@ function statistika(d: Dorovnanie) {
   const max = Math.max(1, ...pred, ...pocas.map((p) => p.l + p.f)), H = 90, k = H / max;
   const stl = [...pred.map((v) => ({ hf: 0, hl: Math.max(2, Math.round(v * k)), lc: "var(--gBd)", rl: "3px 3px 0 0" })), ...pocas.map((p) => ({ hf: Math.round(p.f * k), hl: Math.round(p.l * k), lc: "var(--green)", rl: p.f ? "0" : "3px 3px 0 0" }))];
   const priem = (a: number[]) => a.reduce((x, y) => x + y, 0) / Math.max(1, a.length);
-  return { ludia, firma, stl, pred: `${Math.round(priem(pred)).toLocaleString("sk-SK")} €`, pocas: `${Math.round(priem(pocas.map((p) => p.l))).toLocaleString("sk-SK")} €` };
+  return { ludia, firma, stl, pred: `${sumaEur(Math.round(priem(pred)))}`, pocas: `${sumaEur(Math.round(priem(pocas.map((p) => p.l))))}` };
 }
 
 export function SpravaDorovnania({ entita, hlavnyUcet, mobil, toast, onZbierky, onOznamy, testCiele, nadpis = true }: {

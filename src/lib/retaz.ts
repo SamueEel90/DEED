@@ -10,6 +10,8 @@ import { supabase } from "./supabase";
 import { ZBIERKY, najdiZbierku } from "./zbierky";
 import { darcoviaPre, pridajDar } from "./darcovia";
 import { idZbierkyDB, objektZbierky } from "./darZbierky";
+import { najdiTestProfil } from "./testProfily";
+import { sumaEur } from "@/lib/suma";
 
 export const RETAZ_PCT_MIN = 5, RETAZ_PCT_KROK = 5;
 /** percento vždy 5–100 po 5 (27 → 25, 28 → 30) */
@@ -33,29 +35,68 @@ export interface Strana { druh: DruhStrany; meno: string; iniciala: string; foto
 export const inicialy = (meno: string) => meno.replace(/[^\p{L}\s]/gu, " ").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toLocaleUpperCase("sk-SK")).join("") || "?";
 
 /** zbierka, ako ju vidí tvorca pri výbere a v rade */
-export interface ZbierkaVRetazi { id: string; nazov: string; org: string; ciel: number | null; vyzbierane: number; aktivna: boolean; /** organizátor so štítom */ strana: Strana }
+export interface ZbierkaVRetazi { id: string; nazov: string; org: string; ciel: number | null; vyzbierane: number; aktivna: boolean; /** organizátor so štítom */ strana: Strana;
+  /** OPRAVY 295: titulná fotka (aj pri zbierke z feedu) */ foto?: string }
 
 /** zbierka mimo katalógu (napr. karta z feedu) — appka ju ohlási, keď z nej otvára reťaz */
-export type Znama = { nazov: string; org: string; ciel: number | null; zaklad: number; strana?: Strana };
+export type Znama = { nazov: string; org: string; ciel: number | null; zaklad: number; strana?: Strana; foto?: string };
 const ZNAME = new Map<string, Znama>();
 export const ohlasZbierku = (id: string, z: Znama) => { ZNAME.set(id, z); };
 
 export function zbierkaVRetazi(id: string): ZbierkaVRetazi | null {
+  const zDb = vyberDb?.get(id) ?? vyberDb?.get(idZbierkyDB(id) ?? "");
+  if (zDb) { const x = ZNAME.get(id); return x?.foto && !zDb.foto ? { ...zDb, foto: x.foto } : zDb; }
   const zive = darcoviaPre(id).reduce((a, r) => a + r.suma, 0);
   const z = najdiZbierku(id);
   if (!z) {
     const x = ZNAME.get(id);
-    return x ? { id, nazov: x.nazov, org: x.org, ciel: x.ciel, vyzbierane: x.zaklad + zive, aktivna: true,
+    return x ? { id, nazov: x.nazov, org: x.org, ciel: x.ciel, vyzbierane: x.zaklad + zive, aktivna: true, foto: x.foto,
       strana: x.strana ?? { druh: "charita", meno: x.org || x.nazov, iniciala: inicialy(x.org || x.nazov), stit: "Bronze" } } : null;
   }
   const zi = z.ziadatel, org = zi.typ === "org";
-  return { id, nazov: z.nazov, org: org ? zi.meno : `Pomoc · ${z.lok}`, ciel: z.ciel > 0 ? z.ciel : null, vyzbierane: z.vyzbierane + zive, aktivna: z.stav === "aktivna",
+  return { id, nazov: z.nazov, org: org ? zi.meno : `Pomoc · ${z.lok}`, ciel: z.ciel > 0 ? z.ciel : null, vyzbierane: z.vyzbierane + zive, aktivna: z.stav === "aktivna", foto: z.foto || undefined,
     strana: { druh: org ? "charita" : "help", meno: zi.meno, iniciala: inicialy(zi.meno), foto: zi.foto || undefined, mesto: zi.lok, overeny: zi.overeny, stit: zi.level } };
 }
-/** výber: len verejné bežiace zbierky (súkromnú len cez odkaz — nie tu) */
-export const verejneBeziace = (): ZbierkaVRetazi[] =>
-  [...ZBIERKY.filter((z) => z.stav === "aktivna").map((z) => z.id), ...ZNAME.keys()]
+/** výber: len verejné bežiace zbierky (súkromnú len cez odkaz — nie tu).
+ *  OPRAVY 295: so serverom len skutočné zbierky z databázy, ktoré do reťaze smú (0095) — ukážkové z katalógu nie. */
+export function verejneBeziace(): ZbierkaVRetazi[] {
+  if (supabase) {
+    if (!vyberDb) void nacitajVyber();
+    const db = [...(vyberDb?.values() ?? [])].filter((z) => !vyberMoje.has(z.id));
+    const otvorene = [...ZNAME.keys()].filter((id) => smieDoRetaze(id) && !db.some((z) => z.id === (idZbierkyDB(id) ?? id))).map(zbierkaVRetazi).filter((z): z is ZbierkaVRetazi => !!z);
+    return [...otvorene, ...db];
+  }
+  return [...ZBIERKY.filter((z) => z.stav === "aktivna").map((z) => z.id), ...ZNAME.keys()]
     .filter((id, i, a) => a.indexOf(id) === i).map(zbierkaVRetazi).filter((z): z is ZbierkaVRetazi => !!z);
+}
+/** smie zbierka do reťaze? so serverom len zbierka z databázy (zb-…) alebo zbierka stránky v module, nikdy zvončeková omša */
+export function smieDoRetaze(id: string): boolean {
+  if (!supabase) return !!zbierkaVRetazi(id)?.aktivna;
+  if (/-zv-/.test(id) || vyberMoje.has(idZbierkyDB(id) ?? id)) return false;
+  return /^zb-/.test(id) || !!vyberDb?.has(id) || !!objektZbierky(id);
+}
+// ---- OPRAVY 295: výber zo servera (0095) ----
+let vyberDb: Map<string, ZbierkaVRetazi> | null = null;
+const vyberMoje = new Set<string>();
+let vyberNacitava = false;
+type ZbierkaServera = { id: string; nazov: string; ciel: number | null; vyzbierane: number; stranka: string | null; typ: string | null; org: string; moja: boolean };
+async function nacitajVyber() {
+  if (!supabase || vyberNacitava) return;
+  vyberNacitava = true;
+  const { data, error } = await supabase.rpc("retaz_zbierky", { p_limit: 200 }).then((x) => x, () => ({ data: null, error: true }));
+  vyberNacitava = false;
+  if (error || !Array.isArray(data)) return;
+  const m = new Map<string, ZbierkaVRetazi>();
+  vyberMoje.clear();
+  for (const x of data as ZbierkaServera[]) {
+    if (x.moja) vyberMoje.add(x.id);
+    const tp = x.stranka ? najdiTestProfil(x.stranka) : undefined; // štít z profilu organizátora
+    const druh: DruhStrany = x.typ === "firma" || x.typ === "tvorca" || x.typ === "farnost" ? x.typ : x.typ ? "charita" : "help";
+    m.set(x.id, { id: x.id, nazov: x.nazov, org: x.org, ciel: x.ciel != null && Number(x.ciel) > 0 ? Number(x.ciel) : null, vyzbierane: Number(x.vyzbierane) || 0, aktivna: true,
+      strana: { druh, meno: tp?.meno ?? x.org, iniciala: tp?.iniciala ?? inicialy(x.org), mesto: typeof tp?.mesto === "string" ? tp.mesto : undefined, overeny: true, stit: tp?.stit ?? "Bronze" } });
+  }
+  vyberDb = m; zmena();
+}
 
 const KLUC = "deed.retaz.moja";
 let verzia = 0;
@@ -297,7 +338,7 @@ export function useDarcoviaCezQr(retaz: string, zbierkaId: string): { pocet: num
 }
 
 // ---- Testovanie (len v testovacom režime; testovacie dary sú v ledgeri označené, do ostrých súm nejdú) ----
-const e2 = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\u00A0€`;
+const e2 = (n: number) => `${sumaEur(n)}`;
 const vysledok = (r: Retaz | null) => {
   const b = r ? beziaca(r) : null;
   return b ? `Teraz beží ${zbierkaVRetazi(b.zbierkaId)?.nazov ?? "zbierka"} · ${b.pct} %` : "Rad skončil · ďalšie dary 100 % vám";

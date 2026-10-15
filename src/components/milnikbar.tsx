@@ -7,10 +7,11 @@
 import { C, SPACE, RADIUS } from "@/theme";
 import { tint } from "@/lib/ui";
 import { milniky, dolozeneMilniky, VLASTNA_ZBIERKA_CFG } from "@/features/rola/vlastneZbierky";
+import { sumaEur } from "@/lib/suma";
 
 const ZELENA = "var(--a-green)";
 const ORANZ = "var(--a-warn, #E0913A)";
-const eur = (n: number) => `${Math.round(n).toLocaleString("sk")} €`;
+const eur = (n: number) => `${sumaEur(Math.round(n))}`;
 
 export function MilnikBar({ vyzbierane, dolozene, ludia, krok = VLASTNA_ZBIERKA_CFG.milnik, mini = false, dobrovolne = false }: {
   vyzbierane: number;

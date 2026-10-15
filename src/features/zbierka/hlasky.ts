@@ -1,8 +1,9 @@
+import { sumaEur } from "@/lib/suma";
 // Hlášky po dare — vyberá sa JEDNA, prvá, ktorá platí. Bez výkričníkov, len reálne dáta.
 export type Zbierka = { vyzbierane: number; ciel?: number | null; pocetDarov: number; darovDnes: number; odkazPrijemcu?: { text: string; od: string } | null };
 export type Dar = { eur: number; dorovnanie: number; registrovany: boolean };
 
-const eur = (n: number) => Math.round(n).toLocaleString('sk-SK') + ' €';
+const eur = (n: number) => sumaEur(Math.round(n));
 const HRANICE = [100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000];
 
 export function hlaskaPoDare(z: Zbierka, d: Dar): string {

@@ -4,12 +4,13 @@ import { useState, type CSSProperties, type ReactNode, type RefObject } from "re
 import { MikrodarDlazdica } from "./AnimovaneKomponenty";
 import { pridajDar } from "@/lib/darcovia";
 import { KARTA_OD_EUR } from "./nastavenie";
+import { sumaEur } from "@/lib/suma";
 
 export type KanalPlatby = "eur" | "deed" | "eurc";
 /** otvorenie platobného okna (karta 07): so sumou → rovno krok Spôsob, bez sumy → krok Suma */
 export type OtvorPlatbu = (p: { kanal: KanalPlatby; suma?: number }) => void;
 
-const eurTxt = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })}\u00A0€`;
+const eurTxt = (n: number) => `${sumaEur(n)}`;
 const cislo = (n: number) => n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
 const EUR_FARBY: [string, string][] = [["var(--card)", "var(--cardBd)"], ["var(--t2)", "var(--t2Bd)"], ["var(--t3)", "var(--t3Bd)"]];
 

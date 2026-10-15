@@ -2,6 +2,7 @@
 // Ku každej platbe DEED+ jedna faktúra. Dar (dorovnanie) faktúru nemá.
 // Zatiaľ len v pamäti (žiadne úložisko prehliadača); ostrú faktúru vystaví a pošle e-mailom server — pozri Odkazy pre Samuela.
 import { useSyncExternalStore } from "react";
+import { sumaEur } from "@/lib/suma";
 
 export interface FakturaOrg {
   /** „2026/1043" — zobrazuje sa ako FA 2026/1043 */
@@ -43,7 +44,7 @@ export function bajty(t: string): number[] {
   return out;
 }
 export const esc = (b: number[]) => b.map((c) => (c === 40 || c === 41 || c === 92 ? `\\${String.fromCharCode(c)}` : c < 32 || c > 126 ? `\\${c.toString(8).padStart(3, "0")}` : String.fromCharCode(c))).join("");
-const euro = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })} €`;
+const euro = (n: number) => `${sumaEur(n)}`;
 const den = (iso: string) => { const d = new Date(iso); return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`; };
 
 export function fakturaPdf(f: FakturaOrg): Blob {

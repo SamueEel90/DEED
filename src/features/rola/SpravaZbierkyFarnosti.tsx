@@ -12,8 +12,9 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { kartaK, nadpisK, textK, useZmenaSum } from "./spravaCasti";
 import { VlastnePeniaze } from "./VlastnePeniaze";
 import { SumyPriDarcoch } from "./SumyPriDarcoch";
+import { sumaEur } from "@/lib/suma";
 
-const eur = (n: number) => `${n.toLocaleString("sk-SK")} €`;
+const eur = (n: number) => `${sumaEur(n)}`;
 const cis = (n: number) => n.toLocaleString("sk-SK");
 
 /** stav a štítok zbierky v zozname (AKTÍVNA · NEAKTÍVNA · ZRUŠENÁ; pri veriacich predpona druhu) */

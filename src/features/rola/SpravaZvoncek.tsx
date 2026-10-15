@@ -18,8 +18,9 @@ import { ZvoncekKarta } from "@/features/verejny-profil/NastenkaFarnosti";
 import { TextovePolia, GaleriaEditor } from "./obsahZbierky";
 import { SumyPriDarcoch } from "./SumyPriDarcoch";
 import { kartaK, nadpisK, drobneK, textK, Taby, UkladaSa, AkoDarovat } from "./spravaCasti";
+import { sumaEur } from "@/lib/suma";
 
-const eur = (n: number) => `${n.toLocaleString("sk-SK", { maximumFractionDigits: 2 })}\u00A0€`;
+const eur = (n: number) => `${sumaEur(n)}`;
 const ludi = (n: number) => `${n} ${n === 1 ? "človek" : n >= 2 && n <= 4 ? "ľudia" : "ľudí"}`;
 
 export function SpravaZvoncek({ strankaId, mobil, toast, onSpat }: { strankaId: string; mobil: boolean; toast: (m: string) => void; onSpat: () => void }) {

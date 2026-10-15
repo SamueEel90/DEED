@@ -1,5 +1,5 @@
 -- ============================================================
--- Test 0093 + 0094 — Reťaz dobra na serveri: zapečatenie, oznámenia, podiely v ledgeri na cent, posun radu, 100 % tvorcovi, stránky, Testovanie
+-- Test 0093 + 0094 + 0095 — Reťaz dobra na serveri: zapečatenie, oznámenia, podiely v ledgeri na cent, posun radu, 100 % tvorcovi, stránky, Testovanie
 -- Všetko beží v transakcii a na konci sa vráti (ROLLBACK). Každý riadok musí mať ok = t.
 -- ============================================================
 begin;
@@ -190,6 +190,16 @@ do $$ begin
 exception when others then insert into t values ('test cudzej retaze odmietne', sqlerrm like 'Táto reťaz nie je vaša%');
 end $$;
 reset role;
+
+-- ---- 0095: výber zbierok do reťaze ----
+set role authenticated;
+select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-0000000093c1', false);
+create temp table vy as select public.retaz_zbierky() as j;
+reset role;
+insert into t select 'vyber: aktivna zbierka charity je v zozname', (select j @> '[{"id":"t93-z6","org":"Charita A","moja":false}]'::jsonb from vy);
+insert into t select 'vyber: ukoncena nie', (select not (j @> '[{"id":"t93-z3"}]'::jsonb) from vy);
+insert into t select 'vyber: sektor farnosti ano', (select j @> '[{"id":"t93-far:oprava-strechy","typ":"farnost"}]'::jsonb from vy);
+insert into t select 'vyber: vlastna zbierka je moja', (select j @> '[{"id":"t93-zt","moja":true}]'::jsonb from vy);
 
 select ok, c from t order by ok, c;
 rollback;

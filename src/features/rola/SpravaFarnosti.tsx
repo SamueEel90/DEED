@@ -51,6 +51,7 @@ import { cistyNazov, nacitajProfil, profilZPamate, uplnostProfilu, type ProfilSt
 import { nacitajPiny, pinyZPamate, ulozPiny } from "@/lib/spravaPiny";
 import { useHromadnyVyber, TlacidloVyberu, ListaVyberu, PolickoVyberu, PasVyberu } from "@/components/HromadnyVyber";
 import { Volby } from "@/components/Volby";
+import { sumaEur } from "@/lib/suma";
 
 type Sub = "prehlad" | "zbierky" | "omse" | "oznamy" | "veriaci" | "ludia" | "filialky" | "penazenka" | "nastroje" | "profil" | "nast" | "hlavna" | "nahlad" | "zbierka" | "nova" | "n" | "zvoncek";
 /** sekcie, ktoré sa dajú pripnúť v Prehľade (najviac 6) */
@@ -70,7 +71,7 @@ const IC: Record<string, string> = {
 const TIT: Record<Sub, string> = { prehlad: "Prehľad", zbierky: "Zbierky", omse: "Omše a kalendár", oznamy: "Oznamy", veriaci: "Od veriacich", ludia: "Ľudia", filialky: "Kostoly a miesta", penazenka: "Peňaženka", nastroje: "Nástroje a štatistiky", profil: "Upraviť profil", nast: "Nastavenia", hlavna: "Hlavná zbierka", nahlad: "Náhľad profilu", zbierka: "Správa zbierky", nova: "Nová zbierka", n: "Nastavenia", zvoncek: "Zvončeková zbierka" };
 const Ik = ({ d, s = 20, c = "var(--acc)", w = 1.9, style }: { d: string; s?: number; c?: string; w?: number; style?: CSSProperties }) =>
   <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "none", ...style }}><path d={d} /></svg>;
-const eur = (n: number) => `${n.toLocaleString("sk-SK")} €`;
+const eur = (n: number) => `${sumaEur(n)}`;
 /** začiatok obdobia Prehľadu: Dnes · 7 dní · 30 dní · Rok (od 1. januára) */
 function zaciatokObdobia(ob: number): number {
   const t = new Date(); t.setHours(0, 0, 0, 0);

@@ -19,6 +19,7 @@ import { SADY_EUR, SADY_EURC, type SadaEur, type SadaEurc } from "@/lib/sadyDaro
 import { PravidelnaHarok } from "@/features/zbierka/PravidelnaHarok";
 import { jeNeregistrovany } from "@/lib/devDarca";
 import { AnoNie } from "@/components/AnoNie";
+import { sumaEur } from "@/lib/suma";
 
 export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) => void; onClose: () => void }) {
   const s = SUBJEKTY.charita;
@@ -87,7 +88,7 @@ export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) =
       } />
 
       <div style={{ fontSize: 11, color: C.textTer, margin: `${SPACE.xs}px 0 ${SPACE.sm}px`, lineHeight: 1.45 }}>
-        Centrálna zbierka nemá cieľovú sumu ani povinné dokladovanie — zbierate na svoj chod. Keď použitie doložíte (míľnik {VLASTNA_ZBIERKA_CFG.milnik.toLocaleString("sk")} €), darcovia to uvidia ako zelené „✓ doložené" a stúpne vám karma. Nič sa nevyčíta, keď nedoložíte.
+        Centrálna zbierka nemá cieľovú sumu ani povinné dokladovanie — zbierate na svoj chod. Keď použitie doložíte (míľnik {sumaEur(VLASTNA_ZBIERKA_CFG.milnik)}), darcovia to uvidia ako zelené „✓ doložené" a stúpne vám karma. Nič sa nevyčíta, keď nedoložíte.
       </div>
       {nadpis("PLATOBNÝ MODUL")}
       <div style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: SPACE.sm }}>

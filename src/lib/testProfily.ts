@@ -7,6 +7,7 @@ import { U } from "@/theme";
 import type { StitUroven } from "@/features/zbierka/Pole";
 import { menoBezMena } from "./darcovia";
 import { VIDEO_NAKUP } from "@/lib/ukazkoveVideo";
+import { sumaEur } from "@/lib/suma";
 
 export type Mesto = "Trenčín" | "Prešov" | "Bratislava";
 export const MESTA: Mesto[] = ["Trenčín", "Prešov", "Bratislava"];
@@ -663,7 +664,7 @@ export function vLokalite<T extends { mesto: Mesto }>(zoznam: T[], lok: Lokalita
 export const mestoTextu = (lok: Lokalita, domace: Mesto): Mesto => (lok === "Celé Slovensko" ? domace : lok);
 
 // ---- čísla ----
-export const eur = (n: number) => `${n.toLocaleString("sk-SK")} €`;
+export const eur = (n: number) => `${sumaEur(n)}`;
 export const pct = (vyzbierane: number, ciel?: number) => (ciel && ciel > 0 ? Math.min(100, Math.round((vyzbierane / ciel) * 100)) : 0);
 
 /** slovenský tvar podľa počtu: tvar(3, ["zbierka", "zbierky", "zbierok"]) → „3 zbierky" */

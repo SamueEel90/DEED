@@ -9,6 +9,7 @@ import { SpatTlacidlo } from "@/components/cesta";
 import { C, GRAD, GRAD_ZELENY, glassTmavy, SPACE, RADIUS, TYPE, FW, SHADOW } from "@/theme";
 import { tint } from "@/lib/ui";
 import { pressable } from "@/components/pressable";
+import { sumaEur } from "@/lib/suma";
 
 // ---- HMAT — neviditeľné zväčšenie dotykovej plochy malých ovládačov (WCAG 2.5.5 ≥44px) ----
 // Rodič MUSÍ mať position:relative; klik na rozšírenú plochu prebublá rodičovi.
@@ -115,7 +116,7 @@ export function ProgresBox({ suma, ciel, ludia, live = true }: { suma: number; c
   return (
     <div style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: `${SPACE.gutter}px ${SPACE.md}px` }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-        <div><span style={{ fontSize: 26, fontWeight: FW.bold }}>{Math.round(suma).toLocaleString("sk")} €</span> <span style={{ fontSize: 13, color: C.textTer }}>z {ciel.toLocaleString("sk")} €</span></div>
+        <div><span style={{ fontSize: 26, fontWeight: FW.bold }}>{sumaEur(Math.round(suma))}</span> <span style={{ fontSize: 13, color: C.textTer }}>z {sumaEur(ciel)}</span></div>
         <span style={{ fontSize: 16, fontWeight: FW.bold, color: C.greenL }}>{pct} %</span>
       </div>
       <div style={{ height: 9, background: "rgba(var(--glass-rgb),.1)", borderRadius: RADIUS.pill, overflow: "hidden", margin: `${SPACE.sm}px 0 ${SPACE.xs}px` }}>

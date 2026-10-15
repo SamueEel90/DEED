@@ -12,6 +12,7 @@ import { TESTOVACIA } from "@/lib/testovacia";
 import { DOK, PribehText, TestovaciPas } from "./casti";
 import { ModulPlatby } from "./ModulProfilu";
 import { PRUH } from "./charitaCasti";
+import { sumaEur } from "@/lib/suma";
 
 const PC = "(min-width: 1200px)";
 function usePc() {
@@ -19,7 +20,7 @@ function usePc() {
   useEffect(() => { const q = window.matchMedia(PC), f = () => setP(q.matches); q.addEventListener("change", f); return () => q.removeEventListener("change", f); }, []);
   return p;
 }
-const eurT = (n: number) => `${n.toLocaleString("sk-SK")} €`;
+const eurT = (n: number) => `${sumaEur(n)}`;
 const karta: CSSProperties = { background: "var(--card)", border: "1px solid var(--cardBd)" };
 
 /** onBack = prišiel z appky (Späť vráti, odkiaľ prišiel) · onTvorca = prišiel cez QR / odkaz („{tvorca} ›" otvorí profil tvorcu) */

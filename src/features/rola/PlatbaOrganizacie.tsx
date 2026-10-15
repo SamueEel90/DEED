@@ -6,8 +6,9 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { vystavFakturu, otvorFakturu, type FakturaOrg } from "@/lib/fakturyOrg";
 import { fakturacneUdaje } from "./NastaveniaCharity";
+import { sumaEur } from "@/lib/suma";
 
-const eur = (n: number) => `${n.toLocaleString("sk-SK")} €`;
+const eur = (n: number) => `${sumaEur(n)}`;
 const SPOSOBY: [string, string][] = [["Karta organizácie", "Visa •• 4521"], ["DeeD organizácie", "z peňaženky"]];
 
 export function PlatbaOrganizacie({ co, cena, onZaplatene, onZrus, onUdaje }: {

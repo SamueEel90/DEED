@@ -20,6 +20,7 @@ import { nacitajProfil, ulozProfil, sektorZbierkaId, VLASTNA_ZBIERKA_CFG, useZme
 import { zbierkyOrg } from "./obsah";
 import { SUBJEKTY, type OrgZbierka } from "./mock";
 import { KONFIG, TIER_LABEL, nacitajOrgExtra, ulozOrgExtra, nacitajLogo, type Tier } from "./stav";
+import { sumaEur } from "@/lib/suma";
 
 const ZELENA = "var(--a-green)";
 const karta: CSSProperties = { background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs };
@@ -215,7 +216,7 @@ function FormularSektora({ sektor, logo, toast, onUloz, onSpat }: {
       } />
 
       <div style={{ fontSize: 11.5, color: C.textSec, lineHeight: 1.5, background: tint(ZELENA, .08), border: `1px solid ${tint(ZELENA, .3)}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginTop: SPACE.sm }}>
-        Zbierka nemá cieľovú sumu — beží ďalej, kým ju neukončíš. Po každých {VLASTNA_ZBIERKA_CFG.milnik.toLocaleString("sk")} € doložíš použitie do {VLASTNA_ZBIERKA_CFG.dniNaDolozenie} dní.
+        Zbierka nemá cieľovú sumu — beží ďalej, kým ju neukončíš. Po každých {sumaEur(VLASTNA_ZBIERKA_CFG.milnik)} doložíš použitie do {VLASTNA_ZBIERKA_CFG.dniNaDolozenie} dní.
       </div>
 
       <button onClick={uloz} style={{ ...btnHlavny, marginTop: SPACE.sm }}>

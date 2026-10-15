@@ -11,6 +11,7 @@ import { spracujFotku } from "@/lib/obrazok";
 import { MAX_FOTIEK_ZB, VIDEO_S_ZB, RIADKY_ZB, ZNAKY_ZB, POPIS_FOTKY_MAX, type MediumZbierky } from "@/lib/novaZbierka";
 import { TlacidloGalerie, useZdrojFotiek, jeVerejnaFotka } from "@/components/VyberZGalerie";
 import { PRAVIDLA_ORG, PRAVIDLA_NADPIS, PRAVIDLA_UVOD } from "@/lib/pravidlaObsahu";
+import { sumaEur } from "@/lib/suma";
 
 // ---------- drobné UI ----------
 export const Ik = ({ d, s = 18, c = "currentColor", w = 2 }: { d: string; s?: number; c?: string; w?: number }) =>
@@ -27,7 +28,7 @@ export const vyber = (on: boolean): CSSProperties => ({ background: on ? "var(--
 export const panel: CSSProperties = { borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "20px 22px", display: "flex", flexDirection: "column", gap: 14 };
 export const pole: CSSProperties = { height: 52, padding: "0 16px", borderRadius: 14, background: "var(--field)", border: "1.5px solid var(--cardBd)", fontFamily: "inherit", fontSize: 16, fontWeight: 700, color: "var(--ink)", outline: "none", width: "100%", boxSizing: "border-box" };
 export const pozn: CSSProperties = { fontSize: 13, fontWeight: 600, lineHeight: 1.45, color: "var(--ink3)" };
-export const fmtEur = (n: number) => `${n.toLocaleString("sk-SK").replace(/\u00A0/g, " ")} €`;
+export const fmtEur = (n: number) => sumaEur(n); // OPRAVY 295: jedna funkcia pre celú appku
 export const fmtSek = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
 export const cis = (n: number) => String(n).replace(".", ",");
 // Zadanie 5 · 5.1: DOMParser = inertný dokument (innerHTML na živom dokumente spustí <img onerror> aj na odpojenom prvku)

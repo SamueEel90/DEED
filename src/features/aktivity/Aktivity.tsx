@@ -27,6 +27,7 @@ import { EVENTS, type AktItem } from "./mock";
 import { LS, load, save, obohatit, osoba, vytvorPost, nacitajPocty, podporAktivitu, UDALOST_UCET, type NovyPostSpec } from "./utils";
 import { otvorPridatSkutok } from "@/features/skutok/otvor";
 import type { Oblast } from "@/lib/mojeSkutky";
+import { sumaEur } from "@/lib/suma";
 
 /*
   ============================================================
@@ -495,7 +496,7 @@ export function DeedDetail({ it, support, votes, vote, toast, home, openPerson, 
 
         {isCase && (
           <div style={{ textAlign: "center", padding: SPACE.sm, background: A.surface2, border: `1px solid ${a.bd}`, borderRadius: RADIUS.sm, marginTop: SPACE.xs }}>
-            <b style={{ fontSize: 22, color: a.c }}>{it.raised.toLocaleString("sk")} €</b> <span style={{ color: A.txt2 }}>z {it.goal.toLocaleString("sk")} € ({pct}%)</span>
+            <b style={{ fontSize: 22, color: a.c }}>{sumaEur(it.raised)}</b> <span style={{ color: A.txt2 }}>z {sumaEur(it.goal)} ({pct}%)</span>
             <div style={{ height: 6, background: "rgba(var(--glass-rgb),.12)", borderRadius: 99, marginTop: SPACE.xs, overflow: "hidden" }}><div style={{ height: "100%", width: `${pct}%`, background: GRAD_ZELENY, borderRadius: 99, transition: "width .4s ease" }} /></div>
             <div style={{ fontSize: 10, color: A.gold, marginTop: SPACE.xs, fontWeight: 700 }}>{it.drr} % z tvojho daru ide Marekovi · overené</div>
             {it.supportCount > 0 && <div style={{ fontSize: 10.5, color: A.green, marginTop: SPACE.xs, fontWeight: 700 }}>✓ Ty si prispel(a) {it.supportCount}× · ďakujeme</div>}

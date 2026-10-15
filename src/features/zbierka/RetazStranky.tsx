@@ -12,8 +12,9 @@ import { usePodporaRetazou, useRetazTvorcu, useDarcoviaCezQr, testDar, testRad, 
   useZmenyRetaze, inicialy, type PodporaRetazou, type Strana, type ZbierkaTvorcu, type OznamOrganizatorovi } from "@/lib/retaz";
 import { otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
 import { ZnakStrany, StitStrany } from "./StranaZmluvy";
+import { sumaEur } from "@/lib/suma";
 
-const eur = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })}\u00A0€`;
+const eur = (n: number) => `${sumaEur(n)}`;
 const datum = (ms: number) => { const d = new Date(ms); return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`; };
 const nadpis: CSSProperties = { fontSize: 12, fontWeight: 800, letterSpacing: ".1em", color: "var(--ink3)" };
 /** pásiky reťaze — každý ďalší tvorca svetlejší */

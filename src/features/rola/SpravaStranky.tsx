@@ -48,6 +48,7 @@ import { nacitajPiny, ulozPiny, pinyZPamate, nacitajZbalenie, ulozZbalenie, zbal
 import { nastavStitSpravy } from "@/lib/stitAppky";
 import { ObrOznamenia, ObrEur, ObrEurc, ObrUcty, ObrSpravcovia, ObrUdaje, ObrProgram, ObrFaktury, ObrZariadenia, ObrSuhlasy, ObrStiahnut, ObrFaq, ObrPodpora, ObrZrusit, PROG, pocetSpravcov, pocetZariadeni, eurcText, eurText, HLAVNY_UCET } from "./NastaveniaCharity";
 import { TlacidloNastavenia, LogoKarty } from "./spravaCasti";
+import { sumaEur } from "@/lib/suma";
 import {
   FLAGS, KONFIG, nacitajTiery, ulozTiery, slovo, maPovolenie, vidnoPolozku, smieSkutokZaCharitu, type RolaStranky, odProgramu, PROGRAM_NAZOV, PIN_MAX,
   nacitajStitCharity, ulozStitCharity, nacitajCharituNovu, ulozCharituNovu,
@@ -229,7 +230,7 @@ const ZB_LIST: ZbRiadok[] = [
   { t: "Školské potreby", mesto: "Prešov", v: 450, c: 450, darcovia: 27, bg: "repeating-linear-gradient(135deg,var(--track) 0 12px,var(--btn) 12px 24px)", s: "skončila 25. 8.", konc: true, skoncila: "2026-08-25T18:00:00.000Z", overene: true },
 ];
 const RETAZ: [string, string, string, string][] = [["MK", "Martin K.", "pripojil sa k Strecha pre rodinu Horváthovú", "420 €"], ["ZŠ", "ZŠ Hodžova", "pripojila sa k Centrálnej zbierke", "160 €"], ["LS", "Lucia S.", "pripojila sa k Centrálnej zbierke", "60 €"]];
-const eur = (n: number) => n.toLocaleString("sk-SK") + " €";
+const eur = (n: number) => sumaEur(n);
 const dnes = () => { const s = new Intl.DateTimeFormat("sk-SK", { weekday: "long", day: "numeric", month: "long" }).format(new Date()); return s.charAt(0).toUpperCase() + s.slice(1); };
 
 // ---------- spoločné štýly ----------
@@ -1070,7 +1071,7 @@ function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit
     </>);
     return (<>
       <Sekcia id="cisla" nazov="Čísla" suhrn={`Vyzbierané ${vyz} ${obdTxt}`} akcia={cislaAkcia} zbal={zbal} prepni={prepniZbal}>{cisla}</Sekcia>
-      <Sekcia id="graf" nazov="Graf darov" suhrn={`${(nova ? 0 : GRAF_CIEL[obd]).toLocaleString("sk-SK")} € ${obdTxt}`} zbal={zbal} prepni={prepniZbal}>{grafEl}</Sekcia>
+      <Sekcia id="graf" nazov="Graf darov" suhrn={`${sumaEur((nova ? 0 : GRAF_CIEL[obd]))} ${obdTxt}`} zbal={zbal} prepni={prepniZbal}>{grafEl}</Sekcia>
       <Sekcia id="piny" nazov="Pripnuté" suhrn={pocet(pinyV.length, ["položka", "položky", "položiek"])} zbal={zbal} prepni={prepniZbal}>{pinBar}</Sekcia>
       {treba}{zbierky}
       {tablet ? <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 14, alignItems: "start" }}><div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{retazS}</div><div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{dorS}</div></div> : <>{retazS}{dorS}</>}
@@ -1156,7 +1157,7 @@ function grafData(ob: number, nova: boolean) {
 function GrafDarov({ obd, nova, mobil, onZavri }: { obd: number; nova: boolean; mobil: boolean; onZavri: () => void }) {
   const { A, B, krok, top, spolu } = grafData(obd, nova);
   const X = GRAF_X[obd], gap = obd === 2 ? 3 : mobil ? 6 : 10;
-  const fmt = (v: number) => `${Math.round(v).toLocaleString("sk-SK")} €`;
+  const fmt = (v: number) => `${sumaEur(Math.round(v))}`;
   const tip = (i: number) => `${X[i] || `${i + 1}.`} · ${fmt(A[i] + B[i])}${B[i] ? ` (z toho pravidelná ${fmt(B[i])})` : ""}`;
   const [aktiv, setAktiv] = useState<number | null>(null);
   return (

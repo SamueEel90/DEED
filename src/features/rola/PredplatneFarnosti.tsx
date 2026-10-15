@@ -12,9 +12,10 @@ import { vlastnePrispevky } from "@/features/viera/mock";
 import { kostolKal } from "@/lib/kalendarFarnosti";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
+import { sumaEur } from "@/lib/suma";
 
 const ZELENA = "#4B7A35", CERV = "#A34A2A";
-const eur = (n: number) => `${n.toLocaleString("sk-SK")} €`;
+const eur = (n: number) => `${sumaEur(n)}`;
 const teraz = () => Date.now();
 const kick: CSSProperties = { fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)", padding: "4px 2px 0" };
 const karta: CSSProperties = { borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)" };

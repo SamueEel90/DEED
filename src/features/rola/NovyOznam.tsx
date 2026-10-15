@@ -24,6 +24,7 @@ import {
   type OznamCharity, type DruhOznamu, type FormaOznamu, type Pozvanie, type Plagat, type ZbierkaPriAkcii,
 } from "@/lib/oznamyNove";
 import { sucetDarov, useZmenyDarov } from "@/lib/darcovia";
+import { sumaEur } from "@/lib/suma";
 
 const C = { rSoft: "#F2DDD5", rBd: "#D9A796", red: "#A34A2A", goldBg: "#F1E6C8", goldBd: "#D9C17E", gold: "#8A6A12" };
 const fmtD = (v?: string) => { if (!v) return ""; const [y, m, d] = v.split("-"); return `${+d}. ${+m}. ${y}`; };
@@ -51,7 +52,7 @@ const ucastText = (o: { pozvanie: Pozvanie; limit?: number }, prihlaseni = 0, zu
 // ============================================================
 // BOD 10 · „Pri akcii zbierame na" — karta zbierky s pruhom a Darovať (nie len text)
 // ============================================================
-const eur = (n: number) => `${Math.round(n).toLocaleString("sk-SK")} €`;
+const eur = (n: number) => `${sumaEur(Math.round(n))}`;
 const PRUHY_ZB = "repeating-linear-gradient(135deg,var(--track) 0 12px,var(--btn) 12px 24px)";
 function ZbierkaPriAkciiKarta({ z, onDarovat, zrusene }: { z: ZbierkaPriAkcii; onDarovat?: () => void; zrusene?: boolean }) {
   useZmenyDarov();

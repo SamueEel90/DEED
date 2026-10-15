@@ -3,7 +3,7 @@
 // len QR bežiacej dvojice tvorca + zbierka.
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { DeedQr } from "@/components/deedqr";
-import { ohlasZbierku, obnovRetaz, nacitajRetaz, pripravRetaz, zapecatRetaz, zrusRetaz, beziaca, verejneBeziace, zbierkaVRetazi, zaokruhliPct, useZmenyRetaze, type Retaz, type Strana, type StavVRetazi, type ZbierkaVRetazi } from "@/lib/retaz";
+import { ohlasZbierku, obnovRetaz, nacitajRetaz, pripravRetaz, zapecatRetaz, zrusRetaz, beziaca, verejneBeziace, smieDoRetaze, zbierkaVRetazi, zaokruhliPct, useZmenyRetaze, type Retaz, type Strana, type StavVRetazi, type ZbierkaVRetazi } from "@/lib/retaz";
 import { KartaStrany, ZnakStrany, StitStrany, useRobiRetaz } from "./StranaZmluvy";
 import { useMojeStranky } from "@/lib/mojeStranky";
 import { TESTOVACIA } from "@/lib/testovacia";
@@ -11,12 +11,13 @@ import { TestovanieRetaze } from "./RetazStranky";
 import { Harok } from "./Zdielat";
 import PodrzTlacidlo from "./PodrzTlacidlo";
 import { potvrditTuknutim } from "./Platba";
+import { sumaEur } from "@/lib/suma";
 
 type Krok = "nastavenie" | "vyber" | "zhrnutie" | "bezi";
 type VRade = { zbierkaId: string; pct: number };
 
-const eW = (n: number) => `${Math.round(n).toLocaleString("sk-SK")}\u00A0€`;
-const e2 = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\u00A0€`;
+const eW = (n: number) => `${sumaEur(Math.round(n))}`;
+const e2 = (n: number) => `${sumaEur(n)}`;
 const buzz = (p: number | number[]) => { try { navigator.vibrate?.(p); } catch { /* bez vibrácie */ } };
 const karta: CSSProperties = { borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)" };
 const nadpis: CSSProperties = { fontSize: 12, fontWeight: 700, letterSpacing: ".05em", color: "var(--ink3)" };
@@ -82,10 +83,10 @@ function PercentaRiadku({ pct, onPct }: { pct: number; onPct: (v: number) => voi
 const nadpisZmluvy: CSSProperties = { fontSize: 13.5, fontWeight: 800, color: "var(--gInk)" };
 const datum = (ms: number) => { const d = new Date(ms); return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`; };
 
-export function RetazDobraHarok({ zbierka, onClose }: { zbierka: { id: string; nazov: string; org?: string; ciel?: number | null; vyzbierane?: number; strana?: Strana }; onClose: () => void }) {
+export function RetazDobraHarok({ zbierka, onClose }: { zbierka: { id: string; nazov: string; org?: string; ciel?: number | null; vyzbierane?: number; strana?: Strana; /** OPRAVY 295: titulná fotka */ foto?: string }; onClose: () => void }) {
   const zbierkaId = zbierka.id;
   // zbierka, z ktorej sa reťaz otvára, je v rade prvá (aj keď nie je v katalógu)
-  useState(() => ohlasZbierku(zbierka.id, { nazov: zbierka.nazov, org: zbierka.org ?? "", ciel: zbierka.ciel ?? null, zaklad: zbierka.vyzbierane ?? 0, strana: zbierka.strana }));
+  useState(() => ohlasZbierku(zbierka.id, { nazov: zbierka.nazov, org: zbierka.org ?? "", ciel: zbierka.ciel ?? null, zaklad: zbierka.vyzbierane ?? 0, strana: zbierka.strana, foto: zbierka.foto }));
   useZmenyRetaze();
   const robiTeraz = useRobiRetaz();
   const { ako } = useMojeStranky();
@@ -94,8 +95,9 @@ export function RetazDobraHarok({ zbierka, onClose }: { zbierka: { id: string; n
   const robi = retaz?.robi ?? robiTeraz;
   const menoKratko = robi.meno;
   const [krok, setKrok] = useState<Krok>(() => (nacitajRetaz() ? "bezi" : "nastavenie"));
-  const [rad, setRad] = useState<VRade[]>(() => (zbierkaVRetazi(zbierkaId)?.aktivna ? [{ zbierkaId, pct: 25 }] : []));
-  const [otv, setOtv] = useState<string | null>(() => (zbierkaVRetazi(zbierkaId)?.aktivna ? zbierkaId : null));
+  // OPRAVY 295: so serverom len skutočná zbierka z databázy (ukážková z katalógu do radu nejde)
+  const [rad, setRad] = useState<VRade[]>(() => (smieDoRetaze(zbierkaId) ? [{ zbierkaId, pct: 25 }] : []));
+  const [otv, setOtv] = useState<string | null>(() => (smieDoRetaze(zbierkaId) ? zbierkaId : null));
   const [hladaj, setHladaj] = useState("");
   // OPRAVY 290 · balík 8 (A4): zlyhanie má tvár — pripravená reťaz (jedno id) sa po výpadku uloží raz
   const [chyst, setChyst] = useState<Retaz | null>(null);

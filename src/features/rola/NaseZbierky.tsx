@@ -28,9 +28,10 @@ import {
   bezi as beziDorovnanie, type Dorovnanie,
 } from "@/lib/dorovnanie";
 import { DorovnanieFirmyHarok } from "@/features/zbierka/DorovnanieFirmy";
+import { sumaEur } from "@/lib/suma";
 
 const ZLATA = "var(--a-gold)";
-const eur = (n: number) => `${n.toLocaleString("sk-SK", { maximumFractionDigits: 2 })} €`;
+const eur = (n: number) => `${sumaEur(n)}`;
 const datum = (ms: number) => new Date(ms).toLocaleDateString("sk-SK", { day: "numeric", month: "numeric", year: "numeric" });
 const karta: CSSProperties = {
   background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm,

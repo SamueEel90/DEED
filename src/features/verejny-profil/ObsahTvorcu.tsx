@@ -6,6 +6,7 @@ import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { PortalVp } from "./casti";
 import { PRUH } from "./charitaCasti";
 import { VIDEO_NAKUP } from "@/lib/ukazkoveVideo";
+import { sumaEur } from "@/lib/suma";
 
 const tlSpat: CSSProperties = { alignSelf: "flex-start", height: 44, padding: "0 14px 0 8px", border: "1px solid var(--cardBd)", borderRadius: 14, background: "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontSize: 14, fontWeight: 800, color: "var(--ink)", boxShadow: "none", fontFamily: "inherit" };
 function Spat({ onClick }: { onClick: () => void }) {
@@ -87,7 +88,7 @@ export function NakupPanel({ cena, drzText, onHotovo, onZrus }: { cena: number; 
     <div style={{ margin: "-4px 0 4px", padding: 14, borderRadius: "0 0 20px 20px", background: "var(--panel)", border: "1px solid var(--goldBd)", borderTop: "none", display: "flex", flexDirection: "column", gap: 10, color: "var(--ink)" }}>
       <span style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
         <b style={{ fontSize: 15 }}>Zaplatiť</b>
-        <b style={{ fontSize: 26, fontVariantNumeric: "tabular-nums" }}>{cena.toLocaleString("sk-SK")} €</b>
+        <b style={{ fontSize: 26, fontVariantNumeric: "tabular-nums" }}>{sumaEur(cena)}</b>
       </span>
       <div role="radiogroup" aria-label="Spôsob platby" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         {([["Apple Pay", "uložená karta"], ["DeeD", "z peňaženky"]] as const).map(([t, s], k) => {

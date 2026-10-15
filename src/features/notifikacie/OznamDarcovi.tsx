@@ -11,6 +11,7 @@ import { useDarcovia, sucetDarov } from "@/lib/darcovia";
 import { najdiZbierku, dokazZoStavu, ZBIERKY } from "@/lib/zbierky";
 import { nacitajStav, percentoDolozenia, type StavZbierky } from "@/lib/zbierkaSprava";
 import { DokazBlok } from "@/features/rola/DokazBlok";
+import { sumaEur } from "@/lib/suma";
 
 const ZELENA = "var(--a-green)";
 
@@ -57,7 +58,7 @@ export function OznamDarcoviSheet({ zbierkaId, typ, text, nahladStav, onClose }:
               Ďakujeme{menom ? `, ${menom},` : ""} za tvoj dar!
             </div>
             <div style={{ fontSize: 13.5, color: C.textSec, lineHeight: 1.5, marginTop: SPACE.xs }}>
-              Tvoj dar{mojaSuma > 0 ? ` ${mojaSuma.toLocaleString("sk")} €` : ""} pomohol. {org} doložila, na čo išli peniaze zo zbierky.
+              Tvoj dar{mojaSuma > 0 ? ` ${sumaEur(mojaSuma)}` : ""} pomohol. {org} doložila, na čo išli peniaze zo zbierky.
             </div>
             <span style={{ display: "inline-block", marginTop: SPACE.sm, fontSize: 13, fontWeight: 800, color: ZELENA, background: tint(ZELENA, .12), border: `1px solid ${tint(ZELENA, .35)}`, borderRadius: RADIUS.pill, padding: `${SPACE.xxs}px ${SPACE.sm}px` }}>
               ✓ Doložené {pct} % použitia

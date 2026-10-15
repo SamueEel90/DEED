@@ -40,9 +40,10 @@ import type { MediumZbierky } from "@/lib/novaZbierka";
 import type { FakturaOrg } from "@/lib/fakturyOrg";
 import { PlatbaOrganizacie, Zaplatene } from "./PlatbaOrganizacie";
 import { PribehEditor } from "./PribehEditor";
+import { sumaEur } from "@/lib/suma";
 
 const ZELENA = "var(--a-green)";
-const eur = (n: number) => `${n.toLocaleString("sk")} €`;
+const eur = (n: number) => `${sumaEur(n)}`;
 const datum = (iso: string) => (isNaN(Date.parse(iso)) ? iso : new Date(iso).toLocaleDateString("sk"));
 
 const input: CSSProperties = { width: "100%", boxSizing: "border-box", background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, color: C.text, fontSize: 13, fontFamily: "inherit", outline: "none" };

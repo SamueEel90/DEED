@@ -22,6 +22,7 @@ import { OblubeneBtn } from "@/components/oblubene";
 import { PodporitDeed } from "@/components/podporadeed";
 import { IkonaOpakovat, IkonaRetaz } from "@/components/icons";
 import type { Oblubeny } from "@/types";
+import { sumaEur } from "@/lib/suma";
 
 /** Voliteľný riadok pod platobným modulom (Pravidelná podpora / QR / Reťaz dobra). */
 export interface RiadokAkcie {
@@ -147,7 +148,7 @@ export function PlatobnyModul({
       <PodporaSekcia
         onShare={onShare} upvotes={upvotes} onUpvote={onUpvote} reakcia={reakcia}
         onPodpor={onPodpor} onKanal={onKanal} accent={accent} bezDaru={bezDaru}
-        zbalene={zbalene} komu={komu} krypto={krypto} kryptoOtvorene={kryptoOtvorene} sumyEur={sumyEur} sumyEurc={sumyEurc} bonus={bonus} poEurach={zbalene ? <>{pravidelnaEl}{dorovnanieEl}{oblubeneEl}</> : undefined} onDarEur={onDarEur ?? ((sm) => toast?.(`Ďakujeme za dar ${sm.toLocaleString("sk")} €`))}
+        zbalene={zbalene} komu={komu} krypto={krypto} kryptoOtvorene={kryptoOtvorene} sumyEur={sumyEur} sumyEurc={sumyEurc} bonus={bonus} poEurach={zbalene ? <>{pravidelnaEl}{dorovnanieEl}{oblubeneEl}</> : undefined} onDarEur={onDarEur ?? ((sm) => toast?.(`Ďakujeme za dar ${sumaEur(sm)}`))}
         onDarKrypto={onDarKrypto ?? ((v) => toast?.(`Ďakujeme za dar ${v.toLocaleString("sk", { minimumFractionDigits: 2 })} EURC`))}
         {...(supLabel ? { supLabel } : {})} />
 

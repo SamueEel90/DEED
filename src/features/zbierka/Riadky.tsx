@@ -9,8 +9,9 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { useDarcovia, identitaDarcu, relCas, DARCOVIA_CFG, useSektorDarcu, useUkazSumy, type DarRiadok } from "@/lib/darcovia";
 import { vycerpane, zostatok, type Dorovnanie } from "@/lib/dorovnanie";
 import type { Oblubeny } from "@/types";
+import { sumaEur } from "@/lib/suma";
 
-const eK = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })}\u00A0€`;
+const eK = (n: number) => `${sumaEur(n)}`;
 const riadkove: CSSProperties = { whiteSpace: "nowrap", minWidth: 0, height: 50, borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: "clamp(14px,4vw,15.5px)", fontWeight: 700, color: "var(--ink)", cursor: "pointer", fontFamily: "inherit" };
 const male: CSSProperties = { height: 44, borderRadius: 14, background: "transparent", border: "1px solid var(--cardBd)", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontSize: 14, fontWeight: 700, color: "var(--ink2)", cursor: "pointer", fontFamily: "inherit" };
 

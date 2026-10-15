@@ -30,6 +30,7 @@ import { DeedQr, stiahniDeedQr } from "@/components/deedqr";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import { kopiruj } from "@/lib/zdielanie";
 import { DarLet, useDarRad, darHlavne, darKam, type Dar, type PolohaLetu } from "./DarLet";
+import { sumaEur } from "@/lib/suma";
 
 const ZLATA = "#F6C453";
 /** čitateľnosť na svetlom videu: tieň pod všetkým bielym textom a číslami */
@@ -45,7 +46,7 @@ const IK = {
   zdielat: "M4 12v8h16v-8M16 6l-4-4-4 4M12 2v14",
   spat: "M15 18l-6-6 6-6", celaOn: "M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5", celaOff: "M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5", hraj: "M8 5l12 7-12 7z", plus: "M12 5v14M5 12h14", fajka: "M5 12l5 5 9-10", hore: "M6 15l6-6 6 6", dole: "M6 9l6 6 6-6",
 };
-const eur = (n: number) => `${n.toLocaleString("sk-SK", { maximumFractionDigits: 2 })} €`;
+const eur = (n: number) => `${sumaEur(n)}`;
 const cis = (n: number) => n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
 const polnoc = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
 /** meno v páse len so súhlasom (verzia identity), inak „anonymne"; suma len keď ju darca dovolil */

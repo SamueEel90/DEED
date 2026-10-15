@@ -19,7 +19,8 @@ import { PRUH, useVsetkyNaKonci, type PolCh } from "./charitaCasti";
 import { RetazNaStrankeTvorcu } from "@/features/zbierka/RetazStranky";
 import { najdiZbierku } from "@/lib/zbierky";
 import { darcoviaPre } from "@/lib/darcovia";
-import type { ZbierkaTvorcu } from "@/lib/retaz";
+import { zbierkaVRetazi, type ZbierkaTvorcu } from "@/lib/retaz";
+import { sumaEur } from "@/lib/suma";
 
 const PC = "(min-width: 1200px)";
 function usePc() {
@@ -28,7 +29,7 @@ function usePc() {
   return p;
 }
 const bgU = (u: string, poz = "center") => `url('${u}') ${poz}/cover no-repeat #3a3530`;
-const eurT = (n: number) => `${n.toLocaleString("sk-SK")} €`;
+const eurT = (n: number) => `${sumaEur(n)}`;
 const tlTmave: CSSProperties = { height: 44, border: "none", borderRadius: 14, background: "rgba(10,8,5,.5)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "none" };
 const tlBez: CSSProperties = { border: "none", padding: 0, background: "transparent", boxShadow: "none", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "inherit" };
 const karta: CSSProperties = { background: "var(--card)", border: "1px solid var(--cardBd)" };
@@ -145,7 +146,7 @@ export function StrankaTvorcu({ profil, onBack, onStream, onDetail, onZaznam }: 
   // balík 8 C · 7: Teraz podporujem reťazou (len bežiaca) · Ukončené v mojej reťazi (výsledok a darcovia cez môj QR)
   const naTestZbierku = (z: ZbierkaTvorcu, ukoncena: boolean): TestZbierka => {
     const k = najdiZbierku(z.zbierkaId);
-    return { id: z.zbierkaId, nazov: z.nazov, popis: k?.popis ?? "", mesto: profil.mesto, foto: k?.foto ?? "", vyzbierane: z.vyzbierane, ciel: z.ciel ?? undefined, ludia: darcoviaPre(z.zbierkaId).length,
+    return { id: z.zbierkaId, nazov: z.nazov, popis: k?.popis ?? "", mesto: profil.mesto, foto: k?.foto || zbierkaVRetazi(z.zbierkaId)?.foto || "", /* OPRAVY 295: tá istá titulná fotka ako pri bežiacej */ vyzbierane: z.vyzbierane, ciel: z.ciel ?? undefined, ludia: darcoviaPre(z.zbierkaId).length,
       stav: ukoncena ? "ukoncena" : z.ciel ? "bezi" : "dlhodoba", zodpoveda: z.org || undefined,
       ...(ukoncena && z.kedy ? { skoncila: new Date(z.kedy).toLocaleDateString("sk-SK") } : {}) };
   };

@@ -14,6 +14,7 @@ import { zapisCin } from "./vyzvy";
 import { zapisDarZbierky, idZbierkyDB, naviazObjekt, nacitajDaryZbierky, zdrojDaru, type ObjektZbierky } from "./darZbierky";
 import { toast } from "@/components/toast";
 import { ukazkyTeraz, naZmenuTestStavu } from "./testStav";
+import { sumaEur } from "@/lib/suma";
 
 // ---- CONFIG (spec §6) — všetky čísla ŠTARTOVACIE, žijú tu, nie v kóde ----
 export const DARCOVIA_CFG = {
@@ -321,10 +322,10 @@ export function identitaDarcu(r: DarRiadok, ja?: JaIdentita, sektor: SektorDarcu
 
 /** Suma na zobrazenie — alebo null (= len „daroval"). Prah žije v configu (AC#3). */
 export function zobrazenaSuma(r: DarRiadok): string | null {
-  if (r.firma) return `${r.suma.toLocaleString("sk-SK", { maximumFractionDigits: 2 })} €`;
+  if (r.firma) return `${sumaEur(r.suma)}`;
   if (!r.registrovany || !r.zobrazSumu) return null;
   if (r.suma < DARCOVIA_CFG.prahSumy) return null; // pod prahom NIKDY — žiadne dvojeurové výkriky
-  return `${r.suma.toLocaleString("sk", { maximumFractionDigits: 2 })} €`;
+  return `${sumaEur(r.suma)}`;
 }
 
 /** Relatívny čas riadku. */

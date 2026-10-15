@@ -7,8 +7,9 @@ import { Harok } from "./Zdielat";
 import { Svetlusik } from "./Svetlusik";
 import { NadpisSekcie } from "./Sumy";
 import { vibruj } from "./animacie";
+import { sumaEur } from "@/lib/suma";
 
-const eur2 = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\u00A0€`;
+const eur2 = (n: number) => `${sumaEur(n)}`;
 
 function Obsah({ registrovany, onHotovo }: { registrovany: boolean; onHotovo?: () => void }) {
   const ja = usePouzivatel();

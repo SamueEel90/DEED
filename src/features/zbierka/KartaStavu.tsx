@@ -7,6 +7,7 @@ import { ludiaPomohli } from "./hlasky";
 import { TempoDarov, type TempoRezim } from "./Tempo";
 import { PrispievateliaFarnosti, useUsekyOrganizacii, ZLATA_USEK, VLASTNE_USEK } from "./FarnostPrispela";
 import { PrispievateliaRetazou, useUsekyRetaze } from "./RetazStranky";
+import { sumaEur } from "@/lib/suma";
 
 // míľniky: počíta systém sám, nikto ich nenastavuje
 const MILNIKY = [100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000];
@@ -17,7 +18,7 @@ export function milnikyPre(suma: number): { dosiahnuty: number | null; dalsi: nu
   return { dosiahnuty: nad, dalsi: nad + 100000 };
 }
 
-const eur = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: n % 1 ? 2 : 0 })}\u00A0€`;
+const eur = (n: number) => `${sumaEur(n)}`;
 const dnesOd = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
 /** suma v zozname len keď ju darca povolil a je nad 2 € (≤ 2 € nikdy) */
 const sumaDaru = (r: DarRiadok) => (r.firma || (r.registrovany && r.zobrazSumu)) && r.suma > DARCOVIA_CFG.prahSumy ? eur(r.suma) : null;

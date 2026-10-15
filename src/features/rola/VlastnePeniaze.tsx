@@ -8,8 +8,9 @@ import { useState } from "react";
 import { useSomFarar, useVklady, vlozVlastne, potvrdVklad, type Vklad } from "@/lib/farnostPrispela";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { kartaK } from "./spravaCasti";
+import { sumaEur } from "@/lib/suma";
 
-const eur = (n: number) => `${n.toLocaleString("sk-SK", { maximumFractionDigits: 2 })} €`;
+const eur = (n: number) => `${sumaEur(n)}`;
 const iban = (s: string) => s.replace(/\s/g, "").replace(/(.{4})/g, "$1 ").trim();
 const vs = (s: string) => s.replace(/(\d{4})(?=\d)/g, "$1 ");
 const odKoho = (m: string) => m.replace(/^Farnosť /, "Farnosti ");

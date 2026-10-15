@@ -13,6 +13,7 @@ import { VolbaDarcovstva } from "@/components/zoznamdarcov";
 import { Svetlusik } from "@/components/svetlusik";
 import { nacitajPredvolbu, ulozPredvolbu, type VolbaDaru } from "@/lib/darcovia";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
+import { sumaEur } from "@/lib/suma";
 
 // OPRAVY 90: platba nikdy jedným ťuknutím — vždy „Podrž a zaplať" (okrem prístupnosti „Potvrdzovať ťuknutím")
 const potvrdTuknutim = () => { try { return localStorage.getItem("deed.platba.potvrditTuknutim") === "1"; } catch { return false; } };
@@ -66,10 +67,10 @@ function BonusPas({ bonus, suma }: { bonus?: BonusDaru; suma: number }) {
     <div style={{ background: "color-mix(in srgb, var(--a-gold) 13%, transparent)", border: "1px solid color-mix(in srgb, var(--a-gold) 45%, transparent)",
       borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.sm, lineHeight: 1.5 }}>
       <div style={{ fontSize: 14, fontWeight: 800 }}>
-        Tvojich {suma.toLocaleString("sk", { maximumFractionDigits: 2 })} € → zbierka dostane <span style={{ color: "var(--a-gold)" }}>{spolu.toLocaleString("sk", { maximumFractionDigits: 2 })} €</span>
+        Tvojich {sumaEur(suma)} → zbierka dostane <span style={{ color: "var(--a-gold)" }}>{sumaEur(spolu)}</span>
       </div>
       <div style={{ fontSize: 12, color: C.textSec, marginTop: 2 }}>
-        {bonus.firma} k tvojmu daru pridá {pridane.toLocaleString("sk", { maximumFractionDigits: 2 })} € zo svojej vyčlenenej sumy.
+        {bonus.firma} k tvojmu daru pridá {sumaEur(pridane)} zo svojej vyčlenenej sumy.
       </div>
     </div>
   );
@@ -122,7 +123,7 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
   const tipAplik = tip ? tipSuma : 0;
   const spolu = Math.round((sumaNum + poplatok + tipAplik) * 100) / 100;
   const malo = !jeEur && spolu > PLATBA_ZOSTATOK;
-  const tipLabel = jeEur ? `${tipSuma.toFixed(2)}\u00A0€` : `${tipSuma.toLocaleString("sk")} ${jed}`;
+  const tipLabel = jeEur ? sumaEur(tipSuma) : `${tipSuma.toLocaleString("sk")} ${jed}`;
 
   const inpS: CSSProperties = { width: "100%", padding: `${SPACE.sm}px ${SPACE.sm}px`, borderRadius: RADIUS.sm, background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, color: C.text, fontSize: 16, outline: "none", fontFamily: "inherit" };
   const btnP = (ok: boolean, grad = GRAD): CSSProperties => ({ width: "100%", padding: `${SPACE.sm}px 0`, borderRadius: RADIUS.md, border: "none", fontWeight: 700, fontSize: 15, cursor: ok ? "pointer" : "not-allowed", fontFamily: "inherit", background: ok ? grad : "rgba(var(--glass-rgb),.06)", color: ok ? "#fff" : C.textTer, boxShadow: ok ? "0 8px 26px color-mix(in srgb, var(--a-green) 32%, transparent)" : "none", marginTop: SPACE.gutter });
@@ -326,7 +327,7 @@ const psPill = (active?: boolean): CSSProperties => ({
   color: active ? "var(--a-danger)" : C.text,
 });
 // 1 DEED ≈ 0,01 € (ilustračne) — zobrazí sa pod hodnotou
-const eurZaDeed = (a: number) => (a * 0.01).toLocaleString("sk", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+const eurZaDeed = (a: number) => sumaEur((a * 0.01));
 // sumové chipy — čistá typografia (žiadne emoji); `top` = najčastejšia voľba zvýraznená akcentom
 const psSuma = (top: boolean, col = "var(--a-info)"): CSSProperties => ({
   position: "relative", flex: 1, minHeight: 58, borderRadius: RADIUS.md,
@@ -438,7 +439,7 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKana
                 <span style={{ fontSize: 17, fontWeight: 800, lineHeight: 1, fontVariantNumeric: "tabular-nums", color: i === 2 ? accent : C.text }}>
                   {v.toLocaleString("sk", { minimumFractionDigits: v < 1 ? 2 : 0 })}<span style={{ fontSize: 9, fontWeight: 700, color: C.textTer, marginLeft: 3, letterSpacing: ".04em" }}>EURC</span>
                 </span>
-                <span style={{ fontSize: 10, fontWeight: 600, color: C.textTer, marginTop: 4 }}>= {v.toLocaleString("sk", { minimumFractionDigits: 2 })} €</span>
+                <span style={{ fontSize: 10, fontWeight: 600, color: C.textTer, marginTop: 4 }}>= {sumaEur(v)}</span>
               </button>
             ))}
           </div>

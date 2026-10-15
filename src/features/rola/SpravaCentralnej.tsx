@@ -38,8 +38,9 @@ import { overIban, formatujIban } from "./segmenty";
 import { TextovePolia, GaleriaEditor } from "./obsahZbierky";
 import { DokladyCharity } from "./SpravaZbierky";
 import { kartaK, nadpisK, textK, drobneK, obrysK, zelenyK, ZAMOK, SpatZbierky, UkladaSa, DorovnaniePas, Taby, CislaKarta, AkoDarovat, QrKarta, Statistiky, type DataStatistik } from "./spravaCasti";
+import { sumaEur } from "@/lib/suma";
 
-const eur = (n: number) => `${n.toLocaleString("sk-SK")} €`;
+const eur = (n: number) => `${sumaEur(n)}`;
 const inic = (t: string) => t.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 const dnes = (iso: string) => { const d = new Date(iso); return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`; };
 

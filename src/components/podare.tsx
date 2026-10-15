@@ -21,9 +21,10 @@
 // ============================================================
 import { useEffect, useState, type CSSProperties } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
+import { sumaEur } from "@/lib/suma";
 
 const ZLATA = "var(--a-gold)";
-const eur = (n: number) => `${n.toLocaleString("sk-SK", { maximumFractionDigits: 2 })} €`;
+const eur = (n: number) => `${sumaEur(n)}`;
 
 export interface PoDareData {
   /** dar darcu */
@@ -157,8 +158,8 @@ export function PoDare({ d, onClose }: { d: PoDareData; onClose: () => void }) {
               transition: "width .8s cubic-bezier(.2,.7,.3,1), background .6s ease" }} />
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: SPACE.xs, fontSize: 11.5, color: C.textTer }}>
-            <span>{Math.round(pred + (faza < 2 ? 0 : faza === 2 ? d.suma : spolu)).toLocaleString("sk-SK")} €</span>
-            <span>z {ciel.toLocaleString("sk-SK")} €</span>
+            <span>{sumaEur(Math.round(pred + (faza < 2 ? 0 : faza === 2 ? d.suma : spolu)))}</span>
+            <span>z {sumaEur(ciel)}</span>
           </div>
         </div>
       )}

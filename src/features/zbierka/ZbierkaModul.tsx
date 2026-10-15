@@ -36,6 +36,7 @@ import type { TempoRezim } from "./Tempo";
 import type { StavKroku } from "@/lib/cesta";
 import "@/styles/platba.css";
 import "@/styles/animacie.css";
+import { sumaEur } from "@/lib/suma";
 
 export type ZbierkaData = {
   id: string; nazov: string; popis?: string;
@@ -216,7 +217,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
     if (p.kluc === "dorovnanie" && dorovnanie) return obal(<>
       <KartaDorovnava d={dorovnanie} />
       {dorovnanieKDaru(dorovnanie, 20) > 0 && <div style={{ margin: "-4px 0 12px", textAlign: "center", fontSize: 13.5, fontWeight: 700, color: "var(--gold)", fontVariantNumeric: "tabular-nums" }}>
-        daruješ 20 € → k príjemcovi ide {(20 + dorovnanieKDaru(dorovnanie, 20)).toLocaleString("sk-SK")} €</div>}
+        daruješ 20 € → k príjemcovi ide {sumaEur((20 + dorovnanieKDaru(dorovnanie, 20)))}</div>}
     </>);
     if (p.kluc === "pravidelna") return obal(<PravidelnaRiadok registrovany={registrovany} onClick={() => setHarok("pravidelna")} />);
     if (p.kluc === "oblubene") return obal(<Oblubene polozka={{ refId: zbierka.id, typ: "charita", modul: "charity", nazov: zbierka.nazov, ciel: zbierka.ciel }} />);
@@ -247,7 +248,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
     <SumyDarcovKontext.Provider value={sukromna ? false : sumyVonku}>
     <div ref={rootRef} className="deed-platba" style={{ position: "relative", minHeight: bocny ? undefined : "100%", background: bocny ? "transparent" : "var(--bg)", color: "var(--ink)", paddingBottom: bocny ? 0 : SPACE.lg }}>
       {TESTOVACIE_ZOSTAVENIE && <DevPanel dev={dev} setDev={setDev} miestoPevne={!!miestoProp} registrovany={registrovany} ico={ico}
-        cielInfo={realnyCiel ? undefined : `ukážkový ${DEV_CIEL.toLocaleString("sk-SK")}\u00A0€`} dorovnava={dorovnanie?.firma}
+        cielInfo={realnyCiel ? undefined : `ukážkový ${sumaEur(DEV_CIEL)}`} dorovnava={dorovnanie?.firma}
         onDar={(suma) => pridajDar({ refId: zbierka.id, suma, kanal: "psp", registrovany, cezTvorcu })} />}
 
 
@@ -271,7 +272,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
       {harok === "zdielat" && <ZdielatHarok id={zbierka.id} nazov={zbierka.nazov} organizacia={zbierka.organizacia?.meno}
         obrazok={zbierka.media?.find((m) => m.typ === "foto")?.src} onClose={() => setHarok(null)} />}
       {harok === "podporit" && <PodporitDeedHarok registrovany={registrovany} onClose={() => setHarok(null)} />}
-      {harok === "retaz" && <RetazDobraHarok zbierka={{ id: zbierka.id, nazov: zbierka.nazov, org: zbierka.organizacia?.meno, ciel, vyzbierane: zbierka.vyzbierane, strana: zbierka.organizacia ? { druh: "charita", meno: zbierka.organizacia.meno, iniciala: inicialy(zbierka.organizacia.meno), foto: zbierka.organizacia.obrazok, mesto: zbierka.organizacia.mesto, overeny: true, stit: zbierka.organizacia.stit } : undefined }} onClose={() => setHarok(null)} />}
+      {harok === "retaz" && <RetazDobraHarok zbierka={{ id: zbierka.id, nazov: zbierka.nazov, foto: zbierka.media?.find((m) => m.typ === "foto")?.src, org: zbierka.organizacia?.meno, ciel, vyzbierane: zbierka.vyzbierane, strana: zbierka.organizacia ? { druh: "charita", meno: zbierka.organizacia.meno, iniciala: inicialy(zbierka.organizacia.meno), foto: zbierka.organizacia.obrazok, mesto: zbierka.organizacia.mesto, overeny: true, stit: zbierka.organizacia.stit } : undefined }} onClose={() => setHarok(null)} />}
 
       {/* pripojené položky — vždy rovnaké poradie, odpojené chýbajú úplne */}
       {/* karta 15 — mobil: jeden stĺpec v pevnom poradí · PC (≥ 1024): vľavo obsah, vpravo modul 420 px (sticky) */}
@@ -331,7 +332,7 @@ function DevPanel({ dev, setDev, miestoPevne, registrovany, ico, cielInfo, onDar
           {riadok(`Zbierka má cieľ${cielInfo ? ` (${cielInfo})` : ""}`, dev.maCiel, (v) => setDev({ maCiel: v }))}
           <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: SPACE.xxs, padding: `${SPACE.xxs}px 0` }}>
             <span style={{ flex: 1, fontSize: 12, fontWeight: 700 }}>Simulovať dar</span>
-            {[3, 25, 150, 1000].map((s) => <span key={s} {...pressable(() => onDar(s), `Simulovať dar ${s}\u00A0€`)} style={chip(false)}>+{s.toLocaleString("sk-SK")} €</span>)}
+            {[3, 25, 150, 1000].map((s) => <span key={s} {...pressable(() => onDar(s), `Simulovať dar ${s}\u00A0€`)} style={chip(false)}>+{sumaEur(s)}</span>)}
           </div>
           <div style={{ padding: `${SPACE.xxs}px 0`, fontSize: 12, fontWeight: 700 }}>
             Dorovnanie firmy: {dorovnava ? <span style={{ color: "var(--a-gold)" }}>beží · {dorovnava}</span> : <span style={{ color: C.textTer }}>nebeží</span>}

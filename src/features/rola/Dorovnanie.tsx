@@ -11,9 +11,10 @@ import { FIRMY_ADRESAR } from "./mock";
 import { rovnakaFirma } from "@/lib/firma";
 import { Stit, naStitLevel } from "@/components/stit";
 import { vycerpane, zostatok, popisPomeru, platiPreMna, type Dorovnanie } from "@/lib/dorovnanie";
+import { sumaEur } from "@/lib/suma";
 
 const ZLATA = "var(--a-gold)";
-const eur = (n: number) => `${n.toLocaleString("sk-SK", { maximumFractionDigits: 2 })} €`;
+const eur = (n: number) => `${sumaEur(n)}`;
 const datum = (ms: number) => new Date(ms).toLocaleDateString("sk-SK", { day: "numeric", month: "numeric", year: "numeric" });
 
 /**
