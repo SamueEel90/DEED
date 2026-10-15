@@ -145,7 +145,9 @@ export interface NastenkaProps {
 }
 
 /** OPRAVY 205: položka Spomíname — parte (farár, veriaci) a k nemu zbierka rodiny */
-interface Spom { id: string; it?: VieraFeedItem; x?: PolozkaFarnika; zb?: SpustenaZbierka; obr: string; pal: Paleta; foto?: string;
+/** OPRAVY 302: na stránke (medailón) malá verzia fotky z editora (400 px), veľká ostáva na hárok a tlač */
+const malaFotka = (ed?: PayloadEditora | null): string | undefined => { const m = ed?.fotoMala; return typeof m === "string" && ziveObr(m) ? m : undefined; };
+interface Spom { id: string; it?: VieraFeedItem; x?: PolozkaFarnika; zb?: SpustenaZbierka; obr: string; pal: Paleta; foto?: string; /** OPRAVY 302: Čiernobielo z editora */ siva?: boolean;
   d: { meno: string; nar: string; umr: string; rd: string; rc: string; rm: string; head: string } }
 /** OPRAVY 205: položka Teš sa s nami */
 interface Tes { af?: AutorF; id: string; druh: "svadba" | "jubileum" | "blaho"; pal: Paleta; meno: string; datum: string; vek: string; nadpis: string; x?: PolozkaFarnika; zb?: SpustenaZbierka;
@@ -395,13 +397,13 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
     const sm = x.smutocny, ed = sm?.editor, P0 = (ed?.polia ?? {}) as Record<string, unknown>, pole = (k: string) => String(P0[k] ?? "").trim();
     const vlastne = !ed && !sm?.sablona && (sm?.mode === "image" || !!x.plagat);
     const pal = ed?.sablona && PARTE[ed.sablona] ? PARTE[ed.sablona] : vlastne ? BORDOVA : sm?.sablona ? PARTE[`${sm.sablona.u.zena ? "z" : "m"}${(sm.sablona.volba.v % 8) + 1}`] ?? PARTE.m4 : PARTE.m4;
-    return { id: x.id, it: x, zb: zbPreParte.get(x.id), obr: obrFar(x), pal, foto: ziveObr(sm?.foto ?? ed?.foto) ? (sm?.foto ?? ed?.foto)! : undefined,
+    return { id: x.id, it: x, zb: zbPreParte.get(x.id), obr: obrFar(x), pal, foto: malaFotka(ed) ?? (ziveObr(sm?.foto ?? ed?.foto) ? (sm?.foto ?? ed?.foto)! : undefined), siva: !!ed?.fotoCB,
       d: { meno: sm?.meno || pole("meno") || bezPredpony(x.nazov ?? ""), nar: sm?.datumNar || pole("nar"), umr: sm?.datumUmr || pole("umr"), rd: sm?.rozluckaDatum || pole("rd"), rc: sm?.rozluckaCas || pole("rc"), rm: sm?.rozluckaMiesto || pole("rm"), head: pal.head } };
   });
   const spomVer: Spom[] = OD.filter((x) => x.k === "parte" && parteZije(x.id, String((x.editor?.polia as Record<string, unknown> | undefined)?.rd ?? ""), x.cas)).map((x) => {
     const ed = x.editor, P0 = (ed?.polia ?? {}) as Record<string, unknown>, pole = (k: string) => String(P0[k] ?? "").trim();
     const pal = ed?.sablona && PARTE[ed.sablona] ? PARTE[ed.sablona] : ed ? PARTE.m4 : BORDOVA;
-    return { id: x.id, x, obr: obrVer(x), pal, foto: ziveObr(ed?.foto) ? ed!.foto! : undefined,
+    return { id: x.id, x, obr: obrVer(x), pal, foto: malaFotka(ed) ?? (ziveObr(ed?.foto) ? ed!.foto! : undefined), siva: !!ed?.fotoCB,
       d: { meno: pole("meno") || x.t, nar: pole("nar"), umr: pole("umr"), rd: pole("rd"), rc: pole("rc"), rm: pole("rm"), head: pal.head } };
   });
   const spomZb: Spom[] = zbPohreb.filter((z) => !spomFar.some((s) => s.zb?.id === z.id)).map((z) => {
@@ -804,7 +806,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   const kSpom = maSpom && sekcia("spom", "Spomíname", S.spom, <>
     <div style={{ display: "flex", flexDirection: "column", borderTop: "1px solid color-mix(in srgb,var(--nf-linka) 70%,transparent)" }}>
       {spomienky.map((sp) => { const n = sp.x ? pocetSus(sp.x) : (reakcieF(strankaId, sp.zb?.id ?? sp.id).sustrast ?? []).length; return (
-        <SpomZapis key={sp.id} oz={sp.id} foto={sp.foto} symbol={symbol} meno={sp.d.meno} roky={rokyParte(sp.d.nar, sp.d.umr)} rozlucka={[rozluckaT(sp.d.rd, sp.d.rc), sp.d.rm].filter(Boolean).join(" · ")} zbierka={!!sp.zb} sustrast={n} onTap={() => setParte(sp)} />); })}
+        <SpomZapis key={sp.id} oz={sp.id} foto={sp.foto} siva={sp.siva} symbol={symbol} meno={sp.d.meno} roky={rokyParte(sp.d.nar, sp.d.umr)} rozlucka={[rozluckaT(sp.d.rd, sp.d.rc), sp.d.rm].filter(Boolean).join(" · ")} zbierka={!!sp.zb} sustrast={n} onTap={() => setParte(sp)} />); })}
     </div>
   </>, { pozadie: "var(--nf-spom)" });
   // --- Od veriacich ---
@@ -1090,7 +1092,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   const mTes = <PasX pasRef={pasTes} gap={14}>{tesy.map((t) => tesKarta(t, { flex: "none", scrollSnapAlign: "start", width: mob && !mt ? "calc(100% - 2px)" : 210 }))}</PasX>; // OPRAVY 275: celý hárok na výšku
   const spomZoznam = (vo2: boolean) => zoznamY(pasSpom, spomienky.map((sp) => { const n = sp.x ? pocetSus(sp.x) : (reakcieF(strankaId, sp.zb?.id ?? sp.id).sustrast ?? []).length; return (
     <div key={sp.id} data-oz={sp.id} style={{ flex: "none", scrollSnapAlign: "start", padding: "0 16px", borderRadius: 20, background: KARTA }}>
-      <SpomZapis foto={sp.foto} symbol={symbol} meno={sp.d.meno} roky={rokyParte(sp.d.nar, sp.d.umr)} rozlucka={[rozluckaT(sp.d.rd, sp.d.rc), sp.d.rm].filter(Boolean).join(" · ")} zbierka={!!sp.zb} sustrast={n} onTap={() => setParte(sp)} />
+      <SpomZapis foto={sp.foto} siva={sp.siva} symbol={symbol} meno={sp.d.meno} roky={rokyParte(sp.d.nar, sp.d.umr)} rozlucka={[rozluckaT(sp.d.rd, sp.d.rc), sp.d.rm].filter(Boolean).join(" · ")} zbierka={!!sp.zb} sustrast={n} onTap={() => setParte(sp)} />
     </div>); }), vo2);
   const mVer = <div style={{ display: "grid", gridTemplateColumns: mt ? "repeat(2,minmax(0,1fr))" : "minmax(0,1fr)", gap: 14 }}>{oznVer.map((x) => (
     <div key={x.id} data-oz={x.id} style={{ padding: 20, borderRadius: 20, background: KARTA, display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
@@ -1562,7 +1564,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
       {/* ---------- Spomíname (OPRAVY 205: medailóny bez tlačidiel, ťuk = parte a zbierka rodiny) ---------- */}
       {maSpom && blokN("spom", "Spomíname", "Parte a spomienky. Ťuknite na medailón, otvorí sa parte a zbierka rodiny.", S.spom, <>
         <div style={{ flex: "999 1 520px", minWidth: 0, ...mriezkaTvarov }}>
-          {spomienky.map((sp) => <div key={sp.id} data-oz={sp.id} style={zmensi}><ParteMedailon pal={sp.pal} foto={sp.foto} symbol={symbol} meno={sp.d.meno}
+          {spomienky.map((sp) => <div key={sp.id} data-oz={sp.id} style={zmensi}><ParteMedailon pal={sp.pal} foto={sp.foto} siva={sp.siva} symbol={symbol} meno={sp.d.meno}
             roky={rokyParte(sp.d.nar, sp.d.umr)} rozlucka={rozluckaT(sp.d.rd, sp.d.rc)} zbierka={!!sp.zb} onTap={() => setParte(sp)} /></div>)}
         </div>
       </>, "var(--nf-spom)")}
@@ -1715,7 +1717,7 @@ function DetailParte({ sp, strankaId, symbol, orgMeno, sablona, vz, onOsoba, onZ
   const sirkaPlagatu = (cele: boolean) => { const w = sirkaRamu(cele); return Math.floor(Math.min(w, (w * 210 / 148) * 360 / (510 + qp))); };
   // OPRAVY 296: parte z Editora sa kreslí z návrhu s fotkou zo Storage (uložený obrázok mohol vzniknúť bez fotky); kým nie je fotka načítaná, hárok sa neukáže
   const navrhP = (sp.x?.editor ?? sp.it?.smutocny?.editor ?? null) as PayloadEditora | null;
-  const zNavrhu = useObrazokNavrhu(navrhP, `parte-${sp.id}`, false);
+  const zNavrhu = useObrazokNavrhu(navrhP, `parte-${sp.id}`, false, 1080);
   const obrP = zNavrhu || sp.obr;
   const parteEl = (vyrez: boolean, cele = false) => navrhP && zNavrhu === null
     ? <div style={{ width: "100%", height: "100%", minHeight: 240, display: "flex", alignItems: "center", justifyContent: "center", background: "#fff", color: "#5B5D53", fontSize: 15, fontWeight: 700 }}>Načítavam parte…</div>

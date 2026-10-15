@@ -34,7 +34,7 @@ export interface EditorApi {
 }
 export interface VysledokUlozenia { ok: boolean; uprava?: boolean; blok?: string; chyba?: string }
 type Vysledok = { ok: boolean; y?: number | null };
-type OknoEditora = Window & { initEditor?: (c: unknown) => void; edKrokSpat?: () => boolean; edNahlad?: (o?: { verejny?: boolean }) => Promise<string>;
+type OknoEditora = Window & { initEditor?: (c: unknown) => void; edKrokSpat?: () => boolean; edNahlad?: (o?: { verejny?: boolean; w?: number }) => Promise<string>;
   /** OPRAVY 258: rám na mobile */ edDalej?: () => Vysledok; edHotovo?: () => Vysledok; edNahladRam?: (on: boolean, w: number, h: number) => void; edUlozKoncept?: () => void;
   edAktivne?: () => HTMLElement | null; edNastavFotku?: (src: string) => void;
   /** OPRAVY 303: Kontrola — Podržte a zverejnite, upozorniť na nezaškrtnuté */ edZverejni?: () => Vysledok; edUkazKontrolu?: () => void;
@@ -178,8 +178,8 @@ export function useVerejnyObrazok(navrh: PayloadEditora | null | undefined, kluc
   return useObrazokNavrhu(navrh, kluc, true) || "";
 }
 /** null = ešte sa kreslí · "" = nepodarilo sa · inak obrázok (JPEG data URL) */
-export function useObrazokNavrhu(navrh: PayloadEditora | null | undefined, kluc: string, verejny: boolean): string | null {
-  const k = navrh ? `${kluc}|${navrh.cas ?? ""}|${verejny ? "v" : "c"}` : "";
+export function useObrazokNavrhu(navrh: PayloadEditora | null | undefined, kluc: string, verejny: boolean, /** OPRAVY 302: šírka obrázka */ w = 840): string | null {
+  const k = navrh ? `${kluc}|${navrh.cas ?? ""}|${verejny ? "v" : "c"}|${w}` : "";
   const [, obnov] = useState(0);
   useEffect(() => {
     if (!navrh || !k || verejne.has(k)) return;
@@ -189,10 +189,10 @@ export function useObrazokNavrhu(navrh: PayloadEditora | null | undefined, kluc:
     fr.style.cssText = "position:fixed;left:-10000px;top:0;width:900px;height:1200px;border:0;visibility:hidden;pointer-events:none";
     fr.src = `/editor/oznamenia.html#${navrh.typ}`;
     fr.onload = () => {
-      const w = fr.contentWindow as OknoEditora | null;
-      try { w?.initEditor?.({ typ: navrh.typ, navrh, onSend: () => undefined }); } catch { /* editor ešte nie je pripravený */ }
+      const okn = fr.contentWindow as OknoEditora | null;
+      try { okn?.initEditor?.({ typ: navrh.typ, navrh, onSend: () => undefined }); } catch { /* editor ešte nie je pripravený */ }
       window.setTimeout(async () => {
-        const o = await (async () => { try { return (await w?.edNahlad?.(verejny ? { verejny: true } : undefined)) ?? ""; } catch { return ""; } })();
+        const o = await (async () => { try { return (await okn?.edNahlad?.({ verejny, w })) ?? ""; } catch { return ""; } })();
         verejne.set(k, o);
         if (zivy) obnov((x) => x + 1);
         fr.remove();
@@ -200,6 +200,6 @@ export function useObrazokNavrhu(navrh: PayloadEditora | null | undefined, kluc:
     };
     document.body.appendChild(fr);
     return () => { zivy = false; fr.remove(); };
-  }, [navrh, k, verejny]);
+  }, [navrh, k, verejny, w]);
   return !k ? "" : verejne.has(k) ? verejne.get(k)! : null;
 }

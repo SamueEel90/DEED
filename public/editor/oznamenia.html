@@ -1315,7 +1315,15 @@ window.edKresli=async function(o){o=o||{};const W=o.w||420,H=Math.round(W*630/42
   g.drawImage(t,0,0)}
  return cv};
 /* obrázok hárku pre stránku */
-window.edNahlad=async function(o){try{const cv=await window.edKresli({verejny:!!(o&&o.verejny)});return cv.toDataURL("image/jpeg",.82)}catch(e){return""}};
+/* OPRAVY 302: hárok na stránku ostrý (840 px, detail parte 1 080 px) — nie 420 px, v ktorom bola fotka mäkká */
+window.edNahlad=async function(o){try{const cv=await window.edKresli({verejny:!!(o&&o.verejny),w:(o&&o.w)||840});return cv.toDataURL("image/jpeg",.85)}catch(e){return""}};
+/* OPRAVY 302: fotka ide do úložiska v tlačovej kvalite (dlhšia strana 1 600 px, JPEG 85 %); na stránku (medailón) zvlášť malá verzia 400 px */
+let _mala=null;
+function malaVerzia(){if(typeof st==="undefined"||!st.foto){_mala=null;return}if(_mala&&_mala.z===st.foto)return;const z=st.foto;_mala={z,u:null};
+ nacitaj(z).then(im=>{if(!_mala||_mala.z!==z)return;const M=400,k=Math.min(1,M/Math.max(im.naturalWidth,im.naturalHeight)),c=document.createElement("canvas");c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);
+  const g=c.getContext("2d");g.drawImage(im,0,0,c.width,c.height);try{_mala.u=c.toDataURL("image/jpeg",.82)}catch(e){}}).catch(()=>{})}
+const _rM=render;render=function(){const r=_rM.apply(this,arguments);try{malaVerzia()}catch(e){}return r};
+const _pl=payload;payload=function(){const o=_pl.apply(this,arguments);if(_mala&&_mala.u&&_mala.z===st.foto)o.fotoMala=_mala.u;return o};
 /* Stiahnuť obrázok 1080 × 1620 */
 $("btnPng").onclick=async()=>{try{if(typeof CFG.onUdalost==="function")CFG.onUdalost({akcia:"obrazok"})}catch(e){}const b=$("btnPng"),info=$("infoHotovo");info.hidden=true;b.textContent="Pripravujem…";
  try{const url=(await window.edKresli({w:1080})).toDataURL("image/png");

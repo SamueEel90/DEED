@@ -64,15 +64,16 @@ const ZLATY_RAM = "linear-gradient(160deg,#E3C77E,#A9822F 55%,#E3C77E)";
 export const symbolCirkvi = (kod: string) => (kod === "PC" ? "☦" : kod === "ÚZŽNO" ? "✡" : "✝");
 
 /** 1a · medailón Spomíname */
-export function ParteMedailon({ pal, foto, symbol, meno, roky, rozlucka, zbierka, onTap }: {
+export function ParteMedailon({ pal, foto, symbol, meno, roky, rozlucka, zbierka, onTap, siva }: {
   pal: Paleta; foto?: string; symbol: string; meno: string; roky: string; rozlucka: string; zbierka: boolean; onTap: () => void;
+  /** OPRAVY 302: v editore Čiernobielo — fotka aj v medailóne čiernobiela */ siva?: boolean;
 }) {
   return (
     <button type="button" onClick={onTap} aria-label={`${meno} · otvoriť parte${zbierka ? " a zbierku rodiny" : ""}`}
       style={{ width: 220, maxWidth: "100%", border: "none", background: "transparent", padding: 0, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, color: "var(--nf-ink)", fontFamily: "inherit" }}>
       <span style={{ width: 200, height: 256, borderRadius: "50%", padding: 6, background: ZLATY_RAM, boxSizing: "border-box", display: "block" }}>
         <span style={{ width: "100%", height: "100%", borderRadius: "50%", padding: foto ? 5 : 0, background: foto ? pal.bg : "transparent", boxSizing: "border-box", display: "block" }}>
-          {foto ? <img src={foto} alt="" style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover", display: "block" }} />
+          {foto ? <img src={foto} alt="" style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover", display: "block", filter: siva ? "grayscale(1)" : undefined }} />
             : <span style={{ width: "100%", height: "100%", borderRadius: "50%", background: pal.bg, color: pal.fg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: SERIF, outline: `1px solid ${pal.ac}`, outlineOffset: -12, textAlign: "center", padding: "0 22px", boxSizing: "border-box" }}>
               <span style={{ fontSize: 34, lineHeight: 1 }}>{symbol}</span><i style={{ fontSize: 16 }}>{pal.head || "Smútočné oznámenie"}</i>
             </span>}
