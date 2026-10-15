@@ -233,7 +233,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
   const vrch = miesto !== "podporitDeed" ? (
     <div className="zb-pol" style={{ padding: "4px 16px 0" }}>
       <Hlavicka cisloZbierky={zbierka.cislo != null ? cisloObjektu("Z", zbierka.id) : undefined} overena={zbierka.overena} onBack={onBack} spatNazov={spatNazov} onZavriet={onZavriet} onMoznosti={() => setMenu("menu")} />
-      <Galeria media={zbierka.media ?? []} />
+      <Galeria media={zbierka.media ?? []} nahlady />
       <NadpisText nazov={zbierka.nazov} text={zbierka.popis} otvoreny={st.text as boolean | undefined} onOtvoreny={(v) => zmenStav({ text: v })} />
     </div>
   ) : <PodporitDeedObsah registrovany={registrovany} />;

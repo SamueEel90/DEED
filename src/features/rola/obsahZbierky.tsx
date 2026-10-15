@@ -193,7 +193,7 @@ export function GaleriaEditor({ media, onMedia, ph, onVyrez, nadpis = "Galéria 
                 <Media m={m} />
                 {i === 0 && <span style={{ position: "absolute", left: 8, top: 8, height: 22, padding: "0 8px", borderRadius: 11, background: "var(--green)", color: "#fff", fontSize: 11.5, fontWeight: 800, letterSpacing: ".05em", display: "flex", alignItems: "center" }}>HLAVNÉ</span>}
                 {m.typ === "video" && <span style={{ position: "absolute", right: 8, top: 8, height: 22, padding: "0 8px", borderRadius: 11, background: "rgba(20,18,14,.7)", color: "#fff", fontSize: 11.5, fontWeight: 800, display: "flex", alignItems: "center" }}>VIDEO · {fmtSek(m.sek ?? 0)}</span>}
-                <span style={{ position: "absolute", left: 8, bottom: 8, width: 26, height: 26, borderRadius: "50%", background: "#fff", color: "var(--ink)", fontSize: 12.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{i + 1}</span>
+                <span style={{ position: "absolute", left: 8, bottom: 8, width: 26, height: 26, borderRadius: "50%", background: "#fff", color: "#1D211B", fontSize: 12.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{i + 1}</span>
               </span>
               {male[m.id] && <span style={{ fontSize: 12.5, fontWeight: 700, color: "#8A5A2B" }}>Fotka je malá, na PC môže byť rozmazaná.</span>}
               <input value={m.popis ?? ""} maxLength={POPIS_FOTKY_MAX} onChange={(e) => onMedia(media.map((x) => (x.id === m.id ? { ...x, popis: e.target.value.slice(0, POPIS_FOTKY_MAX) } : x)))}

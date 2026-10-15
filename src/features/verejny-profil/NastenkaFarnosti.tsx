@@ -305,7 +305,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   const brigadyF = useBrigady(strankaId); // KARTA 61 §2
   const detailZbierky = (z: SpustenaZbierka): ZbierkaData => ({
     id: z.id, nazov: z.nazov, popis: cistyText(z.popis), overena: true, ciel: cielCislo(z) || undefined, ...sadyZbierky(z),
-    media: z.media.filter((m) => ziveObr(m.src)).map((m) => (m.typ === "video" ? { typ: "video" as const, src: m.src } : { typ: "foto" as const, src: m.src })),
+    media: z.media.filter((m) => ziveObr(m.src)).map((m) => (m.typ === "video" ? { typ: "video" as const, src: m.src } : { typ: "foto" as const, src: m.src, popis: m.popis })),
     organizacia: orgPole,
   });
 
@@ -532,11 +532,11 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   </button>;
   // ---------- otvorenie zbierok (karta aj malý riadok) ----------
   const otvorHlavnu = () => { if (!hl) return; onDetail({ id: hlRef, nazov: nazovHlavnej(hl), popis: hlTxt, overena: true, organizacia: orgPole, ...sadyZbierky(hl),
-    media: hl.media.filter((m) => ziveObr(m.src)).map((m) => (m.typ === "video" ? { typ: "video" as const, src: m.src } : { typ: "foto" as const, src: m.src })) },
+    media: hl.media.filter((m) => ziveObr(m.src)).map((m) => (m.typ === "video" ? { typ: "video" as const, src: m.src } : { typ: "foto" as const, src: m.src, popis: m.popis })) },
   { typ: "hl", chip: "HLAVNÁ ZBIERKA", t: nazovHlavnej(hl), txt: celyText(hl.popis, hl.popis2), obr: hl.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src }); };
   const otvorZvoncek = (id: string) => {
     const t = `${nazovZvoncek(zvN)} · ${zvT}`, txt = cistyText(zvN.popis) || ZVONCEK_TEXT, foto = zvN.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src;
-    onDetail({ id, nazov: t, popis: txt, overena: true, organizacia: orgPole, ...sadyZbierky(zvN), media: zvN.media.filter((m) => ziveObr(m.src)).map((m) => (m.typ === "video" ? { typ: "video" as const, src: m.src } : { typ: "foto" as const, src: m.src })) },
+    onDetail({ id, nazov: t, popis: txt, overena: true, organizacia: orgPole, ...sadyZbierky(zvN), media: zvN.media.filter((m) => ziveObr(m.src)).map((m) => (m.typ === "video" ? { typ: "video" as const, src: m.src } : { typ: "foto" as const, src: m.src, popis: m.popis })) },
       { typ: "zv", chip: "ZVONČEKOVÁ ZBIERKA", t, txt: celyText(zvN.popis, zvN.popis2) || ZVONCEK_TEXT, obr: foto });
   };
   const otvorPin = (z: ZbierkaNaPripnutie) => onDetail({ id: z.id, nazov: z.nazov, popis: "", overena: true, ciel: z.ciel ?? undefined, media: [], organizacia: { ...orgPole, meno: z.kto, obrazok: undefined } },
@@ -2024,7 +2024,8 @@ function DarcoviaDetailu({ refId, n, ukoncena }: { refId: string; n: number; /**
 export interface DetailF { data: ZbierkaData; typ: "hl" | "zv" | "far" | "rodina" | "pin" | "ukon"; chip: string; t: string; txt: string; obr?: string; parte?: boolean; /** OPRAVY 187 */ pin?: ZbierkaNaPripnutie;
   /** OPRAVY 314 (C): ukončená zbierka s poďakovaním — bez platobného modulu */ dak?: PodakovanieZbierky }
 function DetailZbierky({ d, strankaId, onZavri }: { d: DetailF; strankaId: string; onZavri: () => void }) {
-  useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === "Escape") onZavri(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onZavri]);
+  const [galI, setGalI] = useState<number | null>(null); // OPRAVY 317: otvorený prehliadač fotiek (Esc zavrie len ten)
+  useEffect(() => { if (galI != null) return; const k = (e: KeyboardEvent) => { if (e.key === "Escape") onZavri(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onZavri, galI]);
   const rod = d.typ === "rodina", ram = d.pin ? farbaPripnutej(d.pin) : rod ? FIALOVA : TEAL, hc = rod ? FIALOVA : ZELENA;
   // OPRAVY 187: dar z detailu pripnutej zbierky nesie zdroj = táto farnosť
   useEffect(() => { if (!d.pin || d.pin.ukazkova) return; nastavZdrojDaru(d.data.id, strankaId); return () => nastavZdrojDaru(d.data.id, null); }, [d.pin, d.data.id, strankaId]);
@@ -2038,9 +2039,19 @@ function DetailZbierky({ d, strankaId, onZavri }: { d: DetailF; strankaId: strin
   const [fotoDak, setFotoDak] = useState<string | null>(null);
   const [viacDak, setViacDak] = useState(false);
   // OPRAVY 293: zbierky farnosti — malá fotka vedľa názvu (PC) / na šírku (mobil), ťuk = celá fotka, darcovia hneď pod zbierkou
-  const [celaFoto, setCelaFoto] = useState(false);
   const [viacTxt, setViacTxt] = useState(false);
   const novy = farska && !d.parte;
+  // OPRAVY 317: všetky fotky zbierky — titulná prvá, pri nej „1 / N“, ťuk = prehliadač fotiek (261), pod ňou náhľady (max 5, potom +N)
+  const galZb: MediumGalerie[] = [...(d.data.media ?? []).filter((m) => m.typ === "foto"), ...(d.data.media ?? []).filter((m) => m.typ === "video")];
+  const galT = Math.max(0, galZb.findIndex((m) => m.src === d.obr));
+  const nahlady = galZb.map((m, i) => ({ m, i })).filter((x) => x.i !== galT);
+  const radNahl = d.obr && nahlady.length > 0 && <div style={{ alignSelf: "stretch", display: "flex", gap: wide ? 8 : 6, padding: wide ? 0 : "12px 18px 0" }}>
+                {nahlady.slice(0, 5).map(({ m, i }) => <button key={i} type="button" onClick={() => setGalI(i)} aria-label={`Fotka ${i + 1} z ${galZb.length}${m.popis ? `: ${m.popis}` : ""}`} style={{ position: "relative", ...(wide ? { width: 72, height: 72, flex: "none" } : { flex: "1 1 0", minWidth: 0, maxWidth: 56, aspectRatio: "1" }), padding: 0, border: "none", borderRadius: 10, overflow: "hidden", background: "#2A2620", cursor: "zoom-in", boxShadow: "none" }}>
+                  {m.typ === "foto" ? <img src={m.src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                    : <span aria-hidden="true" style={{ position: "absolute", left: "50%", top: "50%", marginLeft: -5, marginTop: -8, width: 0, height: 0, borderLeft: "14px solid #fff", borderTop: "8px solid transparent", borderBottom: "8px solid transparent" }} />}
+                </button>)}
+                {nahlady.length > 5 && <button type="button" onClick={() => setGalI(nahlady[5].i)} aria-label={`Ďalšie fotky, ${nahlady.length - 5}`} style={{ ...(wide ? { width: 72, height: 72, flex: "none" } : { flex: "1 1 0", minWidth: 0, maxWidth: 56, aspectRatio: "1" }), padding: 0, border: `1.5px solid ${LINKA}`, borderRadius: 10, background: BG, color: INK, fontFamily: "inherit", fontSize: 17, fontWeight: 800, cursor: "pointer", boxShadow: "none" }}>+{nahlady.length - 5}</button>}
+              </div>;
   return createPortal(<SumyDarcovKontext.Provider value={d.typ === "rodina" ? false : farska ? sumyFar : null}>
     <div role="dialog" aria-modal="true" aria-label="Zbierka" style={{ position: "fixed", inset: 0, zIndex: 1000, background: "var(--c-bg)", overflowY: "auto", overscrollBehavior: "contain", padding: wide ? 16 : 12, boxSizing: "border-box", fontFamily: "'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif" }}>
       <div style={{ maxWidth: 1180, margin: "0 auto", paddingBottom: 24, display: "flex", flexDirection: "column", gap: 14 }}>
@@ -2048,11 +2059,14 @@ function DetailZbierky({ d, strankaId, onZavri }: { d: DetailF; strankaId: strin
         <div style={{ display: "flex", flexWrap: "wrap", gap: 20, alignItems: "flex-start" }}>
           <div style={{ ...PREMENNE, flex: "1.1 1 380px", minWidth: 0, maxWidth: ukonD ? 760 : undefined, margin: ukonD ? "0 auto" : undefined, position: wide ? "sticky" : "static", top: 0, display: "flex", flexDirection: "column", gap: 14 } as CSSProperties}>
             {novy ? <>
-              <div style={{ border: `2px solid ${ram}`, background: PAPIER, color: INK, borderRadius: 22, overflow: "hidden", display: "flex", flexDirection: wide ? "row" : "column", gap: wide ? 20 : 0, padding: wide ? 16 : 0, alignItems: "flex-start" }}>
-                {d.obr && <button type="button" onClick={() => setCelaFoto(true)} aria-label="Zväčšiť fotku" style={{ position: "relative", flex: "none", width: wide ? 240 : "100%", aspectRatio: wide ? "4 / 3" : "16 / 9", padding: 0, border: "none", borderRadius: wide ? 14 : 0, overflow: "hidden", background: BG, cursor: "zoom-in", boxShadow: "none" }}>
+              <div style={{ border: `2px solid ${ram}`, background: PAPIER, color: INK, borderRadius: 22, overflow: "hidden", display: "flex", flexDirection: "column", gap: wide ? 14 : 0, padding: wide ? 16 : 0 }}>
+              <div style={{ display: "flex", flexDirection: wide ? "row" : "column", gap: wide ? 20 : 0, alignItems: "flex-start" }}>
+                {d.obr && <button type="button" onClick={() => setGalI(galT)} aria-label={galZb.length > 1 ? `Fotky zbierky, ${galZb.length}` : "Zväčšiť fotku"} style={{ position: "relative", flex: "none", width: wide ? 240 : "100%", aspectRatio: wide ? "4 / 3" : "16 / 9", padding: 0, border: "none", borderRadius: wide ? 14 : 0, overflow: "hidden", background: BG, cursor: "zoom-in", boxShadow: "none" }}>
                   <img src={d.obr} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  {galZb.length > 1 && <span style={{ position: "absolute", left: 8, bottom: 8, height: 28, padding: "0 10px", borderRadius: 8, background: "rgba(10,8,5,.72)", color: "#fff", fontSize: 13.5, fontWeight: 800, display: "flex", alignItems: "center", fontVariantNumeric: "tabular-nums" }}>1 / {galZb.length}</span>}
                   {wide && <span style={{ position: "absolute", right: 8, bottom: 8, height: 28, padding: "0 10px", borderRadius: 8, background: "rgba(10,8,5,.72)", color: "#fff", fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", gap: 4 }}>⤢ zväčšiť</span>}
                 </button>}
+                {!wide && radNahl}
                 <div style={{ flex: 1, minWidth: 0, padding: wide ? "4px 4px 4px 0" : "16px 18px 18px", display: "flex", flexDirection: "column", gap: 8 }}>
                   <span style={kicker(ram)}>{d.chip}</span>
                   <b style={{ fontSize: wide ? 28 : 24, lineHeight: 1.15, letterSpacing: "-.02em" }}>{d.t}</b>
@@ -2063,6 +2077,8 @@ function DetailZbierky({ d, strankaId, onZavri }: { d: DetailF; strankaId: strin
                         <button type="button" onClick={() => setViacTxt(true)} style={{ minHeight: 44, padding: 0, border: "none", background: "transparent", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "var(--nf-gInk)", cursor: "pointer", boxShadow: "none" }}>viac ›</button>
                       </span>)}
                 </div>
+              </div>
+              {wide && radNahl}
               </div>
               {ukonD && d.dak && <>
                 <div style={{ padding: "14px 18px", borderRadius: 16, background: "var(--nf-gSoft)", border: "1.5px solid var(--nf-gBd)" }}>
@@ -2082,7 +2098,7 @@ function DetailZbierky({ d, strankaId, onZavri }: { d: DetailF; strankaId: strin
                 {fotoDak && <FotoCela src={fotoDak} onZavri={() => setFotoDak(null)} />}
               </>}
               <DarcoviaDetailu refId={d.data.id} n={wide ? 3 : 2} ukoncena={ukonD} />
-              {celaFoto && d.obr && <FotoCela src={d.obr} onZavri={() => setCelaFoto(false)} />}
+              {galI != null && <CelaGaleria media={galZb} start={galI} nadpis={d.t} onClose={() => setGalI(null)} />}
             </> : <div style={{ border: `3px solid ${ram}`, background: PAPIER, color: INK, display: "flex", flexDirection: "column", borderRadius: d.parte || rod ? 0 : 22, overflow: "hidden" }}>
               {d.obr && <img src={d.obr} alt="" style={{ width: "100%", maxHeight: "72vh", objectFit: "contain", display: "block", background: BG }} />}
               {d.parte && !d.obr ? <div style={{ padding: "32px 28px 24px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 10 }}>

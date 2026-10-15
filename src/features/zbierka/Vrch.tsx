@@ -72,13 +72,15 @@ function VideoNahlad({ src, onDlzka }: { src: string; onDlzka: (s: number) => vo
 }
 
 // ---------------- 2 · Galéria ----------------
-export function Galeria({ media, vyska: vyskaP, radius: radiusP, okraj, prekrytie, bezBodiek }: {
+export function Galeria({ media, vyska: vyskaP, radius: radiusP, okraj, prekrytie, bezBodiek, nahlady }: {
   media: Medium[];
   /** 5. 10. · galéria aj v náhľade „Posielaš do …" (iná výška, rám, bez okraja) */
   vyska?: number; radius?: number | string; okraj?: string;
   /** štítky nad fotkou (napr. „Posielaš do · …"), neklikateľné */
   prekrytie?: ReactNode;
   bezBodiek?: boolean;
+  /** OPRAVY 317: pod galériou rad malých náhľadov ďalších fotiek (max 5, potom +N), ťuk = prehliadač na tej fotke */
+  nahlady?: boolean;
 }) {
   const { wide, desktop } = useLayout();
   const ref = useRef<HTMLDivElement>(null);
@@ -130,6 +132,12 @@ export function Galeria({ media, vyska: vyskaP, radius: radiusP, okraj, prekryti
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
         </span>
       </div>
+      {nahlady && viac && <div style={{ display: "flex", gap: desktop ? 8 : 6, margin: wide ? "-6px 0 16px" : "-4px 0 14px" }}>
+        {media.slice(1, 6).map((m, j) => <button key={j} type="button" onClick={() => { setIndex(j + 1); setCela(true); }} aria-label={`Fotka ${j + 2} z ${media.length}${m.popis ? `: ${m.popis}` : ""}`} style={{ position: "relative", ...(desktop ? { width: 72, height: 72, flex: "none" } : { flex: "1 1 0", minWidth: 0, maxWidth: 56, aspectRatio: "1" }), padding: 0, border: "none", borderRadius: 10, overflow: "hidden", background: "#2A2620", cursor: "zoom-in", boxShadow: "none" }}>
+          {m.typ === "foto" ? <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: `url(${m.src}) center/cover no-repeat` }} /> : <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}><PlayKruh size={28} /></span>}
+        </button>)}
+        {media.length > 6 && <button type="button" onClick={() => { setIndex(6); setCela(true); }} aria-label={`Ďalšie fotky, ${media.length - 6}`} style={{ ...(desktop ? { width: 72, height: 72, flex: "none" } : { flex: "1 1 0", minWidth: 0, maxWidth: 56, aspectRatio: "1" }), padding: 0, border: "1.5px solid var(--cardBd)", borderRadius: 10, background: "var(--btn)", color: "var(--ink)", fontFamily: "inherit", fontSize: 17, fontWeight: 800, cursor: "pointer", boxShadow: "none" }}>+{media.length - 6}</button>}
+      </div>}
       {cela && <CelaGaleria media={media} start={index} onClose={(i) => { setCela(false); setIndex(i); const el = ref.current; if (el) el.scrollLeft = i * el.clientWidth; }} />}
     </>
   );

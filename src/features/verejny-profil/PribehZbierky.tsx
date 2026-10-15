@@ -35,14 +35,18 @@ export function PribehZbierky({ profil, z, p, spatText = "Späť do feedu", onBa
   const meno = profil.meno.replace(/\s+o\.\s?z\.$/i, "");
   const stitok = (t: string, s: CSSProperties) => <span style={{ height: pc ? 30 : 26, padding: `0 ${pc ? 12 : 10}px`, borderRadius: 9, fontSize: pc ? 12.5 : 11.5, fontWeight: 800, letterSpacing: ".06em", display: "flex", alignItems: "center", whiteSpace: "nowrap", color: "#fff", ...s }}>{t}</span>;
 
+  const fotoT = p.media.filter((m) => m.typ === "foto");
   const titulka = (
     <div style={{ position: "relative", height: pc ? 520 : 440, background: bgF(p.media.find((m) => m.typ === "foto")?.src ?? z.foto) }}>
       <span style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(10,8,5,.45) 0%,rgba(10,8,5,0) 30%,rgba(10,8,5,.92) 100%)" }} />
+      {/* OPRAVY 317: ťuk na titulnú fotku = prehliadač fotiek, pri nej „1 / N“ */}
+      {fotoT.length > 0 && <button type="button" onClick={() => setCela(0)} aria-label={fotoT.length > 1 ? `Fotky zbierky, ${fotoT.length}` : "Zväčšiť fotku"} style={{ position: "absolute", inset: 0, border: "none", padding: 0, background: "transparent", cursor: "zoom-in", boxShadow: "none" }} />}
+      {fotoT.length > 1 && <span style={{ position: "absolute", right: pc ? 48 : 16, top: pc ? 84 : 72, height: 28, padding: "0 10px", borderRadius: 8, background: "rgba(10,8,5,.72)", color: "#fff", fontSize: 13.5, fontWeight: 800, display: "flex", alignItems: "center", fontVariantNumeric: "tabular-nums", pointerEvents: "none" }}>1 / {fotoT.length}</span>}
       <div style={{ position: "absolute", left: pc ? 48 : 16, right: pc ? 48 : 16, top: pc ? 22 : "max(16px, env(safe-area-inset-top))", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
         <button type="button" onClick={onBack} style={tlTm}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>{pc ? spatText : "Späť"}</button>
         {onOrg && <button type="button" onClick={onOrg} style={{ ...tlTm, padding: "0 14px 0 8px" }}>{pc && <span style={{ width: 26, height: 26, borderRadius: 7, background: "#fff", color: "#3F6E2A", fontSize: 10.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{profil.iniciala}</span>}{meno} ›</button>}
       </div>
-      <div style={{ position: "absolute", left: pc ? 48 : 16, right: pc ? 48 : 16, bottom: pc ? 40 : 20, display: "flex", flexDirection: "column", gap: pc ? 14 : 10 }}>
+      <div style={{ position: "absolute", left: pc ? 48 : 16, right: pc ? 48 : 16, bottom: pc ? 40 : 20, display: "flex", flexDirection: "column", gap: pc ? 14 : 10, pointerEvents: "none" }}>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {stitok("ZBIERKA", { background: druhF("zbierka") })}
           {pc && st && stitok(st, { background: "var(--dr-stav)" })}
