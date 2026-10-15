@@ -100,8 +100,8 @@ export function ModulProfilu({ profil, sektor, poradie, mestoV, onZbal, dorovnan
 export function ModulPlatby(p: { profil: TestProfil; sektor: TestSektor; mestoV?: string; dorovnanie?: boolean; uvidisOdkaz?: { text: string; onClick?: () => void }; nazov?: string;
   /** OPRAVY 189: kto volí sumy („farnosť"), predvolene charita */ ktoVoli?: string;
   /** OPRAVY 189: zvončeková zbierka — dar nejde ako hlavná ani sektorová zbierka stránky (nemá riadok v ledgeri) */ bezObjektu?: boolean;
-  /** OPRAVY 189: rýchle sumy € a EURC podľa sady zbierky (lib/sadyDarov) */ sumy?: number[]; sumyE?: number[]; bezEurc?: boolean; /** OPRAVY 189: cieľ zbierky (suma z cieľa + %) */ ciel?: number }) {
-  return <Modul profil={p.profil} sektor={p.sektor} mestoV={p.mestoV ?? ""} sDorovnanim={p.dorovnanie ?? true} uvidisOdkaz={p.uvidisOdkaz} nazovPlatby={p.nazov} ktoVoli={p.ktoVoli} bezObjektu={p.bezObjektu} sumy={p.sumy} sumyE={p.sumyE} bezEurc={p.bezEurc} ciel={p.ciel} />;
+  /** OPRAVY 189: rýchle sumy € a EURC podľa sady zbierky (lib/sadyDarov) */ sumy?: number[]; sumyE?: number[]; bezEurc?: boolean; /** OPRAVY 189: cieľ zbierky (suma z cieľa + %) */ ciel?: number; /** OPRAVY 293: darcovia sú v detaile pod zbierkou */ bezDarcov?: boolean }) {
+  return <Modul profil={p.profil} sektor={p.sektor} mestoV={p.mestoV ?? ""} sDorovnanim={p.dorovnanie ?? true} uvidisOdkaz={p.uvidisOdkaz} nazovPlatby={p.nazov} ktoVoli={p.ktoVoli} bezObjektu={p.bezObjektu} sumy={p.sumy} sumyE={p.sumyE} bezEurc={p.bezEurc} ciel={p.ciel} bezDarcov={p.bezDarcov} />;
 }
 
 function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, ktoVoli = "charita", bezObjektu, sumy = [10, 25, 45], sumyE, bezEurc, ciel = null, bezDarcov }: { profil: TestProfil; sektor: TestSektor; mestoV: string; sDorovnanim: boolean; uvidisOdkaz?: { text: string; onClick?: () => void }; nazovPlatby?: string; ktoVoli?: string; bezObjektu?: boolean; sumy?: number[]; sumyE?: number[]; bezEurc?: boolean; ciel?: number | null;
