@@ -323,12 +323,13 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
 
   // ---------- zdroje oznamov ----------
   const OZ = vlastnePrispevky(strankaId);
-  const OD = odFarnikov(strankaId).filter((x) => x.k !== "umysel" && naStranke(x) /* OPRAVY 310: čakajúce na schválenie nie */ && !vyprsal(x, terazMs()) && !(x.k === "udalost" && x.f?.datum && x.f.datum < vc));
+  // OPRAVY 310/315: čakajúce na schválenie vidí len autor, so štítkom Čaká na schválenie; zamietnuté nikto
+  const OD = odFarnikov(strankaId).filter((x) => x.k !== "umysel" && (naStranke(x) || (x.stav === "caka" && !!x.autor && x.autor === klucJa(ja))) && !vyprsal(x, terazMs()) && !(x.k === "udalost" && x.f?.datum && x.f.datum < vc));
   // OPRAVY 196: hore pri všetkom od veriaceho kruh (fotka alebo začiatočné písmeno) a meno z profilu; ťuk otvorí jeho profil
   const hlavickaAutora = (x: PolozkaFarnika) => {
     const anon = !!x.anon || /Bohu známy/.test(x.kto), meno = anon ? "Bohu známy veriaci" : x.kto || "Veriaci";
     const kruh = <span aria-hidden="true" style={{ flex: "none", width: 40, height: 40, borderRadius: "50%", background: x.autorFoto && !anon ? `url("${x.autorFoto}") center/cover no-repeat` : "#4E7D37", color: "#fff", fontSize: 17, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{x.autorFoto && !anon ? "" : (meno.trim()[0] ?? "V").toLocaleUpperCase("sk-SK")}</span>;
-    const obsah = <>{kruh}<span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", textAlign: "left" }}><b style={{ fontSize: 15.5, color: INK }}>{meno}</b><span style={{ fontSize: 13, color: INK3 }}>{anon ? "meno pozná len farár" : "veriaci"}</span></span></>;
+    const obsah = <>{kruh}<span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", textAlign: "left" }}>{x.stav === "caka" && <span style={{ alignSelf: "flex-start", marginBottom: 2, padding: "2px 8px", borderRadius: 7, background: "var(--nf-zlBg, #F3E7C8)", color: "#6B5214", fontSize: 11.5, fontWeight: 800, letterSpacing: ".06em" }}>ČAKÁ NA SCHVÁLENIE</span>}<b style={{ fontSize: 15.5, color: INK }}>{meno}</b><span style={{ fontSize: 13, color: INK3 }}>{anon ? "meno pozná len farár" : "veriaci"}</span></span></>;
     return anon ? <span style={{ display: "flex", alignItems: "center", gap: 10 }}>{obsah}</span>
       : <button type="button" onClick={() => setOsoba(meno)} aria-label={`Profil · ${meno}`} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit" }}>{obsah}</button>;
   };
@@ -361,7 +362,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
     return af?.meno.trim() ? <button type="button" onClick={() => setOsoba(m)} aria-label={`Profil · ${m}`} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit" }}>{obsah}</button>
       : <span style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48 }}>{obsah}</span>;
   };
-  const autor = (x: PolozkaFarnika) => (x.anon || /Bohu známy/.test(x.kto) ? "Pridal veriaci" : `Pridal veriaci · ${x.kto}`);
+  const autor = (x: PolozkaFarnika) => `${x.stav === "caka" ? "Čaká na schválenie · " : ""}${x.anon || /Bohu známy/.test(x.kto) ? "Pridal veriaci" : `Pridal veriaci · ${x.kto}`}`;
   const moje = (x: PolozkaFarnika) => !!x.autor && x.autor === kto;
   const reakF = (ref: string, pole: PoleReakcieF) => ({ zoznam: reakcieF(strankaId, ref)[pole] ?? [], prepni: () => prepniReakciuF(strankaId, ref, pole, kto, mojeMeno) });
   const reakV = (x: PolozkaFarnika, pole: PoleReakcie) => ({ zoznam: (x[pole] as string[] | undefined) ?? [], prepni: () => prepniVPolozke(strankaId, x.id, pole, kto, undefined, mojeMeno) });

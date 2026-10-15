@@ -297,10 +297,8 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   };
   /** OPRAVY 315: krátky formulár po odoslaní — tá istá karta ako editor (301 / 310 C), na mieste tlačidla, nie len hláška */
   const [vys, setVys] = useState<{ id: string; druh: DruhFarnika; upravene: boolean; caka: boolean } | null>(null);
-  // OPRAVY 315 (3): takmer rovnaký príspevok toho istého autora do 10 min — opýtať sa, nie pridať 2×
-  const [dupl, setDupl] = useState<PolozkaFarnika | null>(null);
   const edRef = useRef<EditorApi>(null);
-  const zavri = () => { setK(null); setHotovo(null); setEdId(null); setVys(null); setDupl(null); };
+  const zavri = () => { setK(null); setHotovo(null); setEdId(null); setVys(null); };
   /** ‹ Späť na stránku farnosti — po uloženom oznámení z editora hláška a posun k bloku */
   const spatNaStranku = () => { const h = hotovo, kk = k; zavri(); if (h && kk && CEZ_EDITOR.includes(kk)) naStranke(h, kk, false); };
   useEffect(() => {
@@ -357,9 +355,9 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   // E.2: na konkrétny deň už sú iné žiadosti → žltá hláška (neblokuje)
   const umNaDen = k === "umysel" && f.umK === 1 && f.datum ? odFarnikov(strankaId).filter((x) => x.k === "umysel" && x.f?.umK === 1 && x.f.datum === f.datum && x.id !== edId).length : 0;
 
-  const uloz = async (znova = false) => {
+  const uloz = async () => {
     if (!k || uklada) return;
-    setUklada(true); setDupl(null);
+    setUklada(true);
     const c = dokonciCas(f.cas), ff = { ...f, cas: CAS_OK(c) ? c : f.cas };
     const txt = cistyText(f.txt);
     const s = k === "udalost" ? [fmtD(f.datum), CAS_OK(c) ? pekny(c) : "", f.kde.trim(), txt].filter(Boolean).join(" · ")
@@ -369,12 +367,6 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     const anon = k === "modlitba" && f.anon;
     const t = k === "modlitba" ? (anon ? "Prosím o modlitbu" : `${ja.celeMeno || "Veriaci"} prosí o modlitbu`) : f.nad.trim();
     const povodny = edId ? odFarnikov(strankaId).find((x) => x.id === edId) : undefined;
-    if (!povodny && !znova) {
-      const n = (x?: string) => cistyText(x ?? "").toLocaleLowerCase("sk-SK").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
-      const d = odFarnikov(strankaId).find((x) => x.k === k && x.autor === kto && teraz() - x.cas < 10 * 60000
-        && (k === "modlitba" ? !!n(s) && n(x.s) === n(s) : !!n(t) && n(x.t) === n(t))); // rovnaký nadpis (prosba: rovnaký text)
-      if (d) { setUklada(false); setDupl(d); return; }
-    }
     const caka = !povodny && stupen(sm, k) === "schvalenie"; // OPRAVY 310: Po schválení — na stránku až keď farár zverejní
     const zaklad: PolozkaFarnika = {
       ...(povodny ?? {}), id: povodny?.id ?? `f${teraz().toString(36)}`, k, t, s, kto: anon ? "Bohu známy veriaci" : ja.celeMeno || "Veriaci", cas: povodny?.cas ?? teraz(),
@@ -619,7 +611,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   // OPRAVY 315: karta po odoslaní krátkeho formulára (rovnaká ako v editore: 301 Zverejnené ✓ / 310 C Odoslané · čaká na schválenie)
   const kartaVysledku = (v: NonNullable<typeof vys>) => {
     const um1 = v.druh === "umysel", b = BLOK_DRUHU[v.druh];
-    const [t, s0] = v.caka ? ["Odoslané · čaká na schválenie", "Farár ho pozrie a zverejní. Dáme vám vedieť."]
+    const [t, s0] = v.caka ? ["Odoslané ✓ · čaká na schválenie farára", "Na stránke ho zatiaľ vidíte len vy, so štítkom Čaká na schválenie. Keď ho farár zverejní, dáme vám vedieť."]
       : um1 ? ["Úmysel je zapísaný ✓", "Ide len farárovi. Na stránke ho nikto nevidí. Farár vám potvrdí čas omše."]
       : [v.upravene ? "Zmeny sú uložené ✓" : "Zverejnené ✓", `${druhT(v.druh)} je na stránke farnosti v ${b?.[1] ?? "Oznamy farnosti"}.`];
     const ok1 = !v.caka;
@@ -646,13 +638,6 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
         </div>
         <div style={{ flex: "none", borderTop: "1px solid var(--cardBd)", background: "var(--bg)" }}>
           <div style={{ padding: "12px 16px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
-            {dupl && <div role="alert" style={{ padding: "12px 14px", borderRadius: 14, background: "var(--goldBg)", border: `1.5px solid ${ZLATA}`, display: "flex", flexDirection: "column", gap: 10 }}>
-              <b style={{ fontSize: 15.5, lineHeight: 1.4 }}>{k === "udalost" ? "Túto udalosť" : k === "modlitba" ? "Túto prosbu" : k === "oznam" ? "Tento oznam" : "Tento príspevok"} ste už pridali pred chvíľou. Pridať znova?</b>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button type="button" onClick={() => { const d = dupl; setDupl(null); zmazKoncept(KONV); setVys({ id: d.id, druh: d.k, upravene: false, caka: d.stav === "caka" }); }} style={{ flex: "1 1 160px", minHeight: 48, borderRadius: 12, border: "none", background: ZELENA, color: "#fff", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>Nie, ukázať pôvodný</button>
-                <button type="button" onClick={() => { void uloz(true); }} style={{ flex: "1 1 120px", minHeight: 48, borderRadius: 12, border: "1.5px solid var(--cardBd)", background: "transparent", color: "var(--ink)", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>Pridať znova</button>
-              </div>
-            </div>}
             {!edId && maObsahV && <ZahoditRozpisane onZahodit={() => { zmazKoncept(KONV); zavri(); }} />}
             {chyba && ch.length > 0 && <span role="alert" style={{ padding: "12px 14px", borderRadius: 12, background: "var(--goldBg)", border: `1.5px solid ${ZLATA}`, fontSize: 15, fontWeight: 800, color: "var(--ink)" }}>Ešte doplňte: {ch.map((c) => c[1]).join(", ")}. Označili sme to vyššie.</span>}
             {plati ? <>
