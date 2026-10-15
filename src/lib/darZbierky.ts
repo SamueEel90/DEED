@@ -69,7 +69,8 @@ export async function zapisDarZbierky(refId: string, eur: number, kanal: KanalDa
 }
 
 /** dar zbierky tak, ako je v ledgeri (rpc zbierka_dary, 0067) */
-export interface DarZLedgera { id: string; cas: number; eur: number; kanal: KanalDaru; meno: string | null; registrovany: boolean; moj: boolean }
+export interface DarZLedgera { id: string; cas: number; eur: number; kanal: KanalDaru; meno: string | null; registrovany: boolean; moj: boolean;
+  /** OPRAVY 294 (0096): skončená zvončeková omša v Hlavnej zbierke = jeden riadok, meno = „Ranná omša 6:00“ */ omsa?: boolean }
 /** dary zbierky z ledgera; `skryte` = zbierka rodiny a ja nie som príjemca ani darca (0075b, KARTA 57 A.7) —
  *  server poslal len počet darov, žiadne sumy ani mená */
 export interface DaryZbierky { dary: DarZLedgera[]; skryte: boolean; pocet: number }
@@ -79,12 +80,12 @@ export async function nacitajDaryZbierky(id: string): Promise<DaryZbierky> {
   const { data, error } = await supabase.rpc("zbierka_dary", { p_zbierka: id, p_limit: 200 });
   if (error) throw error;
   const odp = (data ?? {}) as { dary?: unknown[]; skryte?: boolean; pocet?: number };
-  const dary = (odp.dary ?? []) as { id: string; cas: string; mena: string; kanal: string; meno: string | null; registrovany: boolean; moj: boolean; suma: number }[];
+  const dary = (odp.dary ?? []) as { id: string; cas: string; mena: string; kanal: string; meno: string | null; registrovany: boolean; moj: boolean; suma: number; omsa?: boolean }[];
   return {
     skryte: !!odp.skryte, pocet: Number(odp.pocet ?? dary.length),
     dary: dary.map((d) => ({
       id: d.id, cas: new Date(d.cas).getTime(), eur: d.mena === "DEED" ? Number(d.suma) / DEED_ZA_EUR : Number(d.suma),
-      kanal: d.kanal === "deed" ? "deed" : d.kanal === "sepa" ? "sepa" : "psp", meno: d.meno, registrovany: d.registrovany, moj: d.moj,
+      kanal: d.kanal === "deed" ? "deed" : d.kanal === "sepa" ? "sepa" : "psp", meno: d.meno, registrovany: d.registrovany, moj: d.moj, ...(d.omsa ? { omsa: true } : {}),
     })),
   };
 }

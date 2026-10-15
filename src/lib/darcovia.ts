@@ -50,6 +50,9 @@ export interface DarRiadok {
   zdroj?: string;
   /** KARTA 57C: riadok z ledgera — voľba mena sa tam ešte nezapisuje (vo Viere je preto „Bohu známy veriaci") */
   zLedgera?: boolean;
+  /** OPRAVY 294: skončená zvončeková omša v Hlavnej zbierke = jeden riadok („Ranná omša 6:00 · Pán Boh zaplať · 138 €“),
+   *  jediný riadok so sumou v zozname darcov farnosti; stranka = kvôli poďakovaniu farnosti */
+  omsa?: { nazov: string; stranka: string };
   // zapečené polia LEN pre mock cudzích darcov (v produkcii render cez userId):
   meno?: string; inicialovo?: string; nick?: string; mesto?: string; mestoVerejne?: boolean;
 }
@@ -150,21 +153,40 @@ function obnovZLedgera(refId: string, id: string) {
     if (skryte) skrytaSuma.set(refId, pocet); else skrytaSuma.delete(refId);
     // dorovnanie firmy zapísal server (dorovnanie_dar) — jeho riadok ostáva
     const firmy = realneDary(refId).filter((x) => x.firma);
+    const stranka = id.split(":")[0];
     const dary: DarRiadok[] = l.map((d) => ({
       id: d.id, refId, cas: d.cas, suma: d.eur, kanal: d.kanal, registrovany: d.registrovany,
       verzia: d.meno ? 1 : 4, zobrazSumu: true, moj: d.moj, zLedgera: true, ...(d.meno ? { meno: d.meno } : {}),
+      ...(d.omsa ? { omsa: { nazov: (d.meno ?? "Svätá omša").trim(), stranka } } : {}),
     }));
     sklad.set(refId, [...firmy, ...dary].sort((a, b) => b.cas - a.cas));
     emit();
   }).catch(() => { /* sieť — ostáva posledný stav z ledgera */ });
 }
+/** OPRAVY 294 · bez databázy: Hlavná zbierka farnosti dostane skončené omše ako riadky (so serverom ich pošle server, 0096) */
+type Doplnok = (refId: string) => DarRiadok[] | null;
+let doplnokHlavnej: Doplnok | null = null;
+export function nastavDoplnokHlavnej(f: Doplnok) { doplnokHlavnej = f; }
+const sDoplnkom = new Map<string, { r: DarRiadok[]; kl: string; z: DarRiadok[] }>();
+function sOmsami(refId: string, r: DarRiadok[]): DarRiadok[] {
+  const d = doplnokHlavnej?.(refId);
+  if (!d?.length) return r;
+  const kl = d.map((x) => `${x.id}:${x.suma}`).join("|");
+  const c = sDoplnkom.get(refId);
+  if (c && c.r === r && c.kl === kl) return c.z; // stabilná referencia pre useSyncExternalStore
+  const z = [...r, ...d].sort((a, b) => b.cas - a.cas);
+  sDoplnkom.set(refId, { r, kl, z });
+  return z;
+}
+/** OPRAVY 294: znovu načítať dary zbierky z ledgera (po zavretí omše) */
+export function obnovDaryZbierky(refId: string) { const id = ledgerId(refId); if (id) obnovZLedgera(refId, id); }
 function riadkyPre(refId: string): DarRiadok[] {
   const id = ledgerId(refId);
   if (id) {
     if (!zLedgera.has(refId)) { zLedgera.add(refId); queueMicrotask(() => obnovZLedgera(refId, id)); }
     return realneDary(refId);
   }
-  const r = realneDary(refId);
+  const r = sOmsami(refId, realneDary(refId));
   // KARTA 56D · OPRAVY 289: zvončeková omše (…-zv-…) nikdy nemá vymyslené dary
   if (ciste.has(refId) || !ukazkyTeraz() || OMSA_REF.test(refId) || ZBIERKA_Z_UCTU.test(refId)) return r;
   let s = skladSeed.get(refId);
@@ -303,6 +325,7 @@ export interface JaIdentita { meno?: string; priezvisko?: string; celeMeno?: str
 
 /** Identita riadku podľa verzie. Vlastné dary sa renderujú z AKTUÁLNEHO profilu (nezapekajú sa). */
 export function identitaDarcu(r: DarRiadok, ja?: JaIdentita, sektor: SektorDarcu = "ine"): string {
+  if (r.omsa) return r.omsa.nazov;              // OPRAVY 294: skončená zvončeková omša („Ranná omša 6:00“)
   if (r.firma) return r.firma;                  // dorovnanie — firma sa podpisuje vždy
   if (!r.registrovany) return menoBezMena(sektor); // bez mesta, bez čohokoľvek
   // 0084: riadok z ledgera nesie meno, ktoré darca vybral; bez neho je bez mena (podľa sektora)
@@ -322,7 +345,7 @@ export function identitaDarcu(r: DarRiadok, ja?: JaIdentita, sektor: SektorDarcu
 
 /** Suma na zobrazenie — alebo null (= len „daroval"). Prah žije v configu (AC#3). */
 export function zobrazenaSuma(r: DarRiadok): string | null {
-  if (r.firma) return `${sumaEur(r.suma)}`;
+  if (r.firma || r.omsa) return `${sumaEur(r.suma)}`; // OPRAVY 294: riadok omše je jediný so sumou
   if (!r.registrovany || !r.zobrazSumu) return null;
   if (r.suma < DARCOVIA_CFG.prahSumy) return null; // pod prahom NIKDY — žiadne dvojeurové výkriky
   return `${sumaEur(r.suma)}`;

@@ -21,7 +21,7 @@ import { KartaMiesta, najblizsiaOmsa, NaseKostolyBlok, PodstrankaMiesta, otvorKo
 import { uradneUdaje } from "@/lib/uradneUdaje";
 import { OknoUpozorneni, type CielUpozorneni } from "./OknoUpozorneni";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
-import { useZvoncek, nazovZvoncek, podakovanieZvoncek, ZVONCEK_TEXT } from "@/lib/zvoncekZbierka";
+import { useZvoncek, nazovZvoncek, ZVONCEK_TEXT } from "@/lib/zvoncekZbierka";
 import { createPortal } from "react-dom";
 import type { ProfilStranky } from "@/lib/profilStranky";
 import { cistyText, jeHtmlText } from "@/lib/richtext";
@@ -42,8 +42,8 @@ import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import { ZmensenyModul } from "@/features/zbierka/ZmensenyModul";
 import type { TestProfil, TestSektor } from "@/lib/testProfily";
 import { kedyBrigady } from "@/features/rola/BrigadyFarnosti";
-import { useDarcovia, sucetDarov, relCas, nastavCiste, SumyDarcovKontext, SektorDarcuKontext, type DarRiadok } from "@/lib/darcovia";
-import { useZvoncekOkno, suhrnHlavnej, menaOkna, nadpisOkna, riadokOmse } from "@/lib/zvoncekOmse";
+import { useDarcovia, sucetDarov, relCas, nastavCiste, SumyDarcovKontext, SektorDarcuKontext } from "@/lib/darcovia";
+import { useZvoncekOkno, menaOkna, nadpisOkna } from "@/lib/zvoncekOmse";
 import { nacitajZbierkyStranky, zbierkyStrankyZPamate, useZmenyZbierok, cielCislo, type SpustenaZbierka } from "@/lib/novaZbierka";
 import { useKalendar, kostolKal, omseDna, polozkyDna, druhPolozky, minuty, iso, dvt, nazovOmse, rozsahTyzdna } from "@/lib/kalendarFarnosti";
 import { sumaEur } from "@/lib/suma";
@@ -1389,7 +1389,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
         <div style={{ display: "flex", alignItems: zbPasOn ? "center" : "baseline", gap: 16, flexWrap: "wrap" }}><b style={{ fontSize: siroka ? 30 : 22, letterSpacing: "-.02em" }}>Zbierky farnosti</b>{siroka && <span style={{ flex: zbPasOn ? 1 : undefined, fontSize: 17, color: INK3 }}>ťuknite na zbierku a prispejte</span>}{zbPasOn && zbPrebytok && <Sipky onPosun={posZb} />}</div>
         {zbPasOn ? <>
           <PasZbierok pasRef={pasZb} onPrebytok={setZbPrebytok} polozky={[
-            ...(hlOn && hl ? [{ k: "hl", siroka: true, el: <HlavnaKarta strankaId={strankaId} hlRef={hlRef} nazov={nazovHlavnej(hl)} txt={hlTxt} onTap={otvorHlavnu} /> }] : []),
+            ...(hlOn && hl ? [{ k: "hl", siroka: true, el: <HlavnaKarta nazov={nazovHlavnej(hl)} txt={hlTxt} onTap={otvorHlavnu} /> }] : []),
             ...(zvOn ? [{ k: "zv", el: <ZvoncekKarta strankaId={strankaId} onTap={otvorZvoncek} /> }] : []),
             ...zbFar.map((z) => ({ k: z.id, el: <ZbierkaKarta z={z} onTap={() => otvorZbierku(z)} /> })),
             ...piny.map((z) => ({ k: `p${z.id}`, el: <PripnutaKarta z={z} onTap={() => otvorPin(z)} /> })),
@@ -1399,7 +1399,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
           ]} />
           {prispeliSme}
         </> : siroka ? <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(250px,1fr))", gap: 14, alignItems: "stretch" }}>
-          {hlOn && hl && <div style={{ gridColumn: "span 2", display: "flex", minWidth: 0 }}><HlavnaKarta strankaId={strankaId} hlRef={hlRef} nazov={nazovHlavnej(hl)} txt={hlTxt} onTap={otvorHlavnu} /></div>}
+          {hlOn && hl && <div style={{ gridColumn: "span 2", display: "flex", minWidth: 0 }}><HlavnaKarta nazov={nazovHlavnej(hl)} txt={hlTxt} onTap={otvorHlavnu} /></div>}
           {zvOn && <ZvoncekKarta strankaId={strankaId} onTap={otvorZvoncek} />}
           {zbFar.map((z) => <ZbierkaKarta key={z.id} z={z} onTap={() => otvorZbierku(z)} />)}
           {piny.map((z) => <PripnutaKarta key={z.id} z={z} onTap={() => otvorPin(z)} />)}
@@ -1782,26 +1782,13 @@ function VelkyObrazok({ v, vz }: { v: Velke; vz: Parameters<typeof Plagat>[0]["v
   return <div style={{ flex: 1, minHeight: 0, overflow: "auto", display: "flex", justifyContent: "center", padding: "0 8px 8px" }}><Plagat u={oz.u} volba={oz.volba} vz={vz} sirka={sirka} /></div>;
 }
 
-/** HLAVNÁ ZBIERKA — suma z ledgera (+ zvončekové omše), darcovia „Bohu známy veriaci“ bez súm, zvonček jeden riadok za omšu (OPRAVY 289) */
-function HlavnaKarta({ strankaId, hlRef, nazov, txt, onTap }: { strankaId: string; hlRef: string; nazov: string; txt: string; onTap: () => void }) {
-  const dary = useDarcovia(hlRef);
-  const { uzavrete } = useZvoncekOkno(strankaId);
-  const pod = podakovanieZvoncek(useZvoncek(strankaId), useSlovaFarnosti(strankaId));
-  const s = suhrnHlavnej(strankaId, hlRef);
-  const riadky: { cas: number; k: string; pod?: string; s: string }[] = [
-    ...dary.map((r: DarRiadok) => ({ cas: r.cas, k: "Bohu známy veriaci", s: relCas(r.cas) })),
-    ...uzavrete.map((o) => ({ cas: zIso(o.den).getTime() + minuty(o.cas) * 60000, k: riadokOmse(o, strankaId), pod, s: eur(o.suma) })),
-  ].sort((a, b) => b.cas - a.cas).slice(0, 4);
+/** HLAVNÁ ZBIERKA — OPRAVY 294: karta bez čísla a darcov (jeden zdroj sumy je detail Hlavnej zbierky; karta sa mení v bode 293) */
+function HlavnaKarta({ nazov, txt, onTap }: { nazov: string; txt: string; onTap: () => void }) {
   return (
     <button type="button" onClick={onTap} style={{ flex: "1 1 360px", minWidth: 0, textAlign: "left", padding: "26px 28px", borderRadius: 24, background: KARTA, border: "none", borderLeft: `6px solid ${TEAL}`, display: "flex", flexDirection: "column", gap: 12, cursor: "pointer", color: INK, fontFamily: "inherit" }}>
       <span style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}><span style={{ height: 30, padding: "0 12px", borderRadius: 9, background: TEAL_TL, color: "#fff", fontSize: 13, fontWeight: 800, letterSpacing: ".08em", display: "flex", alignItems: "center" }}>HLAVNÁ ZBIERKA</span><span style={{ fontSize: 15.5, color: INK3 }}>stále · aj pravidelne mesačne</span></span>
       <b style={{ fontSize: "clamp(24px,2.2vw,30px)", letterSpacing: "-.02em" }}>{nazov} ›</b>
       {txt && <span style={{ fontSize: 17, lineHeight: 1.5, color: INK2 }}>{txt}</span>}
-      {s.suma > 0 ? <span style={{ fontSize: 18, color: INK2 }}><b style={{ fontSize: 42, letterSpacing: "-.03em", color: INK }}>{eur(s.suma)}</b> {centralnaZPamate(strankaId)?.rocne ? `v roku ${new Date().getFullYear()}` : "spolu"} · {ludi(s.darcov)}</span>
-        : null /* OPRAVY 247: prázdne pole sa vynechá */}
-      {riadky.length > 0 && <span style={{ display: "flex", flexDirection: "column", borderTop: `1px solid ${LINKA}` }}>
-        {riadky.map((r, i) => <span key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "9px 0", borderBottom: `1px solid ${LINKA}`, fontSize: 15.5 }}><span style={{ minWidth: 0, display: "flex", flexDirection: "column", color: INK2 }}>{r.k}{r.pod && <span style={{ fontSize: 14, color: INK3 }}>{r.pod}</span>}</span><b style={{ flex: "none" }}>{r.s}</b></span>)}
-      </span>}
     </button>);
 }
 

@@ -21,7 +21,7 @@ export function milnikyPre(suma: number): { dosiahnuty: number | null; dalsi: nu
 const eur = (n: number) => `${sumaEur(n)}`;
 const dnesOd = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
 /** suma v zozname len keď ju darca povolil a je nad 2 € (≤ 2 € nikdy) */
-const sumaDaru = (r: DarRiadok) => (r.firma || (r.registrovany && r.zobrazSumu)) && r.suma > DARCOVIA_CFG.prahSumy ? eur(r.suma) : null;
+const sumaDaru = (r: DarRiadok) => r.omsa ? eur(r.suma) : (r.firma || (r.registrovany && r.zobrazSumu)) && r.suma > DARCOVIA_CFG.prahSumy ? eur(r.suma) : null; // OPRAVY 294: omša vždy so sumou
 
 /** počítadlo naskakuje k novej hodnote (~0,7 s) */
 function usePocitadlo(ciel: number): number {
@@ -189,7 +189,7 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, ko
         <div key={posledny.id} className="zb-novy" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, background: "var(--bg)", border: "1px solid var(--cardBd)", borderRadius: 12, padding: "8px 12px" }}>
           <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)", flex: "none" }}>POSLEDNÝ DAR</span>
           <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 700, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{identitaDarcu(posledny, ja, sektor)}</span>
-          {ukazSumy && sumaDaru(posledny) && <span style={{ fontSize: 13, fontWeight: 800, color: "var(--green)", flex: "none", fontVariantNumeric: "tabular-nums" }}>{sumaDaru(posledny)}</span>}
+          {(ukazSumy || posledny.omsa) && sumaDaru(posledny) && <span style={{ fontSize: 13, fontWeight: 800, color: "var(--green)", flex: "none", fontVariantNumeric: "tabular-nums" }}>{sumaDaru(posledny)}</span>}
         </div>
       )}
       {!cezTvorcu && <PrispievateliaFarnosti refId={refId} />}

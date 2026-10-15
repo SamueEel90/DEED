@@ -11,9 +11,9 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
 import { TESTOVACIA } from "./testovacia";
-import { odKedyHlavna } from "./centralnaZbierka";
-import { DEED_ZA_EUR } from "./darZbierky";
-import { darcoviaPre, identitaDarcu, refIdySDarmi, sucetDarov, useZmenyDarov, type DarRiadok } from "./darcovia";
+import { odKedyHlavna, centralnaZPamate, nazovHlavnej } from "./centralnaZbierka";
+import { DEED_ZA_EUR, naviazObjekt } from "./darZbierky";
+import { darcoviaPre, identitaDarcu, refIdySDarmi, sucetDarov, useZmenyDarov, nastavDoplnokHlavnej, obnovDaryZbierky, type DarRiadok } from "./darcovia";
 import { vsetkyMiesta } from "./miestaFarnosti";
 import { CAS_OK, DNI_K, dvt, iso, kostolKal, useKalendar, zIso, type KalKostol } from "./kalendarFarnosti";
 
@@ -83,11 +83,21 @@ let ver = 0;
 const zmena = () => { ver++; posl.forEach((f) => f()); };
 const posunMs = (stranka: string): number => { if (!TESTOVACIA) return 0; try { return Number(localStorage.getItem(KLUC_POSUN + stranka) ?? 0) || 0; } catch { return 0; } };
 const teraz = (stranka: string) => Date.now() + posunMs(stranka);
-/** TESTOVACIE: prepne na ďalšiu omšu hneď (darcovia zmiznú, predchádzajúca omša pribudne do Hlavnej zbierky) */
-export function dalsiaOmsaTest(stranka: string, okno: ZvOkno | null) {
-  if (!okno?.do) return;
+/** TESTOVACIE „Zavrieť omšu (test)“: omša skončí hneď (darcovia zmiznú, omša pribudne do Hlavnej zbierky ako jeden dar).
+ *  OPRAVY 294: s databázou ju zavrie server (0096 zvoncek_zavri_test) — vidno to na každom zariadení aj po obnovení. */
+export async function dalsiaOmsaTest(stranka: string, okno: ZvOkno | null): Promise<string | null> {
+  if (!okno?.do) return "Ďalšia omša nie je v kalendári.";
+  if (supabase) {
+    const { error } = await supabase.rpc("zvoncek_zavri_test", { p_stranka: stranka, p_kostol: okno.kostol || "0" }).then((x) => x, () => ({ error: { message: "Nie ste pripojený na internet." } }));
+    if (error) return error.message || "Server omšu nezavrel.";
+    serverOkna.clear(); serverOmse.delete(stranka); obnovServer(stranka, okno.kostol || "0");
+    obnovDaryZbierky(`${stranka}-centralna`);
+    zmena();
+    return null;
+  }
   try { localStorage.setItem(KLUC_POSUN + stranka, String(posunMs(stranka) + Math.max(0, okno.do - teraz(stranka)) + 1000)); } catch { /* LS */ }
   serverOkna.clear(); zmena();
+  return null;
 }
 
 // ---- server: okno a omše s darmi (0091) ----
@@ -137,14 +147,34 @@ export function uzavreteOmse(stranka: string, kostol = "0"): ZvOmsaSDarmi[] {
   });
 }
 
-/** súhrn hlavnej zbierky farnosti: suma už obsahuje zvončekové omše (jedno číslo). Pri ročnom prepínači len od 1. januára.
- *  Martin 15. 10.: bežiaca omša sa do Hlavnej nepočíta — pripíše sa až po omši jedným riadkom (inak by sa sumy zdvojili). */
+/** súhrn hlavnej zbierky farnosti (jedno číslo). Pri ročnom prepínači len od 1. januára.
+ *  OPRAVY 294: skončené omše sú priamo v daroch Hlavnej (server 0096; bez servera doplnok nižšie) — jeden zdroj
+ *  pre detail, Správu aj všetky vzhľady stránky. Bežiaca omša sa do Hlavnej nepočíta (Martin 15. 10.). */
 export function suhrnHlavnej(stranka: string, hlavnaRef: string): { suma: number; darcov: number } {
+  naviazObjekt(hlavnaRef, { stranka, hlavna: true, nazov: nazovHlavnej(centralnaZPamate(stranka)) }); // aj Správa číta Hlavnú zo servera
   const od = odKedyHlavna(stranka);
-  const h = od ? darcoviaPre(hlavnaRef).filter((r) => r.cas >= od) : null, hs = h ? { suma: h.reduce((x, r) => x + r.suma, 0), pocet: h.length } : sucetDarov(hlavnaRef);
-  const uz = uzavreteOmse(stranka).filter((o) => zIso(o.den).getTime() >= od);
-  return { suma: hs.suma + uz.reduce((s, o) => s + o.suma, 0), darcov: hs.pocet + uz.length };
+  const h = od ? darcoviaPre(hlavnaRef).filter((r) => r.cas >= od) : null;
+  return h ? { suma: h.reduce((x, r) => x + r.suma, 0), darcov: h.length } : (({ suma, pocet }) => ({ suma, darcov: pocet }))(sucetDarov(hlavnaRef));
 }
+
+// OPRAVY 294 · bez databázy: skončená omša = jeden riadok v daroch Hlavnej zbierky (`${stránka}-centralna`), ako robí server
+nastavDoplnokHlavnej((refId) => {
+  if (supabase) return null;
+  const m = refId.match(/^(.+)-centralna$/);
+  if (!m) return null;
+  const stranka = m[1];
+  return uzavreteOmse(stranka).map((o): DarRiadok => ({
+    id: `${o.id}-hlavna`, refId, cas: zIso(o.den).getTime() + (minutyCasu(o.cas) + 60) * 60000, suma: o.suma, kanal: "psp",
+    registrovany: false, verzia: 4, zobrazSumu: true, omsa: { nazov: riadokOmse(o, stranka), stranka } }));
+});
+/** OPRAVY 294: dátum a čas omše z id riadku („Št 15. 10. 2026 · 6:00“) — Štatistiky Hlavnej zbierky */
+export function datumOmse(id: string): string {
+  const m = id.match(/-zv-[^-]+-(\d{4})-(\d{2})-(\d{2})-(\d{2})(\d{2})/);
+  if (!m) return "";
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return `${DNI_K[dvt(d)]} ${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()} · ${Number(m[4])}:${m[5]}`;
+}
+const minutyCasu = (cas: string) => { const [h, mi] = cas.split(":").map(Number); return (h || 0) * 60 + (mi || 0); };
 
 /** mená darcov okna bez súm: „Anna K., Jozef Mráz, Mária a ďalší“ */
 export function menaOkna(dary: DarRiadok[], ja?: Parameters<typeof identitaDarcu>[1]): string {

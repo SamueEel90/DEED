@@ -141,7 +141,7 @@ export function SpravaZvoncek({ strankaId, mobil, toast, onSpat }: { strankaId: 
       {/* DEV panel — len testovacia verzia */}
       {TESTOVACIA && <div style={{ border: "1px dashed rgba(122,78,122,.45)", borderRadius: 14, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <span style={{ flex: 1, minWidth: 160, fontSize: 12, fontWeight: 700, color: "var(--ink3)" }}>DEV · test omše · {ludi(terazLudi)} pri tejto omši</span>
-        <button type="button" disabled={!om.okno?.do} onClick={() => { dalsiaOmsaTest(strankaId, om.okno); toast("Ďalšia omša (test). Darcovia sa vymazali, predchádzajúca omša je v Hlavnej zbierke."); }} style={{ minHeight: 40, padding: "0 12px", borderRadius: 10, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--ink2)", boxShadow: "none" }}>Ďalšia omša (test)</button>
+        <button type="button" disabled={!om.okno?.do} onClick={() => { void dalsiaOmsaTest(strankaId, om.okno).then((e) => toast(e ?? "Omša je zavretá (test). Darcovia sa vymazali, omša je v Hlavnej zbierke ako jeden dar.")); }} style={{ minHeight: 40, padding: "0 12px", borderRadius: 10, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--ink2)", boxShadow: "none" }}>Zavrieť omšu (test)</button>
       </div>}
     </div>);
 }
