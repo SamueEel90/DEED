@@ -31,10 +31,21 @@ export function ZnakStrany({ s, size = 48 }: { s: Strana; size?: number }) {
 }
 
 /** karta strany: znak · meno · mesto a overenie (alebo riadok pod menom) · štít vpravo */
-export function KartaStrany({ s, styl }: { s: Strana; styl?: CSSProperties }) {
+export function KartaStrany({ s, styl, onClick }: { s: Strana; styl?: CSSProperties; /** OPRAVY 316: ťuk = profil (so šípkou ›) */ onClick?: () => void }) {
   const pod = s.pod ?? [s.mesto, s.overeny ? "overený pri registrácii" : ""].filter(Boolean).join(" · ");
+  const st: CSSProperties = { display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", ...styl };
+  if (onClick) return (
+    <button type="button" onClick={onClick} aria-label={`${s.meno} · profil`} style={{ ...st, width: "100%", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" }}>
+      <ZnakStrany s={s} />
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <b style={{ display: "block", fontSize: 15.5, lineHeight: 1.3 }}>{s.meno}</b>
+        {pod && <span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)", marginTop: 2 }}>{pod}</span>}
+      </span>
+      <span style={{ flex: "none", lineHeight: 0 }}><StitStrany s={s} /></span>
+      <span aria-hidden="true" style={{ flex: "none", fontSize: 20, color: "var(--ink3)" }}>›</span>
+    </button>);
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", ...styl }}>
+    <div style={st}>
       <ZnakStrany s={s} />
       <span style={{ flex: 1, minWidth: 0 }}>
         <b style={{ display: "block", fontSize: 15.5, lineHeight: 1.3 }}>{s.meno}</b>

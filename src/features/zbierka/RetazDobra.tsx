@@ -3,9 +3,10 @@
 // len QR bežiacej dvojice tvorca + zbierka.
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { DeedQr } from "@/components/deedqr";
-import { ohlasZbierku, obnovRetaz, nacitajRetaz, pripravRetaz, zapecatRetaz, zrusRetaz, beziaca, verejneBeziace, smieDoRetaze, zbierkaVRetazi, zaokruhliPct, useZmenyRetaze, type Retaz, type Strana, type StavVRetazi, type ZbierkaVRetazi } from "@/lib/retaz";
+import { ohlasZbierku, obnovRetaz, nacitajRetaz, pripravRetaz, zapecatRetaz, zrusRetaz, beziaca, verejneBeziace, zbierkaVRetazi, zaokruhliPct, useZmenyRetaze, type Retaz, type Strana, type StavVRetazi, type ZbierkaVRetazi } from "@/lib/retaz";
 import { KartaStrany, ZnakStrany, StitStrany, useRobiRetaz } from "./StranaZmluvy";
-import { useMojeStranky } from "@/lib/mojeStranky";
+import { useMojeStranky, otvorMojProfil } from "@/lib/mojeStranky";
+import { otvorVerejnyProfil, zavriVerejnyProfil } from "@/features/verejny-profil/otvor";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { TestovanieRetaze } from "./RetazStranky";
 import { Harok } from "./Zdielat";
@@ -96,12 +97,19 @@ export function RetazDobraHarok({ zbierka, onClose }: { zbierka: { id: string; n
   const menoKratko = robi.meno;
   const [krok, setKrok] = useState<Krok>(() => (nacitajRetaz() ? "bezi" : "nastavenie"));
   // OPRAVY 295: so serverom len skutočná zbierka z databázy (ukážková z katalógu do radu nejde)
-  const [rad, setRad] = useState<VRade[]>(() => (smieDoRetaze(zbierkaId) ? [{ zbierkaId, pct: 25 }] : []));
-  const [otv, setOtv] = useState<string | null>(() => (smieDoRetaze(zbierkaId) ? zbierkaId : null));
+  // OPRAVY 316: zbierka, z ktorej sa reťaz otvára, je v rade vždy prvá (okrem zvončekovej omše). Či ju server pustí,
+  // rozhodne pri zapečatení (0093/0094: vlastnú zbierku nie) — vtedy sa ukáže prečo, rad neostane prázdny.
+  const zvonO = /-zv-/.test(zbierkaId);
+  const [rad, setRad] = useState<VRade[]>(() => (!zvonO && zbierkaVRetazi(zbierkaId) ? [{ zbierkaId, pct: 25 }] : []));
+  const [otv, setOtv] = useState<string | null>(() => (!zvonO && zbierkaVRetazi(zbierkaId) ? zbierkaId : null));
+  // OPRAVY 316: karta tvorcu hore — ťuk = jeho profil (stránka, za ktorú reťaz robí), pri reťazi za mňa môj profil
+  // detail zbierky a stránka, z ktorej sa reťaz otvorila, sa zavrú (inak by profil ostal pod nimi)
+  const naProfil = () => { const st = retaz?.stranka ?? (ako !== "ja" ? ako : null); onClose(); zavriVerejnyProfil(); if (st) window.setTimeout(() => otvorVerejnyProfil(st), 0); else otvorMojProfil(); };
   const [hladaj, setHladaj] = useState("");
   // OPRAVY 290 · balík 8 (A4): zlyhanie má tvár — pripravená reťaz (jedno id) sa po výpadku uloží raz
   const [chyst, setChyst] = useState<Retaz | null>(null);
   const [chyba, setChyba] = useState<string | null>(null);
+  const [preco, setPreco] = useState<string | null>(null); // OPRAVY 316: prečo server zbierku do reťaze nepustil — ukáže sa aj pri rade
   const [uklada, setUklada] = useState(false);
   const podrz = !potvrditTuknutim();
   const obalRef = useRef<HTMLDivElement>(null);
@@ -121,7 +129,7 @@ export function RetazDobraHarok({ zbierka, onClose }: { zbierka: { id: string; n
   if (krok === "nastavenie") {
     obsah = (
       <>
-        <KartaStrany s={robi} />
+        <KartaStrany s={robi} onClick={naProfil} />
         <div style={nadpisZmluvy}>vzdáva sa časti z každého daru, v tomto poradí:</div>
         {rad.map((x, i) => {
           const zb = z(x.zbierkaId);
@@ -151,7 +159,8 @@ export function RetazDobraHarok({ zbierka, onClose }: { zbierka: { id: string; n
             </div>
           );
         })}
-        {rad.length === 0 && <div style={{ padding: 16, borderRadius: 18, border: "1.5px dashed var(--fieldBd)", fontSize: 14, lineHeight: 1.5, color: "var(--ink3)", textAlign: "center" }}>Rad je prázdny. Pridajte aspoň jednu zbierku.</div>}
+        {preco && <div role="alert" style={{ padding: "12px 14px", borderRadius: 14, background: "var(--errBg, #F2E3DC)", border: "2px solid var(--cRed, #A34A2A)", fontSize: 14, lineHeight: 1.5, color: "var(--ink)" }}>{preco}</div>}
+        {rad.length === 0 && <div style={{ padding: 16, borderRadius: 18, border: "1.5px dashed var(--fieldBd)", fontSize: 14, lineHeight: 1.5, color: "var(--ink3)", textAlign: "center" }}>{zvonO ? "Zvončeková zbierka pri omši do Reťaze nejde. Pridajte inú zbierku." : "Rad je prázdny. Pridajte aspoň jednu zbierku."}</div>}
         <button type="button" onClick={() => setKrok("vyber")} style={{ height: 50, borderRadius: 14, border: "1.5px dashed var(--gBd)", background: "transparent", color: "var(--gInk)", fontSize: 14.5, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "inherit" }}>
           <Ikonka d="M12 5v14M5 12h14" />Pridať zbierku</button>
         <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)" }}>Potom 100 % vám. Zbierka, ktorú medzitým uzavrú, sa preskočí.</div>
@@ -194,7 +203,7 @@ export function RetazDobraHarok({ zbierka, onClose }: { zbierka: { id: string; n
     obsah = (
       <>
         <div style={nadpis}>ZMLUVA MEDZI</div>
-        <KartaStrany s={robi} />
+        <KartaStrany s={robi} onClick={naProfil} />
         <div style={{ ...nadpisZmluvy, display: "flex", alignItems: "flex-start", gap: 8 }}><span aria-hidden="true">↓</span><span>vzdáva sa časti z každého daru, v tomto poradí</span></div>
         {rad.map((x, i) => { const zb = z(x.zbierkaId); if (!zb) return null; return (
           <div key={x.zbierkaId} style={{ ...karta, borderRadius: 16, border: `1px solid ${i === 0 ? "var(--gBd)" : "var(--cardBd)"}`, display: "flex", alignItems: "center", gap: 10, padding: "12px 14px" }}>
@@ -223,7 +232,7 @@ export function RetazDobraHarok({ zbierka, onClose }: { zbierka: { id: string; n
           <span style={{ fontSize: 14, color: "var(--ink2)" }}>{chyba}</span>
         </div>}
         <div style={{ display: "flex", gap: 10, alignItems: "stretch" }}>
-          <Tlacidlo label="Späť" druhe onClick={() => { setChyba(null); setKrok("nastavenie"); }} />
+          <Tlacidlo label="Späť" druhe onClick={() => { setPreco(chyba); setChyba(null); setKrok("nastavenie"); }} />
           <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
             {chyba ? <Tlacidlo label={uklada ? "Ukladá sa…" : "Skúsiť znova"} disabled={uklada} onClick={() => void zapecatTeraz()} />
               : podrz ? <PodrzTlacidlo key={uklada ? "u" : "p"} label={uklada ? "Ukladá sa…" : "Podržte a zapečaťte"} onConfirm={() => void zapecatTeraz()} />
@@ -240,7 +249,7 @@ export function RetazDobraHarok({ zbierka, onClose }: { zbierka: { id: string; n
     const nOrg = new Set(retaz.polozky.map((x) => z(x.zbierkaId)?.strana.meno ?? x.zbierkaId)).size;
     obsah = (
       <>
-        <KartaStrany s={robi} />
+        <KartaStrany s={robi} onClick={naProfil} />
         {/* balík 8 B: oznámenie organizátorom posiela server pri zapečatení (0093); bez servera len „Zapečatené ✓“ */}
         <div role="status" style={{ padding: "12px 14px", borderRadius: 14, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 14, fontWeight: 800, color: "var(--gInk)" }}>
           {retaz.naServeri

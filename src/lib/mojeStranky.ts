@@ -87,4 +87,6 @@ export function otvorSpravuNa(c: CielSpravy) { cielSpravy = c; try { window.disp
 /** čítanie bez mazania (StrictMode volá inicializáciu dvakrát) */
 export const cielSpravyPre = (stranka?: string): CielSpravy | null => (cielSpravy && (!stranka || cielSpravy.stranka === stranka) ? cielSpravy : null);
 export function zrusCielSpravy() { cielSpravy = null; }
+/** OPRAVY 316: môj profil (modul Profil, hlavná obrazovka) — napr. ťuk na kartu tvorcu vo vlastnej Reťazi dobra */
+export function otvorMojProfil() { cielSpravy = null; try { window.dispatchEvent(new Event(UDALOST_SPRAVA)); } catch { /* SSR */ } }
 export function zrusOtvorenieSpravy() { try { sessionStorage.removeItem(KLUC_SPRAVA); } catch { /* SS */ } }
