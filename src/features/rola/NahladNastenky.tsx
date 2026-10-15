@@ -8,7 +8,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { ProfilStranky } from "@/lib/profilStranky";
-import { NastenkaFarnosti } from "@/features/verejny-profil/NastenkaFarnosti";
+import { NastenkaFarnosti, zvyrazniOznam } from "@/features/verejny-profil/NastenkaFarnosti";
 import { toast } from "@/shared";
 
 const ZELENA = "#4B7A35";
@@ -17,15 +17,7 @@ export function NahladNastenky({ strankaId, meno, profil, mobil, onSpat, doOznam
   const obal = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!doOznamu) return;
-    let n = 0, t = 0;
-    const najdi = () => {
-      const el = [...(obal.current?.querySelectorAll<HTMLElement>(`[data-oz="${CSS.escape(doOznamu)}"]`) ?? [])].find((e) => e.offsetParent !== null && e.getBoundingClientRect().height > 0);
-      if (!el) { if (++n < 20) t = window.setTimeout(najdi, 150); return; }
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-      el.animate([{ outline: "4px solid #C9A24A", outlineOffset: "4px", boxShadow: "0 0 0 10px rgba(201,162,74,.28)" }, { outline: "4px solid #C9A24A", outlineOffset: "4px", boxShadow: "0 0 0 10px rgba(201,162,74,.28)", offset: 0.7 }, { outline: "4px solid transparent", outlineOffset: "4px", boxShadow: "0 0 0 10px rgba(201,162,74,0)" }], { duration: 2600, delay: 450, easing: "ease-out" });
-    };
-    t = window.setTimeout(najdi, 250);
-    return () => window.clearTimeout(t);
+    return zvyrazniOznam(doOznamu, () => obal.current);
   }, [doOznamu]);
   useEffect(() => {
     const esc = (e: KeyboardEvent) => { if (e.key === "Escape") onSpat(); };

@@ -8,7 +8,7 @@ import { useTestStav, vyprazdni } from "@/lib/testStav";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { FarnikPridava, OdFarnikov, fabZapnuty } from "./FarnikPridava";
 import { PrihovorNaStranke } from "./PrihovorNaStranke";
-import { NastenkaFarnosti, posunNaBlok } from "./NastenkaFarnosti";
+import { NastenkaFarnosti, posunNaBlok, zvyrazniOznam } from "./NastenkaFarnosti";
 import { nacitajProfil, profilZPamate, cistyNazov, type ProfilStranky } from "@/lib/profilStranky";
 import { odFarnikov, BLOK_DRUHU } from "@/lib/odFarnikov";
 import { useAdresarFarnosti, nazovFarnosti } from "@/lib/mojeFarnosti";
@@ -206,6 +206,6 @@ export function FarnostStranka({ strankaId, onBack, nahlad = false, stit = "Silv
     <div style={{ position: "relative", minHeight: "100%", background: "var(--nf-bg)" }}>
       <NastenkaFarnosti strankaId={strankaId} meno={meno} profil={prof} fab={fab} onBack={onBack} stit={stit} nahlad={!!onBack && nahlad} />
       {fab && <div aria-hidden="true" style={{ height: pc ? 110 : 180 }} />/* OPRAVY 278: rezerva dole, + nikdy nezakryje text ani tlačidlá (mobil: + je nad spodným menu, všetky vzhľady rovnako) */}
-      <FarnikPridava strankaId={strankaId} mobil={!pc} onPozriet={(id) => { const kd = odFarnikov(strankaId).find((x) => x.id === id)?.k, b = kd ? BLOK_DRUHU[kd] : undefined; window.setTimeout(() => posunNaBlok(b?.[0] ?? "ozn"), 60); }} />
+      <FarnikPridava strankaId={strankaId} mobil={!pc} onPozriet={(id) => { const kd = odFarnikov(strankaId).find((x) => x.id === id)?.k, b = kd ? BLOK_DRUHU[kd] : undefined; zvyrazniOznam(id, undefined, () => posunNaBlok(b?.[0] ?? "ozn")); /* OPRAVY 301: presne pri oznámení, inak aspoň blok */ }} />
     </div>);
 }

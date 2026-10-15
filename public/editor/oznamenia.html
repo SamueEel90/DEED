@@ -963,8 +963,9 @@ body.ram.ram-nahlad .parte{flex:none}
 const $=id=>document.getElementById(id);
 const ram=()=>document.body.classList.contains("ram");
 let RN=null,_vys=0;
-function stav(){const a=kroky();return{i:STEP,n:a.length,nazvy:a.map(k=>KROKY[k]),typ:TYP[st.typ]||"",hotovo:a[STEP]==="hotovo",ulozene:!!$("btnDone").disabled,kontrola:!$("kontrola").hidden}}
+function stav(){const a=kroky();return Object.assign({i:STEP,n:a.length,nazvy:a.map(k=>KROKY[k]),typ:TYP[st.typ]||"",hotovo:a[STEP]==="hotovo",ulozene:!!$("btnDone").disabled,kontrola:!$("kontrola").hidden},typeof window.edStav303==="function"?window.edStav303():{})}
 function hlas(){if(!ram()||typeof CFG.onKrok!=="function")return;try{CFG.onKrok(stav())}catch(e){}}
+window.edHlas=hlas;
 function vyska(){if(!ram()||RN||typeof CFG.onVyska!=="function")return;const h=Math.ceil(document.querySelector(".app").getBoundingClientRect().height);if(h&&h!==_vys){_vys=h;try{CFG.onVyska(h)}catch(e){}}}
 try{new ResizeObserver(vyska).observe(document.querySelector(".app"))}catch(e){}
 if(typeof showStep==="function"){const _s=showStep;showStep=function(){const r=_s.apply(this,arguments);hlas();return r}}
@@ -1003,3 +1004,260 @@ const _i=window.initEditor;window.initEditor=function(cfg){const R=!!(cfg&&cfg.r
  body:not(.ram) .tpls{grid-template-columns:repeat(3,minmax(0,1fr))}body:not(.ram) .tpl{height:120px}}
 </style>
 <script>/* OPRAVY 273: aj fotka z rozpísaného návrhu sa zmenší */(function(){const _i=window.initEditor;if(!_i)return;window.initEditor=function(){const r=_i.apply(this,arguments);try{if(st&&st.foto&&st.foto.length>700000)zmensiFoto(st.foto,x=>{st.foto=x;render()})}catch(e){}return r}})();</script>
+<style>/* OPRAVY 303: Editor oznámení na mobile (rám appky) — 5 prehľadných stránok + Kontrola (prototyp „Editor mobil v2“).
+   Stránky: Muž / Žena · Vzhľad (veľký náhľad, šablóny do boku) · Ozdoby a fotka · Zosnulý · Posledná rozlúčka → Kontrola.
+   Rady do boku: natívne posúvanie (overflow-x, scroll-snap proximity, touch-action pan-x), žiadny vlastný ťah. */
+body.ram .step>h2{display:none}
+body.ram .step[data-s=koho]>h2,body.ram .step[data-s=kontrola]>h2{display:block;font-size:24px;line-height:1.25}
+body.ram .ram-skry,body:not(.ram) .len-ram{display:none!important}
+.ram-hint{margin:-8px 0 0;color:var(--muted);font-size:15.5px;line-height:1.45}
+body.ram #sex{flex-direction:column}body.ram #sex .chip{flex:none;min-height:80px;font-size:20px}
+body.ram:not(.rychly)[data-pg=vzhlad] .step[data-s=vzhlad]>fieldset:not(:first-of-type){display:none}
+body.ram[data-pg=ozdoby] .step[data-s=vzhlad]>fieldset:first-of-type{display:none}
+body.ram[data-pg=osoba] .step[data-s=udaje] [id^=fs]>fieldset:not(:first-child){display:none}
+body.ram[data-pg=udaje2] .step[data-s=udaje] [id^=fs]>fieldset:first-child{display:none}
+body.ram:not([data-pg=ozdoby]):not(.rychly) #qrPrep,body.ram.rychly:not([data-pg=vzhlad]) #qrPrep{display:none!important}
+/* rady do boku */
+.rad{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;touch-action:pan-x;overscroll-behavior-x:contain;scrollbar-width:none;gap:10px;padding:6px 2px 8px}
+.rad::-webkit-scrollbar{display:none}
+body.ram fieldset,body.ram .step{min-width:0;max-width:100%}
+.rad>*{flex:none;scroll-snap-align:start}
+.rad-pozn{margin:0;font-size:13.5px;color:var(--muted)}
+body.ram .tpl{width:84px;height:auto;padding:0;border:0!important;background:none!important;box-shadow:none!important;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;font-size:12.5px;font-weight:600;color:var(--fg)!important;cursor:pointer}
+body.ram .tpl[hidden]{display:none}
+.tpl-k{width:80px;height:108px;border-radius:10px;border:2px solid var(--line);box-sizing:border-box;display:block}
+body.ram .tpl[aria-pressed=true] .tpl-k{border:3px solid #4B7A35}
+.tpl-ok{position:absolute;top:-4px;right:0;width:24px;height:24px;border-radius:50%;background:#4B7A35;color:#fff;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.tpl-n{max-width:84px;text-align:center;line-height:1.2}
+body.ram .tpl[aria-pressed=true] .tpl-n{font-weight:800}
+.leg-vel{text-transform:none!important;letter-spacing:0!important;font-size:18px!important;font-weight:800!important;color:var(--fg)!important}
+/* veľký náhľad na stránke Vzhľad */
+body.ram[data-pg=vzhlad] .app{display:flex;flex-direction:column}
+body.ram[data-pg=vzhlad]:not(.ram-nahlad) .view .parte{flex:none}
+body.ram[data-pg=vzhlad]:not(.ram-nahlad) .view{display:flex!important;order:-1;position:relative;align-self:stretch;width:100%;flex-direction:column;align-items:center;justify-content:flex-start;overflow:hidden;padding:14px 16px 0;box-sizing:border-box;background:var(--bg);border-bottom:1px solid var(--line);cursor:zoom-in}
+.v-cap{position:absolute;left:0;right:0;bottom:8px;text-align:center;font-size:13px;color:var(--muted)}
+body:not(.ram) .v-cap,body.ram-nahlad .v-cap,body.ram:not([data-pg=vzhlad]) .v-cap{display:none}
+/* farba ozdôb ako krúžky, prepínače Áno · Nie */
+.kruh{width:42px;height:42px;border-radius:50%;border:2px solid var(--line);padding:0;cursor:pointer;flex:none}
+.kruh[aria-pressed=true]{outline:3px solid #4B7A35;outline-offset:2px}
+.seg-riadok{display:flex;align-items:center;gap:12px;min-height:52px}
+.seg-riadok>span{flex:1;min-width:0;font-size:16px;font-weight:600}
+.seg{display:flex;flex:none;border:1.5px solid var(--line);border-radius:12px;overflow:hidden}
+.seg.cela{flex:1}
+.seg button{min-height:46px;min-width:60px;padding:0 12px;white-space:nowrap;border:0;background:transparent;color:var(--fg);font:inherit;font-size:15px;font-weight:700;cursor:pointer;flex:1}
+.seg button[aria-pressed=true]{background:#4B7A35;color:#fff}
+.foto-riadok{display:flex;align-items:center;gap:12px}
+.foto-k{width:64px;height:76px;border-radius:50%;border:1.5px dashed var(--line);background:var(--bg) center/cover no-repeat;flex:none}
+.foto-riadok .btn{flex:1}
+/* citát a smútiaci ako jeden riadok „Zmeniť ›“ */
+.cit-riadok{width:100%;min-height:60px;display:flex;align-items:center;gap:10px;padding:10px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--bg);color:var(--fg);font:inherit;text-align:left;cursor:pointer}
+.cit-riadok>span:first-child{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.cit-riadok small{font-size:13px;color:var(--muted);font-weight:600}
+.cit-riadok b{font-size:15.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cit-riadok>span:last-child{flex:none;font-weight:800;color:#4B7A35;font-size:15px}
+body.ram .pick:not(.otv)>.qlist{display:none}
+body.ram #fsSmut:not(.otv)>*:not(.cit-riadok){display:none!important}
+body.ram #fsSmut>legend{display:none!important}
+/* Kontrola */
+.k-riadky{display:flex;flex-direction:column;gap:10px}
+.k-r{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid var(--line);border-radius:14px;background:var(--bg)}
+.k-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.k-t small{font-size:13px;color:var(--muted);font-weight:600}
+.k-t b{font-size:16.5px;line-height:1.35;overflow-wrap:anywhere}
+.k-t b.vel{font-size:22px}
+.k-opr{flex:none;min-height:44px;padding:0 14px;border-radius:12px;border:1.5px solid #4B7A35;background:transparent;color:#4B7A35;font:inherit;font-size:15px;font-weight:800;cursor:pointer}
+.k-ok{flex-direction:row!important;align-items:center;gap:12px;min-height:44px;font-size:16.5px;font-weight:600;color:var(--fg)}
+.k-ok input{width:28px;height:28px;min-height:0;margin:0;accent-color:#4B7A35;flex:none}
+</style>
+<script>/* OPRAVY 303: stránky v ráme na mobile, Kontrola pred zverejnením, natívne rady do boku */(function(){
+const $=id=>document.getElementById(id);
+const ram=()=>document.body.classList.contains("ram");
+const RYCHLY=()=>CFG.rezim==="rychly";
+let NAVRAT=false,KOK=false,ZOZ={};
+const OSOBA={parte:"Zosnulý",svadba:"Snúbenci",jubileum:"Oslávenec",blahozelanie:"Oslávenec"};
+const DRUHA={parte:"Posledná rozlúčka",svadba:"Obrad",jubileum:"Oslava",blahozelanie:"Blahoželanie"};
+Object.assign(KROKY,{ozdoby:"Ozdoby",osoba:"Údaje",udaje2:"Údaje",kontrola:"Kontrola"});
+const DATA=["druh","koho","vzhlad","ozdoby","osoba","udaje2","udaje"];
+function nazov(k){return k==="osoba"?OSOBA[st.typ]:k==="udaje2"?DRUHA[st.typ]:k==="ozdoby"?"Ozdoby":KROKY[k]}
+/* kroky v ráme: dlhá cesta 5 stránok, rýchla cesta farára Muž / Žena · Vzhľad · Údaje; potom Kontrola a Hotovo */
+const _kr=kroky;kroky=function(){if(!ram())return _kr();const a=[];if(!CFG.typ)a.push("druh");if(st.typ==="parte")a.push("koho");
+ if(RYCHLY())a.push("vzhlad","udaje");else a.push("vzhlad","ozdoby","osoba","udaje2");a.push("kontrola","hotovo");return a};
+/* povinné polia podľa stránky (prvá časť údajov · druhá časť) */
+const _ch=chyby;chyby=function(k){if(k==="ozdoby"||k==="kontrola")return"";
+ if(k==="osoba"||k==="udaje2"){const vs=POVINNE[st.typ],prvy=id=>{const e=$(id),fs=e&&e.closest("fieldset");return!!fs&&fs.parentNode.querySelector(":scope>fieldset")===fs};
+  POVINNE[st.typ]=vs.filter(([id])=>prvy(id)===(k==="osoba"));try{return _ch.call(this,"udaje")}finally{POVINNE[st.typ]=vs}}
+ return _ch.apply(this,arguments)};
+/* jedna časť sekcie ako samostatná stránka */
+const _ss=showStep;showStep=function(){const r=_ss.apply(this,arguments);if(!ram())return r;const cur=kroky()[STEP];document.body.dataset.pg=cur;
+ const sec=cur==="ozdoby"?"vzhlad":cur==="osoba"||cur==="udaje2"?"udaje":null;if(sec)document.querySelector(`.step[data-s="${sec}"]`).hidden=false;
+ if(cur==="kontrola"){KOK=false;kontrolaUI()}
+ if(cur!=="kontrola"&&!DATA.includes(cur))NAVRAT=false;
+ ui303();fit();hlas303();return r};
+function hlas303(){try{window.edHlas&&window.edHlas()}catch(e){}}
+window.edStav303=function(){const a=kroky(),k=a[STEP],data=a.filter(x=>DATA.includes(x)&&x!=="druh"),i=data.indexOf(k);
+ let dalsi=null;if(i>=0&&i<data.length-1)dalsi=nazov(data[i+1]);
+ const m=miniatura();return{kluc:k,strana:i+1,strany:data.length,dalsi,navrat:NAVRAT,kOk:KOK,rychly:RYCHLY(),mini:{bg:m.podklad,ac:m.ram}}};
+/* Opraviť › z Kontroly: skok na stránku a tlačidlo dole „Späť na kontrolu ›“ */
+function naKontrolu(){NAVRAT=false;STEP=kroky().indexOf("kontrola");showStep()}
+const _dalej=window.edDalej;window.edDalej=function(){if(ram()&&NAVRAT){if(!mozeDalej())return{ok:false,y:null};naKontrolu();return{ok:true}}return _dalej()};
+const _spat=window.edKrokSpat;window.edKrokSpat=function(){if(ram()&&NAVRAT){naKontrolu();return true}return _spat()};
+window.edUkazKontrolu=function(){const l=$("kOkL");if(l){l.classList.add("miss");l.scrollIntoView({block:"center"});setTimeout(()=>l.classList.remove("miss"),1600)}};
+/* Podržte a zverejnite (appka) → uloží sa, krok Hotovo */
+window.edZverejni=function(){const a=kroky(),ki=a.indexOf("kontrola");
+ for(let i=0;i<ki;i++){const t=chyby(a[i]);if(t){NAVRAT=false;STEP=i;showStep();ukazChybu(t);return{ok:false}}}
+ if(!KOK){window.edUkazKontrolu();return{ok:false}}
+ clearTimeout(_as);odosli("hotovo");const b=$("btnDone");b.textContent="Uložené ✓";b.disabled=true;b.classList.add("sent");
+ STEP=a.indexOf("hotovo");showStep();return{ok:true}};
+/* Kontrola: mená a dátumy veľkým písmom, pri každom Opraviť › */
+function kData(){const v=id=>{const e=$(id);return e&&e.value?String(e.value).trim():""},f=x=>x?fmt(x).replace(/<[^>]+>/g,""):"",
+ den=d=>{if(!d)return"";const D=new Date(d+"T12:00");return DEN[D.getDay()]+" "+f(d)},R=RYCHLY(),O=R?"udaje":"osoba",U=R?"udaje":"udaje2",z=st.sex==="z",P=x=>x||"—",
+ nw=a=>a.filter(Boolean).map(x=>`<span style="white-space:nowrap">${esc(x)}</span>`).join(" · "),
+ kedy=(d,c,m)=>[nw([den(d),c]),m?esc(m):""].filter(Boolean).join("<br>")||"—",roky=n=>n?`${n} ${rokov(n)}`:"—";
+ if(st.typ==="parte"){const vk=$("vekOn").checked?vek(v("nar"),v("umr")):null;
+  const roz=$("kruh").checked?"v úzkom rodinnom kruhu":$("neskor").checked||!v("rd")?"Termín doplníme neskôr":kedy(v("rd"),v("rc"),v("rm"));
+  const r=[["Meno a priezvisko",esc(P(v("meno"))),O,1],[z?"Narodila sa · zomrela":"Narodil sa · zomrel",nw([v("nar")?"* "+f(v("nar")):"","† "+(f(v("umr"))||"—"),vk!=null?`${vk} ${rokov(vk)}`:""]),O],["Posledná rozlúčka",roz,U]];
+  if(!R)r.push(["Podpis",esc(v("pod")||"Smútiaca rodina"),U]);return r}
+ if(st.typ==="svadba")return[["Snúbenci",esc(P([v("sNev"),v("sZen")].filter(Boolean).join(" a "))),O,1],["Sobáš",kedy(v("sD"),v("sC"),v("sM")),U]];
+ if(st.typ==="jubileum")return[["Meno",esc(P(v("jMeno"))),O,1],["Vek",roky(+v("jVek")||vek(v("jNar"),v("jD"))),O],["Dátum oslavy",kedy(v("jD"),v("jC"),v("jM")),O]];
+ return[["Meno",esc(P(v("bMeno"))),O,1],["Vek",roky(+v("bVek")||vek(v("bNar"),v("bD"))),O],["Dátum",esc(den(v("bD"))||"—"),O],["Podpis",esc(P(v("bOd"))),U]]}
+function kontrolaUI(){const bx=$("kRiadky");if(!bx)return;
+ bx.innerHTML=kData().map(([t,h,k,vel])=>`<div class="k-r"><span class="k-t"><small>${t}</small><b class="${vel?"vel":""}">${h}</b></span><button type="button" class="k-opr" data-k="${k}">Opraviť ›</button></div>`).join("");
+ bx.querySelectorAll(".k-opr").forEach(b=>b.onclick=()=>{const i=kroky().indexOf(b.dataset.k);if(i<0)return;NAVRAT=true;STEP=i;showStep()});
+ const c=document.querySelector("#kOkL input");if(c)c.checked=KOK}
+/* jednorazová stavba prvkov rámu */
+let hotove=false;
+function postav(){if(hotove||!ram())return;hotove=true;
+ const f=$("f");
+ const ks=document.createElement("section");ks.className="step";ks.dataset.s="kontrola";ks.hidden=true;
+ ks.innerHTML='<h2>Skontrolujte, prosím, mená a dátumy</h2><div class="k-riadky" id="kRiadky"></div><label class="check k-ok" id="kOkL"><input type="checkbox"> Skontroloval(a) som, všetko sedí</label>';
+ f.insertBefore(ks,document.querySelector('.step[data-s="hotovo"]'));
+ ks.querySelector("input").addEventListener("change",e=>{e.stopPropagation();KOK=e.target.checked;hlas303()});
+ const kh=document.querySelector('.step[data-s="koho"]');kh.querySelector("h2").textContent="Koho sa parte týka?";const h=document.createElement("p");h.className="ram-hint";h.textContent="Podľa toho pripravíme texty (drahý / drahá).";kh.querySelector("h2").after(h);
+ /* šablóny a symboly do boku */
+ $("tpls").classList.add("rad");$("syms").classList.add("rad");
+ const tc=document.createElement("p");tc.className="rad-pozn";tc.id="tplsCap";$("tpls").after(tc);
+ const sc=document.createElement("p");sc.className="rad-pozn";sc.id="symsCap";$("syms").after(sc);
+ const cc=document.createElement("p");cc.className="rad-pozn";cc.id="colsCap";$("cols").after(cc);
+ /* náhľad na stránke Vzhľad: popis a ťuk = celá obrazovka */
+ const vc=document.createElement("span");vc.className="v-cap";vc.id="vCap";document.querySelector(".view").appendChild(vc);
+ /* prepínače namiesto zaškrtávacích políčok */
+ seg("orn","Ozdoby a ornamenty",[["Áno",true],["Nie",false]]);
+ seg("bw",null,[["Čiernobielo",true],["Farebne",false]]);
+ seg("vekOn","Uviesť vek",[["Áno",true],["Nie",false]]);
+ seg("neskor",null,[["Poznáme termín",false],["Doplníme neskôr",true]]);
+ /* fotka: Vybrať fotku */
+ const fl=$("foto").closest("label");fl.classList.add("ram-skry");
+ const fr=document.createElement("div");fr.className="foto-riadok len-ram";fr.innerHTML='<span class="foto-k" id="fotoK"></span><button type="button" class="btn ghost" id="btnFotoVyb">Vybrať fotku</button>';fl.before(fr);
+ $("btnFotoVyb").onclick=()=>$("foto").click();
+ document.querySelectorAll(".step[data-s=vzhlad] p.hint").forEach(p=>{if(/posuniete/.test(p.textContent))p.classList.add("ram-skry")});
+ /* citát ako jeden riadok */
+ ["cit","sCit","jCit"].forEach(id=>{const q=$("pk_"+id);if(!q)return;const pk=q.closest(".pick"),pl=pk.querySelector(".plab");if(pl)pl.classList.add("ram-skry");
+  const b=document.createElement("button");b.type="button";b.className="cit-riadok len-ram";b.id="cr_"+id;q.before(b);
+  const c=document.createElement("p");c.className="rad-pozn len-ram";c.id="cc_"+id;q.before(c);
+  b.onclick=()=>{pk.classList.toggle("otv");ui303()};
+  q.addEventListener("click",e=>{if(e.target.closest(".qopt"))setTimeout(()=>{pk.classList.remove("otv");ui303()})})});
+ /* smútiaci ako jeden riadok */
+ const fs=$("fsSmut");if(fs){const b=document.createElement("button");b.type="button";b.className="cit-riadok len-ram";b.id="cr_smut";fs.insertBefore(b,fs.firstChild);b.onclick=()=>{fs.classList.toggle("otv");ui303()}}
+ /* ťuk na veľký náhľad = celá obrazovka (appka) */
+ document.addEventListener("click",e=>{if(!ram()||document.body.dataset.pg!=="vzhlad"||document.body.classList.contains("ram-nahlad"))return;
+  const v=e.target.closest&&e.target.closest(".view");if(!v||e.target.classList.contains("fimg"))return;try{CFG.onCelaObrazovka&&CFG.onCelaObrazovka()}catch(er){}},true)}
+function seg(id,nazovT,moz){const cb=$(id);if(!cb)return;const lab=cb.closest("label");lab.classList.add("ram-skry");
+ const w=document.createElement("div");w.className="seg-riadok len-ram";w.id="seg_"+id;
+ w.innerHTML=(nazovT?`<span>${nazovT}</span>`:"")+`<div class="seg${nazovT?"":" cela"}"></div>`;lab.before(w);
+ moz.forEach(([t,v])=>{const b=document.createElement("button");b.type="button";b.textContent=t;b.dataset.v=v?"1":"";
+  b.onclick=()=>{if(cb.checked!==v){cb.checked=v;cb.dispatchEvent(new Event("change",{bubbles:true}))}ui303()};w.lastChild.appendChild(b)})}
+/* priebežné obnovenie prvkov rámu (po každom vykreslení) */
+function ui303(){if(!ram())return;postav();
+ const L=TLIST(),t=L.find(x=>x.id===st.t)||L[0];
+ const tp=$("tpls"),vid=[...tp.children].filter(b=>!b.hidden).length;
+ [...tp.children].forEach((b,i)=>{const x=L[i];if(!x)return;if(!b.querySelector(".tpl-k")){const n=b.textContent;b.textContent="";
+  b.insertAdjacentHTML("beforeend",`<span class="tpl-k"></span><span class="tpl-n"></span>`);b.querySelector(".tpl-n").textContent=n}
+  const k=b.querySelector(".tpl-k");k.style.background=x.bg;k.style.boxShadow=`inset 0 -6px 0 ${x.ac}`;
+  const on=b.getAttribute("aria-pressed")==="true";let ok=b.querySelector(".tpl-ok");if(on&&!ok)b.insertAdjacentHTML("beforeend",'<span class="tpl-ok" aria-hidden="true">✓</span>');if(!on&&ok)ok.remove()});
+ const lg=tp.closest("fieldset").querySelector("legend");if(lg){lg.classList.add("leg-vel");lg.textContent=`Vyberte vzhľad · ${vid}`}
+ $("tplsCap").textContent=`${vid} vzhľadov · posuňte prstom do boku ›`;
+ $("symsCap").textContent=`${$("syms").children.length} symbolov · do boku ›`;
+ const K=Object.keys(C);[...$("cols").children].forEach((b,i)=>{const k=K[i];if(!k)return;b.className="kruh";b.setAttribute("aria-label",C[k][0]);b.title=C[k][0];b.textContent="";
+  b.style.background=C[k][1]||`linear-gradient(90deg,#fff 50%,${t.ac} 50%)`});
+ $("colsCap").textContent=`${C[st.col][0]} (vybraté)`;
+ document.querySelectorAll(".seg-riadok").forEach(w=>{const cb=$(w.id.slice(4));if(!cb)return;w.querySelectorAll(".seg button").forEach(b=>b.setAttribute("aria-pressed",String(cb.checked===!!b.dataset.v)))});
+ const sv=$("seg_vekOn");if(sv)sv.firstChild.textContent=`Uviesť vek · ${$("vekTxt").textContent||"–"}`;
+ $("fotoK").style.backgroundImage=st.foto?`url("${st.foto}")`:"";const fz=$("fz").closest("label");if(fz)fz.classList.toggle("ram-skry",!st.foto);
+ /* dátumy podľa Muž / Žena, Bol nám, + vlastný */
+ const z=st.sex==="z",lt=(id,tx)=>{const e=$(id),l=e&&e.closest("label");if(l&&l.firstChild&&l.firstChild.nodeType===3)l.firstChild.textContent=tx};
+ if(st.typ==="parte"){lt("nar",z?"Narodila sa":"Narodil sa");lt("umr",z?"Zomrela":"Zomrel")}
+ const vp=$("pk_vztah").closest(".pick").querySelector(".plab");if(vp)vp.textContent=`${z?"Bola":"Bol"} nám (ťuknite všetko, čo platí)`;
+ const vl=[...$("pk_vztah").children].pop();if(vl&&vl.textContent==="Napísať vlastný")vl.textContent="+ vlastný";
+ ["cit","sCit","jCit"].forEach(id=>{const b=$("cr_"+id),c=$("cc_"+id);if(!b)return;const pk=b.closest(".pick"),sel=st.pk[id],otv=pk.classList.contains("otv");
+  const tx=sel==="vlastny"?"Vlastný text":typeof sel==="number"?($(id).value||"").trim():"Bez citátu";
+  b.innerHTML=`<span><small>${id==="jCit"?"Citát / prianie":"Citát"}</small><b></b></span><span>${otv?"Zavrieť ⌃":"Zmeniť ›"}</span>`;b.querySelector("b").textContent=typeof sel==="number"?`„${tx}“`:tx;
+  c.textContent=`Ťuk = zoznam ${Q[id].length} citátov · Bez citátu · Napísať vlastný`;c.hidden=otv});
+ const bs=$("cr_smut");if(bs){const fs=$("fsSmut"),otv=fs.classList.contains("otv"),l=(st.smut||[]).map(x=>x.vztah+" "+x.meno+(x.rodina?" s rodinou":""));
+  bs.innerHTML=`<span><small>Smútiaci · nepovinné</small><b></b></span><span>${otv?"Zavrieť ⌃":"Zmeniť ›"}</span>`;bs.querySelector("b").textContent=l.length?l.join(", "):"zatiaľ nikto"}
+ const t2=TLIST().find(x=>x.id===st.t);$("vCap").textContent=`${t2?t2.n:""} · ťuk = celá obrazovka`}
+/* veľký náhľad na stránke Vzhľad: celý hárok zmenšený nad šablónami */
+const _f=fit;fit=function(){const r=_f.apply(this,arguments);
+ if(ram()&&document.body.dataset.pg==="vzhlad"&&!document.body.classList.contains("ram-nahlad")){const p=$("p"),v=document.querySelector(".view");p.style.transform="";
+  const w=p.offsetWidth,h=p.offsetHeight;if(w&&h){const k=Math.min((innerWidth-32)/w,300/h);p.style.transformOrigin="top center";p.style.transform=`scale(${k})`;v.style.height=Math.round(h*k+50)+"px"}}
+ else if(ram()&&!document.body.classList.contains("ram-nahlad"))document.querySelector(".view").style.height="";
+ return r};
+/* šablóny a symboly sa prekresľujú — rad ostane posunutý, kde bol */
+const _in=init;init=function(){const a=$("tpls").scrollLeft,b=$("syms").scrollLeft;const r=_in.apply(this,arguments);try{ui303()}catch(e){}$("tpls").scrollLeft=a;$("syms").scrollLeft=b;return r};
+const _r=render;render=function(){const r=_r.apply(this,arguments);try{ui303();if(ram())hlas303()}catch(e){}return r};
+const _ie=window.initEditor;window.initEditor=function(){NAVRAT=false;KOK=false;const r=_ie.apply(this,arguments);if(ram()){postav();showStep()}return r};
+})();</script>
+<style>/* OPRAVY 301: krok Hotovo po uložení — na tom istom mieste zelená karta Zverejnené ✓, Pozrieť na stránke ›, Ďalší krok, Hotovo · späť; pri chybe Neuložilo sa · Skúsiť znova */
+.hk{display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:14px}
+.hk-ok{background:#E3EDDA;border:2px solid #4B7A35;color:#1D211B}
+.hk-chyba{background:#F6E3DC;border:2px solid #A34A2A;color:#1D211B}
+.hk-caka{border:1.5px solid var(--line);background:var(--bg)}
+.hk-hl{display:flex;gap:14px;align-items:center}
+.hk-hl>div:last-child{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.hk-t{font-size:22px;font-weight:800;color:#2F5A22}
+.hk-chyba .hk-t{color:#A34A2A}
+.hk-s{font-size:15.5px;line-height:1.45}
+.hk-mini{width:72px;height:108px;flex:none;overflow:hidden;position:relative;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,.18);background:#fff}
+.hk-mini .parte{position:absolute;left:0;top:0;transform-origin:0 0;box-shadow:none;max-width:none}
+.hk .btn{flex:none}
+.hk-dalsi{font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+#hkDalsie{display:flex;flex-direction:column;gap:12px}
+#hkDalsie.mal{flex-direction:row;flex-wrap:wrap;gap:8px}
+#hkDalsie.mal>.btn{flex:1 1 140px;min-height:46px;font-size:15.5px;padding:8px 14px;background:transparent;color:var(--fg);border:1.5px solid var(--line)}
+#hkDalsie.mal>.tlac{flex:1 1 100%}
+body.ram #hkSpat,body.ram #hkZnova{display:none!important}
+body.hk-on #sumar,body.hk-on #btnFull,body.hk-on #kontrola,body.hk-on #hlavne,body.hk-on #poZapecateni{display:none!important}
+</style>
+<script>/* OPRAVY 301: krok Hotovo — appka po uložení zavolá edVysledok({ok, uprava, blok, chyba}) */(function(){
+const $=id=>document.getElementById(id);
+const ram=()=>document.body.classList.contains("ram");
+let ULOZ=null,VYS={};
+function postav(){if($("hotKarta"))return;const sec=document.querySelector('.step[data-s="hotovo"]');
+ const k=document.createElement("div");k.id="hotKarta";k.hidden=true;sec.insertBefore(k,sec.querySelector("#sumar"));
+ const d=document.createElement("div");d.id="hkDalsie";const lab=document.createElement("span");lab.className="hk-dalsi";lab.id="hkDalsiL";lab.textContent="Ďalší krok";lab.hidden=true;
+ const ref=$("btnPrint");sec.insertBefore(lab,ref);sec.insertBefore(d,ref);["btnPrint","tlac","btnPng","btnCitaj"].forEach(id=>{const e=$(id);if(e)d.appendChild(e)});
+ const u=document.createElement("button");u.type="button";u.className="btn ghost";u.id="btnUpravit";u.textContent="Upraviť";u.hidden=true;u.onclick=()=>window.edUpravit();d.appendChild(u);
+ const sp=document.createElement("button");sp.type="button";sp.className="btn ghost";sp.id="hkSpat";sp.hidden=true;sp.onclick=()=>{try{CFG.onHotovo&&CFG.onHotovo()}catch(e){}};d.after(sp)}
+function karta(){postav();const k=$("hotKarta"),typ=TYP[st.typ]||"Oznámenie",blok=VYS.blok||(st.typ==="parte"?"Spomíname":"Teš sa s nami");
+ document.body.classList.toggle("hk-on",!!ULOZ);k.hidden=!ULOZ;
+ const ok=ULOZ==="ok";$("hkDalsiL").hidden=!ok;$("hkDalsie").classList.toggle("mal",ok);$("btnUpravit").hidden=!ok;$("hkDalsie").hidden=ULOZ==="caka"||ULOZ==="chyba";
+ const sp=$("hkSpat");sp.hidden=!ok;sp.textContent=CFG.hotovoText||"Hotovo · späť na stránku farnosti";
+ if(!ULOZ){k.innerHTML="";return}
+ if(ULOZ==="caka"){k.innerHTML='<div class="hk hk-caka" role="status"><b class="hk-s">Ukladá sa…</b></div>';return}
+ if(ULOZ==="chyba"){k.innerHTML='<div class="hk hk-chyba" role="alert"><b class="hk-t">Neuložilo sa</b><span class="hk-s"></span><button type="button" class="btn primary" id="hkZnova">Skúsiť znova</button></div>';
+  k.querySelector(".hk-s").textContent=(VYS.chyba?VYS.chyba.replace(/\s*$/,"")+" ":"")+"Rozpísané ostáva, nič sa nestratilo.";$("hkZnova").onclick=()=>window.edZnova();return}
+ k.innerHTML=`<div class="hk hk-ok" role="status"><div class="hk-hl"><div class="hk-mini" id="hkMini"></div><div><b class="hk-t">${VYS.uprava?"Zmeny sú uložené ✓":"Zverejnené ✓"}</b><span class="hk-s"></span></div></div>${typeof CFG.onPozriet==="function"?'<button type="button" class="btn primary" id="hkPozriet" style="min-height:58px;font-size:18px">Pozrieť na stránke ›</button>':""}</div>`;
+ k.querySelector(".hk-s").textContent=`${typ} je na stránke farnosti v ${blok}.`;
+ const p=$("p"),c=p.cloneNode(true);c.id="";c.style.transform="";c.style.width="420px";c.querySelectorAll(".ph").forEach(x=>x.remove());c.style.maxWidth="none";c.style.boxShadow="none";$("hkMini").appendChild(c);c.style.transformOrigin="0 0";c.style.transform=`scale(${72/420})`;
+ const pz=$("hkPozriet");if(pz)pz.onclick=()=>{try{CFG.onPozriet()}catch(e){}}}
+function hl(){try{window.edHlas&&window.edHlas()}catch(e){}}
+/* uloženie: najprv „Ukladá sa…“, výsledok povie appka */
+const _o=odosli;odosli=function(stav){if(stav==="hotovo"&&CFG.hotovoKarta){ULOZ="caka";VYS={}}const r=_o.apply(this,arguments);if(stav==="hotovo"&&CFG.hotovoKarta){karta();hl()}return r};
+window.edVysledok=function(v){ULOZ=v&&v.ok?"ok":"chyba";VYS=v||{};if(ULOZ==="chyba"){const b=$("btnDone");b.disabled=true}karta();hl();if(ram())$("hotKarta").scrollIntoView({block:"nearest"})};
+window.edZnova=function(){clearTimeout(_as);odosli("hotovo")};
+/* Upraviť a „‹ Späť na úpravu“: späť na posledný krok s údajmi; ďalšie uloženie appka zapíše ako úpravu */
+window.edUpravit=function(){ULOZ=null;VYS={};odomkni();const a=kroky();STEP=Math.max(0,(a.includes("kontrola")?a.indexOf("kontrola"):a.indexOf("hotovo"))-1);showStep();karta();scrollTo({top:0});hl()};
+const _ss=showStep;showStep=function(){const r=_ss.apply(this,arguments);const h=kroky()[STEP]==="hotovo",b=$("btnBack");if(b)b.textContent=h?"‹ Späť na úpravu":"Späť";return r};
+const bb=$("btnBack"),_b=bb.onclick;bb.onclick=function(){if(kroky()[STEP]==="hotovo"&&ULOZ&&ULOZ!=="caka"){window.edUpravit();return}return _b.apply(this,arguments)};
+if(typeof window.edStav303==="function"){const _st=window.edStav303;window.edStav303=function(){return Object.assign(_st(),{uloz:ULOZ,hotovoText:CFG.hotovoText||""})}}
+const _ie=window.initEditor;window.initEditor=function(){ULOZ=null;VYS={};const r=_ie.apply(this,arguments);karta();return r};
+})();</script>
