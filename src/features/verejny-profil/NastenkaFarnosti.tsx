@@ -31,7 +31,7 @@ import { useMojeStranky } from "@/lib/mojeStranky";
 import { CIRKVI, useMojeFarnosti, useSlovaFarnosti, pridajSledovanu, odstranSledovanu, nazovFarnosti, otvorAdresar, sledujemKostol, sledujKostol, prestanKostol, nastavMojKostol, type SledovanyKostol } from "@/lib/mojeFarnosti";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
 import { otvorVerejnyProfil, odkazQrStranky } from "./otvor";
-import { centralnaZPamate, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
+import { centralnaChyba, centralnaZPamate, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
 import { naviazObjekt } from "@/lib/darZbierky";
 import { usePripnute, useCezStranku, dalsiMilnik, type ZbierkaNaPripnutie } from "@/lib/pripnuteZbierky";
 import { nastavZdrojDaru } from "@/lib/darZbierky";
@@ -1387,6 +1387,11 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
     : <div data-blok={id} style={blokStyl(pozadie)}>{lavyStlpec(nadpis, popis)}{obsah}</div>;
   return (<VideneKontext.Provider value={vidO}>
     <div className="nastenka-farnosti" style={{ ...PREMENNE, ["--nf-linia" as string]: farbaLinie, position: "relative", width: "100%", maxWidth: 1440, margin: "0 auto", background: BG, color: INK, display: "flex", flexDirection: "column", fontFamily: "'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif" }}>
+      {/* OPRAVY 307: Hlavná zbierka sa nenačítala zo servera — nie ticho preč */}
+      {!nahlad && centralnaChyba(strankaId) && <div role="alert" style={{ margin: "12px 16px 0", padding: "12px 16px", borderRadius: 14, background: "var(--goldBg, #F3E7C8)", border: "1.5px solid #C9A24A", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", color: INK }}>
+        <b style={{ flex: "1 1 220px", fontSize: 15.5 }}>Hlavnú zbierku sa nepodarilo načítať.</b>
+        <button type="button" onClick={() => { void nacitajCentralnuZbierku(strankaId); }} style={{ minHeight: 44, padding: "0 16px", border: "none", borderRadius: 12, background: "#4B7A35", color: "#fff", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>Skúsiť znova</button>
+      </div>}
       {kronikaTelo}
       {moderneTelo}
       {konzTelo}
