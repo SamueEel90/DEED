@@ -99,13 +99,14 @@ function Pozvanie({ x, strankaId, kto, reg }: { x: PolozkaFarnika; strankaId: st
 }
 
 /** ··· Nahlásiť nevhodný príspevok · Upraviť · moje */
-export function MenuPrispevku({ x, strankaId, kto, moje, vMenu }: { x: PolozkaFarnika; strankaId: string; kto: string; moje: boolean; /** OPRAVY 228: Upraviť a Zmazať autora až v „…“ */ vMenu?: boolean }) {
+export function MenuPrispevku({ x, strankaId, kto, moje, vMenu, bezZmazania, onZmazane }: { x: PolozkaFarnika; strankaId: string; kto: string; moje: boolean; /** OPRAVY 228: Upraviť a Zmazať autora až v „…“ */ vMenu?: boolean;
+  /** OPRAVY 305: parte so zapečatenou pohrebnou zbierkou — len Upraviť (zbierku ukončí Moja zbierka rodiny) */ bezZmazania?: boolean; onZmazane?: () => void }) {
   const [menu, setMenu] = useState(false), [potvrd, setPotvrd] = useState(false), [ok, setOk] = useState(false);
   const tm = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(tm.current), []);
   // OPRAVY 190: svadbu a jubileum (cez editor) si autor upraví sám a zmaže podržaním
-  const mozeUp = moje && ["oznam", "udalost", "modlitba", "svadba", "ine", "fotky"].includes(x.k); // OPRAVY 194: aj fotky z akcie
-  const mozeZmaz = moje && x.k !== "umysel";
+  const mozeUp = moje && ["oznam", "udalost", "modlitba", "svadba", "ine", "fotky", "parte"].includes(x.k); // OPRAVY 194: aj fotky z akcie · OPRAVY 305: aj parte
+  const mozeZmaz = moje && x.k !== "umysel" && !bezZmazania;
   return <>
     {potvrd && <div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--goldBg)", border: `1.5px solid ${ZLATA}`, display: "flex", flexDirection: "column", gap: 8 }}>
       <b style={{ fontSize: 15.5 }}>Nahlásiť farárovi?</b>
@@ -121,7 +122,7 @@ export function MenuPrispevku({ x, strankaId, kto, moje, vMenu }: { x: PolozkaFa
       {menu && <button type="button" onClick={() => { setMenu(false); setPotvrd(true); }} style={{ minHeight: 40, padding: "0 12px", borderRadius: 10, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--ink)" }}>Nahlásiť nevhodný príspevok</button>}
       {mozeUp && (!vMenu || menu) && <button type="button" onClick={() => nastavUpravu(x.id)} style={{ minHeight: 40, padding: "0 12px", borderRadius: 10, border: "1.5px solid var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--gInk)" }}>Upraviť · moje</button>}
       {mozeZmaz && (!vMenu || menu) && <DrzTlacidlo ms={1200} styl={{ minHeight: 40, padding: "0 12px", borderRadius: 10, border: "1.5px solid #A34A2A", background: "transparent", color: "#A34A2A", fontSize: 13.5, fontWeight: 800 }}
-        onHotovo={() => { zmazOdFarnika(strankaId, x.id); toast("Zmazané ✓"); }}>Podržte · zmazať</DrzTlacidlo>}
+        onHotovo={() => { zmazOdFarnika(strankaId, x.id); toast("Zmazané ✓"); onZmazane?.(); }}>Podržte · zmazať</DrzTlacidlo>}
     </div>
   </>;
 }
