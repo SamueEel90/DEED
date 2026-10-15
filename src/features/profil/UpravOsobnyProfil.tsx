@@ -1,7 +1,8 @@
 // KARTA 18 · bod 3 — Upraviť profil (osoba) + Ochrana osoby.
 // Poradie: Fotky · Meno (zamknuté) · Ako sa ukážeš pri dare · Miesto, kde sa zdržiavam · O mne · Súkromie · [Uložiť].
-// Uložiť je zašednuté, kým nie je zmena alebo chýba ulica či mesto.
-import { useEffect, useState, type ReactNode } from "react";
+// OPRAVY 306: Uložiť nikdy nie je mŕtve — keď chýba ulica alebo mesto (povinné), ťuk posunie na pole s červenou vetou;
+// po uložení „Uložené ✓“ na tlačidle, pri zlyhaní hláška a okno ostane otvorené.
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { nacitajPredvolbu, ulozPredvolbu, type VerziaIdentity } from "@/lib/darcovia";
@@ -52,7 +53,10 @@ export function UpravOsobnyProfil({ onClose }: { onClose: () => void }) {
   }, [ja.ucetId]);
   const set = <K extends keyof Stav>(k: K, v: Stav[K]) => setE((x) => ({ ...x, [k]: v }));
   const zmena = JSON.stringify(e) !== JSON.stringify(povodny) || rebricek !== rebricekPovodny;
-  const moze = zmena && e.ulica.trim().length > 0 && e.mesto.trim().length > 0;
+  const chybaU = !e.ulica.trim(), chybaM = !e.mesto.trim();
+  const [pokus, setPokus] = useState(false);
+  const [ulozene, setUlozene] = useState(false);
+  const miestoRef = useRef<HTMLDivElement>(null), ulicaRef = useRef<HTMLInputElement>(null), mestoRef = useRef<HTMLInputElement>(null);
 
   const meno = ja.meno || tr("upravit.clen"), priezv = ja.priezvisko || "";
   const inic = `${meno}${priezv ? ` ${priezv[0]}.` : ""}`;
@@ -62,19 +66,26 @@ export function UpravOsobnyProfil({ onClose }: { onClose: () => void }) {
   const ini = `${meno[0] ?? ""}${priezv[0] ?? ""}`.toUpperCase();
 
   const uloz = () => {
-    if (!moze) return;
+    if (ulozene) return;
+    if (chybaU || chybaM) { // povinné: posunúť na pole s vetou
+      setPokus(true);
+      miestoRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      window.setTimeout(() => (chybaU ? ulicaRef : mestoRef).current?.focus({ preventScroll: true }), 350);
+      return;
+    }
+    if (!zmena) { onClose(); return; } // nič sa nezmenilo
     const { verzia, ...osobny } = e;
-    ulozOsobny(osobny);
+    if (!ulozOsobny(osobny)) { toast(tr("upravit.ulozitChyba")); return; }
     ulozPredvolbu({ ...nacitajPredvolbu(), verzia });
     if (rebricek !== rebricekPovodny) void nastavVRebricku(rebricek).catch(() => toast(tr("upravit.vRebricku.chyba")));
-    toast(tr("upravit.ulozeny"));
-    onClose();
+    setUlozene(true);
+    window.setTimeout(onClose, 900);
   };
 
   return (
     <>
       <Harok onClose={onClose} zatvorText={tr("sp.zrusit")} plnaVyska hlavicka={<span style={{ flex: 1, fontSize: 19, fontWeight: 800 }}>{tr("profil.upravit")}</span>}
-        paticka={<button type="button" onClick={uloz} disabled={!moze} style={{ flex: 1, height: 56, borderRadius: 18, border: "none", fontSize: 17, fontWeight: 800, color: "#fff", cursor: moze ? "pointer" : "default", background: "var(--gGrad)", opacity: moze ? 1 : .45, transition: "opacity .2s ease", fontFamily: "inherit" }}>{tr("sp.ulozit")}</button>}>
+        paticka={<button type="button" onClick={uloz} style={{ flex: 1, height: 56, borderRadius: 18, border: "none", fontSize: 17, fontWeight: 800, color: "#fff", cursor: "pointer", background: "var(--gGrad)", fontFamily: "inherit" }}>{ulozene ? tr("upravit.ulozene") : tr("sp.ulozit")}</button>}>
         <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {nadpis(tr("upravit.fotky"))}
@@ -119,13 +130,15 @@ export function UpravOsobnyProfil({ onClose }: { onClose: () => void }) {
             {pomoc(tr("upravit.predvolene"))}
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {nadpis(tr("upravit.miesto"))}
+          <div ref={miestoRef} style={{ display: "flex", flexDirection: "column", gap: 8, scrollMarginTop: 80 }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>{nadpis(tr("upravit.miesto"))}{(chybaU || chybaM) && <span style={{ fontSize: 12, fontWeight: 800, color: "#A34A2A" }}>{tr("upravit.povinne")}</span>}</div>
             <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 108px", gap: 8 }}>
-              <input value={e.ulica} onChange={(x) => set("ulica", x.target.value)} placeholder={tr("upravit.ulica")} autoComplete="address-line1" style={pole} />
+              <input ref={ulicaRef} value={e.ulica} onChange={(x) => set("ulica", x.target.value)} placeholder={tr("upravit.ulica")} autoComplete="address-line1" aria-invalid={pokus && chybaU} style={{ ...pole, ...(pokus && chybaU ? { borderColor: "#A34A2A" } : {}) }} />
               <input value={e.cislo} onChange={(x) => set("cislo", x.target.value.slice(0, 10))} placeholder={tr("upravit.cislo")} style={{ ...pole, fontVariantNumeric: "tabular-nums" }} />
             </div>
-            <input value={e.mesto} onChange={(x) => set("mesto", x.target.value)} placeholder={tr("upravit.mesto")} autoComplete="address-level2" style={pole} />
+            {pokus && chybaU && <span role="alert" style={{ fontSize: 13.5, fontWeight: 700, color: "#A34A2A" }}>{tr("upravit.doplnUlicu")}</span>}
+            <input ref={mestoRef} value={e.mesto} onChange={(x) => set("mesto", x.target.value)} placeholder={tr("upravit.mesto")} autoComplete="address-level2" aria-invalid={pokus && chybaM} style={{ ...pole, ...(pokus && chybaM ? { borderColor: "#A34A2A" } : {}) }} />
+            {pokus && chybaM && <span role="alert" style={{ fontSize: 13.5, fontWeight: 700, color: "#A34A2A" }}>{tr("upravit.doplnMesto")}</span>}
             {pomoc(tr("upravit.miestoPomoc"))}
           </div>
 

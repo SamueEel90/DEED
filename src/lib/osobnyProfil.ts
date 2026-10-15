@@ -20,10 +20,12 @@ const posluchaci = new Set<() => void>();
 export function nacitajOsobny(): OsobnyProfil {
   try { const s = localStorage.getItem(KLUC); return s ? { ...ZAKLAD, ...JSON.parse(s) } : ZAKLAD; } catch { return ZAKLAD; }
 }
-export function ulozOsobny(p: OsobnyProfil) {
-  try { localStorage.setItem(KLUC, JSON.stringify(p)); } catch { /* LS */ }
+/** OPRAVY 306: vráti false, keď sa nepodarilo zapísať (plné / zakázané úložisko) — zlyhanie má tvár */
+export function ulozOsobny(p: OsobnyProfil): boolean {
+  try { localStorage.setItem(KLUC, JSON.stringify(p)); } catch { return false; }
   zmenene(KLUC);
   verzia++; posluchaci.forEach((f) => f());
+  return true;
 }
 export function useOsobnyProfil(): OsobnyProfil {
   useSyncExternalStore((f) => { posluchaci.add(f); return () => posluchaci.delete(f); }, () => verzia);

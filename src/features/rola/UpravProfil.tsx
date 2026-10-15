@@ -305,14 +305,14 @@ export function UpravProfilSheet({ pozicia, logo, cover, toast, onUloz, onClose 
         </Riadok>
       ))}
 
-      {/* ---- ULOŽIŤ ---- */}
+      {/* ---- ULOŽIŤ ---- OPRAVY 306: nikdy mŕtve — pri chybe veta, čo opraviť */}
       <div style={{ position: "sticky", bottom: 0, paddingTop: SPACE.sm, paddingBottom: SPACE.sm, marginTop: SPACE.md, background: "var(--c-bg)", display: "flex", gap: SPACE.xs }}>
         <button type="button" onClick={onClose}
           style={{ flex: 1, height: 44, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, background: "transparent", color: C.textSec, fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>
           Zrušiť
         </button>
-        <button type="button" onClick={uloz} disabled={!zmenene || dlhy || chybyKontaktu.length > 0}
-          style={{ flex: 2, height: 44, borderRadius: RADIUS.sm, border: "none", background: zmenene && !dlhy && !chybyKontaktu.length ? "var(--a-green)" : "rgba(var(--glass-rgb),.15)", color: zmenene && !dlhy && !chybyKontaktu.length ? "#fff" : C.textTer, fontWeight: 800, fontSize: 14, cursor: zmenene && !dlhy && !chybyKontaktu.length ? "pointer" : "default", fontFamily: "inherit" }}>
+        <button type="button" onClick={() => { if (!zmenene && !dlhy && !chybyKontaktu.length) { toast("Nič ste nezmenili."); return; } uloz(); }}
+          style={{ flex: 2, height: 44, borderRadius: RADIUS.sm, border: "none", background: "var(--a-green)", color: "#fff", fontWeight: 800, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>
           Uložiť profil
         </button>
       </div>
