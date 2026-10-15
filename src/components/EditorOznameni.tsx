@@ -6,7 +6,8 @@
 // ============================================================
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { OknoGalerie, useZdrojFotiek } from "@/components/VyberZGalerie";
-import { DoleKroky, RamPisania } from "@/components/RamPisania";
+import { createPortal } from "react-dom";
+import { DoleKroky, RamPisania, useRamPisania } from "@/components/RamPisania";
 
 export type TypEditora = "parte" | "svadba" | "jubileum" | "blahozelanie";
 export interface PayloadEditora {
@@ -34,7 +35,8 @@ type OknoEditora = Window & { initEditor?: (c: unknown) => void; edKrokSpat?: ()
   edAktivne?: () => HTMLElement | null; edNastavFotku?: (src: string) => void };
 /** krok editora (OPRAVY 258) */
 interface StavKroku { i: number; n: number; nazvy: string[]; typ: string; hotovo: boolean; ulozene: boolean; kontrola: boolean }
-/** OPRAVY 258: rám na mobile — extra = nad poľami editora (napr. Fotky), vrstva = hláška nad rámom; onZavri (prop) = Späť z 1. kroku, rozpísané sa uloží ako koncept */
+/** OPRAVY 258: rám na mobile — extra = nad poľami editora (napr. Fotky), vrstva = hláška nad rámom; onZavri (prop) = Späť z 1. kroku, rozpísané sa uloží ako koncept
+ *  OPRAVY 299: s `ram` na PC (≥ 1024, mimo rámu) to isté okno ako u veriaceho: hore „‹ Späť …“, vľavo nastavenie, vpravo živý náhľad (jeden komponent pre farára aj veriaceho) */
 export interface RamEditora { extra?: ReactNode; vrstva?: ReactNode }
 /** OPRAVY 258: vybratá fotka do editora ako data URL (náhľad a obrázok sa kreslia cez SVG, cudzia adresa by sa nevykreslila) */
 async function naDataUrl(src: string): Promise<string> {
@@ -46,8 +48,14 @@ async function naDataUrl(src: string): Promise<string> {
 }
 
 export interface UdalostTlace { akcia: "tlac" | "obrazok"; papier?: "A4" | "A5" }
-export const EditorOznameni = forwardRef<EditorApi, { cfg: CfgEditora; onSend: (p: PayloadEditora) => void; onUdalost?: (u: UdalostTlace) => void; style?: CSSProperties; title?: string; ram?: RamEditora | null; onZavri?: () => void }>(
-  function EditorOznameni({ cfg, onSend, onUdalost, style, title = "Editor oznámenia", ram, onZavri }, ref) {
+export const EditorOznameni = forwardRef<EditorApi, { cfg: CfgEditora; onSend: (p: PayloadEditora) => void; onUdalost?: (u: UdalostTlace) => void; style?: CSSProperties; title?: string; ram?: RamEditora | null; onZavri?: () => void;
+  /** OPRAVY 299: PC okno — text tlačidla hore a nadpis okna */ spatText?: string; nadpis?: string }>(
+  function EditorOznameni({ cfg, onSend, onUdalost, style, title = "Editor oznámenia", ram: ramProp, onZavri, spatText = "‹ Späť", nadpis }, ref) {
+    // OPRAVY 299: rám na celú obrazovku len na mobile a tablete na výšku; na PC okno s živým náhľadom
+    const naMobile = useRamPisania();
+    const ram = naMobile ? ramProp : null;
+    const pcOkno = !!ramProp && !naMobile;
+    const ulozeneRef = useRef(false);
     const fr = useRef<HTMLIFrameElement>(null);
     const posli = useRef(onSend);
     const udal = useRef(onUdalost);
@@ -72,7 +80,8 @@ export const EditorOznameni = forwardRef<EditorApi, { cfg: CfgEditora; onSend: (
     const naNacitanie = () => {
       try {
         const { navrh, ...zvysok } = cfg;
-        okno()?.initEditor?.({ ...zvysok, ...(navrh ? { navrh } : {}), onSend: (p: PayloadEditora) => posli.current(p), onUdalost: (u: UdalostTlace) => udal.current?.(u),
+        okno()?.initEditor?.({ ...zvysok, ...(navrh ? { navrh } : {}), onUdalost: (u: UdalostTlace) => udal.current?.(u),
+          onSend: (p: PayloadEditora) => { if (p.stav === "hotovo") ulozeneRef.current = true; posli.current(p); },
           onVyberFotku: () => setGalOtv(true), fotkyTlacidlo: zdroj ? zdroj.tlacidlo : "Vybrať z verejných fotiek ›",
           ...(ram ? { ram: true, tema: document.documentElement.classList.contains("dark") ? "dark" : "light",
             onKrok: (k: StavKroku) => { setKrok(k); if (k.i !== krokI.current) { krokI.current = k.i; setChyba(""); telo.current?.scrollTo({ top: 0 }); } },
@@ -89,8 +98,26 @@ export const EditorOznameni = forwardRef<EditorApi, { cfg: CfgEditora; onSend: (
       if (nahl) { if (el) { el.scrollTop = 0; setPlocha(el.clientHeight); try { w?.edNahladRam?.(true, el.clientWidth, el.clientHeight); } catch { /* */ } } }
       else if (el && spat.current.top) { try { w?.edNahladRam?.(false, 0, 0); } catch { /* */ } el.scrollTop = spat.current.top; const a = spat.current.el; spat.current = { top: 0, el: null }; if (a) try { a.focus({ preventScroll: true }); } catch { /* */ } }
     }, [nahl, !!ram]); // eslint-disable-line react-hooks/exhaustive-deps
-    const iframe = <iframe ref={fr} src={`/editor/oznamenia.html#${cfg.typ}`} onLoad={naNacitanie} title={title}
-      style={ram ? { display: "block", width: "100%", height: nahl ? plocha : Math.max(vyska, 200), border: "none", background: "transparent" } : { display: "block", width: "100%", border: "none", background: "#EFEAE1", ...style }} />;
+    const iframe = <iframe key={ram ? "ram" : "pc"} ref={fr} src={`/editor/oznamenia.html#${cfg.typ}`} onLoad={naNacitanie} title={title}
+      style={ram ? { display: "block", width: "100%", height: nahl ? plocha : Math.max(vyska, 200), border: "none", background: "transparent" }
+        : pcOkno ? { position: "absolute", inset: 0, display: "block", width: "100%", height: "100%", border: "none", background: "#EFEAE1" }
+        : { display: "block", width: "100%", border: "none", background: "#EFEAE1", ...style }} />;
+    if (pcOkno) {
+      // ‹ Späť: najprv krok späť v editore (ako u veriaceho), z 1. kroku alebo po uložení zavrie; rozpísané sa uloží ako koncept
+      const spatPc = () => { try { if (!ulozeneRef.current && okno()?.edKrokSpat?.()) return; okno()?.edUlozKoncept?.(); } catch { /* */ } onZavri?.(); };
+      return createPortal(
+        <div role="dialog" aria-modal="true" aria-label={nadpis ?? title} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(20,17,11,.82)", overscrollBehavior: "contain", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: 16, boxSizing: "border-box" }}>
+          <div style={{ width: "100%", maxWidth: 1200, flex: "none", display: "flex", alignItems: "center", gap: 12 }}>
+            <button type="button" onClick={spatPc} style={{ minHeight: 52, padding: "0 20px", border: "none", borderRadius: 14, background: "#4B7A35", color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 17, fontWeight: 800, boxShadow: "none" }}>{spatText}</button>
+          </div>
+          <div className="sc-tokeny" style={{ position: "relative", flex: 1, minHeight: 0, width: "100%", maxWidth: 1200, borderRadius: 20, overflow: "hidden", background: "var(--bg)", color: "var(--ink)", display: "flex", flexDirection: "column" }}>
+            <div style={{ flex: "none", padding: "14px 16px 10px", borderBottom: "1px solid var(--cardBd)" }}><b style={{ fontSize: 19 }}>{nadpis ?? title}</b></div>
+            {ramProp?.extra && <div style={{ flex: "none", maxHeight: "55%", overflowY: "auto", borderBottom: "1px solid var(--cardBd)" }}>{ramProp.extra}</div>}
+            <div style={{ position: "relative", flex: 1, minHeight: 0 }}>{iframe}{ramProp?.vrstva}</div>
+          </div>
+          {galeria}
+        </div>, document.body);
+    }
     if (!ram) return <>{iframe}{galeria}</>;
     const zavri = () => { try { okno()?.edUlozKoncept?.(); } catch { /* */ } onZavri?.(); };
     const spatKrok = () => { if (krok?.ulozene || !okno()?.edKrokSpat?.()) zavri(); };

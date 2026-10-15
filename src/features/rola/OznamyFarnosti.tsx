@@ -610,7 +610,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       <div style={{ padding: "18px 16px 28px", display: "flex", flexDirection: "column", gap: 14 }}>{editEl}{polia}</div>
     </RamPisania>}
     {jub && jubOtv && <EditorOznameni key={`${edit ?? "novy"}-${edTyp}`} ref={edRef} title={ODRUHY[odr][0]} onSend={(p) => { void naEditor(p); }} onUdalost={(e) => zapisEditora({ udalost: e.akcia, typ: edTyp, papier: e.papier ?? null, kto: "farar", stranka_typ: "farnost", stranka: strankaId, pri_zbierke: false })}
-      ram={{}} onZavri={() => setJubOtv(false)} cfg={jubCfg} />}
+      ram={{}} onZavri={() => setJubOtv(false)} cfg={jubCfg} spatText="‹ Späť do Správy" nadpis={`${edit ? "Úprava · " : ""}${ODRUHY[odr][0]}`} />}
     {vpOn && <NahladNastenky strankaId={strankaId} meno={meno} profil={profil} mobil={mobil} doOznamu={posledne ?? undefined} onSpat={() => setVpOn(false)} />}
   </>;
 }

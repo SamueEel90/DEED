@@ -387,7 +387,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
           <button type="button" onClick={() => setEdMob(true)} style={{ ...tlZ, height: 56, fontSize: 16 }}>{edKon ? "Pokračovať v tvorbe parte ›" : "Otvoriť tvorbu parte ›"}</button>
           {/* OPRAVY 258 · 272: rýchly postup (Muž / Žena → vzhľad → údaje → Hotovo) v ráme na celú obrazovku, PC aj mobil; po Hotovo späť na krok 2, nové parte vybraté */}
           {edMob && <EditorOznameni ref={edRef} title="Parte" onSend={(p) => { void naEditor(p); }} onUdalost={(e) => zapisEditora({ udalost: e.akcia, typ: "parte", papier: e.papier ?? null, ...kdeStat })}
-            ram={{}} onZavri={() => { setEdMob(false); if (!edKon) setRezim(""); }} cfg={edCfg} />}
+            ram={{}} onZavri={() => { setEdMob(false); if (!edKon) setRezim(""); }} cfg={edCfg} spatText="‹ Späť na zbierku" nadpis="Parte" />}
         </>}
         {rezim === "sab" && druh !== "pohreb" && <>
           <b style={{ fontSize: 16 }}>Nové {T.ozn} zo šablóny farnosti</b>

@@ -598,30 +598,26 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     <b style={{ fontSize: 17, color: "var(--gInk)" }}>Zverejnené ✓</b>
     <span style={{ fontSize: 14.5, lineHeight: 1.45, color: "var(--ink2)" }}>Už to vidia všetci na stránke farnosti. Vytlačiť alebo stiahnuť môžete dole v editore.</span>
   </div>;
-  const editorEl = (ram: { extra?: ReactNode; vrstva?: ReactNode } | null) => k && (
-    <EditorOznameni ref={edRef} title={T?.t} onSend={(p) => { void naEditor(p); }} onUdalost={(e) => zapisEditora({ udalost: e.akcia, typ: TYP_EDITORA[k]!, papier: e.papier ?? null, ...kdeStat })} style={{ position: "absolute", inset: 0, height: "100%" }}
-      ram={ram} onZavri={spatNaStranku}
+  // OPRAVY 299: ten istý komponent rozhodne sám — mobil rám na celú obrazovku, PC okno s živým náhľadom
+  const editorEl = (ram: { extra?: ReactNode; vrstva?: ReactNode }) => k && (
+    <EditorOznameni ref={edRef} title={T?.t} onSend={(p) => { void naEditor(p); }} onUdalost={(e) => zapisEditora({ udalost: e.akcia, typ: TYP_EDITORA[k]!, papier: e.papier ?? null, ...kdeStat })}
+      ram={ram} onZavri={spatNaStranku} spatText="‹ Späť na stránku farnosti" nadpis={edId ? `Upraviť · ${T?.t ?? ""}` : T?.t}
       cfg={{ typ: TYP_EDITORA[k]!, sektor: "viera", rezim: "plny", qrObrazok: k === "parte" ? qrStr : undefined, miesta: k === "parte" ? ["v Dome smútku", "vo farskom kostole", "na miestnom cintoríne"] : undefined, kontext: { stranka: strankaId, veriaci: true },
         navrh: edId ? odFarnikov(strankaId).find((y) => y.id === edId)?.editor ?? null : konceptEd.get(`${strankaId}|${k}`) ?? null }} />);
   // KARTA 57C §2: formulár nad stránkou — hore „‹ Späť na stránku farnosti", stránka presvitá
-  const spat = () => { if (jeEd && !hotovo && edRef.current?.krokSpat()) return; spatNaStranku(); };
-  const okno = jeEd && ramOn ? editorEl({ extra: galeriaEd ? <div style={{ padding: "8px 16px", borderBottom: "1px solid var(--cardBd)" }}>{galRiadok}</div> : undefined, vrstva: edToastEl(84) })
+  const okno = jeEd ? editorEl({ extra: galeriaEd ? <div style={{ padding: "8px 16px", borderBottom: ramOn ? "1px solid var(--cardBd)" : undefined }}>{galRiadok}</div> : undefined, vrstva: edToastEl(ramOn ? 84 : 12) })
     : k && createPortal(
     <div role="dialog" aria-modal="true" aria-label={T?.t} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(20,17,11,.82)", overscrollBehavior: "contain", display: "flex", flexDirection: "column", alignItems: "center", gap: mobil ? 10 : 12, padding: mobil ? "calc(10px + env(safe-area-inset-top, 0px)) 10px 10px" : 16, boxSizing: "border-box" }}>
-      <div style={{ width: "100%", maxWidth: jeEd ? 1200 : 520, flex: "none", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+      <div style={{ width: "100%", maxWidth: 520, flex: "none", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         {/* OPRAVY 201: nad oknom len Späť (mobil 44 px, 15 px), okno hneď pod ním */}
-        <button type="button" onClick={spat} style={{ minHeight: mobil ? 44 : 52, padding: mobil ? "0 16px" : "0 20px", border: "none", borderRadius: mobil ? 12 : 14, background: ZELENA, color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: mobil ? 15 : 17, fontWeight: 800 }}>‹ Späť na stránku farnosti</button>
+        <button type="button" onClick={spatNaStranku} style={{ minHeight: mobil ? 44 : 52, padding: mobil ? "0 16px" : "0 20px", border: "none", borderRadius: mobil ? 12 : 14, background: ZELENA, color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: mobil ? 15 : 17, fontWeight: 800 }}>‹ Späť na stránku farnosti</button>
       </div>
-      <div className="sc-tokeny" style={{ position: "relative", flex: 1, minHeight: 0, width: "100%", maxWidth: jeEd ? 1200 : 520, borderRadius: 20, overflow: "hidden", background: "var(--bg)", color: "var(--ink)", display: "flex", flexDirection: "column" }}>
+      <div className="sc-tokeny" style={{ position: "relative", flex: 1, minHeight: 0, width: "100%", maxWidth: 520, borderRadius: 20, overflow: "hidden", background: "var(--bg)", color: "var(--ink)", display: "flex", flexDirection: "column" }}>
         <div style={{ flex: "none", padding: "14px 16px 10px", borderBottom: "1px solid var(--cardBd)" }}><b style={{ fontSize: 19 }}>{edId ? `Upraviť · ${T?.t ?? ""}` : T?.t}</b></div>
-        {jeEd && galeriaEd && <div style={{ flex: "none", maxHeight: galOtv ? "55%" : undefined, overflowY: "auto", borderBottom: "1px solid var(--cardBd)", padding: "8px 16px" }}>{galRiadok}</div>}
-        {jeEd ? <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
-          {editorEl(null)}
-          {edToastEl(12)}
-        </div> : <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
           <div style={{ padding: "8px 16px 24px", display: "flex", flexDirection: "column", gap: 14 }}>{formular}</div>
-        </div>}
-        {!jeEd && <div style={{ flex: "none", borderTop: "1px solid var(--cardBd)", background: "var(--bg)" }}>
+        </div>
+        <div style={{ flex: "none", borderTop: "1px solid var(--cardBd)", background: "var(--bg)" }}>
           <div style={{ padding: "12px 16px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
             {!edId && maObsahV && <ZahoditRozpisane onZahodit={() => { zmazKoncept(KONV); zavri(); }} />}
             {chyba && ch.length > 0 && <span role="alert" style={{ padding: "12px 14px", borderRadius: 12, background: "var(--goldBg)", border: `1.5px solid ${ZLATA}`, fontSize: 15, fontWeight: 800, color: "var(--ink)" }}>Ešte doplňte: {ch.map((c) => c[1]).join(", ")}. Označili sme to vyššie.</span>}
@@ -633,7 +629,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
               <span style={{ fontSize: 13, color: "var(--ink3)", textAlign: "center" }}>Podržte prst na tlačidle, kým sa nenaplní.</span>
             </> : <button type="button" onClick={zverejni} disabled={uklada} style={{ minHeight: 56, border: "none", borderRadius: 14, background: ch.length ? "var(--btn)" : ZELENA, cursor: "pointer", fontFamily: "inherit", fontSize: 17, fontWeight: 800, color: ch.length ? "var(--ink)" : "#fff" }}>{edId ? "Uložiť zmeny" : um ? "Zapísať úmysel" : "Zverejniť"}</button>}
           </div>
-        </div>}
+        </div>
       </div>
     </div>, document.body);
 

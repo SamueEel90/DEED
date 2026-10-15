@@ -998,4 +998,8 @@ const _i=window.initEditor;window.initEditor=function(cfg){const R=!!(cfg&&cfg.r
  if(R&&cfg.tema)document.documentElement.setAttribute("data-theme",cfg.tema);
  const r=_i.apply(this,arguments);fotoTl();if(R){fit();hlas();setTimeout(vyska,30)}return r};
 })();</script>
+<style>/* OPRAVY 299: PC (mimo rámu) — vľavo stĺpec s nastavením najviac 640 px, šablóny v mriežke 3 v rade, vpravo stály živý náhľad (prilepený, mení sa hneď po ťuknutí) */
+@media (min-width:821px){body:not(.ram) .app{grid-template-columns:minmax(0,640px) minmax(0,1fr);max-width:1200px}
+ body:not(.ram) .tpls{grid-template-columns:repeat(3,minmax(0,1fr))}body:not(.ram) .tpl{height:120px}}
+</style>
 <script>/* OPRAVY 273: aj fotka z rozpísaného návrhu sa zmenší */(function(){const _i=window.initEditor;if(!_i)return;window.initEditor=function(){const r=_i.apply(this,arguments);try{if(st&&st.foto&&st.foto.length>700000)zmensiFoto(st.foto,x=>{st.foto=x;render()})}catch(e){}return r}})();</script>
