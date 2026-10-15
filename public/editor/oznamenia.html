@@ -1206,3 +1206,58 @@ const _in=init;init=function(){const a=$("tpls").scrollLeft,b=$("syms").scrollLe
 const _r=render;render=function(){const r=_r.apply(this,arguments);try{ui303();if(ram())hlas303()}catch(e){}return r};
 const _ie=window.initEditor;window.initEditor=function(){NAVRAT=false;KOK=false;const r=_ie.apply(this,arguments);if(ram()){postav();showStep()}return r};
 })();</script>
+<style>/* OPRAVY 301: krok Hotovo po uložení — na tom istom mieste zelená karta Zverejnené ✓, Pozrieť na stránke ›, Ďalší krok, Hotovo · späť; pri chybe Neuložilo sa · Skúsiť znova */
+.hk{display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:14px}
+.hk-ok{background:#E3EDDA;border:2px solid #4B7A35;color:#1D211B}
+.hk-chyba{background:#F6E3DC;border:2px solid #A34A2A;color:#1D211B}
+.hk-caka{border:1.5px solid var(--line);background:var(--bg)}
+.hk-hl{display:flex;gap:14px;align-items:center}
+.hk-hl>div:last-child{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.hk-t{font-size:22px;font-weight:800;color:#2F5A22}
+.hk-chyba .hk-t{color:#A34A2A}
+.hk-s{font-size:15.5px;line-height:1.45}
+.hk-mini{width:72px;height:108px;flex:none;overflow:hidden;position:relative;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,.18);background:#fff}
+.hk-mini .parte{position:absolute;left:0;top:0;transform-origin:0 0;box-shadow:none;max-width:none}
+.hk .btn{flex:none}
+.hk-dalsi{font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+#hkDalsie{display:flex;flex-direction:column;gap:12px}
+#hkDalsie.mal{flex-direction:row;flex-wrap:wrap;gap:8px}
+#hkDalsie.mal>.btn{flex:1 1 140px;min-height:46px;font-size:15.5px;padding:8px 14px;background:transparent;color:var(--fg);border:1.5px solid var(--line)}
+#hkDalsie.mal>.tlac{flex:1 1 100%}
+body.ram #hkSpat,body.ram #hkZnova{display:none!important}
+body.hk-on #sumar,body.hk-on #btnFull,body.hk-on #kontrola,body.hk-on #hlavne,body.hk-on #poZapecateni{display:none!important}
+</style>
+<script>/* OPRAVY 301: krok Hotovo — appka po uložení zavolá edVysledok({ok, uprava, blok, chyba}) */(function(){
+const $=id=>document.getElementById(id);
+const ram=()=>document.body.classList.contains("ram");
+let ULOZ=null,VYS={};
+function postav(){if($("hotKarta"))return;const sec=document.querySelector('.step[data-s="hotovo"]');
+ const k=document.createElement("div");k.id="hotKarta";k.hidden=true;sec.insertBefore(k,sec.querySelector("#sumar"));
+ const d=document.createElement("div");d.id="hkDalsie";const lab=document.createElement("span");lab.className="hk-dalsi";lab.id="hkDalsiL";lab.textContent="Ďalší krok";lab.hidden=true;
+ const ref=$("btnPrint");sec.insertBefore(lab,ref);sec.insertBefore(d,ref);["btnPrint","tlac","btnPng","btnCitaj"].forEach(id=>{const e=$(id);if(e)d.appendChild(e)});
+ const u=document.createElement("button");u.type="button";u.className="btn ghost";u.id="btnUpravit";u.textContent="Upraviť";u.hidden=true;u.onclick=()=>window.edUpravit();d.appendChild(u);
+ const sp=document.createElement("button");sp.type="button";sp.className="btn ghost";sp.id="hkSpat";sp.hidden=true;sp.onclick=()=>{try{CFG.onHotovo&&CFG.onHotovo()}catch(e){}};d.after(sp)}
+function karta(){postav();const k=$("hotKarta"),typ=TYP[st.typ]||"Oznámenie",blok=VYS.blok||(st.typ==="parte"?"Spomíname":"Teš sa s nami");
+ document.body.classList.toggle("hk-on",!!ULOZ);k.hidden=!ULOZ;
+ const ok=ULOZ==="ok";$("hkDalsiL").hidden=!ok;$("hkDalsie").classList.toggle("mal",ok);$("btnUpravit").hidden=!ok;$("hkDalsie").hidden=ULOZ==="caka"||ULOZ==="chyba";
+ const sp=$("hkSpat");sp.hidden=!ok;sp.textContent=CFG.hotovoText||"Hotovo · späť na stránku farnosti";
+ if(!ULOZ){k.innerHTML="";return}
+ if(ULOZ==="caka"){k.innerHTML='<div class="hk hk-caka" role="status"><b class="hk-s">Ukladá sa…</b></div>';return}
+ if(ULOZ==="chyba"){k.innerHTML='<div class="hk hk-chyba" role="alert"><b class="hk-t">Neuložilo sa</b><span class="hk-s"></span><button type="button" class="btn primary" id="hkZnova">Skúsiť znova</button></div>';
+  k.querySelector(".hk-s").textContent=(VYS.chyba?VYS.chyba.replace(/\s*$/,"")+" ":"")+"Rozpísané ostáva, nič sa nestratilo.";$("hkZnova").onclick=()=>window.edZnova();return}
+ k.innerHTML=`<div class="hk hk-ok" role="status"><div class="hk-hl"><div class="hk-mini" id="hkMini"></div><div><b class="hk-t">${VYS.uprava?"Zmeny sú uložené ✓":"Zverejnené ✓"}</b><span class="hk-s"></span></div></div>${typeof CFG.onPozriet==="function"?'<button type="button" class="btn primary" id="hkPozriet" style="min-height:58px;font-size:18px">Pozrieť na stránke ›</button>':""}</div>`;
+ k.querySelector(".hk-s").textContent=`${typ} je na stránke farnosti v ${blok}.`;
+ const p=$("p"),c=p.cloneNode(true);c.id="";c.style.transform="";c.style.width="420px";c.querySelectorAll(".ph").forEach(x=>x.remove());c.style.maxWidth="none";c.style.boxShadow="none";$("hkMini").appendChild(c);c.style.transformOrigin="0 0";c.style.transform=`scale(${72/420})`;
+ const pz=$("hkPozriet");if(pz)pz.onclick=()=>{try{CFG.onPozriet()}catch(e){}}}
+function hl(){try{window.edHlas&&window.edHlas()}catch(e){}}
+/* uloženie: najprv „Ukladá sa…“, výsledok povie appka */
+const _o=odosli;odosli=function(stav){if(stav==="hotovo"&&CFG.hotovoKarta){ULOZ="caka";VYS={}}const r=_o.apply(this,arguments);if(stav==="hotovo"&&CFG.hotovoKarta){karta();hl()}return r};
+window.edVysledok=function(v){ULOZ=v&&v.ok?"ok":"chyba";VYS=v||{};if(ULOZ==="chyba"){const b=$("btnDone");b.disabled=true}karta();hl();if(ram())$("hotKarta").scrollIntoView({block:"nearest"})};
+window.edZnova=function(){clearTimeout(_as);odosli("hotovo")};
+/* Upraviť a „‹ Späť na úpravu“: späť na posledný krok s údajmi; ďalšie uloženie appka zapíše ako úpravu */
+window.edUpravit=function(){ULOZ=null;VYS={};odomkni();const a=kroky();STEP=Math.max(0,(a.includes("kontrola")?a.indexOf("kontrola"):a.indexOf("hotovo"))-1);showStep();karta();scrollTo({top:0});hl()};
+const _ss=showStep;showStep=function(){const r=_ss.apply(this,arguments);const h=kroky()[STEP]==="hotovo",b=$("btnBack");if(b)b.textContent=h?"‹ Späť na úpravu":"Späť";return r};
+const bb=$("btnBack"),_b=bb.onclick;bb.onclick=function(){if(kroky()[STEP]==="hotovo"&&ULOZ&&ULOZ!=="caka"){window.edUpravit();return}return _b.apply(this,arguments)};
+if(typeof window.edStav303==="function"){const _st=window.edStav303;window.edStav303=function(){return Object.assign(_st(),{uloz:ULOZ,hotovoText:CFG.hotovoText||""})}}
+const _ie=window.initEditor;window.initEditor=function(){ULOZ=null;VYS={};const r=_ie.apply(this,arguments);karta();return r};
+})();</script>

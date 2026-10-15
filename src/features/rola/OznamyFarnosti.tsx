@@ -191,11 +191,13 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   const [uklada, setUklada] = useState(false);
   const [posledne, setPosledne] = useState<string | null>(null); // OPRAVY 275: náhľad práve zverejneného
   const opakuj = useRef<(() => void) | null>(null);
+  const chybaRef = useRef(""); // OPRAVY 301: text chyby pre kartu v editore
+  const ulozenyRef = useRef<string | null>(null); // OPRAVY 301: po zverejnení v editore ďalšie uloženie (Upraviť) = úprava toho istého
   const ulozIsto = async (it: VieraFeedItem, uprava: boolean, znova?: () => void): Promise<boolean> => {
     setUklada(true); setChybaUl(null);
     const e = await zapisPrispevokIsto(strankaId, it, uprava);
     setUklada(false);
-    if (e) { setChybaUl(e); opakuj.current = znova ?? (() => { void ulozIsto(it, uprava).then((ok) => { if (ok) { setHotovo(uprava ? "Zmeny sú uložené ✓" : "Zverejnené ✓"); setEdit(null); setJubKon(null); zmazKoncept(`oznam.${strankaId}`); obnov((x) => x + 1); } }); }); return false; }
+    if (e) { chybaRef.current = e; setChybaUl(e); opakuj.current = znova ?? (() => { void ulozIsto(it, uprava).then((ok) => { if (ok) { setHotovo(uprava ? "Zmeny sú uložené ✓" : "Zverejnené ✓"); setEdit(null); setJubKon(null); zmazKoncept(`oznam.${strankaId}`); obnov((x) => x + 1); } }); }); return false; }
     return true;
   };
   // OPRAVY 258: jubileum na mobile — Editor oznámení v ráme na celú obrazovku; rozpísané ostane (koncept) aj po Späť
@@ -219,7 +221,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   // OPRAVY 271: jubileum sa na mobile otvára rovno v editore na celú obrazovku
   // OPRAVY 272: oznámenie (parte, svadba, jubileum, iné) = Editor oznámení na celú obrazovku, PC aj mobil
   const zmenOdr = (i: number) => { setOdr(i); const d = ODRUHY[i][1]; setU(prazdneUdaje(d)); setVolba(prvaVolba(d)); if (osp === 0) setJubOtv(true); };
-  const vycisti = () => { setJubOtv(false); setN(""); setTxt(""); setTxtKey((k) => k + 1); setPlati(0); setUsp(0); setDat(""); setCas(""); setMiesto(""); setMedia([]); setPlagat(undefined); setPozv(0); setLimit(""); setOsp(0); zmenOdr(0); setKde(null); setOzIne(false); setKdeU(""); setUpozV(null); setEdit(null); };
+  const vycisti = () => { ulozenyRef.current = null; setJubOtv(false); setN(""); setTxt(""); setTxtKey((k) => k + 1); setPlati(0); setUsp(0); setDat(""); setCas(""); setMiesto(""); setMedia([]); setPlagat(undefined); setPozv(0); setLimit(""); setOsp(0); zmenOdr(0); setKde(null); setOzIne(false); setKdeU(""); setUpozV(null); setEdit(null); };
   const novy = () => { vycisti(); setHotovo(null); setVyb(false); };
   const zavriForm = () => { vycisti(); setHotovo(null); setVyb(false); setFormOn(false); setKonRozh(false); };
   const vyberDruh = (i: Druh) => { setDr(i); setHotovo(null); setVyb(true); };
@@ -304,7 +306,8 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   const zahod = () => { zmazKoncept(KON); if (jub) setJubKon(null); vycisti(); setVyb(false); setKonRozh(true); };
   const zverejni = async () => {
     if (ch.length || chybaSab || uklada) return;
-    const povodny = edit ? zoznam.find((x) => x.id === edit) : undefined;
+    const povodnyId = edit ?? ulozenyRef.current;
+    const povodny = povodnyId ? zoznam.find((x) => x.id === povodnyId) : undefined;
     const teraz = terazMs(), id = povodny?.id ?? `naboz-${teraz}`;
     const oz: NastavenieOznamu = { dr, n: n.trim(), txt, plati, usp, dat, cas, miesto, pozv: dr !== 2 ? pozv : 0, limit: pozv === 2 ? limit : "", odr, osp, u: sablona ? u : undefined, volba: sablona ? volba : undefined, kal: povodny?.oz?.kal,
       mi: dr === 0 && viacMiest && !ozIne && kde && kde.length < miestaF.length ? kde : dr === 1 && viacMiest && kdeK ? [kdeK] : undefined, kk: dr === 1 && kdeK ? kdeK : undefined,
@@ -356,13 +359,16 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
 
   // ---- BLOK C 235: jubileum z Editora (Blahoželanie) — zverejní sa po „Áno, uložiť“ v editore ----
   const edRef = useRef<EditorApi>(null);
+  // OPRAVY 301: editor sa zatvára sám (Späť, Hotovo · späť do Správy, Pozrieť na stránke); po uložení s ním skončila aj úprava
+  const zavriEditor = () => { setJubOtv(false); if (ulozenyRef.current) { ulozenyRef.current = null; setEdit(null); } };
   const naEditor = async (p: PayloadEditora) => {
     zapisZPayloadu(p, { kto: "farar", stranka_typ: "farnost", stranka: strankaId, pri_zbierke: false });
-    if (p.stav === "koncept" && !edit) setJubKon(p);
+    if (p.stav === "koncept" && !edit && !ulozenyRef.current) setJubKon(p);
     if (p.stav !== "hotovo") return;
     const P = p.polia ?? {}, str = (k: string) => String(P[k] ?? "").trim();
     const obr = (await edRef.current?.nahlad(p.typ === "parte" ? undefined : { verejny: true })) || ""; // OPRAVY 275: na stránku verejný hárok (bez času a miesta hostiny)
-    const povodny = edit ? zoznam.find((x) => x.id === edit) : undefined;
+    const povodnyId = edit ?? ulozenyRef.current;
+    const povodny = povodnyId ? zoznam.find((x) => x.id === povodnyId) : undefined;
     const teraz = terazMs(), id = povodny?.id ?? `naboz-${teraz}`;
     // OPRAVY 273: návrh editora sa ukladá raz — pri parte v smutocny.editor (Spomíname), inak v oz.ed · KARTA 63: upoz aj z Editora (Samuel)
     const oz: NastavenieOznamu = { dr: 2, n: "", txt: "", plati: 0, usp: 0, dat: "", cas: "", miesto: "", pozv: 0, limit: "", odr, osp: 0, ed: p.typ === "parte" ? undefined : p, upoz };
@@ -382,11 +388,13 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       it = { ...zaklad, tag: odr === INE ? "Oznámenie" : "Jubileum", nazov: `Blahoželanie · ${menoB || "jubilant"}`, popis: menoB, reakciaTyp: "blahozelanie" };
     }
     const prazdne: Partial<VieraFeedItem> = { udalost: undefined, datum: undefined, fotky: undefined, video: undefined, plagat: undefined, ukat: undefined, smutocny: undefined, reakciaTyp: undefined, pozvanie: undefined, rsvp: undefined };
-    if (!(await ulozIsto(povodny ? { ...povodny, ...prazdne, ...it } : it, !!povodny))) { setJubOtv(false); return; }
-    setPosledne(it.id);
-    setJubKon(null); setJubOtv(false); zmazKoncept(KON);
-    if (povodny) { setHotovo("Zmeny sú uložené ✓"); setEdit(null); } else setHotovo("Oznámenie je zverejnené ✓");
+    // OPRAVY 301: editor ostane otvorený — karta Zverejnené ✓ alebo Neuložilo sa · Skúsiť znova (rozpísané ostáva)
+    if (!(await ulozIsto(povodny ? { ...povodny, ...prazdne, ...it } : it, !!povodny))) { setChybaUl(null); opakuj.current = null; edRef.current?.vysledok({ ok: false, chyba: chybaRef.current }); return; }
+    setPosledne(it.id); ulozenyRef.current = it.id;
+    setJubKon(null); zmazKoncept(KON);
+    setHotovo(povodny ? "Zmeny sú uložené ✓" : "Oznámenie je zverejnené ✓");
     obnov((x) => x + 1);
+    edRef.current?.vysledok({ ok: true, uprava: !!povodny, blok: p.typ === "parte" ? "Spomíname" : "Teš sa s nami" });
   };
 
   // ---- KARTA 57 C.3: Upraviť zverejnené — formulár sa naplní z `oz` (staršie oznamy bez `oz` sa odvodia) ----
@@ -610,7 +618,8 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       <div style={{ padding: "18px 16px 28px", display: "flex", flexDirection: "column", gap: 14 }}>{editEl}{polia}</div>
     </RamPisania>}
     {jub && jubOtv && <EditorOznameni key={`${edit ?? "novy"}-${edTyp}`} ref={edRef} title={ODRUHY[odr][0]} onSend={(p) => { void naEditor(p); }} onUdalost={(e) => zapisEditora({ udalost: e.akcia, typ: edTyp, papier: e.papier ?? null, kto: "farar", stranka_typ: "farnost", stranka: strankaId, pri_zbierke: false })}
-      ram={{}} onZavri={() => setJubOtv(false)} cfg={jubCfg} spatText="‹ Späť do Správy" nadpis={`${edit ? "Úprava · " : ""}${ODRUHY[odr][0]}`} />}
+      ram={{}} onZavri={zavriEditor} cfg={jubCfg} spatText="‹ Späť do Správy"
+      onPozriet={() => { zavriEditor(); setVpOn(true); }} onHotovo={zavriEditor} hotovoText="Hotovo · späť do Správy" nadpis={`${edit ? "Úprava · " : ""}${ODRUHY[odr][0]}`} />}
     {vpOn && <NahladNastenky strankaId={strankaId} meno={meno} profil={profil} mobil={mobil} doOznamu={posledne ?? undefined} onSpat={() => setVpOn(false)} />}
   </>;
 }

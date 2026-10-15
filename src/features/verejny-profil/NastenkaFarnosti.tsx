@@ -117,6 +117,18 @@ const tlacR = (ja: boolean, tmave: boolean, plne = false): CSSProperties => ({
 export function posunNaBlok(blok: string) {
   document.querySelector(`[data-blok="${blok}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
+/** OPRAVY 301: stránka presne pri oznámení (data-oz), zvýraznené asi 2 s; kým sa nevykreslí, skúša znova. Vráti zrušenie. */
+export function zvyrazniOznam(id: string, koren?: () => ParentNode | null | undefined, nenaslo?: () => void): () => void {
+  let n = 0, t = 0;
+  const najdi = () => {
+    const el = [...((koren?.() ?? document).querySelectorAll<HTMLElement>(`[data-oz="${CSS.escape(id)}"]`))].find((e) => e.offsetParent !== null && e.getBoundingClientRect().height > 0);
+    if (!el) { if (++n < 20) t = window.setTimeout(najdi, 150); else nenaslo?.(); return; }
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.animate([{ outline: "4px solid #C9A24A", outlineOffset: "4px", boxShadow: "0 0 0 10px rgba(201,162,74,.28)" }, { outline: "4px solid #C9A24A", outlineOffset: "4px", boxShadow: "0 0 0 10px rgba(201,162,74,.28)", offset: 0.7 }, { outline: "4px solid transparent", outlineOffset: "4px", boxShadow: "0 0 0 10px rgba(201,162,74,0)" }], { duration: 2600, delay: 450, easing: "ease-out" });
+  };
+  t = window.setTimeout(najdi, 250);
+  return () => window.clearTimeout(t);
+}
 
 export interface NastenkaProps {
   strankaId: string; meno: string; profil: ProfilStranky | null;

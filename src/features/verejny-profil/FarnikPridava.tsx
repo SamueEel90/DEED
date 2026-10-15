@@ -281,7 +281,6 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   const [media, setMedia] = useState<MediumZbierky[]>([]);
   const [chyba, setChyba] = useState(false);
   const [hotovo, setHotovo] = useState<string | null>(null);
-  const [edToast, setEdToast] = useState(false);
   const [uklada, setUklada] = useState(false);
   const [casChyba, setCasChyba] = useState(false); // OPRAVY 180: zlý čas počas písania
   // KARTA 57C §2: po zverejnení zelená hláška dole na stránke + posun k bloku
@@ -296,9 +295,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     if (druh !== "umysel") onPozriet(id);
   };
   const edRef = useRef<EditorApi>(null);
-  const tm = useRef<number | undefined>(undefined);
-  useEffect(() => () => window.clearTimeout(tm.current), []);
-  const zavri = () => { setK(null); setHotovo(null); setEdId(null); setEdToast(false); };
+  const zavri = () => { setK(null); setHotovo(null); setEdId(null); };
   /** ‹ Späť na stránku farnosti — po uloženom oznámení z editora hláška a posun k bloku */
   const spatNaStranku = () => { const h = hotovo, kk = k; zavri(); if (h && kk && CEZ_EDITOR.includes(kk)) naStranke(h, kk, false); };
   useEffect(() => {
@@ -332,7 +329,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   if (!self.on || !povol.length) return null;
 
   const set = (z: Partial<FormularVeriaceho>) => { setF((q) => ({ ...q, ...z })); setChyba(false); };
-  const otvor = (kk: DruhFarnika) => { setF(prazdnyF()); setTxtKey((n) => n + 1); setMedia([]); setChyba(false); setHotovo(null); setEdId(null); setEdToast(false); setSheet(false); setK(kk); };
+  const otvor = (kk: DruhFarnika) => { setF(prazdnyF()); setTxtKey((n) => n + 1); setMedia([]); setChyba(false); setHotovo(null); setEdId(null); setSheet(false); setK(kk); };
   const T = DRUHY_FARNIKA.find((d) => d.k === k);
   const plati = pop > 0 && !T?.zadarmo && !edId;
   const fotky = media.filter((m) => m.typ === "foto");
@@ -402,15 +399,18 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
       : k === "svadba" ? [fmtD(str("sD")), str("sC"), str("sM")].filter(Boolean).join(" · ") : [fmtD(str("jD")), str("jC"), str("jM")].filter(Boolean).join(" · ");
     const obr = (await edRef.current?.nahlad(k === "parte" ? undefined : { verejny: true })) || ""; // OPRAVY 275: verejný hárok
     let it: PolozkaFarnika;
-    const povodny = edId ? odFarnikov(strankaId).find((y) => y.id === edId) : undefined; // OPRAVY 190: úprava ponechá id aj reakcie
+    const povId = edId ?? hotovo; // OPRAVY 301: po zverejnení Upraviť = úprava toho istého
+    const povodny = povId ? odFarnikov(strankaId).find((y) => y.id === povId) : undefined; // OPRAVY 190: úprava ponechá id aj reakcie
     try { it = await bezDataUrl<PolozkaFarnika>({ ...(povodny ?? {}), id: povodny?.id ?? `f${teraz().toString(36)}`, k, t: t || druhT(k), s, kto: povodny?.kto ?? (ja.celeMeno || "Veriaci"), cas: povodny?.cas ?? teraz(), autor: povodny?.autor ?? kto, mesto: povodny?.mesto ?? ja.mesto, autorFoto: povodny?.autorFoto ?? ja.foto ?? undefined, editor: p, obr: obr || undefined,
       // OPRAVY 212: svadba a jubileum majú aj galériu (Editor oznámení len na obrázok pozvánky)
       ...(k === "svadba" || k === "ine" ? { fotky: fotky.length ? fotky.map((m) => m.src) : undefined, popisy: fotky.some((m) => m.popis) ? fotky.map((m) => m.popis ?? "") : undefined } : {}) }, "od-veriacich"); }
-    catch (e) { toast(e instanceof Error ? e.message : "Oznámenie sa nepodarilo uložiť."); return; }
+    catch (e) { edRef.current?.vysledok({ ok: false, chyba: e instanceof Error ? e.message : "Oznámenie sa nepodarilo uložiť." }); return; }
     const eUl = await zapisOdFarnikaIsto(strankaId, it, !!povodny); // OPRAVY 273
-    if (eUl) { toast(`${eUl} Rozpísané ostáva.`); return; }
+    if (eUl) { edRef.current?.vysledok({ ok: false, chyba: eUl }); return; }
     konceptEd.delete(`${strankaId}|${k}`);
-    setHotovo(it.id); setEdToast(true); window.clearTimeout(tm.current); tm.current = window.setTimeout(() => setEdToast(false), 2500);
+    setHotovo(it.id);
+    // OPRAVY 301: karta Zverejnené ✓ v editore (namiesto krátkej hlášky)
+    edRef.current?.vysledok({ ok: true, uprava: !!povodny, blok: BLOK_DRUHU[k]?.[1] });
   };
 
   // OPRAVY 278: + vždy plávajúce vpravo dole, 58 px, zelený prechod — rovnaké vo všetkých vzhľadoch, PC aj mobil
@@ -594,18 +594,14 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     </button>
     {galOtv && <GaleriaEditor media={media} onMedia={setMedia} ph={mobil} max={8} bezVidea nadpis="Fotky" dovetok=" Ukážu sa po ťuknutí na oznámenie. Pod fotku môžete napísať popis." />}
   </>;
-  const edToastEl = (hore: number) => edToast && <div role="status" style={{ position: "absolute", left: 16, right: 16, top: hore, zIndex: 3, maxWidth: 560, margin: "0 auto", padding: "14px 16px", borderRadius: 16, background: "var(--gSoft)", border: "2px solid var(--green)", boxShadow: "0 10px 26px rgba(30,28,20,.2)", display: "flex", flexDirection: "column", gap: 4 }}>
-    <b style={{ fontSize: 17, color: "var(--gInk)" }}>Zverejnené ✓</b>
-    <span style={{ fontSize: 14.5, lineHeight: 1.45, color: "var(--ink2)" }}>Už to vidia všetci na stránke farnosti. Vytlačiť alebo stiahnuť môžete dole v editore.</span>
-  </div>;
   // OPRAVY 299: ten istý komponent rozhodne sám — mobil rám na celú obrazovku, PC okno s živým náhľadom
   const editorEl = (ram: { extra?: ReactNode; vrstva?: ReactNode }) => k && (
     <EditorOznameni ref={edRef} title={T?.t} onSend={(p) => { void naEditor(p); }} onUdalost={(e) => zapisEditora({ udalost: e.akcia, typ: TYP_EDITORA[k]!, papier: e.papier ?? null, ...kdeStat })}
-      ram={ram} onZavri={spatNaStranku} spatText="‹ Späť na stránku farnosti" nadpis={edId ? `Upraviť · ${T?.t ?? ""}` : T?.t}
+      ram={ram} onZavri={spatNaStranku} spatText="‹ Späť na stránku farnosti" onPozriet={spatNaStranku} onHotovo={zavri} hotovoText="Hotovo · späť na stránku farnosti" nadpis={edId ? `Upraviť · ${T?.t ?? ""}` : T?.t}
       cfg={{ typ: TYP_EDITORA[k]!, sektor: "viera", rezim: "plny", qrObrazok: k === "parte" ? qrStr : undefined, miesta: k === "parte" ? ["v Dome smútku", "vo farskom kostole", "na miestnom cintoríne"] : undefined, kontext: { stranka: strankaId, veriaci: true },
         navrh: edId ? odFarnikov(strankaId).find((y) => y.id === edId)?.editor ?? null : konceptEd.get(`${strankaId}|${k}`) ?? null }} />);
   // KARTA 57C §2: formulár nad stránkou — hore „‹ Späť na stránku farnosti", stránka presvitá
-  const okno = jeEd ? editorEl({ extra: galeriaEd ? <div style={{ padding: "8px 16px", borderBottom: ramOn ? "1px solid var(--cardBd)" : undefined }}>{galRiadok}</div> : undefined, vrstva: edToastEl(ramOn ? 84 : 12) })
+  const okno = jeEd ? editorEl({ extra: galeriaEd ? <div style={{ padding: "8px 16px", borderBottom: ramOn ? "1px solid var(--cardBd)" : undefined }}>{galRiadok}</div> : undefined })
     : k && createPortal(
     <div role="dialog" aria-modal="true" aria-label={T?.t} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(20,17,11,.82)", overscrollBehavior: "contain", display: "flex", flexDirection: "column", alignItems: "center", gap: mobil ? 10 : 12, padding: mobil ? "calc(10px + env(safe-area-inset-top, 0px)) 10px 10px" : 16, boxSizing: "border-box" }}>
       <div style={{ width: "100%", maxWidth: 520, flex: "none", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
