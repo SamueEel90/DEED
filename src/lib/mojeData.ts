@@ -9,18 +9,29 @@ import { useEffect } from "react";
 import { supabase } from "./supabase";
 
 const obnovy = new Map<string, () => void>();
+type Zluc = (lokal: unknown, ucet: unknown) => unknown;
+const zlucenia = new Map<string, Zluc>();
 const VLASTNIK = "deed.mojeData.vlastnik";
 let vUcte: string | null = null;
 
 /** modul: „tento kľúč patrí do účtu", obnov = znova načítaj z localStorage + ohlás zmenu */
-export function zaregistrujKluc(kluc: string, obnov: () => void) {
+/** `zluc` (voliteľné): pri prihlásení sa obsah zariadenia zlúči s účtom (namiesto „účet má prednosť") */
+export function zaregistrujKluc(kluc: string, obnov: () => void, zluc?: Zluc) {
   obnovy.set(kluc, obnov);
+  if (zluc) zlucenia.set(kluc, zluc);
   if (vUcte && zUctu) zladKluc(kluc, obnov, cudziPrehliadac); // modul sa načítal až po synchronizácii (lazy obrazovka)
 }
 let zUctu: Map<string, unknown> | null = null;
 let cudziPrehliadac = false; // tento prehliadač predtým používal iný účet
 function zladKluc(kluc: string, obnov: () => void, cudzi: boolean) {
-  if (zUctu?.has(kluc)) {
+  const zluc = zlucenia.get(kluc);
+  if (zUctu?.has(kluc) && zluc && !cudzi) {
+    const ucet = zUctu.get(kluc), spolu = zluc(citaj(kluc), ucet);
+    try { localStorage.setItem(kluc, JSON.stringify(spolu)); } catch { /* LS */ }
+    zUctu.set(kluc, spolu);
+    obnov();
+    if (JSON.stringify(spolu) !== JSON.stringify(ucet)) void posli(kluc);
+  } else if (zUctu?.has(kluc)) {
     try { localStorage.setItem(kluc, JSON.stringify(zUctu.get(kluc))); } catch { /* LS */ }
     obnov();
   } else if (cudzi) {

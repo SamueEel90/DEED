@@ -1,16 +1,19 @@
 // ============================================================
 // OPRAVY 297 (Martin 15. 10.) — videné oznamy a akcie sa zbalia (Nástenka, Moderné, Kronika, Klasika; PC aj mobil).
 //  · videné = rozklikol ho (ťuk kdekoľvek do karty: viac, Prídem, fotka …), alebo bol celý na obrazovke aspoň 2 s;
-//  · pamätá tento prehliadač / telefón (localStorage, aj bez prihlásenia); iné zariadenie = všetko znova celé;
+//  · neprihlásený: pamätá len tento prehliadač / telefón (localStorage); iné zariadenie = všetko znova celé;
+//  · prihlásený (doplnok 297): videné sa ukladá k účtu (moje_data, 0084b) — mobil aj PC vedia to isté;
+//    pri prihlásení sa videné zo zariadenia zlúči s účtom (zjednotenie, pri rozdiele platí zariadenie);
 //  · zbalí sa až pri ďalšej návšteve — stav sa číta raz pri otvorení stránky (snímka), nikdy pod prstom;
 //  · zmenený obsah (iný podpis) sa znova rozbalí so štítkom ZMENENÉ, nový pri ďalšej návšteve so štítkom NOVÉ.
 // Použitie: <VideneKontext.Provider value={useVidenePocas(stránka)}> … <Videne id podpis kratke={…}>celá karta</Videne>.
 // ============================================================
+import { zaregistrujKluc, zmenene } from "./mojeData";
 import { createContext, useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 export type StavVidene = "plne" | "nove" | "zmenene" | "videne";
 type Mapa = Record<string, string>;
-const KLUC = (stranka: string) => `deed.videne.${stranka}`;
+const KLUC = (stranka: string) => `deed.videne.${stranka.replace(/[^a-zA-Z0-9_.-]/g, "_").slice(0, 68)}`; // kľúč moje_data (0084b)
 const MAX = 600;
 
 function citaj(stranka: string): Mapa {
@@ -22,6 +25,21 @@ function zapis(stranka: string, m: Mapa) {
     if (k.length > MAX) k.slice(0, k.length - MAX).forEach((x) => { if (x !== "__n") delete m[x]; }); // najstaršie preč
     localStorage.setItem(KLUC(stranka), JSON.stringify(m));
   } catch { /* LS */ }
+  zmenene(KLUC(stranka)); // prihlásený → do účtu
+}
+/** zlúčenie zariadenia s účtom: všetko videné z oboch; pri inom podpise platí zariadenie */
+function zluc(lokal: unknown, ucet: unknown): Mapa {
+  const o = (x: unknown) => (x && typeof x === "object" ? x as Mapa : {});
+  const m = { ...o(ucet), ...o(lokal) };
+  if (o(ucet).__n === "1") m.__n = "1";
+  return m;
+}
+const registrovane = new Set<string>();
+function doUctu(stranka: string) {
+  const k = KLUC(stranka);
+  if (registrovane.has(k)) return;
+  registrovane.add(k);
+  zaregistrujKluc(k, () => {}, zluc); // snímka stránky sa nemení (zbalí sa až pri ďalšej návšteve)
 }
 
 /** krátky podpis obsahu — zmena textu, času, miesta alebo fotky = iný podpis (ZMENENÉ) */
@@ -38,6 +56,7 @@ export const VideneKontext = createContext<Videnia | null>(null);
 /** snímka pri otvorení stránky; „nové“ len ak tu človek už bol (prvá návšteva = všetko celé bez štítkov) */
 export function useVidenePocas(stranka: string): Videnia {
   const [v] = useState<Videnia>(() => {
+    doUctu(stranka); // už synchronizovaný účet sa zlúči hneď (pred snímkou)
     const snimka = citaj(stranka), bol = snimka.__n === "1";
     zapis(stranka, { ...snimka, __n: "1" });
     return {
