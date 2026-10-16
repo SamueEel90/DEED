@@ -1333,3 +1333,151 @@ $("btnPng").onclick=async()=>{try{if(typeof CFG.onUdalost==="function")CFG.onUda
 /* tlač až po načítaní fotiek */
 $("btnTlac").onclick=async()=>{await pripravTlac();await Promise.all([...$("printArea").querySelectorAll("img")].map(i=>i.decode?i.decode().catch(()=>{}):null));try{if(typeof CFG.onUdalost==="function")CFG.onUdalost({akcia:"tlac",papier:PAPIER})}catch(e){}window.print()};
 })();</script>
+<style>/* OPRAVY 318: Editor parte na mobile (dlhá cesta) — 5 strán + Kontrola podľa prototypu „Editor mobil v2“ (zlatý rám PLATÍ · 16. 10. 1:25).
+   1 Muž / Žena + meno, dátumy, vek + Fotka · 2 Vzhľad (veľký náhľad hore, dole nízky pás miniatúr 48 × 66, názov nad miniatúrou) · 3 Ozdoby · 4 Bol nám + Citát · 5 Posledná rozlúčka → Kontrola (QR Áno · Nie).
+   Strana je na výber alebo na písanie; na iPhone 11 Pro bez rolovania. Pri väčšom písme sa strana posúva (natívne, rolovanie má iframe), nič nevyteká doprava. */
+html.r318{overflow-x:hidden}
+body.ram .form,body.ram fieldset,body.ram .step,body.ram label,body.ram .pick,body.ram .row>*{min-width:0;max-width:100%}
+body.ram input,body.ram textarea,body.ram select,body.ram .btn{max-width:100%;box-sizing:border-box}
+body.ram .row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+body.p318 .form{padding:16px 16px 20px;gap:12px;margin:0}
+body.p318 .app{display:flow-root}
+body.p318 .ram-hint{display:none}
+body.p318 .step[data-s=koho]>h2{font-size:23px;margin:0}
+body.p318 #sex{flex-direction:row;gap:10px}
+body.p318 #sex .chip{flex:1;min-height:48px;font-size:16px;font-weight:700;border-radius:12px}
+body.p318 #k318{display:flex;flex-direction:column;gap:10px}
+body.p318 #k318 input:not([type=checkbox]){height:46px;min-height:46px;padding-top:0;padding-bottom:0}
+body.p318[data-pg=koho] .form{gap:10px;padding-top:12px;padding-bottom:12px}
+body.p318 #k318 .seg button{min-height:42px}
+body.p318 #k318>label,body.p318 #k318 .row>label{font-size:14px;font-weight:700;color:var(--muted);gap:6px}
+body.p318 #k318 .seg-riadok{min-height:44px}
+body.p318 .seg button{white-space:normal;line-height:1.2;padding:4px 10px}
+.n318{font-size:13px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:2px 0 -4px}
+body.p318 #k318 .foto-k{width:48px;height:56px}
+body.p318[data-pg=vzhlad] .step[data-s=vzhlad]>fieldset:not(:first-of-type),body.p318[data-pg=ozdoby] .step[data-s=vzhlad]>fieldset:nth-of-type(n+4){display:none!important}
+/* 2 · Vzhľad: náhľad čo najväčší hore, dole nízky pás */
+body.p318{margin:0}
+body.p318[data-pg=vzhlad]:not(.ram-nahlad) .app{display:flex;flex-direction:column;min-height:100vh;gap:0}
+body.p318[data-pg=vzhlad]:not(.ram-nahlad) .view{flex:1 1 0;min-height:230px;border-bottom:0;overflow:hidden}
+body.p318[data-pg=vzhlad]:not(.ram-nahlad) .view .parte{width:420px;max-width:none}
+body.p318[data-pg=vzhlad] .form{flex:none;padding:10px 0 8px;gap:0;border-top:1px solid var(--line)}
+body.p318[data-pg=vzhlad] .step[data-s=vzhlad]>fieldset:first-of-type{gap:6px}
+body.p318[data-pg=vzhlad] .step[data-s=vzhlad]>fieldset:first-of-type>legend{display:none}
+body.p318 #tplsCap{display:none}
+.vz318{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:0 16px}
+.vz318 b{font-size:16px;color:var(--fg)}.vz318 span{font-size:13.5px;color:var(--muted);white-space:nowrap}
+body.p318 #tpls{gap:10px;padding:4px 16px 4px;scroll-padding-left:16px}
+body.p318 .tpl{width:62px;gap:4px;font-size:11.5px;line-height:1.15}
+body.p318 .tpl-n{order:-1;height:27px;display:flex;align-items:flex-end;justify-content:center;max-width:62px;font-weight:700;color:var(--fg)}
+body.p318 .tpl-k{width:48px;height:66px;border-radius:5px;border:1px solid var(--line)!important;box-shadow:none!important;position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:7px;gap:3px}
+body.p318 .tpl[aria-pressed=true] .tpl-k{outline:3px solid #4B7A35;outline-offset:2px}
+body.p318 .tpl-ok{display:none}
+.m318r{position:absolute;inset:3px;border:1px solid;border-radius:2px;pointer-events:none}
+.m318s{height:11px;display:flex;align-items:center;justify-content:center}.m318s svg{height:11px;width:auto}
+.m318f{width:18px;height:22px;border-radius:50%;background:center/cover no-repeat}
+.m318l{width:26px;height:2px;border-radius:1px;margin-top:2px}.m318l+.m318l{width:18px;margin-top:0}
+.v-cap{bottom:6px}
+/* 3 · Ozdoby: symboly ako ťukacie tlačidlá (nie rad do boku), krúžky farieb v jednom riadku */
+body.p318 #syms{flex-wrap:wrap!important;overflow:visible;padding:2px 0;scroll-snap-type:none}
+body.p318 #symsCap{display:none}
+body.p318 #cols{flex-wrap:wrap!important;gap:7px}
+body.p318 #cols .kruh{width:38px;height:38px}
+/* 4 · Bol nám + Citát */
+body.p318[data-pg=osoba] #fsP>fieldset:first-child>legend{display:none}
+body.p318 #cc_cit{display:none}
+body.p318 #pk_vztah{gap:8px}
+body.p318 #pk_vztah~.plab,body.p318 .pick>.plab.v318{font-size:13px;font-weight:800;letter-spacing:.06em;color:var(--muted)}
+.v318 small{font-weight:600;letter-spacing:0;font-size:13px}
+/* 5 · Posledná rozlúčka: dátum a čas vedľa seba, čas cez hodiny telefónu */
+body.p318[data-pg=udaje2] #fsRoz>legend{display:none}
+body.p318 #ch_rc{display:none}
+body.p318 #rc{display:block!important}
+body.p318 #rozBox .row>label,body.p318 .pick-rc318{font-size:14px;font-weight:700;color:var(--muted)}
+body.p318 .pick-rc318{display:flex;flex-direction:column;gap:4px}
+/* Kontrola: QR presunutý sem */
+body.p318 #qrPrep{display:none!important}
+html body.ram.p318[data-pg=kontrola]:not(.rychly) #qrPrep{display:flex!important;flex-direction:column;align-items:stretch!important;gap:8px!important;padding:12px 14px!important;border-radius:14px!important}
+body.p318[data-pg=kontrola] #qrPrep>span:first-child{flex:none!important}
+body.p318[data-pg=kontrola] #qrPrep>span:nth-child(2){display:flex;gap:8px}
+body.p318[data-pg=kontrola] #qrPrep>span:nth-child(2)>button{flex:1;min-height:46px!important}
+body.p318[data-pg=kontrola] #qrPrep>span:nth-child(3){display:none}
+body.p318 .step[data-s=kontrola]>h2{font-size:21px;margin:0}
+body.p318 .k-riadky{gap:8px}
+body.p318 .k-r{padding:10px 12px}
+body.p318 .k-t b,body.p318 .k-t b.vel{font-size:15px;line-height:1.3}
+body.p318 .step[data-s=kontrola]>h2{font-size:20px}
+body.p318 .k-r{padding:8px 12px;gap:10px}
+body.p318 .k-opr{min-height:40px;padding:0 12px;font-size:14.5px}
+html body.ram.p318[data-pg=kontrola] #qrPrep{padding:10px 12px!important}
+body.p318[data-pg=kontrola] #qrPrep>span:nth-child(2)>button{min-height:44px!important}
+body.p318[data-pg=udaje2] #fsRoz,body.p318[data-pg=udaje2] #rozBox{gap:8px}
+body.p318[data-pg=udaje2] #fsP{gap:12px!important}
+</style>
+<script>/* OPRAVY 318: dlhá cesta parte v ráme — presun polí na 1. stranu, pás miniatúr, Kontrola s QR, skutočná miniatúra parte pre pás náhľadu */(function(){
+const $=id=>document.getElementById(id);
+const ram=()=>document.body.classList.contains("ram");
+const P=()=>ram()&&st.typ==="parte"&&CFG.rezim!=="rychly";
+const SPAT=[];let ZAP=false;
+/* presun prvku na nové miesto; na pôvodné miesto ostane značka (návrat, keď editor nie je v ráme) */
+function presun(el,kam,pred){if(!el||!kam)return;const z=document.createComment("318");el.parentNode.insertBefore(z,el);SPAT.push([el,z]);kam.insertBefore(el,pred||null)}
+function zapni(){if(ZAP)return;ZAP=true;
+ if(!$("fotoRiadok")&&typeof render==="function")render();
+ const kh=document.querySelector('.step[data-s="koho"]');let k=$("k318");if(!k){k=document.createElement("div");k.id="k318";kh.appendChild(k)}
+ const meno=$("meno").closest("label"),fs=meno.parentNode;
+ presun(meno,k);presun($("rodL"),k);presun($("nar").closest(".row"),k);presun($("seg_vekOn"),k);presun($("vekOn").closest("label"),k);
+ let n=$("n318f");if(!n){n=document.createElement("p");n.className="n318 len-ram";n.id="n318f";n.textContent="Fotka"}k.appendChild(n);
+ presun($("fotoRiadok"),k);presun($("seg_bw"),k);presun($("bw").closest("label"),k);
+ /* čas vedľa dátumu */
+ const rr=$("rd").closest(".row"),pc=$("rc").closest(".pick");if(rr&&pc&&rr.children[1]&&rr.children[1].tagName==="SPAN"){rr.children[1].hidden=true;pc.classList.add("pick-rc318");presun(pc,rr)}
+ /* QR na Kontrolu (nad zaškrtnutie) */
+ /* nadpis pásu vzhľadov */
+ const tf=$("tpls").closest("fieldset");if(!$("vz318")){const h=document.createElement("div");h.className="vz318 len-ram";h.id="vz318";h.innerHTML="<b></b><span>do boku ›</span>";tf.insertBefore(h,$("tpls"))}
+ document.documentElement.classList.add("r318")}
+function vypni(){if(!ZAP)return;ZAP=false;while(SPAT.length){const[el,z]=SPAT.pop();z.parentNode.insertBefore(el,z);z.remove()}
+ const rr=$("rd").closest(".row");if(rr&&rr.children[1])rr.children[1].hidden=false;const pc=$("rc").closest(".pick");if(pc)pc.classList.remove("pick-rc318");
+ const v=$("vz318");if(v)v.remove();document.documentElement.classList.remove("r318","r318v");document.body.classList.remove("p318")}
+const MENA=()=>({koho:"Vzhľad",vzhlad:"Ozdoby",ozdoby:st.sex==="z"?"Bola nám":"Bol nám",osoba:"Posledná rozlúčka"});
+/* povinné polia: meno a dátum úmrtia už na 1. strane */
+const _ch=chyby;chyby=function(k){if(!P())return _ch.apply(this,arguments);
+ if(k==="koho"){const t=_ch.call(this,"koho");if(t)return t;return _ch.call(this,"udaje")}
+ if(k==="osoba")return"";if(k==="udaje2")return _ch.call(this,"udaje");return _ch.apply(this,arguments)};
+/* jedna strana = jedna obrazovka; po prechode hore */
+const _ss=showStep;showStep=function(){const r=_ss.apply(this,arguments);if(P())zapni();else vypni();
+ document.body.classList.toggle("p318",P());
+ if(P()){const cur=kroky()[STEP];document.documentElement.classList.toggle("r318v",cur==="vzhlad");
+  if(cur==="kontrola")kontrola318();ui318();try{scrollTo(0,0)}catch(e){}}
+ return r};
+/* Kontrola: Meno, Narodil sa · zomrel, Posledná rozlúčka (Opraviť › na 1. a 5. stranu), QR Áno · Nie, zaškrtnutie */
+function kontrola318(){const ks=document.querySelector('.step[data-s="kontrola"]');if(!ks)return;const q=$("qrPrep");if(q&&q.parentNode!==ks)presun(q,ks,$("kOkL"));const h=ks.querySelector("h2");if(h)h.textContent="Skontrolujte mená a dátumy";
+ ks.querySelectorAll(".k-r").forEach(r=>{const t=(r.querySelector("small")||{}).textContent||"",b=r.querySelector(".k-opr");if(/^Podpis/.test(t)){r.remove();return}
+  if(b&&b.dataset.k==="osoba")b.dataset.k="koho"})}
+/* pás miniatúr: farba pozadia, symbol, rámik, fotka; bez fotky len vzhľady bez fotky */
+function ui318(){if(!P())return;
+ const L=T,tp=$("tpls"),bez=!st.foto;let vid=0,zvol=null;
+ [...tp.children].forEach((b,i)=>{const t=L[i];if(!t)return;const skry=bez&&t.foto;b.hidden=skry;if(!skry){vid++;if(!zvol)zvol=b}
+  const k=b.querySelector(".tpl-k");if(!k)return;const ac=C[st.col]&&C[st.col][1]||t.ac,kl=[t.bg,ac,st.sym,!!st.foto&&t.foto,$("orn").checked].join("|");if(k.dataset.k318===kl&&k.children.length)return;k.dataset.k318=kl;
+  k.style.background=t.bg;k.innerHTML=(t.frame&&t.frame!=="none"?`<i class="m318r" style="border-color:${ac}"></i>`:"")+`<i class="m318s">${symHTML(st.sym,ac)||""}</i>`+
+   (t.foto&&st.foto?`<i class="m318f" style="background-image:url('${st.foto}')"></i>`:"")+`<i class="m318l" style="background:${t.fg}"></i><i class="m318l" style="background:${t.mu}"></i>`});
+ const vz=$("vz318");if(vz)vz.firstChild.textContent=`Vyberte vzhľad · ${vid}`;
+ const cur=L.find(x=>x.id===st.t);if(bez&&cur&&cur.foto&&zvol){zvol.click();return}
+ const tl=$("tpls").querySelector('.tpl[aria-pressed="true"]');if(tl&&document.body.dataset.pg==="vzhlad"&&!tl._318){tl._318=1;try{tl.scrollIntoView({block:"nearest",inline:"center"})}catch(e){}}
+ const kh=document.querySelector('.step[data-s="koho"]>h2');if(kh)kh.textContent="Koho sa parte týka?";
+ const vp=$("pk_vztah").closest(".pick").querySelector(".plab");if(vp){vp.classList.add("v318");vp.innerHTML=`${st.sex==="z"?"BOLA":"BOL"} NÁM · <small>ťuknite všetko, čo platí</small>`}
+ mini()}
+/* stav pre appku: kam ďalej, skutočná miniatúra parte pre pás náhľadu */
+let MINI="",_mt=0,_mk="";
+function mini(){clearTimeout(_mt);_mt=setTimeout(async()=>{if(!P()||typeof window.edKresli!=="function")return;const kl=JSON.stringify([st,$("meno").value,$("nar").value,$("umr").value,$("orn").checked,$("bw").checked,$("qrOn").checked]);if(kl===_mk&&MINI)return;
+ try{const cv=await window.edKresli({w:120});MINI=cv.toDataURL("image/jpeg",.8);_mk=kl;if(window.edHlas)window.edHlas()}catch(e){}},350)}
+const _es=window.edStav303;window.edStav303=function(){const o=_es();if(!P())return o;const t=T.find(x=>x.id===st.t);
+ o.dalsi=MENA()[o.kluc]||null;o.p318=true;o.mini=Object.assign({},o.mini,{img:MINI,t:[($("meno").value||"").trim(),t?t.n:""].filter(Boolean).join(" · ")});return o};
+const _r=render;render=function(){const r=_r.apply(this,arguments);try{ui318()}catch(e){}return r};
+/* náhľad na strane Vzhľad: celý hárok do plochy nad pásom */
+const _f=fit;fit=function(){const r=_f.apply(this,arguments);
+ if(P()&&document.body.dataset.pg==="vzhlad"&&!document.body.classList.contains("ram-nahlad")){const p=$("p"),v=document.querySelector(".view");p.style.transform="";v.style.height="";
+  const w=p.offsetWidth,h=p.offsetHeight,H=Math.max(200,v.clientHeight-40);if(w&&h){const k=Math.min((innerWidth-32)/w,H/h);p.style.transformOrigin="top center";p.style.transform=`scale(${k})`;p.style.marginBottom=Math.round(h*k-h)+"px"}}
+ else{const p=$("p");if(p)p.style.marginBottom=""}
+ return r};
+addEventListener("resize",()=>{if(P())fit()});
+const _ie=window.initEditor;window.initEditor=function(){ZAP&&vypni();const r=_ie.apply(this,arguments);try{showStep()}catch(e){}return r};
+})();</script>

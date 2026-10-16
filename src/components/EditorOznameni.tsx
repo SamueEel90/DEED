@@ -42,7 +42,8 @@ type OknoEditora = Window & { initEditor?: (c: unknown) => void; edKrokSpat?: ()
 /** krok editora (OPRAVY 258) */
 interface StavKroku { i: number; n: number; nazvy: string[]; typ: string; hotovo: boolean; ulozene: boolean; kontrola: boolean;
   /** OPRAVY 303: stránka (koho, vzhlad, ozdoby, osoba, udaje2, udaje, kontrola, hotovo), poradie medzi stránkami, kam ďalej, návrat na Kontrolu, zaškrtnuté, miniatúra */
-  kluc?: string; strana?: number; strany?: number; dalsi?: string | null; navrat?: boolean; kOk?: boolean; rychly?: boolean; mini?: { bg?: string; ac?: string };
+  kluc?: string; strana?: number; strany?: number; dalsi?: string | null; navrat?: boolean; kOk?: boolean; rychly?: boolean; mini?: { bg?: string; ac?: string; /** OPRAVY 318: skutočná miniatúra parte a „meno · vzhľad“ */ img?: string; t?: string };
+  /** OPRAVY 318: dlhá cesta parte (5 strán + Kontrola) */ p318?: boolean;
   /** OPRAVY 301: uloženie (caka · ok · chyba) */ uloz?: "caka" | "ok" | "chyba" | null; hotovoText?: string }
 /** OPRAVY 258: rám na mobile — extra = nad poľami editora (napr. Fotky), vrstva = hláška nad rámom; onZavri (prop) = Späť z 1. kroku, rozpísané sa uloží ako koncept
  *  OPRAVY 299: s `ram` na PC (≥ 1024, mimo rámu) to isté okno ako u veriaceho: hore „‹ Späť …“, vľavo nastavenie, vpravo živý náhľad (jeden komponent pre farára aj veriaceho) */
@@ -64,6 +65,8 @@ export const EditorOznameni = forwardRef<EditorApi, { cfg: CfgEditora; onSend: (
     // OPRAVY 299: rám na celú obrazovku len na mobile a tablete na výšku; na PC okno s živým náhľadom
     const naMobile = useRamPisania();
     const ram = naMobile ? ramProp : null;
+    // OPRAVY 318: bez obsahu nad editorom sa posúva iframe sám (natívne rolovanie aj pri rýchlom ťahu na iPhone), telo rámu stojí
+    const vlastne = !!ram && !ram.extra;
     const pcOkno = !!ramProp && !naMobile;
     const ulozeneRef = useRef(false);
     const fr = useRef<HTMLIFrameElement>(null);
@@ -87,10 +90,10 @@ export const EditorOznameni = forwardRef<EditorApi, { cfg: CfgEditora; onSend: (
     const [nahl, setNahl] = useState(false);
     const [plocha, setPlocha] = useState(600);
     const telo = useRef<HTMLDivElement>(null);
-    const spat = useRef<{ top: number; el: HTMLElement | null }>({ top: 0, el: null });
+    const spat = useRef<{ top: number; el: HTMLElement | null; y?: number }>({ top: 0, el: null });
     const krokI = useRef(-1);
     const krokJ = useRef("");
-    const otvorNahlad = () => { let a: HTMLElement | null = null; try { a = okno()?.edAktivne?.() ?? null; a?.blur(); } catch { /* */ } spat.current = { top: telo.current?.scrollTop || 1, el: a }; setNahl(true); };
+    const otvorNahlad = () => { let a: HTMLElement | null = null; try { a = okno()?.edAktivne?.() ?? null; a?.blur(); } catch { /* */ } spat.current = { top: telo.current?.scrollTop || 1, el: a, y: vlastne ? okno()?.scrollY ?? 0 : undefined }; setNahl(true); };
     const naNacitanie = () => {
       try {
         const { navrh, ...zvysok } = cfg;
@@ -99,7 +102,7 @@ export const EditorOznameni = forwardRef<EditorApi, { cfg: CfgEditora; onSend: (
           hotovoKarta: true, hotovoText, ...(onPozriet ? { onPozriet: () => poHotove.current.onPozriet?.() } : {}), onHotovo: () => (poHotove.current.onHotovo ?? onZavri)?.(),
           onVyberFotku: () => setGalOtv(true), fotkyTlacidlo: zdroj ? zdroj.tlacidlo : "Vybrať z verejných fotiek ›",
           ...(ram ? { ram: true, tema: document.documentElement.classList.contains("dark") ? "dark" : "light",
-            onKrok: (k: StavKroku) => { const j = JSON.stringify(k); if (j === krokJ.current) return; krokJ.current = j; setKrok(k); if (k.i !== krokI.current) { krokI.current = k.i; setChyba(""); telo.current?.scrollTo({ top: 0 }); } },
+            onKrok: (k: StavKroku) => { const j = JSON.stringify(k); if (j === krokJ.current) return; krokJ.current = j; setKrok(k); if (k.i !== krokI.current) { krokI.current = k.i; setChyba(""); telo.current?.scrollTo({ top: 0 }); if (vlastne) try { okno()?.scrollTo(0, 0); } catch { /* */ } } },
             onCelaObrazovka: () => otvorNahlad(),
             onVyska: (h: number) => setVyska(h), onChyba: (t: string) => setChyba(t) } : {}) });
       } catch { /* iframe ešte nie je pripravený */ }
@@ -108,16 +111,16 @@ export const EditorOznameni = forwardRef<EditorApi, { cfg: CfgEditora; onSend: (
     // Editor A: jedno okno Vybrať fotku — Z telefónu · Moje fotky · Verejné fotky
     const zTel = (f: File) => { setGalOtv(false); const r = new FileReader(); r.onload = () => { try { okno()?.edNastavFotku?.(String(r.result)); } catch { /* editor zatvorený */ } }; r.readAsDataURL(f); };
     const galeria = galOtv && <OknoGalerie zdroj={zdroj} vybrane={[]} zostava={1} onZavri={() => setGalOtv(false)} onVyber={vyber} zTelefonu={zTel} />;
-    const posunNa = (y?: number | null) => { const el = telo.current, f = fr.current; if (el && f && y != null) el.scrollTo({ top: Math.max(0, f.offsetTop + y - 12), behavior: "smooth" }); };
+    const posunNa = (y?: number | null) => { if (y == null) return; if (vlastne) { try { okno()?.scrollTo({ top: Math.max(0, y - 12), behavior: "smooth" }); } catch { /* */ } return; } const el = telo.current, f = fr.current; if (el && f) el.scrollTo({ top: Math.max(0, f.offsetTop + y - 12), behavior: "smooth" }); };
     // náhľad na celú plochu: editor dostane rozmer plochy, po zatvorení to isté miesto a to isté pole
     useLayoutEffect(() => {
       if (!ram) return;
       const el = telo.current, w = okno();
       if (nahl) { if (el) { el.scrollTop = 0; setPlocha(el.clientHeight); try { w?.edNahladRam?.(true, el.clientWidth, el.clientHeight); } catch { /* */ } } }
-      else if (el && spat.current.top) { try { w?.edNahladRam?.(false, 0, 0); } catch { /* */ } el.scrollTop = spat.current.top; const a = spat.current.el; spat.current = { top: 0, el: null }; if (a) try { a.focus({ preventScroll: true }); } catch { /* */ } }
+      else if (el && spat.current.top) { try { w?.edNahladRam?.(false, 0, 0); } catch { /* */ } el.scrollTop = spat.current.top; const y = spat.current.y; if (y != null) window.setTimeout(() => { try { okno()?.scrollTo(0, y); } catch { /* */ } }, 30); const a = spat.current.el; spat.current = { top: 0, el: null }; if (a) try { a.focus({ preventScroll: true }); } catch { /* */ } }
     }, [nahl, !!ram]); // eslint-disable-line react-hooks/exhaustive-deps
     const iframe = <iframe key={ram ? "ram" : "pc"} ref={fr} src={`/editor/oznamenia.html#${cfg.typ}`} onLoad={naNacitanie} title={title}
-      style={ram ? { display: "block", width: "100%", height: nahl ? plocha : Math.max(vyska, 200), border: "none", background: "transparent" }
+      style={ram ? { display: "block", width: "100%", height: vlastne ? "100%" : nahl ? plocha : Math.max(vyska, 200), border: "none", background: "transparent" }
         : pcOkno ? { position: "absolute", inset: 0, display: "block", width: "100%", height: "100%", border: "none", background: "#EFEAE1" }
         : { display: "block", width: "100%", border: "none", background: "#EFEAE1", ...style }} />;
     if (pcOkno) {
@@ -145,7 +148,15 @@ export const EditorOznameni = forwardRef<EditorApi, { cfg: CfgEditora; onSend: (
     const stred = !k ? title : k.kluc === "kontrola" ? "Kontrola" : k.kluc === "hotovo" ? k.typ : k.strana ? `${k.typ} · ${k.strana} z ${k.strany}` : k.typ;
     const diely = k?.strana && k.strany ? { i: k.strana - 1, n: k.strany } : undefined;
     const POD: Record<string, string> = { ozdoby: "mení sa hneď", osoba: "mení sa, ako píšete", udaje: "mení sa, ako píšete", udaje2: "skontrolujte pred uložením" };
-    const pas = k?.kluc && POD[k.kluc] && (k.kluc !== "udaje" || k.rychly) ? (
+    // OPRAVY 318: od 3. strany a na Kontrole skutočná miniatúra parte, „meno · vzhľad“
+    const pas = k?.p318 ? (["ozdoby", "osoba", "udaje2", "kontrola"].includes(k.kluc ?? "") ? (
+      <div style={{ height: 64, boxSizing: "border-box", padding: "0 16px", display: "flex", alignItems: "center", gap: 12 }}>
+        {k.mini?.img ? <img src={k.mini.img} alt="" style={{ width: 32, height: 48, flex: "none", objectFit: "cover", borderRadius: 3, border: "1px solid var(--cardBd)", background: "#fff" }} />
+          : <span aria-hidden="true" style={{ width: 32, height: 48, flex: "none", borderRadius: 3, background: k.mini?.bg || "#fff", border: "1px solid var(--cardBd)" }} />}
+        <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><b style={{ fontSize: 15.5 }}>Náhľad</b><span style={{ fontSize: 13, color: "var(--ink3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{k.mini?.t || "mení sa, ako píšete"}</span></span>
+        <button type="button" onClick={otvorNahlad} style={{ flex: "none", minHeight: 44, padding: "0 14px", borderRadius: 12, border: "1.5px solid var(--gBd)", background: "transparent", color: "var(--gInk)", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, boxShadow: "none" }}>Pozrieť ⤢</button>
+      </div>) : undefined)
+    : k?.kluc && POD[k.kluc] && (k.kluc !== "udaje" || k.rychly) ? (
       <div style={{ height: 64, boxSizing: "border-box", padding: "0 16px", display: "flex", alignItems: "center", gap: 12 }}>
         <span aria-hidden="true" style={{ width: 34, height: 48, flex: "none", borderRadius: 4, background: k.mini?.bg || "#fff", boxShadow: `inset 0 -4px 0 ${k.mini?.ac || "#888"}`, border: "1px solid var(--cardBd)" }} />
         <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><b style={{ fontSize: 15.5 }}>Náhľad</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>{POD[k.kluc]}</span></span>
@@ -156,15 +167,15 @@ export const EditorOznameni = forwardRef<EditorApi, { cfg: CfgEditora; onSend: (
     const dole = !k ? null : k.kluc === "kontrola" ? <>
       {k.kOk ? <div style={{ ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo label="Podržte a zverejnite" trvanie={1500} onConfirm={zverejni} /></div>
         : <button type="button" onClick={() => { try { okno()?.edUkazKontrolu?.(); } catch { /* */ } }} style={{ ...tlB, background: "var(--btn)", color: "var(--ink2)" }}>Podržte a zverejnite</button>}
-      <span style={{ fontSize: 13, color: "var(--ink3)", textAlign: "center" }}>{k.kOk ? "Podržte prst na tlačidle, kým sa nenaplní." : "Tlačidlo je aktívne až po zaškrtnutí."}</span>
+      {!k.p318 /* OPRAVY 318: prototyp bez riadku pod tlačidlom */ && <span style={{ fontSize: 13, color: "var(--ink3)", textAlign: "center" }}>{k.kOk ? "Podržte prst na tlačidle, kým sa nenaplní." : "Tlačidlo je aktívne až po zaškrtnutí."}</span>}
     </> : k.hotovo && k.uloz === "caka" ? <button type="button" disabled style={{ ...tlB, background: "var(--btn)", color: "var(--ink2)", cursor: "default" }}>Ukladá sa…</button>
       : k.hotovo && k.uloz === "ok" ? <button type="button" onClick={() => (onHotovo ?? onZavri)?.()} style={{ ...tlB, background: "var(--ink)", color: "var(--bg)" }}>{hotovoText || "Hotovo · späť na stránku farnosti"}</button>
       : k.hotovo && k.uloz === "chyba" ? <button type="button" onClick={() => { try { okno()?.edZnova?.(); } catch { /* */ } }} style={{ ...tlB, background: "#4B7A35", color: "#fff" }}>Skúsiť znova</button>
       : k.hotovo ? <button type="button" onClick={dalej} disabled={k.ulozene} style={{ ...tlB, background: k.ulozene ? "var(--btn)" : "#4B7A35", color: k.ulozene ? "var(--ink2)" : "#fff", cursor: k.ulozene ? "default" : "pointer" }}>{k.ulozene ? "Uložené ✓" : "Hotovo · uložiť"}</button>
-      : <button type="button" onClick={dalej} style={{ ...tlB, background: "#4B7A35", color: "#fff" }}>{k.navrat ? "Späť na kontrolu ›" : k.dalsi ? `Pokračovať · ${k.dalsi} ›` : "Skontrolovať a uložiť ›"}</button>;
+      : <button type="button" onClick={dalej} style={{ ...tlB, background: "#4B7A35", color: "#fff" }}>{k.navrat ? "Späť na kontrolu ›" : k.dalsi ? `Pokračovať · ${k.dalsi} ›` : k.p318 ? "Skontrolovať ›" : "Skontrolovať a uložiť ›"}</button>;
     return (
       <RamPisania nazov={k?.typ || title} stred={stred} kroky={diely} onSpat={spatKrok} spatText={k?.kluc === "hotovo" && k.uloz && k.uloz !== "caka" ? "‹ Späť na úpravu" : "‹ Späť"} nahlad={nahl} onZavriNahlad={() => setNahl(false)} pas={pas}
-        chyba={chyba} teloRef={telo} vrstva={<>{ram.vrstva}{galeria}</>} dole={dole}>
+        chyba={chyba} teloRef={telo} vrstva={<>{ram.vrstva}{galeria}</>} dole={dole} bezRolovania={vlastne && !nahl}>
         {ram.extra && <div style={{ display: nahl ? "none" : undefined }}>{ram.extra}</div>}
         {iframe}
       </RamPisania>);
