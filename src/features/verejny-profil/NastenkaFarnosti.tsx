@@ -197,7 +197,8 @@ function MenoPodZnackou({ t }: { t: Tes }) {
 /** OPRAVY 205: obsah tvaru — svadba mená a dátum, jubileum roky a meno, blahoželanie nadpis */
 function ObsahTvaru({ t, velky }: { t: Tes; velky?: boolean }) {
   const k = velky ? 1.35 : 1;
-  if (t.druh === "svadba") { const [a, b] = t.meno.split(/\s*(?:&| a )\s*/); return <>
+  // OPRAVY 328: mená z nadpisu bez slova „Svadba“ (to je už nad menami)
+  if (t.druh === "svadba") { const [a, b] = t.meno.replace(/^\s*svadba\b[\s·:,–-]*/i, "").split(/\s*(?:&| a )\s*/); return <>
     <span style={kickerTvaru(t.pal.ac)}>SVADBA</span>
     <i style={{ fontSize: (a.length > 14 ? 19 : 26) * k, lineHeight: 1.05, marginTop: 4, ...riadkyMax(2) }}>{a}</i>
     {b && <><i style={{ fontSize: 18 * k, color: t.pal.ac }}>&amp;</i><i style={{ fontSize: (b.length > 14 ? 19 : 26) * k, lineHeight: 1.05, ...riadkyMax(2) }}>{b}</i></>}
