@@ -417,7 +417,9 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   };
   // KARTA 57 A.8: archív — ukončené a zrušené v jednom zbalenom riadku, pri každej dátum a čas ukončenia (čas servera)
   const archiv = dalsie.filter(vArchive).filter((z) => !archSkryte.includes(z.id));
-  const archivN = archiv.length + archivH.length;
+  // OPRAVY 320 doplnok: ukončené vecné zbierky sú v Archíve
+  const archivV = vecne.filter((z) => z.stav === "ukoncena" && !archSkryte.includes(z.id));
+  const archivN = archiv.length + archivH.length + archivV.length;
   const archivKarta = archivN > 0 && (
     <div style={{ flex: "none", display: "flex", flexDirection: "column", gap: 8 }}>
       <button type="button" onClick={() => setArchOtv((o) => !o)} aria-expanded={archOtv} style={{ minHeight: 64, padding: "10px 16px", borderRadius: 18, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" }}>
@@ -426,7 +428,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
         <span aria-hidden="true" style={{ fontSize: 18, color: "var(--ink3)", transform: `rotate(${archOtv ? 180 : 0}deg)`, transition: "transform .2s ease" }}>⌄</span>
       </button>
       {archOtv && archivN > 1 && <div style={{ display: "flex", justifyContent: "flex-end" }}><TlacidloVyberu v={hvA} /></div>}
-      {archOtv && <ListaVyberu v={hvA} polozky={[...archivH.map((h, i) => ({ id: `h${i}`, cas: Date.parse(h.koniec) || 0 })), ...archiv.map((z) => ({ id: z.id, cas: Date.parse(z.koniec ?? "") || 0 }))]} />}
+      {archOtv && <ListaVyberu v={hvA} polozky={[...archivH.map((h, i) => ({ id: `h${i}`, cas: Date.parse(h.koniec) || 0 })), ...archiv.map((z) => ({ id: z.id, cas: Date.parse(z.koniec ?? "") || 0 })), ...archivV.map((z) => ({ id: z.id, cas: z.koniec ?? 0 }))]} />}
       {archOtv && <div style={{ display: "flex", flexDirection: "column", borderRadius: 18, border: "1px solid var(--cardBd)", background: "var(--card)", padding: "4px 16px" }}>
         {archivH.map((h, i) => (
           <div key={`h${i}`} onClick={hvA.zap ? () => hvA.prepni(`h${i}`) : undefined} style={{ minHeight: 60, padding: "10px 0", borderTop: i ? "1px solid var(--cardBd)" : "none", display: "flex", alignItems: "center", gap: 12, cursor: hvA.zap ? "pointer" : undefined }}>
@@ -446,6 +448,16 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
               {rod && otv && <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)", paddingTop: 4 }}>Zbierka rodiny, ktorú ste overili. Sumy a darcov vidí len príjemca. Váš podiel farnosti nájdete v Peňaženke.</span>}
             </span>
             {!hvA.zap && <span aria-hidden="true" style={{ flex: "none", fontSize: 18, color: "var(--ink3)" }}>{rod ? (otv ? "⌃" : "⌄") : "›"}</span>}
+          </button>); })}
+        {archivV.map((z, i0) => { const i = i0 + archivH.length + archiv.length; return (
+          <button key={z.id} type="button" onClick={() => { if (hvA.zap) { hvA.prepni(z.id); return; } setVecnaOtv({ z, nova: false }); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+            style={{ minHeight: 60, padding: "10px 0", border: "none", borderTop: i ? "1px solid var(--cardBd)" : "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" }}>
+            {hvA.zap && <PolickoVyberu on={hvA.vyb.has(z.id)} />}
+            <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+              <b style={{ fontSize: 15 }}>{z.nazov}</b>
+              <span style={{ fontSize: 13, color: "var(--ink3)" }}>{["vecná zbierka", z.koniec ? casKonca(new Date(z.koniec).toISOString()) : ""].filter(Boolean).join(" · ")}</span>
+            </span>
+            {!hvA.zap && <span aria-hidden="true" style={{ flex: "none", fontSize: 18, color: "var(--ink3)" }}>›</span>}
           </button>); })}
       </div>}
       {archOtv && <TlZbalit onZbal={() => setArchOtv(false)} />}{/* OPRAVY 321 */}
@@ -515,9 +527,9 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       <span style={kicker}>ĎALŠIE ZBIERKY</span>
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{dalsie.filter((z) => !vArchive(z)).map(dalsieRiadok)}</div>
     </>}
-    {vecne.length > 0 && <>
+    {vecne.some((z) => z.stav === "aktivna") && <>
       <span style={kicker}>VECNÉ ZBIERKY</span>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{vecne.map((z) => (
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{vecne.filter((z) => z.stav === "aktivna").map((z) => (
         <button key={z.id} type="button" onClick={() => setVecnaOtv({ z, nova: false })} style={{ flex: "none", borderRadius: 20, border: "1.5px solid var(--cardBd)", background: "var(--card)", display: "flex", alignItems: "center", gap: mobil ? 12 : 16, padding: mobil ? "10px 12px" : "12px 18px 12px 12px", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" }}>
           {nahladFoto(fotoVecnej(z))}
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>

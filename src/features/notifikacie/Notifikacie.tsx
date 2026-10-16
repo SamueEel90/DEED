@@ -110,12 +110,13 @@ export function Zvoncek({ color = "var(--c-textSec)", toast }: { color?: string;
   // OPRAVY 315: ťuk na upozornenie vždy niekam vedie — veriaci na svoj príspevok (alebo vysvetlenie), farár do Správy → Od veriacich
   const [nezv, setNezv] = useState<{ stranka: string; t: string } | null>(null);
   const naOdkaz = (n: Notifikacia) => {
-    const m = /^(odv|prisp|nezv):([^:]+):(.+)$/.exec(n.odkaz ?? "");
+    const m = /^(odv|prisp|nezv|vz):([^:]+):(.+)$/.exec(n.odkaz ?? "");
     oznac(n.id); setOtvor(false);
     if (!m) return;
     const [, druh, stranka, pid] = m;
     if (druh === "odv") otvorSpravuNa({ stranka, sub: "veriaci", zvyrazni: pid });
     else if (druh === "prisp") otvorVerejnyProfil(stranka, { doOznamu: pid });
+    else if (druh === "vz") otvorVerejnyProfil(stranka, { doVecnej: pid }); // OPRAVY 320: poďakovanie darcom vecnej zbierky → detail zbierky
     else setNezv({ stranka, t: mojeCakajuce().find((c) => c.id === pid)?.t ?? n.text });
   };
   useVrstva(otvor, () => setOtvor(false));

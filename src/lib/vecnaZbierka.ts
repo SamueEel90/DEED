@@ -12,7 +12,7 @@ import { bezDataUrl } from "./uploadFoto";
 import { klucNaSlug } from "./testProfily";
 import type { MediumZbierky } from "./novaZbierka";
 
-export interface PodakovanieVecnej { popis: string; popis2: string; media: MediumZbierky[]; ulozene?: number; zmazane?: number }
+export interface PodakovanieVecnej { popis: string; popis2: string; media: MediumZbierky[]; ulozene?: number; zmazane?: number; /** OPRAVY 320: darcom poslané upozornenie (0101) */ poslane?: number; poslaneKomu?: number }
 export interface VecnaZbierka {
   id: string; nazov: string; popis: string; popis2: string;
   co: string; kde: string; /** YYYY-MM-DD */ doKedy: string; organizuje: string;
@@ -114,3 +114,20 @@ export function textPlagatuZPoli(z: Pick<VecnaZbierka, "co" | "kde" | "doKedy">)
   return [co ? co[0].toLocaleUpperCase("sk-SK") + co.slice(1) : "", kde, dk ? `do ${dk}` : ""].filter(Boolean).join(" · ");
 }
 export const zbierkaSkoncila = (z: VecnaZbierka) => z.stav === "ukoncena";
+
+// ---- OPRAVY 320 doplnok: neprihlásený ťukol Prihlásiť sa → po prihlásení späť na zápis tej istej zbierky ----
+const KLUC_ZAPIS = "deed.vecne.zapisPoPrihlaseni";
+export function cakajZapisPoPrihlaseni(stranka: string, id: string) { try { sessionStorage.setItem(KLUC_ZAPIS, JSON.stringify({ stranka, id })); } catch { /* bez úložiska sa len nevráti */ } }
+/** číta sa bez mazania (StrictMode volá inicializáciu dvakrát); zmaže zrusZapisPoPrihlaseni */
+export function zapisPoPrihlaseni(stranka: string): string | null {
+  try { const v = JSON.parse(sessionStorage.getItem(KLUC_ZAPIS) || "null") as { stranka: string; id: string } | null; return v && v.stranka === stranka ? v.id : null; } catch { return null; }
+}
+export function zrusZapisPoPrihlaseni() { try { sessionStorage.removeItem(KLUC_ZAPIS); } catch { /* LS */ } }
+
+/** OPRAVY 320 doplnok (0101): poďakovanie darcom do zvončeka — raz za zbierku. Vráti počet príjemcov alebo chybu. */
+export async function podakujDarcom(stranka: string, z: VecnaZbierka, text: string): Promise<{ n: number } | { e: string }> {
+  if (!supabase) return { e: "Upozornenie darcom posiela server. V tejto verzii bez servera sa neposlalo." };
+  const { data, error } = await supabase.rpc("vecna_podakuj", { p_stranka: stranka, p_zbierka: z.id, p_text: text });
+  if (error) return { e: /uz_poslane/.test(error.message) ? "Darcom ste už poďakovanie poslali." : /nie_spravca/.test(error.message) ? "Poďakovanie posiela len správca stránky." : "Upozornenie darcom sa nepodarilo poslať. Skúste to znova." };
+  return { n: Number(data) || 0 };
+}

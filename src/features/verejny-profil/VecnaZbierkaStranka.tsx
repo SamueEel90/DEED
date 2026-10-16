@@ -84,7 +84,7 @@ export function VecnaDetail({ strankaId, z, onZavri }: { strankaId: string; z: V
 }
 
 /** (D) darca naskenoval QR · (D2) poďakovanie od organizátora na tom istom mieste */
-export function VecnaDarca({ strankaId, z, org, onZavri, onPozriet }: { strankaId: string; z: VecnaZbierka; org: Organizator; onZavri: () => void; onPozriet: () => void }) {
+export function VecnaDarca({ strankaId, z, org, onZavri, onPozriet, onPrihlasit }: { strankaId: string; z: VecnaZbierka; org: Organizator; onZavri: () => void; onPozriet: () => void; /** OPRAVY 320 doplnok: neprihlásený → prihlásenie, potom späť na zápis */ onPrihlasit: () => void }) {
   const ja = usePouzivatel(), sektor = useSektorDarcu(), reg = ja.typ !== "pasivny";
   const moznosti = useMemo(() => volbyMena(ja, volbaBezMena(sektor)), [ja, sektor]);
   const [volba, setVolba] = useState(nacitajPredvolbu);
@@ -132,7 +132,10 @@ export function VecnaDarca({ strankaId, z, org, onZavri, onPozriet }: { strankaI
           {menit && <div role="radiogroup" aria-label="Ako sa zapíšete" style={{ display: "flex", flexDirection: "column", gap: 6 }}>{moznosti.map(([v, t]) => <button key={v} type="button" role="radio" aria-checked={v === volba.verzia} onClick={() => vyber(v)} style={{ ...chip(v === volba.verzia), textAlign: "left", padding: "0 14px", fontSize: 15.5 }}>{t}</button>)}</div>}
           {chyba && <span role="alert" style={{ padding: "12px 14px", borderRadius: 14, background: "#F6E3DC", border: "1.5px solid #A34A2A", color: "#7A2E16", fontSize: 14.5, fontWeight: 800, lineHeight: 1.45 }}>{chyba}</span>}
           <div style={{ ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo label={uklada ? "Zapisujem…" : "Podržte · daroval som"} trvanie={1000} disabled={uklada} onConfirm={() => { void zapis(); }} /></div>
-        </> : <span role="status" style={{ padding: "12px 14px", borderRadius: 14, background: KARTA, fontSize: 15, lineHeight: 1.5, color: INK }}>Bez prihlásenia sa zapísať nedá. Prihláste sa v appke DEED+ a naskenujte QR znova. Za dar ďakujeme aj tak.</span>}
+        </> : <>
+          <span role="status" style={{ padding: "12px 14px", borderRadius: 14, background: KARTA, fontSize: 15, lineHeight: 1.5, color: INK }}>Bez prihlásenia sa zapísať nedá. Po prihlásení sa vrátite sem a zapíšete sa.</span>
+          <button type="button" onClick={onPrihlasit} style={{ minHeight: 56, border: "none", borderRadius: 16, background: ZELENA_TL, color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 16.5, fontWeight: 800 }}>Prihlásiť sa</button>
+        </>}
         </>}
       </>}
     </div>

@@ -10,7 +10,7 @@ import { AnoNie } from "@/components/AnoNie";
 import { profilZPamate } from "@/lib/profilStranky";
 import { relCas } from "@/lib/darcovia";
 import { TlZbalit } from "@/features/verejny-profil/zbalit";
-import { ulozVecnu, noveIdVecnej, textPlagatuZPoli, fotoVecnej, odkazVecnej, doKedyText, usePrehladDarov, type VecnaZbierka } from "@/lib/vecnaZbierka";
+import { podakujDarcom, ulozVecnu, noveIdVecnej, textPlagatuZPoli, fotoVecnej, odkazVecnej, doKedyText, usePrehladDarov, type VecnaZbierka } from "@/lib/vecnaZbierka";
 import { kresliPlagat, riadkovTextu, stiahniPdf, vytlac } from "./vecnaPlagat";
 
 const karta: CSSProperties = { borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 };
@@ -157,18 +157,33 @@ export function VecnaSprava({ strankaId, meno, z: z0, nova, mobil, onSpat }: { s
   const [dak, setDak] = useState(z.podakovanie ?? { popis: "", popis2: "", media: [] });
   const [koniec, setKoniec] = useState(false);
   const plneDak = !!cistyText(dak.popis) || !!cistyText(dak.popis2) || dak.media.length > 0;
+  // OPRAVY 320 doplnok: Poslať poďakovanie darcom (raz, 0101)
+  const poslane = z.podakovanie?.poslane;
+  const [poslat, setPoslat] = useState(true);
+  const [posl, setPosl] = useState<{ ok: boolean; t: string } | null>(null);
+  const posliDarcom = async (n: VecnaZbierka): Promise<VecnaZbierka> => {
+    if (!plneDak || !poslat || poslane || pr.ludi === 0) return n;
+    const r = await podakujDarcom(strankaId, n, cistyText(dak.popis || dak.popis2).slice(0, 500));
+    if ("e" in r) { setPosl({ ok: false, t: r.e }); return n; }
+    setPosl({ ok: true, t: `Darcovia dostali upozornenie (${r.n}).` });
+    return { ...n, podakovanie: { ...(n.podakovanie ?? dak), poslane: Date.now(), poslaneKomu: r.n } };
+  };
   const ukonci = async () => {
-    const n: VecnaZbierka = { ...z, stav: "ukoncena", koniec: Date.now(), ...(plneDak ? { podakovanie: { ...dak, ulozene: Date.now() } } : {}) };
-    setUlozene("uklada");
+    let n: VecnaZbierka = { ...z, stav: "ukoncena", koniec: Date.now(), ...(plneDak ? { podakovanie: { ...dak, ulozene: Date.now() } } : {}) };
+    setUlozene("uklada"); setPosl(null);
     const e = await ulozVecnu(strankaId, n);
     if (e) { setUlozene("chyba"); setChybaT(e); return; }
+    const n2 = await posliDarcom(n);
+    if (n2 !== n) { n = n2; await ulozVecnu(strankaId, n); }
     prvy.current = true; setZ(n); setUlozene("ok"); setKoniec(true);
   };
   const ulozDak = async () => {
     if (!plneDak) { setUlozene("chyba"); setChybaT("Napíšte poďakovanie alebo pridajte fotky."); return; }
-    const n = { ...z, podakovanie: { ...dak, ulozene: Date.now(), zmazane: z.podakovanie?.zmazane } };
-    setUlozene("uklada"); const e = await ulozVecnu(strankaId, n);
+    let n: VecnaZbierka = { ...z, podakovanie: { ...dak, ulozene: Date.now(), zmazane: z.podakovanie?.zmazane, poslane: z.podakovanie?.poslane, poslaneKomu: z.podakovanie?.poslaneKomu } };
+    setUlozene("uklada"); setPosl(null); const e = await ulozVecnu(strankaId, n);
     if (e) { setUlozene("chyba"); setChybaT(e); return; }
+    const n2 = await posliDarcom(n);
+    if (n2 !== n) { n = n2; await ulozVecnu(strankaId, n); }
     prvy.current = true; setZ(n); setUlozene("ok");
   };
   const zmazZoStranky = async () => {
@@ -203,6 +218,7 @@ export function VecnaSprava({ strankaId, meno, z: z0, nova, mobil, onSpat }: { s
     {koniec ? <section role="status" style={{ ...karta, background: "var(--gSoft)", border: "2px solid var(--green)" }}>
       <b style={{ fontSize: 17 }}>Zbierka je ukončená</b>
       <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>{plneDak ? "Darcovia sa už zapísať nedajú. Na stránke farnosti je zbierka s vaším poďakovaním." : "Darcovia sa už zapísať nedajú. Poďakovanie môžete doplniť neskôr."}</span>
+      {posl && <span role={posl.ok ? "status" : "alert"} style={{ fontSize: 14.5, fontWeight: 800, color: posl.ok ? "var(--gInk)" : "#A34A2A" }}>{posl.t}</span>}
       <button type="button" onClick={onSpat} style={tlPlne}>Hotovo · späť na zbierky</button>
     </section> : <section style={karta}>
       <b style={{ fontSize: 18 }}>{aktivna ? "Ukončenie a poďakovanie" : "Poďakovanie"}</b>
@@ -210,6 +226,12 @@ export function VecnaSprava({ strankaId, meno, z: z0, nova, mobil, onSpat }: { s
       <TextovePolia popis={dak.popis} popis2={dak.popis2} onPopis={(h) => setDak((x) => ({ ...x, popis: h }))} onPopis2={(h) => setDak((x) => ({ ...x, popis2: h }))} ph={mobil}
         popisHlavneho="Najviac 12 riadkov, ľudia ho uvidia hneď." placeholder="Ďakujeme. Vaše veci sme odovzdali…" nadpis2="Pokračovanie" popis2Text="Komu ďakujeme, čo sme urobili. Ukáže sa po „… viac“." placeholder2="Ukáže sa po „… viac“." />
       <GaleriaEditor media={dak.media} onMedia={(m) => setDak((x) => ({ ...x, media: m }))} ph={mobil} bezVidea nadpis="Fotky · ako to dopadlo" popisNapoveda="Popis (nepovinné)" dovetok="" />
+      {poslane ? <span style={{ fontSize: 14, fontWeight: 700, color: "var(--gInk)" }}>Darcom sme poslali upozornenie{z.podakovanie?.poslaneKomu ? ` (${z.podakovanie.poslaneKomu})` : ""}.</span>
+        : pr.ludi > 0 && <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", minHeight: 52 }}>
+          <span style={{ display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15 }}>Poslať poďakovanie darcom</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>každý, kto sa zapísal, dostane upozornenie · raz</span></span>
+          <AnoNie value={poslat} onChange={setPoslat} label="Poslať poďakovanie darcom" />
+        </div>}
+      {posl && <span role={posl.ok ? "status" : "alert"} style={{ fontSize: 14.5, fontWeight: 800, color: posl.ok ? "var(--gInk)" : "#A34A2A" }}>{posl.t}</span>}
       {aktivna ? <div style={{ ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo label={plneDak ? "Podržte a ukončite s poďakovaním" : "Podržte a ukončite"} trvanie={1500} onConfirm={() => { void ukonci(); }} /></div>
         : <button type="button" onClick={() => void ulozDak()} style={tlPlne}>Uložiť poďakovanie</button>}
       {!aktivna && z.podakovanie?.ulozene && !z.podakovanie.zmazane && <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 12, borderTop: "1px solid var(--cardBd)" }}>

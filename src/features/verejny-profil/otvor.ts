@@ -17,7 +17,11 @@ const zmena = () => { verzia++; posluchaci.forEach((f) => f()); };
 let zoSpravy = false;
 // OPRAVY 315: ťuk na upozornenie „Farár zverejnil váš príspevok“ → stránka presne pri príspevku
 let doOznamu: string | null = null;
-export function otvorVerejnyProfil(k: string, o?: { zoSpravy?: boolean; doOznamu?: string }) { otvorene = true; kluc = k; zoSpravy = !!o?.zoSpravy; doOznamu = o?.doOznamu ?? null; zmena(); }
+export function otvorVerejnyProfil(k: string, o?: { zoSpravy?: boolean; doOznamu?: string; doVecnej?: string }) { otvorene = true; kluc = k; zoSpravy = !!o?.zoSpravy; doOznamu = o?.doOznamu ?? null; doVecnej = o?.doVecnej ?? null; zmena(); }
+// OPRAVY 320 doplnok: z upozornenia „Poďakovanie · …“ → stránka s detailom vecnej zbierky (číta sa bez mazania, zmaže zrusDoVecnej)
+let doVecnej: string | null = null;
+export const cielVecnej = (): string | null => doVecnej;
+export function zrusDoVecnej() { doVecnej = null; }
 /** príspevok, pri ktorom sa má stránka otvoriť (číta sa bez mazania, zmaže ho zrusDoOznamu) */
 export const cielOznamu = (): string | null => doOznamu;
 export function zrusDoOznamu() { doOznamu = null; }

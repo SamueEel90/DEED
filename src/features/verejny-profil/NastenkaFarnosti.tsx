@@ -7,7 +7,7 @@
 // Darcovia hlavnej zbierky: z ledgera, vždy „Bohu známy veriaci“ (voľba mena sa ešte nezapisuje), suma jedného
 // darcu nikdy; zvončeková = jeden súhrnný riadok za nedeľu.
 // ============================================================
-import { useVecneZbierky, vecneZbierky, fotoVecnej, doKedyText, type VecnaZbierka } from "@/lib/vecnaZbierka";
+import { useVecneZbierky, vecneZbierky, fotoVecnej, doKedyText, cakajZapisPoPrihlaseni, zapisPoPrihlaseni, zrusZapisPoPrihlaseni, type VecnaZbierka } from "@/lib/vecnaZbierka";
 import { VecnaDetail, VecnaDarca, STITOK_VECNEJ } from "./VecnaZbierkaStranka";
 import { useZamokVrstvy } from "@/lib/zamokVrstvy";
 import { useFarbaLinie, useVolbaLinie } from "@/lib/liniaStranky";
@@ -33,7 +33,7 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { useMojeStranky } from "@/lib/mojeStranky";
 import { CIRKVI, useMojeFarnosti, useSlovaFarnosti, pridajSledovanu, odstranSledovanu, nazovFarnosti, otvorAdresar, sledujemKostol, sledujKostol, prestanKostol, nastavMojKostol, farnostiSuhrn, nastavFarnostiSuhrn, blokyFarnosti, blokyKostola, type SledovanyKostol } from "@/lib/mojeFarnosti";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
-import { otvorVerejnyProfil, odkazQrStranky, vecnaZQrCitaj, zrusVecnuZQr } from "./otvor";
+import { otvorVerejnyProfil, odkazQrStranky, vecnaZQrCitaj, zrusVecnuZQr, cielVecnej, zrusDoVecnej } from "./otvor";
 import { nacitajVerejne } from "@/lib/verejneNastavenia";
 import { centralnaChyba, centralnaZPamate, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
 import { naviazObjekt } from "@/lib/darZbierky";
@@ -71,7 +71,7 @@ import { ZbierkaModul, type ZbierkaData } from "@/features/zbierka/ZbierkaModul"
 import type { StitLevel } from "@/components/stit";
 import { toast } from "@/shared";
 import { SADY_EUR, SADY_EURC } from "@/lib/sadyDarov";
-import { useLayout } from "@/components/context";
+import { useLayout, useUpgrade } from "@/components/context";
 
 import "@/styles/nastenka.css";
 import { useObrazokNavrhu, type PayloadEditora } from "@/components/EditorOznameni";
@@ -308,9 +308,14 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   const zb = zbierkyStrankyZPamate(strankaId).filter((z) => (z.stav ?? "aktivna") === "aktivna");
   // OPRAVY 320: vecné zbierky — bežiace a ukončené s poďakovaním (kým ho farár nezmaže zo stránky)
   const vecne = useVecneZbierky(strankaId).filter((z) => z.stav === "aktivna" || (!!z.podakovanie?.ulozene && !z.podakovanie.zmazane));
-  const [vecnaDet, setVecnaDet] = useState<string | null>(null);
-  const [vecnaDar, setVecnaDar] = useState<string | null>(vecnaZQrCitaj);
-  useEffect(() => { zrusVecnuZQr(); }, []);
+  const [vecnaDet, setVecnaDet] = useState<string | null>(cielVecnej);
+  // OPRAVY 320 doplnok: po prihlásení späť na „Darovali ste?“ tej istej zbierky (aj keď sa stránka po prihlásení otvorí nanovo)
+  const regV = ja.typ !== "pasivny";
+  const [vecnaDar, setVecnaDar] = useState<string | null>(() => vecnaZQrCitaj() ?? (regV ? zapisPoPrihlaseni(strankaId) : null));
+  useEffect(() => { zrusVecnuZQr(); zrusDoVecnej(); }, []); // čakajúci zápis po prihlásení sa zmaže, až keď okno zavrie (stránka sa po prihlásení môže otvoriť nanovo)
+  const upgrade = useUpgrade();
+  const [regPred, setRegPred] = useState(regV);
+  if (regV !== regPred) { setRegPred(regV); if (regV) { const id = zapisPoPrihlaseni(strankaId); if (id) setVecnaDar(id); } }
   const vecnaD = vecnaDet ? vecne.find((z) => z.id === vecnaDet) ?? null : null;
   const vecnaQ = vecnaDar ? vecneZbierky(strankaId).find((z) => z.id === vecnaDar) ?? null : null;
   const stitV = (z: VecnaZbierka) => (z.stav === "aktivna" ? STITOK_VECNEJ : "VECNÁ · ĎAKUJEME");
@@ -1754,7 +1759,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
       </CelaObrazovka>}
       {/* OPRAVY 320: vecná zbierka — detail a „Darovali ste?“ z QR na plagáte */}
       {vecnaD && <VecnaDetail strankaId={strankaId} z={vecnaD} onZavri={() => setVecnaDet(null)} />}
-      {vecnaQ && <VecnaDarca strankaId={strankaId} z={vecnaQ} org={{ meno, logo, inicialy: iniciy(meno) }} onZavri={() => setVecnaDar(null)} onPozriet={() => { setVecnaDar(null); setVecnaDet(vecnaQ.id); }} />}
+      {vecnaQ && <VecnaDarca strankaId={strankaId} z={vecnaQ} org={{ meno, logo, inicialy: iniciy(meno) }} onZavri={() => { zrusZapisPoPrihlaseni(); setVecnaDar(null); }} onPozriet={() => { zrusZapisPoPrihlaseni(); setVecnaDar(null); setVecnaDet(vecnaQ.id); }}
+        onPrihlasit={() => { cakajZapisPoPrihlaseni(strankaId, vecnaQ.id); setVecnaDar(null); upgrade(); }} />}
       {osoba && createPortal(<div role="dialog" aria-modal="true" aria-label={`Profil · ${osoba}`} style={{ position: "fixed", inset: 0, zIndex: 1100, overflowY: "auto", overscrollBehavior: "contain", background: "var(--c-bg)", color: "var(--c-text)" }}>
         <CudziProfil subjekt={{ typ: "osoba", meno: osoba }} toast={toast} onBack={() => setOsoba(null)} />
       </div>, document.body)}
