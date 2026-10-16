@@ -89,3 +89,9 @@ html.dark .sprava-charity,html.dark .sc-tokeny{--h0:#6E9F4E;--h1:#6FB8B4;--h2:#B
 /* KARTA 49 · červená (odmietnuť, po lehote, ukončiť) */
 .sprava-charity,.sc-tokeny{--red:#8E3B2F}
 html.dark .sprava-charity,html.dark .sc-tokeny{--red:#E08A7A}
+
+/* OPRAVY 325: nadpisy sekcií Správy */
+.sprava-charity,.sc-tokeny{--nadSek:#3A3C34}
+html.dark .sprava-charity,html.dark .sc-tokeny{--nadSek:#D9D2C4}
+.sprava-charity,.sc-tokeny{--stPBg:#F1DCDD;--stPBd:#9A3A44;--stPInk:#6E1F2A;--stZBg:#F1E6C8;--stZBd:#C9A24A;--stZInk:#6B5414}
+html.dark .sprava-charity,html.dark .sc-tokeny{--stPBg:#3A1A1F;--stPBd:#8C3440;--stPInk:#F0C9CE;--stZBg:#33290F;--stZBd:#C9A24A;--stZInk:#E8CF8A}

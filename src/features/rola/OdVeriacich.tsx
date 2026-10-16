@@ -4,7 +4,7 @@
 // Ťuk na príspevok: oprava nadpisu a textu („Opravené ✓", veriaci dostane správu), parte/svadba/jubileum
 // z editora farár len maže. Mazanie len podržaním. Označiť viac: všetko · staršie ako 30 dní · skupinu.
 // ============================================================
-import { KartaNastavenia } from "./KartaNastavenia";
+import { KartaNastavenia, NADPIS_SEKCIE, farbaStitku } from "./KartaNastavenia";
 import { TlZbalit } from "@/features/verejny-profil/zbalit";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { nacitajSelfAdd, ulozSelfAdd } from "@/features/viera/UserOznamy";
@@ -172,7 +172,7 @@ export function OdVeriacich({ strankaId, meno, mobil, toast }: { strankaId: stri
         <button type="button" onClick={() => (selM ? prepniVyb(x.id) : setOtv(o ? null : x.id))} aria-expanded={selM ? undefined : o} aria-pressed={selM ? on : undefined}
           style={{ width: "100%", minHeight: 62, padding: "8px 0", border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" }}>
           {selM && <PolickoVyberu on={on} />}
-          <span style={{ flex: "none", padding: "3px 9px", borderRadius: 8, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 11, fontWeight: 800, color: "var(--gInk)", whiteSpace: "nowrap", maxWidth: mobil ? 110 : undefined, overflow: "hidden", textOverflow: "ellipsis" }}>{druhT(x.k)}</span>
+          <span style={{ flex: "none", padding: "3px 9px", borderRadius: 8, ...farbaStitku(x.k === "parte" ? "parte" : x.k === "svadba" || x.k === "ine" ? "zlata" : "zelena"), fontSize: 11, fontWeight: 800, whiteSpace: "nowrap", maxWidth: mobil ? 110 : undefined, overflow: "hidden", textOverflow: "ellipsis" }}>{druhT(x.k)}</span>
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
             <b style={{ fontSize: 14.5 }}>{x.t}</b>
             <span style={{ fontSize: 12.5, color: "var(--ink3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{[x.s, x.kto, kedy(x.cas), x.upravil ? "upravil farár" : "", vyprsal(x, terazMs()) ? "už nie je na stránke" : ""].filter(Boolean).join(" · ")}</span>
@@ -202,8 +202,8 @@ export function OdVeriacich({ strankaId, meno, mobil, toast }: { strankaId: stri
     <UmyslyFarara strankaId={strankaId} meno={meno} mobil={mobil} toast={toast} />
 
     {C.length > 0 && <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <span style={{ flex: 1, fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: "#8A6A1C", padding: "4px 2px 0" }}>ČAKÁ NA VAŠE SCHVÁLENIE · {C.length}</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, paddingTop: 16 }}>
+        <span style={{ ...NADPIS_SEKCIE, paddingTop: 0, flex: 1, color: "#B8913A" }}>ČAKÁ NA VAŠE SCHVÁLENIE · {C.length}</span>
         {C.length > 1 && <button type="button" onClick={() => setVybC(vybC ? null : new Set())} style={{ ...tlC, border: "1px solid var(--cardBd)", background: "var(--card)", color: "var(--ink)" }}>{vybC ? "Zrušiť výber" : "Vybrať viac"}</button>}
       </div>
       <section style={{ ...karta, borderRadius: mobil ? 18 : 22, padding: mobil ? "4px 14px" : "6px 20px", background: "var(--goldBg)", border: "1.5px solid var(--goldBd)" }}>{C.map(riadokC)}</section>
@@ -223,8 +223,8 @@ export function OdVeriacich({ strankaId, meno, mobil, toast }: { strankaId: stri
     {!L.length && <section style={{ ...karta, borderRadius: mobil ? 18 : 22, padding: "14px 20px", fontSize: 14, color: "var(--ink3)" }}>Zatiaľ nič. Čo veriaci pridajú, uvidíte tu a môžete to opraviť alebo zmazať.</section>}
     {skupiny.map(([nad, l]) => (
       <div key={nad} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ flex: 1, fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)", padding: "4px 2px 0" }}>{nad} · {l.length}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, paddingTop: 16 }}>
+          <span style={{ ...NADPIS_SEKCIE, paddingTop: 0, flex: 1 }}>{nad} · {l.length}</span>
           <OznacitSkupinu v={hv} ids={l.map((x) => x.id)} />
         </div>
         <section style={{ ...karta, borderRadius: mobil ? 18 : 22, padding: mobil ? "4px 14px" : "6px 20px" }}>{l.map(riadok)}</section>

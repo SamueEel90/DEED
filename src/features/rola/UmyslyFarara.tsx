@@ -6,6 +6,7 @@
 // Zapísaný: Poslať správu · Odslúžené ✓ (zbalený riadok Odslúžené · N) · Presunúť na inú omšu.
 // Hore + Zapísať úmysel (osobne alebo telefonicky): text, kto, omša.
 // ============================================================
+import { NADPIS_SEKCIE } from "./KartaNastavenia";
 import { TlZbalit } from "@/features/verejny-profil/zbalit";
 import { useState, type CSSProperties } from "react";
 import { odFarnikov, pridajOdFarnika, upravOdFarnika, zmazOdFarnika, type PolozkaFarnika } from "@/lib/odFarnikov";
@@ -13,7 +14,7 @@ import { useKalendar, kostolKal, omseDna, dniTyzdna, rozsahTyzdna, iso, dvt, DNI
 import { PodrzZmaz } from "./OznamyFarnosti";
 
 const karta: CSSProperties = { borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)" };
-const kicker: CSSProperties = { fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: "var(--acc)", padding: "4px 2px 0" };
+const kicker: CSSProperties = { ...NADPIS_SEKCIE, paddingTop: 0 }; // OPRAVY 325 (medzera nad riadkom)
 const pole: CSSProperties = { height: 48, padding: "0 14px", borderRadius: 12, background: "var(--field)", border: "1px solid var(--cardBd)", fontFamily: "inherit", fontSize: 15, fontWeight: 600, color: "var(--ink)", outline: "none", width: "100%", boxSizing: "border-box" };
 const MAX_TYZDNOV = 12;
 const terazMs = () => Date.now();
@@ -142,7 +143,7 @@ export function UmyslyFarara({ strankaId, meno, mobil, toast }: { strankaId: str
   };
 
   return <>
-    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", paddingTop: 16 }}>
       <span style={{ ...kicker, flex: 1 }}>ÚMYSLY NA OMŠU · LEN PRE VÁS</span>
       <button type="button" onClick={() => setNovy((n) => !n)} aria-expanded={novy} style={{ ...tlB(true), minHeight: 40 }}>+ Zapísať úmysel</button>
     </div>

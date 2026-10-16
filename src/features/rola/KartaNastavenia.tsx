@@ -3,7 +3,17 @@
 // Tmavozlatý podklad, zlatý rám, min. 96 px, ikona 40 px vľavo, nadpis 18 px + stav jednou vetou, vpravo plné tlačidlo (min. 52 px).
 // Ťuk na celú kartu = to isté ako tlačidlo. Rovnaké na PC aj mobile, vo svetlom aj tmavom režime.
 // ============================================================
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
+
+/** OPRAVY 325: nadpis sekcie Správy — väčší a svetlejší (tmavý režim #D9D2C4), nad ním 28 px (s medzerou rodiča) */
+export const NADPIS_SEKCIE: CSSProperties = { fontSize: 15, fontWeight: 800, letterSpacing: ".07em", lineHeight: 1.3, color: "var(--nadSek)", paddingTop: 16 };
+
+/** OPRAVY 325: štítok typu podľa farby — PARTE bordová piety, SVADBA a JUBILEUM (aj zmena omše) zlatá, ostatné (krátky oznam) zelená */
+export function farbaStitku(druh: "parte" | "zlata" | "zelena"): CSSProperties {
+  return druh === "parte" ? { background: "var(--stPBg)", border: "1px solid var(--stPBd)", color: "var(--stPInk)" }
+    : druh === "zlata" ? { background: "var(--stZBg)", border: "1px solid var(--stZBd)", color: "var(--stZInk)" }
+    : { background: "var(--gSoft)", border: "1px solid var(--gBd)", color: "var(--gInk)" };
+}
 
 export const IK_KOLIESKO = <>
   <circle cx="12" cy="12" r="3.2" />

@@ -9,6 +9,7 @@
 // (ťuk na riadok: text, Upraviť, Ako to vidia ľudia, Podržte a zmažte). Upraviť naplní formulár z `oz`.
 // Pozvať ľudí aj pri krátkom ozname (+ limit pri záväznom), Oznámenie: Parte · Svadba · Jubileum · Iné.
 // ============================================================
+import { NADPIS_SEKCIE, farbaStitku } from "./KartaNastavenia";
 import { TlZbalit } from "@/features/verejny-profil/zbalit";
 import { CasPole } from "@/components/CasPole";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
@@ -563,7 +564,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       <div key={x.id} style={{ borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
         <button type="button" onClick={() => { if (hv.zap) { hv.prepni(x.id); return; } setOtv(o ? null : x.id); setPozri(null); }} aria-expanded={hv.zap ? undefined : o} aria-pressed={hv.zap ? on : undefined} style={{ width: "100%", minHeight: 60, padding: "8px 0", border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" }}>
           {hv.zap && <PolickoVyberu on={on} />}
-          <span style={{ flex: "none", padding: "3px 9px", borderRadius: 8, background: zm ? "var(--goldBg)" : "var(--gSoft)", border: `1px solid ${zm ? ZLATA : "var(--gBd)"}`, fontSize: 11.5, fontWeight: 800, color: zm ? "var(--ink)" : "var(--gInk)", whiteSpace: "nowrap" }}>{st}</span>
+          <span style={{ flex: "none", padding: "3px 9px", borderRadius: 8, ...farbaStitku(st === "PARTE" ? "parte" : zm || st === "SVADBA" || st === "JUBILEUM" ? "zlata" : "zelena"), fontSize: 11.5, fontWeight: 800, whiteSpace: "nowrap" }}>{st}</span>
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 14.5 }}>{x.nazov}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{meta(x)}</span></span>
           {!hv.zap && <span aria-hidden="true" style={{ flex: "none", fontSize: 18, color: "var(--ink3)" }}>{o ? "⌃" : "⌄"}</span>}
         </button>
@@ -586,7 +587,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       <ListaVyberu v={hv} polozky={zoznam.map((x) => ({ id: x.id, cas: x.vytvorene ?? 0 }))} />
       {zoznam.length ? SKUPINY.map(([nad, fn]) => { const l = zoznam.filter(fn); return l.length > 0 && (
         <div key={nad} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span style={{ flex: 1, fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)", padding: "4px 2px 0" }}>{nad} · {l.length}</span><OznacitSkupinu v={hv} ids={l.map((x) => x.id)} /></div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, paddingTop: 16 }}><span style={{ ...NADPIS_SEKCIE, paddingTop: 0, flex: 1 }}>{nad} · {l.length}</span><OznacitSkupinu v={hv} ids={l.map((x) => x.id)} /></div>
           <section style={{ ...karta, padding: mobil ? "4px 14px" : "6px 20px" }}>{l.map(riadok)}</section>
         </div>); })
         : <section style={{ ...karta, padding: "14px 20px", fontSize: 14.5, color: "var(--ink3)" }}>Zatiaľ nič. Ťuknite na + Pridať oznam.</section>}
