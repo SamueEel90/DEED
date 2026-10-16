@@ -2222,10 +2222,10 @@ function MojKostolVolba({ stranka, mojKostol }: { stranka: string; mojKostol: st
   const l = useMiesta(stranka);
   if (l.length < 2) return null;
   return (
-    <label style={{ flex: "1 1 100%", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+    <label style={{ flex: "1 1 100%", minWidth: 0, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
       <span style={{ fontSize: 14.5, fontWeight: 800 }}>Môj kostol</span>
       <select value={l.some((m) => m.id === mojKostol) ? mojKostol ?? "" : ""} onChange={(e) => { void nastavMojKostol(e.target.value || null).catch((er: Error) => toast(er.message)); }} aria-label="Môj kostol"
-        style={{ flex: "1 1 160px", minWidth: 0, minHeight: 44, padding: "0 12px", borderRadius: 12, border: `1.5px solid ${LINKA}`, background: "#fff", fontFamily: "inherit", fontSize: 15, fontWeight: 700, color: INK }}>
+        style={{ flex: "1 1 160px", minWidth: 0, maxWidth: "100%", width: "100%", minHeight: 44, padding: "0 12px", borderRadius: 12, border: `1.5px solid ${LINKA}`, background: "#fff", fontFamily: "inherit", fontSize: 15, fontWeight: 700, color: INK, boxSizing: "border-box", textOverflow: "ellipsis" }}>
         <option value="">Nevybraný · všetky kostoly</option>{l.map((m) => <option key={m.id} value={m.id}>{m.nazov}</option>)}</select>
     </label>);
 }
