@@ -1303,8 +1303,9 @@ window.edKresli=async function(o){o=o||{};const W=o.w||420,H=Math.round(W*630/42
  try{vtesnajEl(c);const R=c.getBoundingClientRect();
   obr=[...c.querySelectorAll("img")].filter(im=>im.getAttribute("src")).map(im=>{const kon=im.parentElement,kr=kon.getBoundingClientRect(),f=kr.width/(kon.offsetWidth||kr.width||1),cs=getComputedStyle(kon),ic=getComputedStyle(im),
    ir=im.getBoundingClientRect(),fimg=im.classList.contains("fimg"),fx=fimg&&typeof st!=="undefined"&&st.fx?st.fx:{x:50,y:50,z:1},pos=String(ic.objectPosition||"50% 50%").split(/\s+/).map(t=>/%$/.test(t)?parseFloat(t):50);
-   const b=fimg?{x:kr.left-R.left,y:kr.top-R.top,w:kr.width,h:kr.height}:{x:ir.left-R.left,y:ir.top-R.top,w:ir.width,h:ir.height};
-   return{src:im.getAttribute("src"),...b,r:fimg?polomery(cs,kr.width,kr.height,f):[[0,0],[0,0],[0,0],[0,0]],fit:ic.objectFit||"fill",px:(fimg?fx.x:pos[0])/100,py:(fimg?fx.y:pos[1])/100,z:fimg?(fx.z||1):1,siv:/grayscale/.test(ic.filter)}});
+   const zr=parseFloat(getComputedStyle(document.documentElement).zoom)||1;/* OPRAVY 331: zväčšené písmo cez zoom stránky — poloha fotky v súradniciach hárku */
+   const b=fimg?{x:(kr.left-R.left)/zr,y:(kr.top-R.top)/zr,w:kr.width/zr,h:kr.height/zr}:{x:(ir.left-R.left)/zr,y:(ir.top-R.top)/zr,w:ir.width/zr,h:ir.height/zr};
+   return{src:im.getAttribute("src"),...b,r:fimg?polomery(cs,b.w,b.h,f/zr):[[0,0],[0,0],[0,0],[0,0]],fit:ic.objectFit||"fill",px:(fimg?fx.x:pos[0])/100,py:(fimg?fx.y:pos[1])/100,z:fimg?(fx.z||1):1,siv:/grayscale/.test(ic.filter)}});
   c.querySelectorAll("img").forEach(im=>{im.style.visibility="hidden";im.removeAttribute("src")})}
  finally{box.remove()}
  const css=[...document.querySelectorAll("style")].map(x=>x.textContent).join("\n"),xh=new XMLSerializer().serializeToString(c);
@@ -1485,4 +1486,98 @@ const _f=fit;fit=function(){const r=_f.apply(this,arguments);
  return r};
 addEventListener("resize",()=>{if(P())fit()});
 const _ie=window.initEditor;window.initEditor=function(){ZAP&&vypni();const r=_ie.apply(this,arguments);try{showStep()}catch(e){}return r};
+})();</script>
+<style>/* OPRAVY 331: Svadba, Jubileum a Blahoželanie na mobile rovnakou cestou ako parte (318):
+   1 Údaje (mená / meno, dátum, vek, Fotka: Vybrať fotku · S fotkou / Bez fotky · Farebne / Čiernobielo) → 2 Vzhľad (náhľad už s menom a fotkou, pás miniatúr) → 3 Ozdoby → 4 Text → Kontrola. */
+body.p331 .step[data-s=koho]>fieldset:first-of-type,body.p331 .step[data-s=koho]>.ram-hint{display:none!important}
+body.p331 .step[data-s=koho]>h2{font-size:23px;margin:0}
+body.p331 #k331{display:flex;flex-direction:column;gap:10px}
+body.p331[data-pg=koho] .form{gap:10px;padding-top:12px;padding-bottom:12px}
+body.p331 #k331 input:not([type=checkbox]){height:46px;min-height:46px;padding-top:0;padding-bottom:0}
+body.p331 #k331>label,body.p331 #k331 .row>label{font-size:14px;font-weight:700;color:var(--muted);gap:6px}
+body.p331 #k331 .foto-k{width:48px;height:56px}
+body.p331 #k331 .seg-riadok{min-height:44px}
+#sf331{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#sf331 button{min-height:46px;border-radius:12px;border:1.5px solid var(--line);background:transparent;color:var(--fg);font:inherit;font-size:15.5px;font-weight:700;cursor:pointer}
+#sf331 button[aria-pressed=true]{background:#4B7A35;border-color:#4B7A35;color:#fff}
+#fe331{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:12px;background:#F6E3DC;border:1.5px solid #A34A2A;color:#7A2E16;font-size:14.5px;font-weight:800}
+#fe331 button{min-height:44px;border-radius:12px;border:none;background:#A34A2A;color:#fff;font:inherit;font-weight:800;cursor:pointer}
+body.p331 .step[data-s=udaje]>h2{font-size:23px;margin:0}
+html body.ram.p318.p331[data-pg=kontrola] #qrPrep{display:none!important}
+body.p331 fieldset.p331-prazdny{display:none!important}
+</style>
+<script>/* OPRAVY 331: Svadba · Jubileum · Blahoželanie — dlhá cesta v ráme ako parte (318): najprv mená a fotka, potom šablóna */(function(){
+const $=id=>document.getElementById(id);
+const ram=()=>document.body.classList.contains("ram");
+const TYPY=["svadba","jubileum","blahozelanie"];
+const P=()=>ram()&&TYPY.includes(st.typ)&&CFG.rezim!=="rychly";
+const TL=()=>st.typ==="blahozelanie"?TB:st.typ==="jubileum"?TJ:TS;
+/* polia 1. strany (mená, dátum, vek) — ostatné ostanú na strane Text */
+const POLIA={svadba:["sNev","sD"],jubileum:["jMeno","jNar","jVek"],blahozelanie:["bMeno","bNar","bVek"]};
+const NADPIS={svadba:"Snúbenci",jubileum:"Oslávenec",blahozelanie:"Komu blahoželáte?"};
+const SPAT=[];let ZAP=null;
+function presun(el,kam){if(!el||!kam||el.parentNode===kam)return;if(!el.parentNode){kam.appendChild(el);SPAT.push([el,null]);return}const z=document.createComment("331");el.parentNode.insertBefore(z,el);SPAT.push([el,z]);kam.appendChild(el)}
+function obal(id){const e=$(id);if(!e)return null;return e.closest(".row")||e.closest("label")}
+function vypni(){if(!ZAP)return;ZAP=null;while(SPAT.length){const[el,z]=SPAT.pop();if(!z){el.remove();continue}z.parentNode.insertBefore(el,z);z.remove()}document.body.classList.remove("p331")}
+function zapni(){if(ZAP===st.typ)return;vypni();
+ const kh=document.querySelector('.step[data-s="koho"]');if(!kh)return;ZAP=st.typ;
+ if(!$("fotoRiadok")&&typeof render==="function"){ZAP=null;render();ZAP=st.typ}
+ let k=$("k331");if(!k){k=document.createElement("div");k.id="k331";kh.appendChild(k)}
+ POLIA[st.typ].forEach(id=>presun(obal(id),k));
+ /* „Vek na … (60 vypočítané)“ ako jeden riadok nad poľom (text a číslo sa nerozsypú do stĺpca) */
+ ["jVek","bVek"].forEach(id=>{const e=$(id),lab=e&&e.closest("label");if(!lab||lab.querySelector(".v331"))return;const sp=document.createElement("span");sp.className="v331";
+  [...lab.childNodes].filter(n=>n!==e).forEach(n=>sp.appendChild(n));lab.insertBefore(sp,e)});
+ let n=$("n331f");if(!n){n=document.createElement("p");n.className="n318 len-ram";n.id="n331f";n.textContent="Fotka"}presun(n,k);
+ presun($("fotoRiadok"),k);
+ let sf=$("sf331");if(!sf){sf=document.createElement("div");sf.id="sf331";sf.setAttribute("role","radiogroup");sf.setAttribute("aria-label","Fotka na oznámení");
+  sf.innerHTML='<button type="button" role="radio" data-v="1">S fotkou</button><button type="button" role="radio" data-v="0">Bez fotky</button>';
+  sf.querySelector('[data-v="1"]').onclick=()=>{if(!st.foto){const b=$("btnFotoVyb");if(b)b.click()}};
+  sf.querySelector('[data-v="0"]').onclick=()=>{chybaFoto("");if(st.foto){st.foto=null;render();try{autosave()}catch(e){}}else ui331()}}
+ presun(sf,k);presun($("seg_bw"),k);presun($("bw").closest("label"),k);
+ let fe=$("fe331");if(!fe){fe=document.createElement("div");fe.id="fe331";fe.setAttribute("role","alert");fe.hidden=true}presun(fe,k)}
+/* zlyhanie má tvár: fotku sa nepodarilo načítať */
+function chybaFoto(t){const fe=$("fe331");if(!fe)return;fe.hidden=!t;if(!t){fe.innerHTML="";return}
+ fe.innerHTML='<span></span><button type="button">Skúsiť znova</button>';fe.firstChild.textContent=t;fe.querySelector("button").onclick=()=>{chybaFoto("");const b=$("btnFotoVyb");if(b)b.click()}}
+const _nf=window.edNastavFotku;window.edNastavFotku=function(src){if(!P()||!src)return _nf.apply(this,arguments);
+ const im=new Image();im.onload=()=>{chybaFoto("");_nf(src)};im.onerror=()=>chybaFoto("Fotku sa nepodarilo nahrať.");im.src=src};
+const _kr=kroky;kroky=function(){if(!P())return _kr();const a=[];if(!CFG.typ)a.push("druh");a.push("koho","vzhlad","ozdoby","udaje","kontrola","hotovo");return a};
+const _ch=chyby;chyby=function(k){if(!P())return _ch.apply(this,arguments);
+ if(k==="koho"){document.querySelectorAll(".miss").forEach(e=>e.classList.remove("miss"));const box=$("k331"),ch=[];
+  for(const[id,n]of POVINNE[st.typ]){const e=$(id);if(e&&box&&box.contains(e)&&!e.value.trim()){ch.push(n);e.classList.add("miss")}}
+  return ch.length?"Ešte doplňte: "+ch.join(", ")+".":""}
+ if(k==="vzhlad"||k==="ozdoby"||k==="kontrola")return"";return _ch.call(this,"udaje")};
+const MENA={koho:"Vzhľad",vzhlad:"Ozdoby",ozdoby:"Text"};
+const _ss=showStep;showStep=function(){const r=_ss.apply(this,arguments);
+ if(!P()){vypni();return r}
+ zapni();document.body.classList.add("p318","p331");const cur=kroky()[STEP];document.documentElement.classList.add("r318");document.documentElement.classList.toggle("r318v",cur==="vzhlad");
+ const kh=document.querySelector('.step[data-s="koho"]>h2');if(kh)kh.textContent=NADPIS[st.typ];
+ const uh=document.querySelector('.step[data-s="udaje"]>h2');if(uh)uh.textContent="Text";
+ if(cur==="kontrola")document.querySelectorAll("#kRiadky .k-opr").forEach(b=>{if(b.dataset.k==="osoba")b.dataset.k="koho";else if(b.dataset.k==="udaje2")b.dataset.k="udaje"});
+ /* prázdny fieldset na strane Text (všetky polia sú na 1. strane) sa neukáže */
+ document.querySelectorAll('.step[data-s="udaje"] [id^=fs]>fieldset').forEach(f=>f.classList.toggle("p331-prazdny",![...f.children].some(c=>c.tagName!=="LEGEND")));
+ ui331();try{scrollTo(0,0)}catch(e){}if(typeof fit==="function")fit();return r};
+/* pás vzhľadov: s fotkou len vzhľady s fotkou, bez fotky len bez fotky; miniatúra už s fotkou */
+function ui331(){if(!P())return;const L=TL(),tp=$("tpls"),sF=!!st.foto;let vid=0,zvol=null;
+ [...tp.children].forEach((b,i)=>{const t=L[i];if(!t)return;const skry=!!t.foto!==sF;b.hidden=skry;if(!skry){vid++;if(!zvol)zvol=b}
+  const k=b.querySelector(".tpl-k");if(!k)return;const ac=C[st.col]&&C[st.col][1]||t.ac,kl=[t.bg,ac,st.sym,sF&&t.foto,$("orn").checked,st.foto&&st.foto.length].join("|");if(k.dataset.k331===kl&&k.children.length)return;k.dataset.k331=kl;
+  k.style.background=t.bg;k.innerHTML=(t.frame&&t.frame!=="none"?`<i class="m318r" style="border-color:${ac}"></i>`:"")+`<i class="m318s">${symHTML(st.sym,ac)||""}</i>`+
+   (t.foto&&sF?`<i class="m318f" style="background-image:url('${st.foto}')"></i>`:"")+`<i class="m318l" style="background:${t.fg}"></i><i class="m318l" style="background:${t.mu}"></i>`});
+ const vz=$("vz331");if(vz)vz.firstChild.textContent=`Vyberte vzhľad · ${vid}`;
+ const sf=$("sf331");if(sf){sf.querySelector('[data-v="1"]').setAttribute("aria-checked",sF);sf.querySelector('[data-v="1"]').setAttribute("aria-pressed",sF);sf.querySelector('[data-v="0"]').setAttribute("aria-checked",!sF);sf.querySelector('[data-v="0"]').setAttribute("aria-pressed",!sF)}
+ const cur=L.find(x=>x.id===st.t);if(cur&&!!cur.foto!==sF&&zvol){zvol.click();return}
+ mini()}
+let MINI="",_mt=0,_mk="";
+function mini(){clearTimeout(_mt);_mt=setTimeout(async()=>{if(!P()||typeof window.edKresli!=="function")return;const kl=JSON.stringify([st,...POLIA[st.typ].map(id=>($(id)||{}).value),$("orn").checked,$("bw").checked]);if(kl===_mk&&MINI)return;
+ try{const cv=await window.edKresli({w:120});MINI=cv.toDataURL("image/jpeg",.8);_mk=kl;if(window.edHlas)window.edHlas()}catch(e){}},350)}
+const MENO=()=>st.typ==="svadba"?[($("sNev")||{}).value,($("sZen")||{}).value].map(x=>(x||"").trim()).filter(Boolean).join(" & "):(($(st.typ==="jubileum"?"jMeno":"bMeno")||{}).value||"").trim();
+const _es=window.edStav303;window.edStav303=function(){const o=_es();if(!P())return o;const t=TL().find(x=>x.id===st.t);
+ o.dalsi=MENA[o.kluc]||null;o.p318=true;o.mini=Object.assign({},o.mini,{img:MINI,t:[MENO(),t?t.n:""].filter(Boolean).join(" · ")});return o};
+const _r=render;render=function(){const r=_r.apply(this,arguments);try{ui331()}catch(e){}return r};
+/* nadpis pásu vzhľadov ako pri parte */
+const _ss2=showStep;showStep=function(){const r=_ss2.apply(this,arguments);if(P()){const tf=$("tpls").closest("fieldset");if(!$("vz331")&&!$("vz318")){const h=document.createElement("div");h.className="vz318 len-ram";h.id="vz331";h.innerHTML="<b></b><span>do boku ›</span>";tf.insertBefore(h,$("tpls"))}ui331()}else{const v=$("vz331");if(v)v.remove()}return r};
+const _f=fit;fit=function(){const r=_f.apply(this,arguments);
+ if(P()&&document.body.dataset.pg==="vzhlad"&&!document.body.classList.contains("ram-nahlad")){const p=$("p"),v=document.querySelector(".view");p.style.transform="";
+  const w=p.offsetWidth,h=p.offsetHeight,H=Math.max(200,v.clientHeight-40);if(w&&h){const k=Math.min((innerWidth-32)/w,H/h);p.style.transformOrigin="top center";p.style.transform=`scale(${k})`;p.style.marginBottom=Math.round(h*k-h)+"px"}}
+ return r};
+const _ie=window.initEditor;window.initEditor=function(){vypni();const r=_ie.apply(this,arguments);try{showStep()}catch(e){}return r};
 })();</script>

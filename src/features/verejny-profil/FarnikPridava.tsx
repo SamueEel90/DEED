@@ -625,7 +625,8 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     </div>;
   };
   // KARTA 57C §2: formulár nad stránkou — hore „‹ Späť na stránku farnosti", stránka presvitá
-  const okno = jeEd ? editorEl({ extra: galeriaEd ? <div style={{ padding: "8px 16px", borderBottom: ramOn ? "1px solid var(--cardBd)" : undefined }}>{galRiadok}</div> : undefined })
+  // OPRAVY 331: na mobile rovnaká cesta ako parte — fotka sa vyberá na 1. strane editora (Vybrať fotku), nie v páse nad ním
+  const okno = jeEd ? editorEl({ extra: galeriaEd && !ramOn ? <div style={{ padding: "8px 16px", borderBottom: ramOn ? "1px solid var(--cardBd)" : undefined }}>{galRiadok}</div> : undefined })
     : k && createPortal(
     <div role="dialog" aria-modal="true" aria-label={T?.t} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(20,17,11,.82)", overscrollBehavior: "contain", display: "flex", flexDirection: "column", alignItems: "center", gap: mobil ? 10 : 12, padding: mobil ? "calc(10px + env(safe-area-inset-top, 0px)) 10px 10px" : 16, boxSizing: "border-box" }}>
       <div style={{ width: "100%", maxWidth: 520, flex: "none", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
