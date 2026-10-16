@@ -192,7 +192,7 @@ export function NadpisText({ nazov, text, otvoreny: otvorenyZvonka, onOtvoreny }
           </div>
           {dlhy && otvoreny && (
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <button type="button" onClick={zbal} style={{ ...odkaz, background: "transparent", padding: "2px 0" }}>menej</button>
+              <button type="button" onClick={zbal} style={{ ...odkaz, background: "transparent", padding: "2px 0", minHeight: 44 }}>Zbaliť ⌃</button>
             </div>
           )}
         </div>

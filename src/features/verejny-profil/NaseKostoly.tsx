@@ -5,6 +5,7 @@
 // Podstránka: fotka + ‹ Späť na Farnosť …, omše v tomto kostole, história (viac ›), fotky, najbližšie akcie tu,
 // zbierka farnosti na toto miesto (peniaze idú na účet farnosti), adresa + Navigovať ›. Žiadne platby na podstránke.
 // ============================================================
+import { TlZbalit } from "./zbalit";
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useKalendar, kostolKal, omseDna, casSoStitkom, polozkyDna, druhPolozky, iso, dvt, DNI_K, minuty, pekny, type KalKostol } from "@/lib/kalendarFarnosti";
@@ -115,10 +116,11 @@ export function PodstrankaMiesta({ m, strankaId, menoFarnosti, siroka, zbierky, 
       : null}
     <button type="button" onClick={onKalendar} style={tl}>Celý kalendár farnosti ›</button>
   </>);
-  const histEl = hist && <section style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+  const histEl = hist && <section data-zbal="" style={{ display: "flex", flexDirection: "column", gap: 6, scrollMarginTop: 16 }}>
     {/* OPRAVY 262: celá história formátovaná, skrátená z čistého textu */}
     {histOtv && jeHtmlText(m.historia) ? <FormatovanyText text={m.historia} style={{ fontSize: 16.5, lineHeight: 1.6, color: INK2 }} />
       : <span style={{ fontSize: 16.5, lineHeight: 1.6, color: INK2, whiteSpace: "pre-line", ...(histOtv ? {} : { display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }) }}>{hist}</span>}
+    {histOtv && hist.length > 220 && <TlZbalit onZbal={() => setHistOtv(false)} />}
     {!histOtv && hist.length > 220 && <button type="button" onClick={() => setHistOtv(true)} style={{ alignSelf: "flex-start", padding: 0, border: "none", background: "transparent", color: "var(--nf-gInk)", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, cursor: "pointer" }}>viac ›</button>}
   </section>;
   const akcieEl = akcie.length > 0 && sekcia(siroka ? "NAJBLIŽŠIE AKCIE V TOMTO KOSTOLE" : "NAJBLIŽŠIE AKCIE TU", akcie.map((a, i) => (

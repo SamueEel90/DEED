@@ -1,6 +1,7 @@
 // KARTA 43 · spoločné časti troch verejných profilov (Kronika · Výklad · Pirát).
 // Farby z tokenov správy charity (.sc-tokeny + data-stit) — tie isté ako v prototypoch.
 // Len transform/opacity, ťukacie plochy od 44 px, žiadne emoji, slovenský formát čísel.
+import { TlZbalit } from "./zbalit";
 import { useZamokVrstvy } from "@/lib/zamokVrstvy";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -208,6 +209,8 @@ export function PribehText({ text, riadky = 6, fs = 14.5, farba = "var(--ink2)",
     <span style={{ display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: cely ? "unset" : riadky, overflow: "hidden", fontSize: fs, lineHeight: 1.5, color: farba } as CSSProperties}>{text}</span>
     {!cely && <span role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); setCely(true); }} onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); setCely(true); } }}
       style={{ alignSelf: "flex-start", minHeight: 44, margin: "-12px 0", display: "flex", alignItems: "center", fontSize: 13.5, fontWeight: 800, color: odkaz, cursor: "pointer" }}>Čítať celý príbeh ›</span>}
+    {/* OPRAVY 321: čo sa rozbalí, má Zbaliť */}
+    {cely && <span onClick={(e) => e.stopPropagation()} style={{ display: "contents" }}><TlZbalit onZbal={() => setCely(false)} styl={{ color: odkaz, fontSize: 13.5, margin: "-12px 0" }} /></span>}
   </>);
 }
 

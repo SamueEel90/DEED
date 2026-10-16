@@ -80,6 +80,7 @@ import { useAutorNaStranke, type AutorF } from "@/lib/autorFarnosti";
 import { DNI_UH, casyUH, maUH, textCasu } from "@/lib/uradneHodiny";
 import { useSumyDarcov } from "@/lib/sumyDarcov";
 import { odkazZbierky } from "@/features/zbierka/Zdielat";
+import { TlZbalit } from "./zbalit";
 import { CelaGaleria, OdznakFotiek, type MediumGalerie } from "@/components/celaGaleria";
 import { medGal } from "@/lib/medGal";
 import { posterVidea, useZmenyPosterov } from "@/lib/videoUloz";
@@ -277,9 +278,15 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   };
 
   // ---------- O nás + hlavná ----------
-  const onas = cistyText([profil?.onas, profil?.onas2].filter(Boolean).join("\n")).trim();
+  // OPRAVY 321: pokračovanie, ktoré začína tým istým textom ako úvod, sa neopakuje (po rozbalení sa text len predĺži)
+  const onasCasti = bezOpakovania(profil?.onas, profil?.onas2);
+  const onas = cistyText(onasCasti.join("\n")).trim();
   // OPRAVY 262: celé O nás formátované (odseky, nadpis, tučné), skrátená veta z čistého textu
-  const onasF = (st: CSSProperties) => <div style={{ display: "flex", flexDirection: "column", gap: "0.7em", ...st }}>{[profil?.onas, profil?.onas2].filter(Boolean).map((t, i) => <FormatovanyText key={i} text={t} />)}</div>;
+  const onasF = (st: CSSProperties) => <div style={{ display: "flex", flexDirection: "column", gap: "0.7em", ...st }}>{onasCasti.map((t, i) => <FormatovanyText key={i} text={t} />)}</div>;
+  /** OPRAVY 321: rozbalené O farnosti — Zbaliť ⌃ dole (pri dlhom texte aj hore), po zbalení to isté miesto */
+  const onasDlhy = onas.length > 600;
+  const onasRoz = (st: CSSProperties) => <div data-zbal="" style={{ display: "flex", flexDirection: "column", gap: 8, scrollMarginTop: 16 }}>
+    {onasDlhy && <TlZbalit onZbal={() => setOnasOtv(false)} />}{onasF(st)}<TlZbalit onZbal={() => setOnasOtv(false)} /></div>;
   const hl = centralnaZPamate(strankaId);
   const hlOn = !!hl?.spustena;
   const hlRef = `${strankaId}-centralna`;
@@ -697,6 +704,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   const zbObsah = <>
     {stvorce.length > 0 && <div style={{ display: "grid", gridTemplateColumns: `repeat(${k3 || !siroka ? 2 : 4},minmax(0,1fr))`, gap: 12 }}>{zbVsetky ? stvorce : stvorce.slice(0, vMriezke)}</div>}
     {!zbVsetky && stvorce.length > vMriezke && <button type="button" onClick={() => setZbVsetky(true)} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", color: "var(--nf-gInk)", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, cursor: "pointer", textAlign: "left" }}>+ {ineNazvy.length ? ineNazvy.slice(-Math.max(1, stvorce.length - vMriezke)).slice(0, 1)[0] : `${stvorce.length - vMriezke} ďalšie`} · všetky zbierky ›</button>}
+    {zbVsetky && stvorce.length > vMriezke && <TlZbalit onZbal={() => setZbVsetky(false)} />}
     {prispeliSme}
   </>;
   const kZbierky = maZbierky && <div data-blok="zbierky" style={{ display: "flex", flexDirection: "column", gap: 12, scrollMarginTop: 16 }}>{KN("Zbierky farnosti")}{zbObsah}</div>;
@@ -733,7 +741,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
             <b style={{ fontSize: 19, lineHeight: 1.3, overflowWrap: "anywhere" }}>{x.t}</b>
             {x.txt && <div className="vid-skry">{o ? <Viac text={x.txt} velkost={16} riadkov={40} /> : <button type="button" onClick={() => setOzOtv(x.id)} style={{ padding: 0, border: "none", background: "transparent", color: INK2, fontFamily: "inherit", fontSize: 16, textAlign: "left", cursor: "pointer", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{x.txt}</button>}</div>}
             {x.foto && <div className="vid-skry"><button type="button" onClick={() => otvorGal(x.t, x.gal)} aria-label="Fotky na celú obrazovku" style={{ alignSelf: "flex-start", border: "none", padding: 0, borderRadius: 12, overflow: "hidden", cursor: "zoom-in", marginTop: 4, position: "relative" }}><img src={x.foto} alt="" style={{ width: 220, maxWidth: "100%", aspectRatio: "16 / 9", objectFit: "cover", display: "block" }} /><OdznakFotiek m={x.gal} /></button></div>}
-            {o && hlavickaFar(x.af)}
+            {o && hlavickaFar(x.af)}{o && <TlZbalit onZbal={() => setOzOtv(null)} />}
           </span>
         </div></Videne>); })}
     </div>
@@ -903,7 +911,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
       </div>
       <div style={{ padding: k3 ? "60px 28px 0" : "48px 18px 0", display: "flex", flexDirection: "column", gap: k3 ? 20 : 14 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}><b style={{ fontSize: k3 ? 38 : 30, lineHeight: 1.05, letterSpacing: "-.035em" }}>{meno}</b>{podMeno && <span style={{ fontSize: 16, color: INK3 }}>{podMeno}</span>}</div>
-        {onas && <span style={{ fontSize: 16.5, lineHeight: 1.6, color: INK2 }}>{onasOtv ? onasF({}) : <>{onas.split(/(?<=[.!?])\s|\n/)[0]} <button type="button" onClick={() => setOnasOtv(true)} style={{ border: "none", background: "transparent", padding: 0, color: "var(--nf-gInk)", fontFamily: "inherit", fontSize: "inherit", fontWeight: 800, cursor: "pointer" }}>viac ›</button></>}</span>}
+        {onas && <span style={{ display: "block", fontSize: 16.5, lineHeight: 1.6, color: INK2 }}>{onasOtv ? onasRoz({}) : <>{onas.split(/(?<=[.!?])\s|\n/)[0]} <button type="button" onClick={() => setOnasOtv(true)} style={{ border: "none", background: "transparent", padding: 0, color: "var(--nf-gInk)", fontFamily: "inherit", fontSize: "inherit", fontWeight: 800, cursor: "pointer" }}>viac ›</button></>}</span>}
         <div style={{ display: "grid", gridTemplateColumns: maOmse ? "1fr 1fr" : "1fr", gap: 8 }}>
           {sledBtn}
           {maOmse && <button type="button" onClick={() => setKalOtv(true)} style={{ minHeight: 52, minWidth: 0, padding: "6px 10px", borderRadius: 14, border: `1.5px solid ${LINKA}`, background: KARTA, color: INK, fontFamily: "inherit", cursor: "pointer", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "flex-start", textAlign: "left" }}>
@@ -1006,9 +1014,10 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   const onasVeta = onas.split(/(?<=[.!?])\s|\n/)[0];
   const viacOnas = !onasOtv && onasVeta !== onas && <> <button type="button" onClick={() => setOnasOtv(true)} style={{ border: "none", background: "transparent", padding: 0, color: "var(--nf-gInk)", fontFamily: "inherit", fontSize: "inherit", fontWeight: 800, cursor: "pointer" }}>viac ›</button></>;
   /** celý text O nás vždy na podklade --nf-papier */
-  const onasCely = onasOtv && onas && <div style={{ padding: pc ? "22px 26px" : "16px 18px", borderRadius: pc ? 24 : 18, background: PAPIER, border: `1px solid ${LINKA}`, display: "flex", flexDirection: "column", gap: 10 }}>
+  const onasCely = onasOtv && onas && <div data-zbal="" style={{ padding: pc ? "22px 26px" : "16px 18px", borderRadius: pc ? 24 : 18, background: PAPIER, border: `1px solid ${LINKA}`, display: "flex", flexDirection: "column", gap: 10, scrollMarginTop: 16 }}>
+    {onasDlhy && <TlZbalit onZbal={() => setOnasOtv(false)} />}
     {onasF({ fontSize: pc ? 17 : 15.5, lineHeight: 1.6, color: INK2 })}
-    <button type="button" onClick={() => setOnasOtv(false)} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", color: "var(--nf-gInk)", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>Zbaliť ⌃</button>
+    <TlZbalit onZbal={() => setOnasOtv(false)} />
   </div>;
   const logoEl = (s: number, r: number) => logo ? <img src={logo} alt="Logo" style={{ width: s, height: s, borderRadius: profil?.tvar === "kruh" ? "50%" : r, objectFit: "cover", background: "#fff", boxShadow: "0 8px 24px rgba(0,0,0,.4)", display: "block" }} />
     : <span role="img" aria-label="Logo farnosti" style={{ width: s, height: s, borderRadius: r, background: "#fff", color: "#14110B", display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.round(s * 0.36), fontWeight: 800, boxShadow: "0 8px 24px rgba(0,0,0,.4)" }}>{inic}</span>;
@@ -1060,7 +1069,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
         <b style={{ fontSize: 19, lineHeight: 1.3, overflowWrap: "anywhere" }}>{x.t}</b>
         {x.txt && (o ? <Viac text={x.txt} velkost={16} riadkov={40} /> : <button type="button" onClick={() => setOzOtv(x.id)} style={{ padding: 0, border: "none", background: "transparent", color: INK2, fontFamily: "inherit", fontSize: 16, textAlign: "left", cursor: "pointer", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{x.txt}</button>)}
         {x.foto && <button type="button" onClick={() => otvorGal(x.t, x.gal)} aria-label="Fotky na celú obrazovku" style={{ alignSelf: "flex-start", border: "none", padding: 0, borderRadius: 12, overflow: "hidden", cursor: "zoom-in", marginTop: 4, position: "relative" }}><img src={x.foto} alt="" style={{ width: 220, maxWidth: "100%", aspectRatio: "16 / 9", objectFit: "cover", display: "block" }} /><OdznakFotiek m={x.gal} /></button>}
-        {o && hlavickaFar(x.af)}
+        {o && hlavickaFar(x.af)}{o && <TlZbalit onZbal={() => setOzOtv(null)} />}
       </span>
     </div></Videne>); };
   /** zoznam dole v bloku: vo dvojici vyplní výšku suseda, inak najviac 460 (mobil 340) px */
@@ -1151,6 +1160,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
       {zbUkaz}
       {!mob && zbDalsie > 0 && <button type="button" onClick={() => setZbVsetky(true)} style={{ aspectRatio: "1 / 1", borderRadius: 22, border: "1.5px dashed var(--nf-linka)", background: PAPIER, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", gap: 8, textAlign: "center", padding: 16, color: INK, fontFamily: "inherit", cursor: "pointer" }}><b style={{ fontSize: 19 }}>+ {zbDalsie > 1 ? `${zbDalsiNazov} a ďalšie` : zbDalsiNazov}</b><span style={{ fontSize: 15, fontWeight: 800, color: "var(--nf-gInk)" }}>všetky zbierky ›</span></button>}
     </div>}
+    {zbVsetky && stvorce.length > zbNaRad && <TlZbalit onZbal={() => setZbVsetky(false)} />}
     {mob && zbDalsie > 0 && <button type="button" onClick={() => setZbVsetky(true)} style={{ minHeight: 48, borderRadius: 14, border: "1.5px dashed var(--nf-linka)", background: "transparent", color: "var(--nf-gInk)", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, cursor: "pointer", padding: "0 14px", textAlign: "left" }}>+ {zbDalsiNazov} · všetky zbierky ›</button>}
     {prispeliSme}
   </>;
@@ -1363,7 +1373,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
     {<button type="button" aria-pressed={jeHl || jeSl} aria-expanded={jeHl || jeSl ? mfOn : undefined} onClick={sledTap} style={{ minHeight: kTl, minWidth: 0, padding: "0 16px", borderRadius: 14, border: "none", background: ZELENA_TL, color: "#fff", fontFamily: "inherit", fontSize: 17, fontWeight: 800, cursor: "pointer" }}>{sledT}{(jeHl || jeSl) && !sledChyba ? " ⌄" : ""}</button>}
     {maOmse && <button type="button" onClick={() => setKalOtv(true)} style={{ minHeight: kTl, minWidth: 0, padding: "0 14px", borderRadius: 14, border: `1.5px solid ${LINKA}`, background: PAPIER, color: INK, fontFamily: "inherit", fontSize: 17, fontWeight: 800, cursor: "pointer" }}>Omše a kalendár</button>}
   </>;
-  const kOnas = onas && (onasOtv ? onasF({ fontSize: pc ? 18 : 16.5, lineHeight: 1.55, color: INK2 })
+  const kOnas = onas && (onasOtv ? onasRoz({ fontSize: pc ? 18 : 16.5, lineHeight: 1.55, color: INK2 })
     : <span style={{ fontSize: pc ? 18 : 16.5, lineHeight: 1.55, color: INK2, maxWidth: 760 }}>{onasVeta}{onasVeta !== onas && <> <button type="button" onClick={() => setOnasOtv(true)} style={{ border: "none", background: "transparent", padding: 0, color: "var(--nf-gInk)", fontFamily: "inherit", fontSize: "inherit", fontWeight: 800, cursor: "pointer" }}>viac ›</button></>}</span>);
   const kDnes = (dnesCasy || zmenaT || (pc && poctyT)) ? <div style={{ display: "flex", alignItems: pc ? "center" : "flex-start", flexDirection: pc ? "row" : "column", flexWrap: "wrap", gap: pc ? 28 : 4, padding: pc ? "18px 24px" : "14px 16px", borderRadius: 16, background: PAPIER, border: `1px solid ${LINKA}` }}>
     {(dnesCasy || zmenaT) && <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: ".12em", color: "var(--nf-gInk)" }}>● DNES · {DNW_V[dvt(dnesD)]} {dLbl(dnesD)}</span>}
@@ -1457,7 +1467,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
       {/* OPRAVY 243: hrubá farebná línia pod titulkou s jemným tieňom */}
       <div aria-hidden="true" style={{ height: 12, background: "var(--nf-linia)", boxShadow: "0 4px 14px rgba(0,0,0,.18)", position: "relative", zIndex: 1 }} />
       <div style={{ padding: `${siroka ? 28 : 18}px ${PAD_X} ${siroka ? 12 : 4}px`, display: "flex", flexDirection: "column", gap: 14 }}>
-        {onas && onasOtv && onasF({ fontSize: "clamp(16px,1.4vw,19px)", lineHeight: 1.6, color: INK2 })}
+        {onas && onasOtv && onasRoz({ fontSize: "clamp(16px,1.4vw,19px)", lineHeight: 1.6, color: INK2 })}
         {onas && !onasOtv && <span style={{ fontSize: "clamp(16px,1.4vw,19px)", lineHeight: 1.6, color: INK2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } as CSSProperties}>
           {onas.split(/(?<=[.!?])\s|\n/)[0]}{" "}
           {!onasOtv && <button type="button" onClick={() => setOnasOtv(true)} style={{ border: "none", background: "transparent", padding: 0, color: "var(--nf-gInk)", fontFamily: "inherit", fontSize: "inherit", fontWeight: 800, cursor: "pointer" }}>viac ›</button>}
@@ -1753,7 +1763,15 @@ function PasZbierok({ polozky, pasRef, onPrebytok }: { polozky: { k: string; el:
 }
 
 /** OPRAVY 262: celý text zbierky (text + pokračovanie) na formátované zobrazenie */
-const celyText = (a?: string, b?: string) => [a, b].filter((x) => !!x && !!cistyText(x)).join(jeHtmlText(a) || jeHtmlText(b) ? "" : "\n\n");
+const celyText = (a?: string, b?: string) => bezOpakovania(a, b).join(jeHtmlText(a) || jeHtmlText(b) ? "" : "\n\n");
+/** OPRAVY 321: úvod a pokračovanie — keď pokračovanie začína celým úvodom, úvod sa vynechá (text sa nezopakuje) */
+function bezOpakovania(a?: string | null, b?: string | null): string[] {
+  const n = (x?: string | null) => cistyText(x ?? "").replace(/\s+/g, " ").trim();
+  const na = n(a), nb = n(b);
+  if (na && nb && nb.startsWith(na)) return [b!];
+  return [a, b].filter((x): x is string => !!x && !!n(x));
+}
+
 
 /** KARTA 57C §5: vybraná sada zbierky (index v SADY_EUR / SADY_EURC) → rýchle sumy v module */
 function sadyZbierky(z: { sada: number; eurc: boolean; sadaE: number }): Pick<ZbierkaData, "rychleSumy" | "eurc" | "rychleSumyE"> {
@@ -1863,6 +1881,7 @@ export function Viac({ text, riadkov = 4, velkost = 16.5 }: { text: string; riad
     {otv && html ? <FormatovanyText text={text} style={{ fontSize: velkost, lineHeight: 1.5, color: INK2, overflowWrap: "anywhere" }} />
       : <span ref={ref} style={{ fontSize: velkost, lineHeight: 1.5, color: INK2, whiteSpace: "pre-line", overflowWrap: "anywhere", ...(otv ? {} : { display: "-webkit-box", WebkitLineClamp: riadkov, WebkitBoxOrient: "vertical", overflow: "hidden" }) } as CSSProperties}>{kratky}</span>}
     {dlhy && !otv && <button type="button" onClick={() => setOtv(true)} style={{ alignSelf: "flex-start", minHeight: 40, padding: 0, border: "none", background: "transparent", color: INK, fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, cursor: "pointer" }}>… viac</button>}
+    {dlhy && otv && <TlZbalit onZbal={() => setOtv(false)} />}
   </>;
 }
 
@@ -2071,7 +2090,7 @@ function DetailZbierky({ d, strankaId, onZavri }: { d: DetailF; strankaId: strin
                   <span style={kicker(ram)}>{d.chip}</span>
                   <b style={{ fontSize: wide ? 28 : 24, lineHeight: 1.15, letterSpacing: "-.02em" }}>{d.t}</b>
                   {d.txt && (wide || viacTxt
-                    ? <FormatovanyText text={d.txt} style={{ fontSize: 17, lineHeight: 1.55, color: INK2 }} />
+                    ? <>{viacTxt && !wide && cistyText(d.txt).length > 900 && <TlZbalit onZbal={() => setViacTxt(false)} />}<FormatovanyText text={d.txt} style={{ fontSize: 17, lineHeight: 1.55, color: INK2 }} />{viacTxt && !wide && <TlZbalit onZbal={() => setViacTxt(false)} />}</>
                     : <span style={{ fontSize: 16, lineHeight: 1.5, color: INK2 }}>
                         <span style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" } as CSSProperties}>{cistyText(d.txt)}</span>
                         <button type="button" onClick={() => setViacTxt(true)} style={{ minHeight: 44, padding: 0, border: "none", background: "transparent", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "var(--nf-gInk)", cursor: "pointer", boxShadow: "none" }}>viac ›</button>
@@ -2087,7 +2106,7 @@ function DetailZbierky({ d, strankaId, onZavri }: { d: DetailF; strankaId: strin
                 <div style={{ padding: "16px 18px", borderRadius: 18, background: KARTA, color: INK, display: "flex", flexDirection: "column", gap: 10 }}>
                   <span style={kicker("var(--nf-zlInk, #8A6A1C)")}>ĎAKUJEME · NA ČO SME PENIAZE POUŽILI</span>
                   {(() => { const t = celyText(d.dak.popis, d.dak.popis2); return t ? (wide || viacDak || !cistyText(d.dak.popis2)
-                    ? <FormatovanyText text={wide || viacDak ? t : d.dak.popis} style={{ fontSize: 16.5, lineHeight: 1.55, color: INK2 }} />
+                    ? <>{viacDak && !wide && cistyText(t).length > 900 && <TlZbalit onZbal={() => setViacDak(false)} />}<FormatovanyText text={wide || viacDak ? t : d.dak.popis} style={{ fontSize: 16.5, lineHeight: 1.55, color: INK2 }} />{viacDak && !wide && <TlZbalit onZbal={() => setViacDak(false)} />}</>
                     : <span style={{ display: "flex", flexDirection: "column", gap: 4 }}><FormatovanyText text={d.dak.popis} style={{ fontSize: 16.5, lineHeight: 1.55, color: INK2 }} />
                         <button type="button" onClick={() => setViacDak(true)} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "var(--nf-gInk)", cursor: "pointer", boxShadow: "none" }}>… viac</button></span>) : null; })()}
                   {d.dak.media.filter((m) => m.typ === "foto" && ziveObr(m.src)).length > 0 && <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 }}>
