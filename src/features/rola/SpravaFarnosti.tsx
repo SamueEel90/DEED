@@ -2,6 +2,8 @@
 // KARTA 56D: Správa od prvého príchodu — všetky funkcie, žiadne ukážkové dáta (prototyp „Sprava farnosti - prvy prichod").
 // Profil, logo a percento = profil_stranky (ako charita), pripnuté = sprava_piny, hlavná zbierka = profil_stranky.centralna.
 // Omše, oznamy a nastavenia farnosti z modulu Viera (stav.ts — localStorage + zrkadlo naboz_stav) pod kľúčom stránky.
+import { VecnaNova, VecnaSprava } from "./VecnaZbierkaSprava";
+import { useVecneZbierky, fotoVecnej, doKedyText, type VecnaZbierka } from "@/lib/vecnaZbierka";
 import { NADPIS_SEKCIE } from "./KartaNastavenia";
 import { KartaNastavenia, IK_PORADIE } from "./KartaNastavenia";
 import { TlZbalit } from "@/features/verejny-profil/zbalit";
@@ -99,6 +101,8 @@ const BEZ_PRIDAT: Sub[] = ["zvoncek", "profil", "hlavna", "nahlad", "zbierka", "
 
 // ---- spoločné štýly (prototyp) ----
 const karta: CSSProperties = { flex: "none", borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)" };
+/** OPRAVY 320: krabica (Vecná zbierka) */
+const IK_KRABICA = "M3 7.5 12 3l9 4.5v9L12 21l-9-4.5v-9zM3 7.5 12 12l9-4.5M12 12v9";
 const kicker: CSSProperties = { flex: "none", ...NADPIS_SEKCIE }; // OPRAVY 325
 const tlZ: CSSProperties = { flex: "none", minHeight: 44, padding: "0 14px", border: "none", borderRadius: 12, background: "#4B7A35", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "#fff" };
 
@@ -135,6 +139,10 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const [zbOtv, setZbOtv] = useState<string | null>(null);
   const [uspOtv, setUspOtv] = useState(false); // OPRAVY 292
   const [pz, setPz] = useState(false);
+  // OPRAVY 320: Vecná zbierka — nová (vyplniť) a správa (plagát, darcovia, ukončenie)
+  const [vecnaNova, setVecnaNova] = useState(false);
+  const [vecnaOtv, setVecnaOtv] = useState<{ z: VecnaZbierka; nova: boolean } | null>(null);
+  const vecne = useVecneZbierky(strankaId);
   const [pzT, setPzT] = useState(""); // OPRAVY 185: text Späť podľa kroku zbierky // OPRAVY 161: postup zbierky pre veriacich
   const [archOtv, setArchOtv] = useState(false); // KARTA 57 A.8: archív zbalený
   // OPRAVY 284 (5): hromadné zmazanie z archívu — len zo zoznamu, peniaze, darcovia a doklady ostávajú
@@ -465,14 +473,18 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
         <button type="button" onClick={() => setZbVyber(false)} aria-label="Zavrieť" style={{ width: 44, height: 44, borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--field)", cursor: "pointer", fontSize: 18, color: "var(--ink2)", boxShadow: "none" }}>×</button></div>
       {volbaZb(IC.kostol, "Zbierka farnosti", "na opravu, misie, lavice · peniaze idú na účet hlavnej zbierky", () => { sprava(""); if (!bezi) { setZbBlok(true); return; } go("nova"); })}
       {volbaZb(IC.ludia, "Zbierka s overovateľom", "pohreb, svadba, iné · peniaze idú rodine, podiel farnosti na účet farnosti · nezávisí od hlavnej zbierky", () => { sprava(""); setPz(true); })}
+      {volbaZb(IK_KRABICA, "Vecná zbierka", "ponožky, potraviny, oblečenie · bez peňazí, darca sa zapíše cez QR pri krabici", () => { sprava(""); setZbVyber(false); setVecnaNova(true); window.scrollTo({ top: 0, behavior: "smooth" }); })}
       {volbaZb(IC.verejny, "Zbierka iného subjektu", "pripnúť zbierku charity alebo človeka z Help · peniaze idú priamo im, vy ju len ukazujete", () => { setZbVyber(false); setPinVyber(true); })}
     </section>}
     {pinVyber && <PripnutieVyber strankaId={strankaId} mobil={mobil} onSpat={() => { setPinVyber(false); setZbVyber(true); }}
       onHotovo={(t) => { setPinVyber(false); setNoveOk(t); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
     {pz && <ZbierkaSOverovatelom stranka={strankaId} menoFarnosti={meno} ucetFarnosti={hlavnyUcet} mobil={mobil} pc={desktop} toast={toast} onZavri={() => setPz(false)} spatRef={pzSpat} onSpatText={setPzT}
       onHotovo={(_z, t) => { setPz(false); setNoveOk(t); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
+    {vecnaNova && <VecnaNova strankaId={strankaId} mobil={mobil} onZavri={() => { setVecnaNova(false); setZbVyber(true); }}
+      onHotovo={(z) => { setVecnaNova(false); setVecnaOtv({ z, nova: true }); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
+    {vecnaOtv && <VecnaSprava key={vecnaOtv.z.id} strankaId={strankaId} meno={meno} z={vecnaOtv.z} nova={vecnaOtv.nova} mobil={mobil} onSpat={() => { setVecnaOtv(null); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
     {/* KARTA 56E §2: kým beží tvorba (výber druhu alebo postup), zoznam zbierok sa nezobrazuje */}
-    {!zbVyber && !pz && !pinVyber && <>
+    {!zbVyber && !pz && !pinVyber && !vecnaNova && !vecnaOtv && <>
     {/* KARTA 57 B.2: v Zbierkach na mobile a tablete aj veľké + Pridať zbierku hore */}
     {mobil && <button type="button" onClick={() => { setPridat(false); setZbVyber(true); window.scrollTo({ top: 0, behavior: "smooth" }); }} style={{ flex: "none", minHeight: 56, border: "none", borderRadius: 16, background: "#4B7A35", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "#fff", boxShadow: "none" }}><span aria-hidden="true" style={{ fontSize: 22, lineHeight: 1 }}>+</span>Pridať zbierku</button>}
     {noveOk && sprava2(noveOk, () => setNoveOk(null), true)}
@@ -502,6 +514,19 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     {dalsie.some((z) => !vArchive(z)) && <>
       <span style={kicker}>ĎALŠIE ZBIERKY</span>
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{dalsie.filter((z) => !vArchive(z)).map(dalsieRiadok)}</div>
+    </>}
+    {vecne.length > 0 && <>
+      <span style={kicker}>VECNÉ ZBIERKY</span>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{vecne.map((z) => (
+        <button key={z.id} type="button" onClick={() => setVecnaOtv({ z, nova: false })} style={{ flex: "none", borderRadius: 20, border: "1.5px solid var(--cardBd)", background: "var(--card)", display: "flex", alignItems: "center", gap: mobil ? 12 : 16, padding: mobil ? "10px 12px" : "12px 18px 12px 12px", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" }}>
+          {nahladFoto(fotoVecnej(z))}
+          <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+            <span style={{ alignSelf: "flex-start" }}>{chipF(z.stav === "aktivna" ? "VECNÁ ZBIERKA" : "VECNÁ · UKONČENÁ", z.stav === "aktivna" ? "#3E7A2E" : "#6B6C64", 7)}</span>
+            <b style={{ fontSize: mobil ? 16 : 18 }}>{z.nazov}</b>
+            <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{z.stav === "aktivna" ? `do ${doKedyText(z.doKedy, false)} · plagát, darcovia, ukončenie` : "darcovia, poďakovanie"}</span>
+          </span>
+          <span aria-hidden="true" style={{ fontSize: 22, color: "var(--ink3)" }}>›</span>
+        </button>))}</div>
     </>}
     {archivKarta}
     <PripnuteZoznam strankaId={strankaId} mobil={mobil} hlas={(t) => setNoveOk(t)} />

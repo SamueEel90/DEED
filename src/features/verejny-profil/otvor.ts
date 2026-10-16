@@ -32,6 +32,11 @@ export const verejnyProfilKluc = (): string | null => kluc;
 // OPRAVY 162 · QR farnosti = jeden QR z registrácie (/p/{slug}?qr=1), nikdy sa nemení.
 // Kým hlavná zbierka nebeží, otvorí profil; keď beží, ten istý QR otvorí rovno hlavnú zbierku.
 let qrHlavna = false;
+// OPRAVY 320: QR na plagáte vecnej zbierky (/p/{slug}?vz={id}) → stránka farnosti a hneď „Darovali ste?“ (raz)
+let vecnaZQr: string | null = null;
+/** číta sa bez mazania (StrictMode volá inicializáciu dvakrát), zmaže zrusVecnuZQr */
+export const vecnaZQrCitaj = (): string | null => vecnaZQr;
+export function zrusVecnuZQr() { vecnaZQr = null; }
 export const odkazQrStranky = (stranka: string) => `https://deed.sk/p/${klucNaSlug(stranka)}?qr=1`;
 /** profil farnosti otvorený z QR farnosti: keď hlavná zbierka beží, otvor ju (raz) */
 export function useOtvorHlavnuZQr(stranka: string, farnost: boolean, otvor: () => void) {
@@ -45,7 +50,7 @@ if (typeof window !== "undefined") {
   const m = window.location.pathname.match(/^\/p\/([^/?#]+)/);
   if (m) {
     const k = slugNaKluc(decodeURIComponent(m[1]));
-    if (k) { otvorene = true; kluc = k; qrHlavna = new URLSearchParams(window.location.search).has("qr"); }
+    if (k) { otvorene = true; kluc = k; qrHlavna = new URLSearchParams(window.location.search).has("qr"); vecnaZQr = new URLSearchParams(window.location.search).get("vz"); }
     try { window.history.replaceState(null, "", window.location.origin + "/"); } catch { /* sandbox */ }
   }
 }

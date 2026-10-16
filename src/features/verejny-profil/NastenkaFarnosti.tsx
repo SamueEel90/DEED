@@ -7,6 +7,8 @@
 // Darcovia hlavnej zbierky: z ledgera, vždy „Bohu známy veriaci“ (voľba mena sa ešte nezapisuje), suma jedného
 // darcu nikdy; zvončeková = jeden súhrnný riadok za nedeľu.
 // ============================================================
+import { useVecneZbierky, vecneZbierky, fotoVecnej, doKedyText, type VecnaZbierka } from "@/lib/vecnaZbierka";
+import { VecnaDetail, VecnaDarca, STITOK_VECNEJ } from "./VecnaZbierkaStranka";
 import { useZamokVrstvy } from "@/lib/zamokVrstvy";
 import { useFarbaLinie, useVolbaLinie } from "@/lib/liniaStranky";
 import { useRozlozenie } from "@/lib/rozlozenieFarnosti";
@@ -31,7 +33,7 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { useMojeStranky } from "@/lib/mojeStranky";
 import { CIRKVI, useMojeFarnosti, useSlovaFarnosti, pridajSledovanu, odstranSledovanu, nazovFarnosti, otvorAdresar, sledujemKostol, sledujKostol, prestanKostol, nastavMojKostol, farnostiSuhrn, nastavFarnostiSuhrn, blokyFarnosti, blokyKostola, type SledovanyKostol } from "@/lib/mojeFarnosti";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
-import { otvorVerejnyProfil, odkazQrStranky } from "./otvor";
+import { otvorVerejnyProfil, odkazQrStranky, vecnaZQrCitaj, zrusVecnuZQr } from "./otvor";
 import { nacitajVerejne } from "@/lib/verejneNastavenia";
 import { centralnaChyba, centralnaZPamate, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
 import { naviazObjekt } from "@/lib/darZbierky";
@@ -304,6 +306,14 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
 
   // ---------- zbierky ----------
   const zb = zbierkyStrankyZPamate(strankaId).filter((z) => (z.stav ?? "aktivna") === "aktivna");
+  // OPRAVY 320: vecné zbierky — bežiace a ukončené s poďakovaním (kým ho farár nezmaže zo stránky)
+  const vecne = useVecneZbierky(strankaId).filter((z) => z.stav === "aktivna" || (!!z.podakovanie?.ulozene && !z.podakovanie.zmazane));
+  const [vecnaDet, setVecnaDet] = useState<string | null>(null);
+  const [vecnaDar, setVecnaDar] = useState<string | null>(vecnaZQrCitaj);
+  useEffect(() => { zrusVecnuZQr(); }, []);
+  const vecnaD = vecnaDet ? vecne.find((z) => z.id === vecnaDet) ?? null : null;
+  const vecnaQ = vecnaDar ? vecneZbierky(strankaId).find((z) => z.id === vecnaDar) ?? null : null;
+  const stitV = (z: VecnaZbierka) => (z.stav === "aktivna" ? STITOK_VECNEJ : "VECNÁ · ĎAKUJEME");
   const druh = (z: SpustenaZbierka) => z.farnost?.druh ?? "farnost";
   // OPRAVY 314 (C): ukončená zbierka farnosti s poďakovaním ostáva na stránke — UKONČENÁ, Vyzbierali sme, ĎAKUJEME, darcovia, bez platobného modulu
   useZmenySpravy();
@@ -553,7 +563,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   // OPRAVY 220/221: kalendár Tento týždeň — všetko zaškrtnuté v Čo uvidia ľudia
   const maKal = maOmse || [0, 1].some((o) => miestaF.some((m) => plagatTyzdna(kostolKal(strankaId, m.id), VJ, o, SLF.omsa).some((d) => d.o.length > 0)));
   const prispela = usePrispela(strankaId);
-  const maZbierky = hlOn || zvOn || zbFar.length + zbIne.length + piny.length + prispela.length > 0;
+  const maZbierky = hlOn || zvOn || zbFar.length + zbIne.length + piny.length + prispela.length + vecne.length > 0;
   const prazdna = !(!!onas || maZbierky || maPrid || !!p || VO.length > 0 || prosby.length || maSpom || maTes || pomoz.length || oznVer.length || ozAll.length || maKal || maUrad);
   // ---------- titulka: tlačidlo Moja farnosť / Sledovať ----------
   // Martin (odpovede 13. 10.): mobil a tablet — dlaždica „Omše a kalendár“ s dnešnými časmi vedľa Moja farnosť; PC nie
@@ -726,10 +736,11 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
     ...zbFar.map((z) => <ZbierkaStvorec key={z.id} stitok={stitZb(z)} nazov={z.nazov || "Zbierka"} foto={z.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src} farba={TEAL} pod={!ukon(z) && cielCislo(z) ? `cieľ ${eur(cielCislo(z))}` : undefined} onTap={() => otvorZbierku(z)} />),
     ...piny.map((z) => <ZbierkaStvorec key={z.id} stitok={chipPripnutej(z)} nazov={z.nazov} foto={z.foto} farba={farbaPripnutej(z)} onTap={() => otvorPin(z)} />),
     ...zbIne.map((z) => <ZbierkaStvorec key={z.id} stitok="ZBIERKA RODINY" nazov={bezPredpony(z.nazov) || "Zbierka"} foto={z.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src} farba={FIALOVA} onTap={() => otvorZbierku(z)} />),
+    ...vecne.map((z) => <ZbierkaStvorec key={z.id} stitok={stitV(z)} nazov={z.nazov} foto={fotoVecnej(z)} farba={ZLATA} onTap={() => setVecnaDet(z.id)} />),
   ];
   const vMriezke = k3 || !siroka ? 4 : 8;
-  const ineNazvy = [...zbFar.map((z) => z.nazov), ...piny.map((z) => z.nazov), ...zbIne.map((z) => bezPredpony(z.nazov))].slice(Math.max(0, vMriezke - stvorce.length + (zbFar.length + piny.length + zbIne.length)));
-  const zbNazvy = [hlOn && hl ? nazovHlavnej(hl) : "", zvOn ? `Zvončeková · ${zvT}` : "", ...zbFar.map((z) => z.nazov), ...piny.map((z) => z.nazov), ...zbIne.map((z) => bezPredpony(z.nazov))].filter(Boolean);
+  const ineNazvy = [...zbFar.map((z) => z.nazov), ...piny.map((z) => z.nazov), ...zbIne.map((z) => bezPredpony(z.nazov)), ...vecne.map((z) => z.nazov)].slice(Math.max(0, vMriezke - stvorce.length + (zbFar.length + piny.length + zbIne.length + vecne.length)));
+  const zbNazvy = [hlOn && hl ? nazovHlavnej(hl) : "", zvOn ? `Zvončeková · ${zvT}` : "", ...zbFar.map((z) => z.nazov), ...piny.map((z) => z.nazov), ...zbIne.map((z) => bezPredpony(z.nazov)), ...vecne.map((z) => z.nazov)].filter(Boolean);
   const zbS = stvorce.length ? suhrn(poc(stvorce.length, "zbierka", "zbierky", "zbierok"), zbNazvy[0]) : prispela.length ? `Prispeli sme · ${prispela[0].kto}` : "";
   const zbObsah = <>
     {stvorce.length > 0 && <div style={{ display: "grid", gridTemplateColumns: `repeat(${k3 || !siroka ? 2 : 4},minmax(0,1fr))`, gap: 12 }}>{zbVsetky ? stvorce : stvorce.slice(0, vMriezke)}</div>}
@@ -1386,6 +1397,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
     {zbFar.map((z) => zbRiadok(z.id, stitZb(z), TEAL, z.nazov || "Zbierka", () => otvorZbierku(z)))}
     {piny.map((z) => zbRiadok(z.id, chipPripnutej(z), farbaPripnutej(z), z.nazov, () => otvorPin(z)))}
     {zbIne.map((z) => zbRiadok(z.id, "ZBIERKA RODINY", FIALOVA, bezPredpony(z.nazov) || "Zbierka", () => otvorZbierku(z)))}
+    {vecne.map((z) => zbRiadok(z.id, stitV(z), ZLATA, z.nazov, () => setVecnaDet(z.id)))}
     {prispeliSme}
   </>;
   const kUradObsah = <>
@@ -1530,6 +1542,9 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
             ...zbIne.map((z) => ({ k: `r${z.id}`, el: <button type="button" onClick={() => otvorZbierku(z)} style={{ width: "100%", textAlign: "left", border: "none", borderRadius: 22, background: KARTA, borderLeft: `5px solid ${FIALOVA}`, padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 8, color: INK, cursor: "pointer", fontFamily: "inherit" }}>
               <span style={kicker(FIALOVA)}>ZBIERKA RODINY</span><b style={{ fontSize: 20, lineHeight: 1.25 }}>{bezPredpony(z.nazov) || "Zbierka"}</b><span style={{ fontSize: 16, color: INK2 }}>Peniaze idú: rodine · Prispieť ›</span>
             </button> })),
+            ...vecne.map((z) => ({ k: `v${z.id}`, el: <button type="button" onClick={() => setVecnaDet(z.id)} style={{ width: "100%", textAlign: "left", border: "none", borderRadius: 22, background: KARTA, borderLeft: `5px solid ${ZLATA}`, padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 8, color: INK, cursor: "pointer", fontFamily: "inherit" }}>
+              <span style={kicker(ZLATA)}>{stitV(z)}</span><b style={{ fontSize: 20, lineHeight: 1.25 }}>{z.nazov}</b><span style={{ fontSize: 16, color: INK2 }}>{[z.co, z.doKedy && z.stav === "aktivna" ? `do ${doKedyText(z.doKedy, false)}` : ""].filter(Boolean).join(" · ")} ›</span>
+            </button> })),
           ]} />
           {prispeliSme}
         </> : siroka ? <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(250px,1fr))", gap: 14, alignItems: "stretch" }}>
@@ -1540,6 +1555,9 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
           {zbIne.map((z) => <button key={z.id} data-oz={z.id} type="button" onClick={() => otvorZbierku(z)} style={{ textAlign: "left", border: "none", borderRadius: 22, background: KARTA, borderLeft: `5px solid ${FIALOVA}`, padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 8, color: INK, cursor: "pointer", fontFamily: "inherit" }}>
             <span style={kicker(FIALOVA)}>ZBIERKA RODINY</span><b style={{ fontSize: 20, lineHeight: 1.25 }}>{bezPredpony(z.nazov) || "Zbierka"}</b><span style={{ fontSize: 16, color: INK2 }}>Peniaze idú: rodine · Prispieť ›</span>
           </button>)}
+          {vecne.map((z) => <div key={z.id} data-oz={z.id} style={{ display: "flex" }}><button type="button" onClick={() => setVecnaDet(z.id)} style={{ width: "100%", textAlign: "left", border: "none", borderRadius: 22, background: KARTA, borderLeft: `5px solid ${ZLATA}`, padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 8, color: INK, cursor: "pointer", fontFamily: "inherit" }}>
+              <span style={kicker(ZLATA)}>{stitV(z)}</span><b style={{ fontSize: 20, lineHeight: 1.25 }}>{z.nazov}</b><span style={{ fontSize: 16, color: INK2 }}>{[z.co, z.doKedy && z.stav === "aktivna" ? `do ${doKedyText(z.doKedy, false)}` : ""].filter(Boolean).join(" · ")} ›</span>
+            </button></div>)}
           {prispeliSme}
         </div> : <>
           {hlOn && hl && <RiadokZbierky stitok="HLAVNÁ ZBIERKA" farba="var(--nf-gInk)" nazov={nazovHlavnej(hl)} obr={hl.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src} refId={hlRef} ram onTap={otvorHlavnu} />}
@@ -1547,6 +1565,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
           {zbFar.map((z) => <RiadokZbierky key={z.id} stitok={stitZb(z)} farba={TEAL} nazov={z.nazov || "Zbierka"} obr={z.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src} refId={z.id} ciel={ukon(z) ? undefined : cielCislo(z)} onTap={() => otvorZbierku(z)} />)}
           {piny.map((z) => <RiadokZbierky key={z.id} stitok={chipPripnutej(z)} farba={farbaPripnutej(z)} nazov={z.nazov} obr={z.foto} pct={z.ciel ? Math.min(100, Math.round((z.vyzbierane / z.ciel) * 100)) : undefined} onTap={() => otvorPin(z)} />)}
           {zbIne.map((z) => <RiadokZbierky key={z.id} stitok="ZBIERKA RODINY" farba={FIALOVA} nazov={bezPredpony(z.nazov) || "Zbierka"} onTap={() => otvorZbierku(z)} />)}
+          {vecne.map((z) => <RiadokZbierky key={z.id} stitok={stitV(z)} farba={ZLATA} nazov={z.nazov} obr={fotoVecnej(z)} onTap={() => setVecnaDet(z.id)} />)}
           {prispeliSme}
         </>}
       </div>}
@@ -1733,6 +1752,9 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
       {velke && <CelaObrazovka label="Na celú obrazovku" onZavri={() => setVelke(null)}>
         <VelkyObrazok v={velke} vz={vz} />
       </CelaObrazovka>}
+      {/* OPRAVY 320: vecná zbierka — detail a „Darovali ste?“ z QR na plagáte */}
+      {vecnaD && <VecnaDetail strankaId={strankaId} z={vecnaD} onZavri={() => setVecnaDet(null)} />}
+      {vecnaQ && <VecnaDarca strankaId={strankaId} z={vecnaQ} org={{ meno, logo, inicialy: iniciy(meno) }} onZavri={() => setVecnaDar(null)} onPozriet={() => { setVecnaDar(null); setVecnaDet(vecnaQ.id); }} />}
       {osoba && createPortal(<div role="dialog" aria-modal="true" aria-label={`Profil · ${osoba}`} style={{ position: "fixed", inset: 0, zIndex: 1100, overflowY: "auto", overscrollBehavior: "contain", background: "var(--c-bg)", color: "var(--c-text)" }}>
         <CudziProfil subjekt={{ typ: "osoba", meno: osoba }} toast={toast} onBack={() => setOsoba(null)} />
       </div>, document.body)}
