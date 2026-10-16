@@ -9,6 +9,7 @@
 // (ťuk na riadok: text, Upraviť, Ako to vidia ľudia, Podržte a zmažte). Upraviť naplní formulár z `oz`.
 // Pozvať ľudí aj pri krátkom ozname (+ limit pri záväznom), Oznámenie: Parte · Svadba · Jubileum · Iné.
 // ============================================================
+import { TlZbalit } from "@/features/verejny-profil/zbalit";
 import { CasPole } from "@/components/CasPole";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { RichTextInput } from "@/components/richtext";
@@ -575,6 +576,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
             <PodrzZmaz onZmaz={() => { zmazOznam(x); setOtv(null); setPozri(null); obnov((y) => y + 1); toast(`„${x.nazov ?? ""}“ je zmazané.`); }} />
           </div>
           {pozri === x.id && <div style={{ maxWidth: 460 }}>{nahladZverejneneho(x)}</div>}
+          <TlZbalit onZbal={() => { setOtv(null); setPozri(null); }} />{/* OPRAVY 321 */}
         </div>}
       </div>);
   };

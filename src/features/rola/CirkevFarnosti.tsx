@@ -2,6 +2,7 @@
 // Cirkev farnosti — farár ju nastaví (Martin 13:11). Podľa nej sa farnosť zaradí v Adresári cirkví.
 // Zoznam: 18 cirkví a náboženských spoločností registrovaných v SR (lib/mojeFarnosti CIRKVI).
 // ============================================================
+import { TlZbalit } from "@/features/verejny-profil/zbalit";
 import { useEffect, useState } from "react";
 import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { CIRKVI, RODINY_CIRKVI, skratkaCirkvi, nacitajCirkevFarnosti, nastavCirkevFarnosti } from "@/lib/mojeFarnosti";
@@ -35,5 +36,6 @@ export function CirkevFarnosti({ strankaId, mobil, toast }: { strankaId: string;
               <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}><b style={{ fontSize: 14 }}>{n}</b><span style={{ fontSize: 12, color: "var(--ink3)" }}>{popis}</span></span>
             </button>); })}
         </div>))}
+      {otv && <TlZbalit onZbal={() => setOtv(false)} />}{/* OPRAVY 321 */}
     </section>);
 }

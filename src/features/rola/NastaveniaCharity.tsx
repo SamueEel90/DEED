@@ -4,6 +4,7 @@
 // Uložiť / Odoslať / Pridať sú sivé, kým nie je čo uložiť. Žiadne SMS.
 // Stav obrazoviek sa ukladá do účtu stránky (nastavenia_stranky, migrácia 0050) — lib/nastaveniaStranky.
 // ============================================================
+import { TlZbalit } from "@/features/verejny-profil/zbalit";
 import { RichTextInput } from "@/components/richtext";
 import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { cistyText } from "@/lib/richtext";
@@ -559,6 +560,7 @@ function ProgramCharita({ mobil, tier, onTier, otvor }: { mobil: boolean; tier: 
           </div>))}
       </div>
     </div>}
+    {por && <TlZbalit text="Skryť celé porovnanie ⌃" onZbal={() => setPor(false)} />}{/* OPRAVY 321 */}
     <div style={dvaStlpce(mobil)}>
       <div style={stlpec}><div style={nad}>PLATÍ VŽDY, V KAŽDOM PROGRAME</div><Zoznam polozky={VZDY} /></div>
       <div style={stlpec}><div style={nad}>PLATBA A FAKTÚRY</div>

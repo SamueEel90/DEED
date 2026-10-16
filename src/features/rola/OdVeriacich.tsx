@@ -4,6 +4,7 @@
 // Ťuk na príspevok: oprava nadpisu a textu („Opravené ✓", veriaci dostane správu), parte/svadba/jubileum
 // z editora farár len maže. Mazanie len podržaním. Označiť viac: všetko · staršie ako 30 dní · skupinu.
 // ============================================================
+import { TlZbalit } from "@/features/verejny-profil/zbalit";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { nacitajSelfAdd, ulozSelfAdd } from "@/features/viera/UserOznamy";
 import { DRUHY_FARNIKA, CEZ_EDITOR, KAM_DRUHU, nacitajSmie, ulozSmie, stupen, rozhodniOdFarnikov, type Stupen, type SmieFarnika, odFarnikov, upravOdFarnika, zmazOdFarnika, zmazOdFarnikov, nastavenieOdVeriacich, ulozNastavenieOdVeriacich, useOdFarnikov, useCerstveOdFarnikov, pocetNahl, pocetSus, vyprsal, type DruhFarnika, type PolozkaFarnika } from "@/lib/odFarnikov";
@@ -179,6 +180,7 @@ export function OdVeriacich({ strankaId, meno, mobil, toast }: { strankaId: stri
             : <Oprava key={x.id} x={x} strankaId={strankaId} />}
           {x.fotky?.length ? <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(110px,1fr))", gap: 6 }}>{x.fotky.slice(0, 8).map((f, j) => <img key={j} src={f} alt="" style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", borderRadius: 10, display: "block" }} />)}</div> : null}
           <div><PodrzZmaz onZmaz={() => { zmazOdFarnika(strankaId, x.id); setOtv(null); toast("Zmazané."); }} /></div>
+          <TlZbalit onZbal={() => setOtv(null)} />{/* OPRAVY 321 */}
         </div>}
       </div>);
   };

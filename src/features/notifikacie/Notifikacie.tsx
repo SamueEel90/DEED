@@ -3,6 +3,7 @@
 // akcie priamo v ozname · agregácia malých darov do súhrnu (povinná).
 // Nastavenia: hlavný vypínač · každá položka V APPKE a NA DISPLEJ · zbalené kategórie · strop 3 denne ·
 // večerný súhrn · tichý čas. Tá istá obrazovka je aj v Nastavenia → Oznámenia (jeden komponent, dva vstupy).
+import { TlZbalit } from "@/features/verejny-profil/zbalit";
 import { sZnackou } from "@/components/DeedZnacka";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { zaregistrujKluc, zmenene } from "@/lib/mojeData";
@@ -288,6 +289,7 @@ export function NastaveniaOznameni({ onBack }: { onBack: () => void }) {
                         <button type="button" role="switch" aria-checked={a} aria-label={`${t} v appke`} aria-disabled={!oz.master} onClick={() => prepni(t, "a")} style={{ justifySelf: "center", border: "none", boxShadow: "none", background: "transparent", padding: 9, margin: -9, cursor: oz.master ? "pointer" : "default" }}><Prep on={a} male /></button>
                         <button type="button" role="switch" aria-checked={pu} aria-label={`${t} na displej`} aria-disabled={!oz.master} onClick={() => prepni(t, "p")} style={{ justifySelf: "center", border: "none", boxShadow: "none", background: "transparent", padding: 9, margin: -9, cursor: oz.master ? "pointer" : "default" }}><Prep on={pu} male /></button>
                       </div>); })}
+                    <TlZbalit onZbal={() => setOtv((x) => x.filter((y) => y !== k.hl))} />{/* OPRAVY 321 */}
                   </div>}
                 </div>);
             })}

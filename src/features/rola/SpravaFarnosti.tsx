@@ -2,6 +2,7 @@
 // KARTA 56D: Správa od prvého príchodu — všetky funkcie, žiadne ukážkové dáta (prototyp „Sprava farnosti - prvy prichod").
 // Profil, logo a percento = profil_stranky (ako charita), pripnuté = sprava_piny, hlavná zbierka = profil_stranky.centralna.
 // Omše, oznamy a nastavenia farnosti z modulu Viera (stav.ts — localStorage + zrkadlo naboz_stav) pod kľúčom stránky.
+import { TlZbalit } from "@/features/verejny-profil/zbalit";
 import { cielSpravyPre } from "@/lib/mojeStranky";
 import { UsporiadatStranku } from "./UsporiadatStranku";
 import { FarbaLinii } from "./FarbaLinii";
@@ -437,6 +438,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
             {!hvA.zap && <span aria-hidden="true" style={{ flex: "none", fontSize: 18, color: "var(--ink3)" }}>{rod ? (otv ? "⌃" : "⌄") : "›"}</span>}
           </button>); })}
       </div>}
+      {archOtv && <TlZbalit onZbal={() => setArchOtv(false)} />}{/* OPRAVY 321 */}
       {archOtv && <PasVyberu v={hvA} dolu={mobil ? 104 : 12} pocet={(n) => (n === 1 ? "1 zbierka" : n < 5 ? `${n} zbierky` : `${n} zbierok`)}
         onZmaz={(ids) => {
           const h = archivH.filter((_, i) => !ids.includes(`h${i}`)); if (h.length !== archivH.length) { setArchivH(h); ulozStav("hlavnaArchiv", strankaId, h); }

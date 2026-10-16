@@ -3,6 +3,7 @@
 // Týždeň · Mesiac · Rozvrh omší, úprava dňa vpravo, Čo uvidia ľudia, Vytlačiť na nástenku, Pripnúť týždeň do Prehľadu.
 // Kalendár začína prázdny. Dáta: lib/kalendarFarnosti (účet farnosti).
 // ============================================================
+import { TlZbalit } from "@/features/verejny-profil/zbalit";
 import { casyUH, textCasu, type UradneHodiny, type VynimkaUH } from "@/lib/uradneHodiny";
 import { nacitajProfil, profilZPamate } from "@/lib/profilStranky";
 import { useAutorZaMna, type AutorF } from "@/lib/autorFarnosti";
@@ -210,6 +211,7 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, tel = false, toa
               <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, color: "var(--ink3)" }}>do
                 <input type="date" value={pz?.do ?? ""} onChange={(e) => nastavPozn(kod, { do: e.target.value || undefined })} style={pole} /></label>
             </div>); })}
+          <TlZbalit onZbal={() => setPoznG(null)} />{/* OPRAVY 321 */}
         </div>}
       </div>);
   })}

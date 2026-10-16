@@ -6,6 +6,7 @@
 // Len rozloženie, farby podľa štítu a témy, Späť všade, povolenia z jedného miesta (stav.ts).
 // Funkcie za tlačidlami NIE SÚ — každé tlačidlo otvorí obrazovku „Pripravujeme".
 // ============================================================
+import { TlZbalit } from "@/features/verejny-profil/zbalit";
 import { pripojTestovaciuStranku } from "@/lib/stranka";
 import { nacitajNastavenia } from "@/lib/nastaveniaStranky";
 import { otvorPridatSkutok } from "@/features/skutok/otvor";
@@ -779,12 +780,14 @@ function Sekcia({ id, nazov, suhrn, akcia, zbal, prepni, children }: { id: strin
       <button onClick={() => prepni(id)} tabIndex={-1} aria-hidden="true" style={{ flex: "none", width: 26, minHeight: 44, padding: 0, border: "none", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>{sipka}</button>
     </div>
     {children}
+    <TlZbalit onZbal={() => prepni(id)} />{/* OPRAVY 321 */}
   </>);
   return (<>
     <button onClick={() => prepni(id)} aria-expanded style={{ minHeight: 44, padding: "0 4px", border: "none", background: "transparent", display: "flex", alignItems: "center", gap: 8, cursor: "pointer", textAlign: "left", width: "100%", marginBottom: -6 }}>
       <span style={{ ...nadpisSekcie, padding: 0, flex: 1 }}>{nazov.toUpperCase()}</span>{sipka}
     </button>
     {children}
+    <TlZbalit onZbal={() => prepni(id)} />{/* OPRAVY 321 */}
   </>);
 }
 
@@ -1322,6 +1325,7 @@ function ObrZbierky(s: Spolocne) {
           pod={centralnaVidno ? cisla(cC)[0] : "Doplňte text a fotku, potom ju uvidia darcovia"} cislo={cisloObjektu("Z", `${strankaId}-centralna`)} suma={cisla(cC)[1]} onClick={() => otvorCen(0)} />
         {sek.map((x, i) => { const c = nova ? NULA : cislaSektora(x.id); return (
           <RiadokZb key={x.id} id={`cen-${x.id}`} hier={i + 1} foto={x.foto ? `url('${x.foto}') center/cover no-repeat #3a3530` : ""} stit={`SEKTOR ${i + 1}`} nazov={x.nazov} pod={cisla(c)[0]} cislo={cisloObjektu("Z", `${strankaId}-${x.id}`)} suma={cisla(c)[1]} onClick={() => otvorCen(i + 1)} />); })}
+        <TlZbalit onZbal={() => prepniZbal("cen-sektory", false)} />{/* OPRAVY 321 */}
         </>}
       </>}
       {(list.length > 0 || rozpisana) && <span style={{ ...nadpisZb, paddingTop: centralna ? 8 : 0 }}>ZBIERKY</span>}

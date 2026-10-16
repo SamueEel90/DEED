@@ -6,6 +6,7 @@
 // Zapísaný: Poslať správu · Odslúžené ✓ (zbalený riadok Odslúžené · N) · Presunúť na inú omšu.
 // Hore + Zapísať úmysel (osobne alebo telefonicky): text, kto, omša.
 // ============================================================
+import { TlZbalit } from "@/features/verejny-profil/zbalit";
 import { useState, type CSSProperties } from "react";
 import { odFarnikov, pridajOdFarnika, upravOdFarnika, zmazOdFarnika, type PolozkaFarnika } from "@/lib/odFarnikov";
 import { useKalendar, kostolKal, omseDna, dniTyzdna, rozsahTyzdna, iso, dvt, DNI_K, minuty } from "@/lib/kalendarFarnosti";
@@ -135,6 +136,7 @@ export function UmyslyFarara({ strankaId, meno, mobil, toast }: { strankaId: str
             <button type="button" onClick={() => { setPresun(u.id); setSpravaPre(null); }} style={tlB()}>Presunúť na inú omšu</button>
           </div>}
           <div><PodrzZmaz onZmaz={() => { zmazOdFarnika(strankaId, u.id); setOtv(null); toast("Zmazané."); }} /></div>
+          <TlZbalit onZbal={() => { setOtv(null); setPresun(null); setSpravaPre(null); }} />{/* OPRAVY 321 */}
         </div>}
       </div>);
   };
@@ -169,6 +171,7 @@ export function UmyslyFarara({ strankaId, meno, mobil, toast }: { strankaId: str
             <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 14 }}>{u.t}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{[u.zapis ? omsaText(u.zapis) : null, u.kto, `odslúžené ${kedy(u.odsluzene!)}`].filter(Boolean).join(" · ")}</span></span>
             <button type="button" onClick={() => upravOdFarnika(strankaId, u.id, { odsluzene: undefined })} style={{ ...tlB(), minHeight: 40 }}>Vrátiť</button>
           </div>))}
+        <TlZbalit onZbal={() => setOdsOtv(false)} />{/* OPRAVY 321 */}
       </section>}
     </>}
   </>;
