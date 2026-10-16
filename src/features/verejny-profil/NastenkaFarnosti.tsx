@@ -186,6 +186,14 @@ function tesBlaho(ed: PayloadEditora, z: Pick<Tes, "id" | "nadpis" | "r" | "mena
     : { ...z, druh: "blaho", pal, meno, datum: pole("bD"), vek: "", nadpis: zak.head || z.nadpis, pod: pole("bMeno") || undefined };
 }
 
+const krstne = (m: string) => m.trim().split(/\s+/)[0] ?? "";
+/** OPRAVY 328: riadok pod značkou Teš sa — rovnaká výška pri každej značke (2 riadky), aby autori a značky boli v jednej línii.
+ *  Jubileum: meno 16 px tučne, najviac 2 riadky, nikdy orezané. Svadba a ostatné: prázdny riadok rovnakej výšky. */
+function MenoPodZnackou({ t }: { t: Tes }) {
+  return <span style={{ minHeight: 40, maxWidth: 230, display: "flex", alignItems: "flex-start", justifyContent: "center", textAlign: "center" }}>
+    {t.druh === "jubileum" && <b style={{ fontSize: 16, fontWeight: 800, lineHeight: 1.25, overflowWrap: "anywhere" }}>{t.meno}</b>}
+  </span>;
+}
 /** OPRAVY 205: obsah tvaru — svadba mená a dátum, jubileum roky a meno, blahoželanie nadpis */
 function ObsahTvaru({ t, velky }: { t: Tes; velky?: boolean }) {
   const k = velky ? 1.35 : 1;
@@ -195,11 +203,10 @@ function ObsahTvaru({ t, velky }: { t: Tes; velky?: boolean }) {
     {b && <><i style={{ fontSize: 18 * k, color: t.pal.ac }}>&amp;</i><i style={{ fontSize: (b.length > 14 ? 19 : 26) * k, lineHeight: 1.05, ...riadkyMax(2) }}>{b}</i></>}
     {t.datum && <span style={{ fontSize: 14 * k, marginTop: 6 }}>{datumT(t.datum)}</span>}
   </>; }
-  if (t.druh === "jubileum") { const n = +t.vek, dlzka = t.meno.length; return <>
+  if (t.druh === "jubileum") { const n = +t.vek; return <>
     <span style={kickerTvaru(t.pal.fg)}>JUBILEUM</span>
     {t.vek ? <><b style={{ fontSize: 52 * k, fontWeight: 800, lineHeight: 1, letterSpacing: "-.03em" }}>{t.vek}</b><span style={{ ...kickerTvaru(t.pal.fg), letterSpacing: ".16em" }}>{rokyT(n)}</span></> : null}
-    {/* OPRAVY 229: dlhé meno menším písmom, najviac 2 riadky, inak „…" */}
-    <i style={{ fontFamily: SERIF_TVARU, fontSize: (dlzka > 22 ? 13 : dlzka > 14 ? 15 : 18) * k, marginTop: 2, lineHeight: 1.15, maxWidth: "100%", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", overflowWrap: "anywhere" }}>{t.meno}</i>
+    {/* OPRAVY 328: meno do kosoštvorca nikdy — je pod značkou (MenoPodZnackou); bez veku ostane len JUBILEUM */}
   </>; }
   // OPRAVY 241: Iné s fotkou alebo plagátom = obrázok orezaný na štvorec (štítok a nadpis sú pod tvarom)
   if (t.ine && t.foto) return <span style={{ alignSelf: "stretch", margin: "0 -14px", height: "100%", borderRadius: 20, overflow: "hidden", display: "block" }}><img src={t.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /></span>;
@@ -463,7 +470,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
     if (ed0 && (ed0.typ === "svadba" || ed0.typ === "jubileum")) {
       const P0 = (ed0.polia ?? {}) as Record<string, unknown>, pole = (k: string) => String(P0[k] ?? "").trim(), sv = ed0.typ === "svadba";
       const pal = (ed0.sablona && (sv ? SVADBA : JUBILEUM)[ed0.sablona]) || (sv ? ZAKLAD.svadba : ZAKLAD.jubileum);
-      return { id: x.id, druh: sv ? "svadba" : "jubileum", pal, it: x, meno: sv ? [pole("sNev"), pole("sZen")].filter(Boolean).join(" & ") || bezPredpony(x.nazov ?? "") : pole("jMeno") || bezPredpony(x.nazov ?? ""),
+      return { id: x.id, druh: sv ? "svadba" : "jubileum", pal, it: x, meno: sv ? [pole("sNev"), pole("sZen")].map(krstne).filter(Boolean).join(" & ") || bezPredpony(x.nazov ?? "") : pole("jMeno") || bezPredpony(x.nazov ?? ""),
         datum: sv ? pole("sD") : pole("jD"), vek: sv ? "" : (pole("jVekTxt").match(/\d+/)?.[0] ?? vekJubilea(pole("jNar"), pole("jD"))), nadpis: x.nazov ?? "", r: reakF(x.id, "blaho"), mena: reakcieF(strankaId, x.id).mena ?? {}, af: x.af };
     }
     const st = stit(x), u = x.oz?.u, druhT: Tes["druh"] = st === "SVADBA" ? "svadba" : st === "JUBILEUM" ? "jubileum" : "blaho";
@@ -479,7 +486,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
     // OPRAVY 229: kosoštvorec len jubileum (pozvánka z Editora); iné oznámenie veriaceho = štvorec s nadpisom
     if (!sv && ed?.typ !== "jubileum") return { id: x.id, druh: "blaho", pal: ZAKLAD.blaho, x, meno: x.t, datum: "", vek: "", nadpis: x.t, r: reakV(x, "blaho"), mena: x.mena ?? {}, ine: true, foto: x.fotky?.find(ziveObr) ?? (ziveObr(x.obr) ? x.obr : undefined) };
     const pal = (ed?.sablona && (sv ? SVADBA : JUBILEUM)[ed.sablona]) || (sv ? ZAKLAD.svadba : ZAKLAD.jubileum);
-    return { id: x.id, druh: sv ? "svadba" : "jubileum", pal, x, meno: sv ? [pole("sNev"), pole("sZen")].filter(Boolean).join(" & ") || x.t : pole("jMeno") || x.t,
+    return { id: x.id, druh: sv ? "svadba" : "jubileum", pal, x, meno: sv ? [pole("sNev"), pole("sZen")].map(krstne).filter(Boolean).join(" & ") || x.t : pole("jMeno") || x.t,
       datum: sv ? pole("sD") : pole("jD"), vek: sv ? "" : (pole("jVekTxt").match(/\d+/)?.[0] ?? vekJubilea(pole("jNar"), pole("jD"))), nadpis: x.t, r: reakV(x, "blaho"), mena: x.mena ?? {} };
   });
   const tesZb: Tes[] = zbSvadba.map((z) => ({ id: z.id, druh: "svadba", pal: ZAKLAD.svadba, zb: z, meno: bezPredpony(z.nazov) || "Svadba", datum: "", vek: "", nadpis: z.nazov, r: reakF(z.id, "blaho"), mena: reakcieF(strankaId, z.id).mena ?? {} }));
@@ -1646,6 +1653,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
         <div style={{ flex: "999 1 520px", minWidth: 0, ...mriezkaTvarov }}>
           {tesy.map((t) => <div key={t.id} data-oz={t.id} style={{ ...zmensi, position: "relative" }}>{znTes(t)}<TvarOznamu tvar={t.druh === "svadba" ? "kruh" : t.druh === "jubileum" ? "kosostvorec" : "stvorec"} pal={t.pal} label={`${t.meno} · otvoriť`}
             onTap={() => setTes(t)} pod={<>
+              {!(t.ine && t.foto) && <MenoPodZnackou t={t} />}
               {t.ine && t.foto && <span style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, textAlign: "center", maxWidth: 220 }}>
                 <span style={kickerTvaru(t.pal.ac)}>OZNÁMENIE</span>
                 <i style={{ fontFamily: SERIF_TVARU, fontSize: 19, lineHeight: 1.2, ...riadkyMax(3) }}>{sestSlov(t.nadpis)}</i>
