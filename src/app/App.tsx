@@ -214,7 +214,9 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   const [walletReq, setWalletReq] = useState(0); // ☰ → Peňaženka: otvor peňaženku v Profile
   const [akcie, setAkcie] = useState<StrankaAkcie>({}); // kontextové akcie aktuálneho modulu (Pridať / Ukáž talent / Nástenka)
   const [upgradeOpen, setUpgradeOpen] = useState(false); // pasívny → „Staň sa aktívnym" panel
-  const [aktivacia, setAktivacia] = useState(false); // overlay aktívnej registrácie (upgrade)
+  // overlay aktívnej registrácie (upgrade) · OPRAVY 320: alebo prihlásenie „Už mám účet“ — po ňom človek ostane tam, odkiaľ prišiel
+  const [aktivacia, setAktivacia] = useState<false | "aktivny" | "login">(false);
+  useEffect(() => { if (aktivacia === "login" && session && !("demo" in session && session.demo) && session.typ !== "pasivny") setAktivacia(false); }, [session]); // eslint-disable-line react-hooks/exhaustive-deps
   const [intro, setIntro] = useState(false); // prvé spustenie — 3-kartový sprievodca
   const [akoFunguje, setAkoFunguje] = useState(false); // „Ako DEED funguje" z menu Viac
   // KARTA 57 F: tím DEED (deed_admin, 0070) — Viac → TÍM DEED → Štatistika editora oznámení
@@ -250,7 +252,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   useVrstva(viac, () => setViac(false));
   useVrstva(!!galeria, () => setGaleria(null));
   useVrstva(upgradeOpen, () => setUpgradeOpen(false));
-  useVrstva(aktivacia, () => setAktivacia(false));
+  useVrstva(!!aktivacia, () => setAktivacia(false));
   useVrstva(orgReg, () => { setOrgReg(false); cakajRegistraciuOrg(false); });
   useVrstva(!!badgeSheet, () => setBadgeSheet(null));
   useVrstva(!!splitSheet, () => setSplitSheet(null));
@@ -443,7 +445,8 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
         {upgradeOpen && (
           <UpgradePanel
             onClose={() => setUpgradeOpen(false)}
-            onAktivovat={() => { setUpgradeOpen(false); setAktivacia(true); }}
+            onAktivovat={() => { setUpgradeOpen(false); setAktivacia("aktivny"); }}
+            onPrihlasit={() => { setUpgradeOpen(false); setAktivacia("login"); }}
           />
         )}
 
@@ -460,7 +463,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
         {/* overlay aktívnej registrácie (po kliku „Stať sa aktívnym") */}
         {aktivacia && (
           <div style={{ position: "absolute", inset: 0, zIndex: 80, background: C.bg }}>
-            <Registracia start="aktivny" onHotovo={() => setAktivacia(false)} />
+            <Registracia start={aktivacia} onHotovo={() => setAktivacia(false)} />
           </div>
         )}
       </div>

@@ -38,7 +38,7 @@ const btnPrimary = {
 } as const;
 
 /** Panel „Staň sa aktívnym" — otvorí ho create akcia alebo DEED platba pri pasívnom účte. */
-export function UpgradePanel({ onClose, onAktivovat }: { onClose?: () => void; onAktivovat?: () => void }) {
+export function UpgradePanel({ onClose, onAktivovat, onPrihlasit }: { onClose?: () => void; onAktivovat?: () => void; /** OPRAVY 320: kto už účet má, sa prihlási a vráti sa tam, odkiaľ prišiel */ onPrihlasit?: () => void }) {
   const vyhody = [
     { Ikona: IkonaPlus, col: "var(--a-green)", t: "Pridávaj skutky, žiadosti a zbierky" },
     { Ikona: IkonaPenazenka, col: "var(--a-green)", t: "Nastav pravidelnú podporu zbierky" },
@@ -70,6 +70,7 @@ export function UpgradePanel({ onClose, onAktivovat }: { onClose?: () => void; o
       </div>
 
       <button onClick={onAktivovat} style={btnPrimary}>Zaregistrovať sa</button>
+      {onPrihlasit && <button onClick={onPrihlasit} style={{ width: "100%", minHeight: 52, marginTop: SPACE.sm, borderRadius: RADIUS.md, background: "transparent", color: C.text, border: `1.5px solid ${C.line}`, fontWeight: 800, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }}>Už mám účet · Prihlásiť sa</button>}
       <button onClick={onClose} style={{ width: "100%", padding: `${SPACE.sm}px 0`, marginTop: SPACE.sm, borderRadius: RADIUS.md, background: "transparent", color: C.textSec, border: "none", fontWeight: 700, fontSize: 14.5, cursor: "pointer", fontFamily: "inherit" }}>
         Teraz nie
       </button>

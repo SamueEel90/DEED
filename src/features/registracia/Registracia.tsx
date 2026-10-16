@@ -20,12 +20,12 @@ import { Obrazovka, Nadpis, Svetlo, Volby, IK, naServeri } from "./RegB";
 
 type Faza = "vitaj" | "kto" | "login" | "osoba" | "org";
 
-export function Registracia({ onHotovo, start, resume }: { onHotovo?: () => void; start?: "aktivny" | "organizacia"; resume?: { authId: string; typ?: TypUctu; stav?: string } }) {
+export function Registracia({ onHotovo, start, resume }: { onHotovo?: () => void; /** OPRAVY 320: „login“ = vrstva Už mám účet · Prihlásiť sa (z okna Toto je pre registrovaných) */ start?: "aktivny" | "organizacia" | "login"; resume?: { authId: string; typ?: TypUctu; stav?: string } }) {
   // rozrobená registrácia osoby: zo servera (resume) alebo lokálne (mock režim, pád appky)
   const ulozeny = !naServeri ? ulozenyKrok() : null;
   const resumeOsoba = resume && resume.typ !== "charita";
   const [faza, setFaza] = useState<Faza>(() =>
-    start === "aktivny" ? "osoba" : start === "organizacia" ? "org" : resumeOsoba || ulozeny?.typ === "osoba" ? "osoba" : "vitaj");
+    start === "aktivny" ? "osoba" : start === "organizacia" ? "org" : start === "login" ? "login" : resumeOsoba || ulozeny?.typ === "osoba" ? "osoba" : "vitaj");
   const [startOsoby] = useState<KrokOsoby>(() =>
     start === "aktivny" ? "plan" : resumeOsoba ? (krokZoStavu(resume!.stav) ?? "telefon") : ((krokZoStavu(ulozeny?.krok) ?? "plan") as KrokOsoby));
   const [auth, setAuth] = useState<{ id: string; email: string } | null>(resumeOsoba ? { id: resume!.authId, email: "" } : null);
@@ -43,7 +43,8 @@ export function Registracia({ onHotovo, start, resume }: { onHotovo?: () => void
       <AuthPage uvodnyRezim="login"
         onAuthed={(id, email) => { setAuth({ id, email }); setFaza("osoba"); }}
         onRegistrovat={() => setFaza("kto")}
-        onGuest={TESTOVACIA ? () => { setSession({ demo: true }); onHotovo?.(); } : undefined} />);
+        onPasivny={start === "login" ? onHotovo : undefined} /* vrstva v appke: späť bez prihlásenia, tam, odkiaľ prišiel */
+        onGuest={TESTOVACIA && start !== "login" ? () => { setSession({ demo: true }); onHotovo?.(); } : undefined} />);
   }
   if (faza === "osoba") {
     return <OsobaB start={startOsoby} authId={auth?.id} email={auth?.email} preOrg={preOrg} toast={toast}
