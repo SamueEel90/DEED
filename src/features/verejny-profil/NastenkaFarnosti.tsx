@@ -53,7 +53,7 @@ import { stiahniIcs } from "@/lib/kalendar";
 import { sumaEur } from "@/lib/suma";
 import { prihovory, odkazyVidei, useZmenyPrihovoru, naZivo, onlineOmse, onlineVDen, type Prihovor } from "@/lib/prihovor";
 import { PrihovorVelky, StarsiePrihovory, OdkazyVidei, ZvukPas } from "./VypocujSi";
-import { odFarnikov, useOdFarnikov, useCerstveOdFarnikov, prepniVPolozke, vyprsal, pocetSus, naStranke, BLOK_DRUHU, type PolozkaFarnika, type PoleReakcie } from "@/lib/odFarnikov";
+import { DRUHY_FARNIKA, odFarnikov, useOdFarnikov, useCerstveOdFarnikov, prepniVPolozke, vyprsal, pocetSus, naStranke, BLOK_DRUHU, type PolozkaFarnika, type PoleReakcie } from "@/lib/odFarnikov";
 import { reakcieF, prepniReakciuF, useReakcieF, useCerstveReakcieF, type PoleReakcieF } from "@/lib/reakcieFarnosti";
 import { vlastnePrispevky, vlastnePrispevkyVsetky, type VieraFeedItem } from "@/features/viera/mock";
 import { usePrispevkySync } from "@/features/viera/prispevkyDB";
@@ -332,13 +332,32 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   const OZ = vlastnePrispevky(strankaId);
   // OPRAVY 310/315: čakajúce na schválenie vidí len autor, so štítkom Čaká na schválenie; zamietnuté nikto
   const OD = odFarnikov(strankaId).filter((x) => x.k !== "umysel" && (naStranke(x) || (x.stav === "caka" && !!x.autor && x.autor === klucJa(ja))) && !vyprsal(x, terazMs()) && !(x.k === "udalost" && x.f?.datum && x.f.datum < vc));
+  // OPRAVY 330: čakajúci príspevok vidí len autor — nadpis, text a fotka rozmazané (nedá sa odfotiť a rozposlať ako zverejnený).
+  // Čitateľná ostane hlavička (autor · ČAKÁ NA SCHVÁLENIE · typ · dátum), veta a Upraviť · zmazať (data-caka-ok). Ťuk na kartu nič neotvorí; celý text len v Upraviť.
+  const cakaIds = OD.filter((x) => x.stav === "caka").map((x) => x.id).join("\n");
+  useEffect(() => {
+    if (!cakaIds) return;
+    const el = document.createElement("style"); el.setAttribute("data-caka-330", "");
+    el.textContent = cakaIds.split("\n").map((id) => { const c = `[data-oz="${CSS.escape(id)}"]`; return `${c}{pointer-events:none;user-select:none;-webkit-user-select:none}`
+      + `${c} *:not([data-caka-ok]):not([data-caka-ok] *):not(:has([data-caka-ok])){filter:blur(7px)}`
+      + `${c} [data-caka-ok]{pointer-events:auto;user-select:text;-webkit-user-select:text}`
+      // karta bez hlavičky autora (riadky Kroniky a Klasiky, medailóny): veta hore na karte
+      + `${c}:not(:has([data-caka-h])){position:relative}`
+      + `${c}:not(:has([data-caka-h]))::after{content:"Čaká na schválenie · Váš príspevok čaká na schválenie farára. Vidíte ho len vy.";position:absolute;left:0;right:0;top:0;z-index:2;padding:8px 12px;font-size:13.5px;font-weight:800;line-height:1.4;color:#2A2214;background:#E2C27A;border-radius:10px;pointer-events:none}`; }).join("\n");
+    document.head.appendChild(el);
+    return () => el.remove();
+  }, [cakaIds]);
   // OPRAVY 196: hore pri všetkom od veriaceho kruh (fotka alebo začiatočné písmeno) a meno z profilu; ťuk otvorí jeho profil
   const hlavickaAutora = (x: PolozkaFarnika) => {
     const anon = !!x.anon || /Bohu známy/.test(x.kto), meno = anon ? "Bohu známy veriaci" : x.kto || "Veriaci";
     const kruh = <span aria-hidden="true" style={{ flex: "none", width: 40, height: 40, borderRadius: "50%", background: x.autorFoto && !anon ? `url("${x.autorFoto}") center/cover no-repeat` : "#4E7D37", color: "#fff", fontSize: 17, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{x.autorFoto && !anon ? "" : (meno.trim()[0] ?? "V").toLocaleUpperCase("sk-SK")}</span>;
-    const obsah = <>{kruh}<span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", textAlign: "left" }}>{x.stav === "caka" && <span style={{ alignSelf: "flex-start", marginBottom: 2, padding: "2px 8px", borderRadius: 7, background: "var(--nf-zlBg, #F3E7C8)", color: "#6B5214", fontSize: 11.5, fontWeight: 800, letterSpacing: ".06em" }}>ČAKÁ NA SCHVÁLENIE</span>}<b style={{ fontSize: 15.5, color: INK }}>{meno}</b><span style={{ fontSize: 13, color: INK3 }}>{anon ? "meno pozná len farár" : "veriaci"}</span></span></>;
-    return anon ? <span style={{ display: "flex", alignItems: "center", gap: 10 }}>{obsah}</span>
+    const obsah = <>{kruh}<span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", textAlign: "left" }}>{x.stav === "caka" && <span style={{ alignSelf: "flex-start", marginBottom: 2, padding: "2px 8px", borderRadius: 7, background: "#E2C27A", color: "#2A2214", fontSize: 11.5, fontWeight: 800, letterSpacing: ".06em" }}>ČAKÁ NA SCHVÁLENIE · {(DRUHY_FARNIKA.find((d) => d.k === x.k)?.t ?? "").toLocaleUpperCase("sk-SK")} · {dd(x.cas)}</span>}<b style={{ fontSize: 15.5, color: INK }}>{meno}</b><span style={{ fontSize: 13, color: INK3 }}>{anon ? "meno pozná len farár" : "veriaci"}</span></span></>;
+    const h = anon ? <span style={{ display: "flex", alignItems: "center", gap: 10 }}>{obsah}</span>
       : <button type="button" onClick={() => setOsoba(meno)} aria-label={`Profil · ${meno}`} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit" }}>{obsah}</button>;
+    // OPRAVY 330: čakajúci — hlavička + veta čitateľné, zvyšok karty rozmazaný
+    if (x.stav !== "caka") return h;
+    return <span data-caka-ok="" data-caka-h="" style={{ display: "flex", flexDirection: "column", gap: 6 }}>{h}
+      <span style={{ fontSize: 14, lineHeight: 1.45, fontWeight: 700, color: INK }}>Váš príspevok čaká na schválenie farára. Vidíte ho len vy.</span></span>;
   };
   // OPRAVY 206: čo pridá Správa, má ten istý riadok autora — duchovný z Ľudia (fotka, meno s titulmi, titul podľa cirkvi)
   const SLF = useSlovaFarnosti(strankaId);
@@ -670,7 +689,10 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   const suhrn = (...x: (string | false | undefined | null)[]) => x.filter(Boolean).join(" · ");
   const modliN = prosby.reduce((a, x) => a + reakV(x, "modl").zoznam.length, 0);
   const deti1 = stretnutiaF.filter((x) => !skoncilo(x)).sort((a, b) => a.dat.localeCompare(b.dat));
-  const tes1 = tesy[0], ud1 = udalosti[0], pom1 = pomoz[0];
+  // OPRAVY 330: čakajúci príspevok nikdy v súhrne bloku (nadpis by sa prečítal mimo rozmazanej karty)
+  type MozCaka = { stav?: string; x?: { stav?: string }; mojeX?: { stav?: string } };
+  const nieCaka = (o: MozCaka) => o.stav !== "caka" && o.x?.stav !== "caka" && o.mojeX?.stav !== "caka";
+  const tes1 = tesy.find(nieCaka), ud1 = udalosti.find(nieCaka), pom1 = pomoz.find(nieCaka);
   const omseSuhrn = (() => { for (let i = 0; i < 7; i++) { const d = new Date(dnesD.getFullYear(), dnesD.getMonth(), dnesD.getDate() + i), c = casyDna(d); if (c) return `${i === 0 ? "dnes" : i === 1 ? "zajtra" : den(d)} ${c}`; } return ""; })();
   const telS = k?.telefony.map((t) => t.cislo.trim()).find(Boolean) || k?.emaily.map((e) => e.adresa.trim()).find(Boolean) || "";
   const uhS = maUH(uh) ? DNI_UH.map((dn, i) => { const c = casyUH(uh, i); return c.length ? `${dn} ${c.map(textCasu).join(", ")}` : ""; }).find(Boolean) : "";
@@ -682,8 +704,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
     pom: suhrn(poc(pomoz.length, "prosba o pomoc", "prosby o pomoc", "prosieb o pomoc"), pom1?.dat && `${den(zIso(pom1.dat))} ${dm(zIso(pom1.dat))}`),
     prid: suhrn(udalosti.length > 0 && poc(udalosti.length, "akcia", "akcie", "akcií"), ud1 && `najbližšie ${ud1.t}${ud1.dat ? ` ${dm(zIso(ud1.dat))}` : ""}`, alba.length > 0 && poc(alba.length, "album fotiek", "albumy fotiek", "albumov fotiek")),
     tes: suhrn(poc(tesy.length, "radosť", "radosti", "radostí"), tes1 && `${tes1.ine ? tes1.nadpis : tes1.meno}${tes1.druh === "jubileum" && tes1.vek ? `, ${tes1.vek} ${rokyT(Number(tes1.vek)).toLocaleLowerCase("sk-SK")}` : ""}`),
-    spom: suhrn(poc(spomienky.length, "spomienka", "spomienky", "spomienok"), spomienky.slice(0, 3).map((x) => x.d.meno).filter(Boolean).join(", ")),
-    ver: suhrn(poc(oznVer.length, "oznam", "oznamy", "oznamov"), oznVer[0]?.t),
+    spom: suhrn(poc(spomienky.length, "spomienka", "spomienky", "spomienok"), spomienky.filter(nieCaka).slice(0, 3).map((x) => x.d.meno).filter(Boolean).join(", ")),
+    ver: suhrn(poc(oznVer.length, "oznam", "oznamy", "oznamov"), oznVer.find(nieCaka)?.t),
     deti: suhrn(poc(deti1.length, "akcia", "akcie", "akcií"), deti1[0] && `${deti1[0].dat ? `${den(zIso(deti1[0].dat))} ` : ""}${deti1[0].t}`),
     kostoly: suhrn(poc(miestaF.length, "kostol", "kostoly", "kostolov"), miestaF.map((m) => m.nazov).join(", ")),
     omse: omseSuhrn,
@@ -764,7 +786,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
     <div style={{ display: "grid", gridTemplateColumns: `repeat(${k3 ? 3 : siroka ? 2 : 1},minmax(0,1fr))`, gap: 14 }}>
       {prosby.map((x) => (
         <div key={x.id} data-oz={x.id} style={{ padding: 20, borderRadius: 20, background: KARTA, display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
-          {x.anon || /Bohu známy/.test(x.kto) ? <span style={{ fontSize: 14.5, color: INK3 }}>bez mena</span> : hlavickaAutora(x)}
+          {(x.anon || /Bohu známy/.test(x.kto)) && x.stav !== "caka" ? <span style={{ fontSize: 14.5, color: INK3 }}>bez mena</span> : hlavickaAutora(x)}
           <span style={{ display: "flex", flexDirection: "column", gap: 6 }}>{x.t && <b style={{ fontSize: 18, lineHeight: 1.4 }}>{x.t}</b>}{x.s && <span style={{ fontSize: 16, lineHeight: 1.5, color: INK2, whiteSpace: "pre-line" }}>{x.s}</span>}</span>
           {reakcia({ ...reakV(x, "modl"), t: "Modlím sa s vami", tJa: "Modlíte sa s nami ✓", poc: (n) => `${n} sa modlí` })}
           <MenuPrispevku x={x} strankaId={strankaId} kto={kto} moje={moje(x)} />
@@ -1089,7 +1111,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   </>;
   const mModli = <PasX pasRef={pasMod}>{prosby.map((x) => (
     <div key={x.id} data-oz={x.id} style={{ ...sirkaKarty(nPas(3.25)), padding: mob ? 18 : 24, borderRadius: 24, background: KARTA, display: "flex", flexDirection: "column", justifyContent: "space-between", gap: 16 }}>
-      <span style={{ display: "flex", flexDirection: "column", gap: 8 }}>{x.anon || /Bohu známy/.test(x.kto) ? <span style={{ fontSize: 14.5, color: INK3 }}>bez mena</span> : hlavickaAutora(x)}{x.t && <b style={{ fontSize: mob ? 18 : 20, lineHeight: 1.4 }}>{x.t}</b>}{x.s && <span style={{ fontSize: 16, lineHeight: 1.5, color: INK2, whiteSpace: "pre-line" }}>{x.s}</span>}</span>
+      <span style={{ display: "flex", flexDirection: "column", gap: 8 }}>{(x.anon || /Bohu známy/.test(x.kto)) && x.stav !== "caka" ? <span style={{ fontSize: 14.5, color: INK3 }}>bez mena</span> : hlavickaAutora(x)}{x.t && <b style={{ fontSize: mob ? 18 : 20, lineHeight: 1.4 }}>{x.t}</b>}{x.s && <span style={{ fontSize: 16, lineHeight: 1.5, color: INK2, whiteSpace: "pre-line" }}>{x.s}</span>}</span>
       <span style={{ display: "flex", flexDirection: "column", gap: 8 }}>{reakcia({ ...reakV(x, "modl"), t: "Modlím sa s vami", tJa: "Modlíte sa s nami ✓", poc: (n) => `${n} sa modlí` })}<MenuPrispevku x={x} strankaId={strankaId} kto={kto} moje={moje(x)} /></span>
     </div>))}</PasX>;
   const mPomoz = <div style={{ display: "grid", gridTemplateColumns: `repeat(${mob && !mt ? 1 : 2},minmax(0,1fr))`, gap: 16 }}>{pomZor.map((u) => { const b = brigadyF.find((x) => x.id === u.id), d = u.dat ? zIso(u.dat) : null; return (
@@ -1279,7 +1301,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
       {r.extra && <span className="vid-skry" style={{ display: "contents" }}>{r.extra}</span>}
     </>;
     if (!pc) return (
-      <div key={r.key} style={{ display: "flex", gap: 14, alignItems: "flex-start", padding: "14px 0", borderBottom: `1px solid ${LINKA}` }}>
+      <div key={r.key} data-oz={r.key} style={{ display: "flex", gap: 14, alignItems: "flex-start", padding: "14px 0", borderBottom: `1px solid ${LINKA}` }}>
         {r.kriz && <span style={{ flex: "none", paddingTop: 2 }}>{KRIZ}</span>}
         <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
           {(datum || r.pod) && <span style={{ fontSize: 14, fontWeight: 800, color: r.d ? farbaDna(r.d) : INK3 }}>{[datum, r.pod].filter(Boolean).join(" · ")}</span>}
@@ -1289,7 +1311,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
       </div>);
     const stl = [datum || r.pod ? "110px" : "", "minmax(0,1fr)", r.akcia ? "auto" : ""].filter(Boolean).join(" ");
     return (
-      <div key={r.key} style={{ display: "grid", gridTemplateColumns: r.kriz ? "16px minmax(0,1fr)" : stl, gap: r.kriz ? 16 : 24, alignItems: "center", padding: r.kicker || r.kriz ? "16px 0" : "18px 0", borderBottom: `1px solid ${LINKA}` }}>
+      <div key={r.key} data-oz={r.key} style={{ display: "grid", gridTemplateColumns: r.kriz ? "16px minmax(0,1fr)" : stl, gap: r.kriz ? 16 : 24, alignItems: "center", padding: r.kicker || r.kriz ? "16px 0" : "18px 0", borderBottom: `1px solid ${LINKA}` }}>
         {r.kriz ? KRIZ : (datum || r.pod) && <span style={{ display: "flex", flexDirection: "column" }}>{datum && <b style={{ fontSize: 22, color: r.d ? farbaDna(r.d) : INK }}>{datum}</b>}{r.pod && <span style={{ fontSize: r.podFarba ? 13 : 14, fontWeight: r.podFarba ? 800 : 400, letterSpacing: r.podFarba ? ".1em" : undefined, color: r.podFarba ?? INK3 }}>{r.pod}</span>}</span>}
         <span style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>{stred}</span>
         {r.akcia && !r.kriz && <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>{r.akcia}</span>}
@@ -1551,7 +1573,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
         <div style={{ flex: "999 1 520px", minWidth: 0, display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))", gap: 16 }}>
           {prosby.map((x) => (
             <div key={x.id} data-oz={x.id} style={{ padding: 22, borderRadius: 22, background: KARTA, display: "flex", flexDirection: "column", gap: 14 }}>
-              {x.anon || /Bohu známy/.test(x.kto) ? <span style={{ display: "flex", alignItems: "center", gap: 12 }}><Sviecka /><span style={{ fontSize: 15, color: INK3 }}>bez mena</span></span> : hlavickaAutora(x)}
+              {(x.anon || /Bohu známy/.test(x.kto)) && x.stav !== "caka" ? <span style={{ display: "flex", alignItems: "center", gap: 12 }}><Sviecka /><span style={{ fontSize: 15, color: INK3 }}>bez mena</span></span> : hlavickaAutora(x)}
               <span style={{ display: "flex", flexDirection: "column", gap: 6 }}>{x.t && <b style={{ fontSize: 19, lineHeight: 1.4 }}>{x.t}</b>}{x.s && <span style={{ fontSize: 17, lineHeight: 1.5, fontWeight: 600, color: INK2, whiteSpace: "pre-line" }}>{x.s}</span>}</span>
               {reakcia({ ...reakV(x, "modl"), t: "Modlím sa s vami", tJa: "Modlíte sa s nami ✓", poc: (n) => `${n} sa modlí` })}
               <MenuPrispevku x={x} strankaId={strankaId} kto={kto} moje={moje(x)} />

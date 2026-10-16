@@ -108,7 +108,7 @@ export function MenuPrispevku({ x, strankaId, kto, moje, vMenu, bezZmazania, onZ
   const mozeUp = moje && ["oznam", "udalost", "modlitba", "svadba", "ine", "fotky", "parte"].includes(x.k); // OPRAVY 194: aj fotky z akcie · OPRAVY 305: aj parte
   const mozeZmaz = moje && x.k !== "umysel" && !bezZmazania;
   return <>
-    {potvrd && <div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--goldBg)", border: `1.5px solid ${ZLATA}`, display: "flex", flexDirection: "column", gap: 8 }}>
+    {potvrd && <div data-caka-ok="" style={{ padding: "12px 14px", borderRadius: 14, background: "var(--goldBg)", border: `1.5px solid ${ZLATA}`, display: "flex", flexDirection: "column", gap: 8 }}>
       <b style={{ fontSize: 15.5 }}>Nahlásiť farárovi?</b>
       <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>Farár príspevok pozrie. Kto nahlásil, sa nedozvie autor.</span>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -116,8 +116,8 @@ export function MenuPrispevku({ x, strankaId, kto, moje, vMenu, bezZmazania, onZ
         <button type="button" onClick={() => setPotvrd(false)} style={{ minHeight: 46, padding: "0 16px", borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--ink)" }}>Zrušiť</button>
       </div>
     </div>}
-    {ok && <span role="status" style={{ fontSize: 14, fontWeight: 800, color: "var(--gInk)" }}>Nahlásené ✓ Farár to pozrie.</span>}
-    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+    {ok && <span data-caka-ok="" role="status" style={{ fontSize: 14, fontWeight: 800, color: "var(--gInk)" }}>Nahlásené ✓ Farár to pozrie.</span>}
+    <div data-caka-ok="" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>{/* OPRAVY 330: pri čakajúcom ostáva čitateľné a ťukateľné */}
       <button type="button" onClick={() => setMenu((m) => !m)} aria-label="Viac" aria-expanded={menu} style={{ minWidth: 44, minHeight: 40, padding: "0 10px", borderRadius: 10, border: "1px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 18, fontWeight: 800, color: "var(--ink3)", lineHeight: 1 }}>···</button>
       {menu && <button type="button" onClick={() => { setMenu(false); setPotvrd(true); }} style={{ minHeight: 40, padding: "0 12px", borderRadius: 10, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--ink)" }}>Nahlásiť nevhodný príspevok</button>}
       {mozeUp && (!vMenu || menu) && <button type="button" onClick={() => nastavUpravu(x.id)} style={{ minHeight: 40, padding: "0 12px", borderRadius: 10, border: "1.5px solid var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--gInk)" }}>Upraviť · moje</button>}
