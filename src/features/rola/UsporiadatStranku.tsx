@@ -1,15 +1,16 @@
 // ============================================================
 // OPRAVY 292 · Správa → Nástroje → Usporiadať stránku (nie v Nastaveniach, aby si farár omylom nič nepokazil).
 // Prototyp „Usporiadat stranku“: zoznam blokov stredného stĺpca s ↑ ↓ (44 px) a Ukázať / Skryť, na mobile aj
-// podržať a potiahnuť (úchyt ⠿); živý náhľad (hlavný stĺpec + bočný panel). Jedno poradie pre všetky štyri vzhľady,
-// prepínač vzhľadu je len na náhľad. Pevné: titulka a hlavička, bočný panel, päta, zelené +.
+// podržať a potiahnuť (úchyt ⠿); živý náhľad (hlavný stĺpec + bočný panel). Jedno poradie pre všetky štyri vzhľady.
+// OPRAVY 323: bez prepínača vzhľadu — náhľad ukazuje vzhľad, ktorý má farnosť zapnutý; pri bloku „Vedľa predošlého · Áno / Nie“
+// (len Moderné a Klasika na PC; Teš sa a Spomíname túto voľbu nemajú). Pevné: titulka a hlavička, bočný panel, päta, zelené +.
 // Zbierky: Nástenka a Moderné presúvateľné, Kronika a Klasika v bočnom paneli. Premenovať 7 blokov (najviac 30 znakov).
 // „Podržte a uložte“ + „Obnoviť pôvodné“, hláška na mieste, zlyhanie má tvár. Ukladá sa na server (verejné nastavenia).
 // ============================================================
 import { useRef, useState, type CSSProperties } from "react";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
-import { BLOKY_STRANKY, PREMENOVAT, NAZOV_MAX, POVODNE, normalizuj, ulozUsporiadanie, useUsporiadanie, nadpisBloku, type BlokStranky, type Usporiadanie } from "@/lib/usporiadanieStranky";
-import { ROZLOZENIA, rozlozenieZPamate, type Rozlozenie } from "@/lib/rozlozenieFarnosti";
+import { BLOKY_STRANKY, PREMENOVAT, NAZOV_MAX, POVODNE, normalizuj, ulozUsporiadanie, useUsporiadanie, nadpisBloku, mozeVedla, radyVedla, type BlokStranky, type Usporiadanie } from "@/lib/usporiadanieStranky";
+import { ROZLOZENIA, rozlozenieZPamate } from "@/lib/rozlozenieFarnosti";
 
 const M = Object.fromEntries(BLOKY_STRANKY.map((b) => [b.id, b])) as Record<BlokStranky, (typeof BLOKY_STRANKY)[number]>;
 const rovnake = (a: Usporiadanie, b: Usporiadanie) => JSON.stringify(normalizuj(a)) === JSON.stringify(normalizuj(b));
@@ -17,7 +18,7 @@ const rovnake = (a: Usporiadanie, b: Usporiadanie) => JSON.stringify(normalizuj(
 export function UsporiadatStranku({ strankaId, mobil, onSpat }: { strankaId: string; mobil: boolean; onSpat: () => void }) {
   const ulozene = useUsporiadanie(strankaId);
   const [u, setU] = useState<Usporiadanie>(ulozene);
-  const [vz, setVz] = useState<Rozlozenie>(() => rozlozenieZPamate(strankaId));
+  const vz = rozlozenieZPamate(strankaId); // OPRAVY 323: náhľad = zapnutý vzhľad farnosti
   const [ed, setEd] = useState<BlokStranky | null>(null);
   const [hlaska, setHlaska] = useState<{ ok: boolean; t: string } | null>(null);
   const [uklada, setUklada] = useState(false);
@@ -32,6 +33,8 @@ export function UsporiadatStranku({ strankaId, mobil, onSpat }: { strankaId: str
     o.splice(ia, 1); o.splice(ib, 0, a); // pri susedoch = výmena; pri ťahu = vloženie na miesto
     zmen({ ...u, poradie: o });
   };
+  const vedla = (k: BlokStranky, on: boolean) => zmen({ ...u, vedla: on ? [...u.vedla.filter((x) => x !== k), k] : u.vedla.filter((x) => x !== k) });
+  const parVz = vz === "moderne" || vz === "konzervativny"; // dvojice vedľa seba len v Modernom a Klasike
   const prepni = (k: BlokStranky) => zmen({ ...u, skryte: u.skryte.includes(k) ? u.skryte.filter((x) => x !== k) : [...u.skryte, k] });
   const premenuj = (k: BlokStranky, t: string) => { const z = { ...u.nazvy }; if (t) z[k] = t.slice(0, NAZOV_MAX); else delete z[k]; zmen({ ...u, nazvy: z }); };
   const zmenene = !rovnake(u, ulozene);
@@ -88,6 +91,14 @@ export function UsporiadatStranku({ strankaId, mobil, onSpat }: { strankaId: str
                   <span style={{ position: "absolute", top: 3, left: 3, width: 24, height: 24, borderRadius: "50%", background: "#fff", transform: `translateX(${on ? 22 : 0}px)`, transition: "transform .2s" }} />
                 </button>
               </div>
+              {/* OPRAVY 323: Vedľa predošlého · Áno / Nie (Moderné a Klasika na PC) */}
+              {i > 0 && mozeVedla(k) && mozeVedla(L[i - 1]) && <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", padding: mobil ? "0 12px 10px" : "0 14px 10px 48px", opacity: on ? 1 : 0.55 }}>
+                <span style={{ flex: "1 1 160px", minWidth: 0, display: "flex", flexDirection: "column" }}><b style={{ fontSize: 14 }}>Vedľa predošlého</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>vedľa bloku {nadpisBloku(u, L[i - 1], M[L[i - 1]].t)} · Moderné a Klasika na PC</span></span>
+                <span role="radiogroup" aria-label={`Vedľa predošlého: ${nm}`} style={{ display: "flex", flex: "none", border: "1.5px solid var(--cardBd)", borderRadius: 12, overflow: "hidden" }}>
+                  {([["Áno", true], ["Nie", false]] as [string, boolean][]).map(([t, v]) => { const a = u.vedla.includes(k) === v; return (
+                    <button key={t} type="button" role="radio" aria-checked={a} onClick={() => vedla(k, v)} style={{ minHeight: 40, minWidth: 56, padding: "0 12px", border: "none", background: a ? "#4B7A35" : "transparent", color: a ? "#fff" : "var(--ink)", fontFamily: "inherit", fontSize: 14, fontWeight: 800, cursor: "pointer", boxShadow: "none" }}>{t}</button>); })}
+                </span>
+              </div>}
               {otv && moze && <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: mobil ? "4px 12px 14px" : "4px 14px 14px 48px" }}>
                 <input value={u.nazvy[k] ?? M[k].t} onChange={(e) => premenuj(k, e.target.value)} maxLength={NAZOV_MAX} aria-label="Nový názov bloku"
                   style={{ minHeight: 48, padding: "0 14px", borderRadius: 12, border: "1.5px solid var(--green)", background: "var(--field)", fontFamily: "inherit", fontSize: 16, fontWeight: 700, color: "var(--ink)", outline: "none", width: "100%", boxSizing: "border-box" }} />
@@ -120,8 +131,9 @@ export function UsporiadatStranku({ strankaId, mobil, onSpat }: { strankaId: str
         <div style={{ gridColumn: "1 / -1", height: 64, borderRadius: 12, background: "linear-gradient(160deg,#A9A290,#5F584A)", display: "flex", alignItems: "flex-end", padding: "8px 12px", boxSizing: "border-box", color: "#fff", fontSize: 13, fontWeight: 800 }}>Titulka</div>
         {mobil && <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{panel.map((p) => <span key={p} style={{ padding: "6px 10px", borderRadius: 10, background: "var(--btn)", color: "var(--ink2)", fontSize: 13, fontWeight: 700 }}>{p}</span>)}</div>}
         <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-          {L.filter((k) => !u.skryte.includes(k)).map((k) => <div key={k} style={{ minHeight: 40, padding: "0 12px", borderRadius: 10, background: "var(--field)", display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 700, minWidth: 0 }}>
-            <span style={{ flex: "none", width: 6, height: 22, borderRadius: 3, background: M[k].farba }} /><span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nadpisBloku(u, k, M[k].t)}</span></div>)}
+          {(parVz && !mobil ? radyVedla(u, L.filter((k) => !u.skryte.includes(k))) : L.filter((k) => !u.skryte.includes(k)).map((k) => [k])).map((rad) => <div key={rad[0]} style={{ display: "grid", gridTemplateColumns: `repeat(${rad.length},minmax(0,1fr))`, gap: 8, minWidth: 0 }}>
+            {rad.map((k0) => { const k = k0 as BlokStranky; return <div key={k} style={{ minHeight: 40, padding: "0 12px", borderRadius: 10, background: "var(--field)", display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 700, minWidth: 0 }}>
+              <span style={{ flex: "none", width: 6, height: 22, borderRadius: 3, background: M[k].farba }} /><span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nadpisBloku(u, k, M[k].t)}</span></div>; })}</div>)}
         </div>
         {!mobil && <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{panel.map((p) => <div key={p} style={{ minHeight: 40, padding: "8px 12px", boxSizing: "border-box", borderRadius: 10, background: "var(--btn)", color: "var(--ink2)", display: "flex", alignItems: "center", fontSize: 13.5, fontWeight: 700 }}>{p}</div>)}</div>}
         <div style={{ gridColumn: "1 / -1", minHeight: 40, padding: "0 12px", borderRadius: 10, background: "#14110B", color: "#fff", display: "flex", alignItems: "center", fontSize: 14, fontWeight: 700 }}>Päta · Farský úrad</div>
@@ -132,13 +144,8 @@ export function UsporiadatStranku({ strankaId, mobil, onSpat }: { strankaId: str
   return (<>
     <button type="button" onClick={onSpat} style={{ alignSelf: "flex-start", minHeight: 44, padding: "0 14px", borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--btn)", color: "var(--ink)", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer", boxShadow: "none" }}>‹ Nástroje</button>
     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 24 }}>Usporiadať stránku</b><span style={{ fontSize: 14, lineHeight: 1.45, color: "var(--ink3)" }}>{mobil ? "Šípkami alebo podržaním ⠿ a potiahnutím zmeníte poradie" : "Šípkami zmeníte poradie"}, prepínačom blok skryjete. Prázdny blok sa skryje sám. Platí pre všetky vzhľady.</span></div>
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <span style={{ fontSize: 13, fontWeight: 800 }}>Vzhľad stránky · len náhľad</span>
-      <div role="radiogroup" aria-label="Vzhľad na náhľad" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {ROZLOZENIA.map((r) => { const a = vz === r.k; return <button key={r.k} type="button" role="radio" aria-checked={a} onClick={() => setVz(r.k)} style={{ minHeight: 44, padding: "0 16px", borderRadius: 12, border: a ? "none" : "1.5px solid var(--cardBd)", background: a ? "var(--ink)" : "var(--card)", color: a ? "var(--bg)" : "var(--ink)", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, cursor: "pointer", boxShadow: "none" }}>{r.t}</button>; })}
-      </div>
-      <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Zapnutý vzhľad farnosti: {zapnuty}. Zmeníte ho v Nastaveniach → Vzhľad stránky.{bok ? " V tomto vzhľade sú Zbierky v bočnom paneli." : ""}</span>
-    </div>
+    {/* OPRAVY 323: bez prepínača vzhľadu — náhľad je zapnutý vzhľad farnosti */}
+    <span style={{ padding: "10px 14px", borderRadius: 12, background: "var(--field)", fontSize: 14, lineHeight: 1.45, color: "var(--ink2)" }}>Poradie platí pre všetky vzhľady. Náhľad: <b style={{ color: "var(--ink)" }}>{zapnuty}</b>{bok ? " · Zbierky sú v bočnom paneli." : ""}</span>
     {mobil ? <>{zoznamEl}{nahlad}</>
       : <div style={{ display: "grid", gridTemplateColumns: "minmax(0,520px) minmax(0,1fr)", gap: 32, alignItems: "start" }}>{zoznamEl}{nahlad}</div>}
   </>);

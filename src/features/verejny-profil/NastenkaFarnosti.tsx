@@ -21,7 +21,7 @@ import { KartaMiesta, najblizsiaOmsa, NaseKostolyBlok, PodstrankaMiesta, otvorKo
 import { uradneUdaje } from "@/lib/uradneUdaje";
 import { OknoUpozorneni, useCoChodi, type CielUpozorneni } from "./OknoUpozorneni";
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
-import { useUsporiadanie, nadpisBloku as nadpisUsp, viditelne, type BlokStranky } from "@/lib/usporiadanieStranky";
+import { useUsporiadanie, nadpisBloku as nadpisUsp, viditelne, radyVedla, type BlokStranky } from "@/lib/usporiadanieStranky";
 import { useZvoncek, nazovZvoncek, ZVONCEK_TEXT } from "@/lib/zvoncekZbierka";
 import { createPortal } from "react-dom";
 import type { ProfilStranky } from "@/lib/profilStranky";
@@ -839,7 +839,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   </>);
   // --- Spomíname = zápis na tmavšom pozadí ---
   const kSpom = maSpom && sekcia("spom", nzB("spom", "Spomíname"), S.spom, <>
-    <div style={{ display: "flex", flexDirection: "column", borderTop: "1px solid color-mix(in srgb,var(--nf-linka) 70%,transparent)" }}>
+    {/* OPRAVY 322: na PC mriežka (najviac 3 vedľa seba), nie riadok cez celú šírku na jedného */}
+    <div style={pc ? { ...MRIEZKA3, columnGap: 24, rowGap: 0 } : { display: "flex", flexDirection: "column", borderTop: "1px solid color-mix(in srgb,var(--nf-linka) 70%,transparent)" }}>
       {spomienky.map((sp) => { const n = sp.x ? pocetSus(sp.x) : (reakcieF(strankaId, sp.zb?.id ?? sp.id).sustrast ?? []).length; return (
         <SpomZapis key={sp.id} oz={sp.id} foto={sp.foto} siva={sp.siva} znacka={znSpom(sp, -6)} symbol={symbol} meno={sp.d.meno} roky={rokyParte(sp.d.nar, sp.d.umr)} rozlucka={[rozluckaT(sp.d.rd, sp.d.rc), sp.d.rm].filter(Boolean).join(" · ")} zbierka={!!sp.zb} sustrast={n} onTap={() => setParte(sp)} />); })}
     </div>
@@ -978,6 +979,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   // ============================================================
   const moderne = rozlozenie === "moderne";
   const pcVelke = useAspon(1366); // PC 1440 vs. tablet na šírku
+  const od1200 = useAspon(1200); // OPRAVY 322: Teš sa 3 vedľa seba od 1200 px
   // OPRAVY 278: + je vo všetkých vzhľadoch plávajúce vpravo dole (Karta 65 tu neplatí)
   const [pasMod, posMod] = usePas(), [pasTes, posTes] = usePas(), [pasPrid, posPrid] = usePas(), [pasKos, posKos] = usePas();
   const [pasOzn, posOzn] = usePas(true), [pasSpom, posSpom] = usePas(true);
@@ -1132,11 +1134,14 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
         <div style={{ padding: "12px 18px 16px" }}><MenuPrispevku x={a} strankaId={strankaId} kto={kto} moje={moje(a)} /></div>
       </div>); })}
   </PasX>;
-  const mTes = <PasX pasRef={pasTes} gap={14}>{tesy.map((t) => tesKarta(t, { flex: "none", scrollSnapAlign: "start", width: mob && !mt ? "calc(100% - 2px)" : 210 }))}</PasX>; // OPRAVY 275: celý hárok na výšku
-  const spomZoznam = (vo2: boolean) => zoznamY(pasSpom, spomienky.map((sp) => { const n = sp.x ? pocetSus(sp.x) : (reakcieF(strankaId, sp.zb?.id ?? sp.id).sustrast ?? []).length; return (
+  // OPRAVY 322: Teš sa na PC na celú šírku, 2 až 3 karty vedľa seba
+  const mTes = <PasX pasRef={pasTes} gap={14}>{tesy.map((t) => tesKarta(t, mob ? { flex: "none", scrollSnapAlign: "start", width: !mt ? "calc(100% - 2px)" : 210 } : sirkaKarty(od1200 ? 3 : 2, 14)))}</PasX>; // OPRAVY 275: celý hárok na výšku
+  // OPRAVY 322: Spomíname na PC vždy na celú šírku v mriežke (najviac 3 vedľa seba), ⌃ ⌄ Ďalšie ostáva
+  const spomZoznam = (vo2: boolean) => (mob ? (d: ReactNode) => zoznamY(pasSpom, d, vo2)
+    : (d: ReactNode) => <div ref={pasSpom} className="md-pas" style={{ ...MRIEZKA3, gap: 12, maxHeight: 460, overflowY: "auto", scrollSnapType: "y proximity", scrollbarWidth: "none", overscrollBehaviorY: "contain" }}>{d}</div>)(spomienky.map((sp) => { const n = sp.x ? pocetSus(sp.x) : (reakcieF(strankaId, sp.zb?.id ?? sp.id).sustrast ?? []).length; return (
     <div key={sp.id} data-oz={sp.id} style={{ flex: "none", scrollSnapAlign: "start", padding: "0 16px", borderRadius: 20, background: KARTA }}>
       <SpomZapis foto={sp.foto} siva={sp.siva} znacka={znSpom(sp, -6)} symbol={symbol} meno={sp.d.meno} roky={rokyParte(sp.d.nar, sp.d.umr)} rozlucka={[rozluckaT(sp.d.rd, sp.d.rc), sp.d.rm].filter(Boolean).join(" · ")} zbierka={!!sp.zb} sustrast={n} onTap={() => setParte(sp)} />
-    </div>); }), vo2);
+    </div>); }));
   const mVer = <div style={{ display: "grid", gridTemplateColumns: mt ? "repeat(2,minmax(0,1fr))" : "minmax(0,1fr)", gap: 14 }}>{oznVer.map((x) => (
     <div key={x.id} data-oz={x.id} style={{ padding: 20, borderRadius: 20, background: KARTA, display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
       {hlavickaAutora(x)}
@@ -1195,16 +1200,14 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
     omse: { id: "omse", t: "Sväté omše", popis: "", suhrn: S.omse, ma: maOmse && omseDni.length > 0, obsah: () => <SvateOmse matna={matna} maly onCely={() => setKalOtv(true)} dni={omseDni} bezNadpisu /> },
     urad: { id: "urad", t: "Farský úrad", popis: "", suhrn: S.urad, ma: maUrad, obsah: () => <>{fotoFaryEl}<div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>{uradPolia}</div></> },
   };
-  // OPRAVY 292: poradie z Usporiadať stránku; dva susedné bloky idú vedľa seba, keď spolu dajú celý riadok (predvolené = pôvodný rytmus)
-  const SIRKA_M: Record<string, number> = { zbierky: 12, ozn: 7, vyp: 5, mod: 12, pom: 12, prid: 12, tes: 7, spom: 5, ver: 5, deti: 7, kostoly: 12 };
-  const RYTMUS: [string, number][][] = (() => {
-    const l = poradieB.filter((id) => MBL[id]?.ma), out: [string, number][][] = [];
-    for (let i = 0; i < l.length; i++) {
-      const a = l[i], b = l[i + 1], sa = SIRKA_M[a] ?? 12, sb = b ? SIRKA_M[b] ?? 12 : 0;
-      if (b && sa < 12 && sb < 12 && sa + sb === 12) { out.push([[a, sa], [b, sb]]); i++; } else out.push([[a, 12]]);
-    }
-    return out;
-  })();
+  // OPRAVY 323: poradie z Usporiadať stránku; vedľa seba len bloky, pri ktorých farár zvolil „Vedľa predošlého“ (pevné dvojice z 292 zrušené).
+  // Teš sa a Spomíname vždy na celú šírku (322). Šírky dvojice: pôvodný nerovný rytmus, keď dáva celý riadok, inak pol na pol.
+  const SIRKA_M: Record<string, number> = { ozn: 7, vyp: 5, mod: 7, pom: 7, prid: 7, ver: 5, deti: 7, kostoly: 7 };
+  const RYTMUS: [string, number][][] = radyVedla(US, poradieB.filter((id) => MBL[id]?.ma)).map((r) => {
+    if (r.length < 2) return [[r[0], 12]];
+    const sa = SIRKA_M[r[0]] ?? 6, sb = SIRKA_M[r[1]] ?? 6;
+    return sa + sb === 12 ? [[r[0], sa], [r[1], sb]] : [[r[0], 6], [r[1], 6]];
+  });
   const mPcBlok = (b: MB, span: number, vo2: boolean) => b.id === "zbierky"
     ? <section key={b.id} data-oz={b.id} data-blok="zbierky" style={{ gridColumn: "span 12", display: "flex", flexDirection: "column", gap: 18, scrollMarginTop: 84, minWidth: 0 }}>
       <MNadpis id="zbierky" t={b.t} vpravo={!zbVsetky && zbDalsie > 0 ? vsetkyZb("všetky zbierky ›") : undefined} />{b.obsah(false)}</section>
@@ -1326,13 +1329,12 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
       akcia: <button type="button" onClick={() => setMiesto(m)} style={tlacR(false, false)}>Viac o kostole ›</button> }); }) },
   ];
   const kNadpis = (t: string) => <b style={{ fontSize: 30, letterSpacing: "-.02em", paddingBottom: 6, borderBottom: "2px solid var(--nf-linia)" }}>{t}</b>;
-  const kSek = (id: string, t: string, deti: ReactNode) => <section key={id} data-blok={id} style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0, scrollMarginTop: 16 }}>{kNadpis(t)}<div style={{ display: "flex", flexDirection: "column" }}>{deti}</div></section>;
+  // OPRAVY 322: Spomíname a Teš sa na PC v mriežke (najviac 3 vedľa seba), nie riadok cez celú šírku na jedného
+  const kSek = (id: string, t: string, deti: ReactNode) => <section key={id} data-blok={id} style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0, scrollMarginTop: 16 }}>{kNadpis(t)}<div style={pc && (id === "spom" || id === "tes") ? { ...MRIEZKA3, columnGap: 28, rowGap: 0 } : { display: "flex", flexDirection: "column" }}>{deti}</div></section>;
   const kB = (id: string) => kBloky.find((b) => b.id === id)!;
   const kPoradie = poradieB.filter((id) => id !== "zbierky"); // Zbierky sú v bočnom paneli (pevné)
-  const PARY_K = [["tes", "spom"], ["deti", "ver"]];
-  const kRady: string[][] = (() => { const l = kPoradie.filter((id) => kB(id).ma), out: string[][] = [];
-    for (let i = 0; i < l.length; i++) { const a = l[i], b = l[i + 1]; if (b && PARY_K.some((p) => p.includes(a) && p.includes(b))) { out.push([a, b]); i++; } else out.push([a]); }
-    return out; })();
+  // OPRAVY 323: vedľa seba len bloky s „Vedľa predošlého“ (Teš sa a Spomíname nikdy, 322)
+  const kRady: string[][] = radyVedla(US, kPoradie.filter((id) => kB(id).ma));
   // pravý stĺpec (PC) a spoločné kúsky
   const kKarta = (t: string, deti: ReactNode, blok?: string) => <section data-blok={blok} style={{ padding: 24, borderRadius: 18, background: PAPIER, border: `1px solid ${LINKA}`, borderTop: "4px solid var(--nf-linia)", display: "flex", flexDirection: "column", gap: 10, scrollMarginTop: 16 }}><b style={{ fontSize: 24, paddingBottom: 4 }}>{t}</b>{deti}</section>;
   const kOmseZoznam = <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -1409,7 +1411,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
         ? <div style={{ padding: pc ? "40px 64px 72px" : "28px 18px 48px" }}><span style={{ fontSize: 18, color: INK3 }}>Farnosť tu zatiaľ nič nezverejnila.</span></div>
         : pc ? <div style={{ display: "grid", gridTemplateColumns: kMaPravy ? `minmax(0,1fr) ${kVelke ? 400 : 340}px` : "minmax(0,1fr)", gap: kVelke ? 56 : 36, padding: kVelke ? "40px 64px 72px" : "32px 40px 56px", alignItems: "start" }}>
           <main style={{ display: "flex", flexDirection: "column", gap: 44, minWidth: 0 }}>
-            {/* OPRAVY 292: poradie z Usporiadať stránku; Teš sa · Spomíname a Deti · Od veriacich vedľa seba, keď sú za sebou */}
+            {/* OPRAVY 292/323: poradie z Usporiadať stránku; vedľa seba len bloky s „Vedľa predošlého“ */}
             {kRady.map((rad) => { const l = rad.map(kB); return l.length === 2 ? <div key={rad[0]} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 40 }}>{l.map((b) => kSek(b.id, b.t, b.riadky()))}</div> : kSek(l[0].id, l[0].t, l[0].riadky()); })}
           </main>
           {kMaPravy && <aside style={{ position: "sticky", top: 24, display: "flex", flexDirection: "column", gap: 24, minWidth: 0 }}>
@@ -1763,6 +1765,8 @@ function PasZbierok({ polozky, pasRef, onPrebytok }: { polozky: { k: string; el:
 }
 
 /** OPRAVY 262: celý text zbierky (text + pokračovanie) na formátované zobrazenie */
+/** OPRAVY 322: mriežka kariet na celú šírku — najviac 3 vedľa seba, užšie okno 2, úzke 1 */
+const MRIEZKA3: CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(max(240px,calc((100% - 32px) / 3)),1fr))", gap: 16, alignContent: "start" };
 const celyText = (a?: string, b?: string) => bezOpakovania(a, b).join(jeHtmlText(a) || jeHtmlText(b) ? "" : "\n\n");
 /** OPRAVY 321: úvod a pokračovanie — keď pokračovanie začína celým úvodom, úvod sa vynechá (text sa nezopakuje) */
 function bezOpakovania(a?: string | null, b?: string | null): string[] {
