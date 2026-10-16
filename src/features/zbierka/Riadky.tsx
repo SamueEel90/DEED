@@ -6,7 +6,7 @@ import { DeedZnacka } from "@/components/DeedZnacka";
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { usePersonalizacia } from "@/lib/personalizacia";
 import { usePouzivatel } from "@/lib/pouzivatel";
-import { useDarcovia, identitaDarcu, relCas, DARCOVIA_CFG, useSektorDarcu, useUkazSumy, type DarRiadok } from "@/lib/darcovia";
+import { useDarcovia, identitaDarcu, relCas, DARCOVIA_CFG, useSektorDarcu, useUkazSumy, jeViera, type DarRiadok } from "@/lib/darcovia";
 import { vycerpane, zostatok, type Dorovnanie } from "@/lib/dorovnanie";
 import type { Oblubeny } from "@/types";
 import { sumaEur } from "@/lib/suma";
@@ -25,6 +25,9 @@ export function ZdielatRiadok({ onZdielat, paciSa = 0, onPodporitDeed, sam, daru
   /** OPRAVY 304: registrovaný — vedľa Zdieľať · QR „Darujete ako: … ⌄“ (každé polovica šírky) */ darujete?: boolean }) {
   const [paci, setPaci] = useState(false);
   const pocet = paciSa + (paci ? 1 : 0);
+  // Martin 16. 10.: vo Viere nie je Páči sa mi vôbec (neregistrovaný má Zdieľať · QR na celú šírku)
+  const viera = jeViera(useSektorDarcu());
+  if (viera && !darujete && !onPodporitDeed) sam = true;
   return (
     <div style={{ display: "grid", gridTemplateColumns: sam && !darujete ? "1fr" : "minmax(0,1fr) minmax(0,1fr)", gap: 10, marginTop: 2 }}>
       <button type="button" className="zb-karta" onClick={onZdielat} style={riadkove}>
