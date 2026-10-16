@@ -40,9 +40,10 @@ export const NAZVY: Record<Kluc, string> = {
   zapojitFirmu: "Zapojiť firmu do dorovnania", retazNastavit: "Reťaz dobra · nastaviť", darcovia: "Darcovia",
 };
 
-// Hranice platieb (Martin 28. 9. 2026): pod 1 € len krypto · 1 € až pod 3 € len SEPA · od 3 € aj karta.
+// Hranice platieb (Martin 28. 9. 2026): pod 1 € len krypto · 1 € až pod 5 € len SEPA · od 5 € aj karta.
+// OPRAVY 304 (Martin 15. 10.): pod 5 € sa karta neponúka vôbec — poplatok by zjedol dar (predtým od 3 €).
 export const MIN_DAR_EUR = 1;
-export const KARTA_OD_EUR = 3;
+export const KARTA_OD_EUR = 5;
 
 /** stav používateľa a zbierky, ktorý filtruje tabuľku */
 export type Kontext = {

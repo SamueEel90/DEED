@@ -1,6 +1,6 @@
 // KARTA 06 · Rýchle sumy v €, DEED dlaždice (mikrodar), vlastná suma, dary v krypte.
 // Mikrodar = klik a hneď odíde (bez okna peňaženky): svetielko letí k sume zbierky, po 0,65 s suma narastie, dlaždica 1,6 s „Odoslané".
-import { useState, type CSSProperties, type ReactNode, type RefObject } from "react";
+import { useRef, useState, type CSSProperties, type MouseEvent, type ReactNode, type RefObject } from "react";
 import { MikrodarDlazdica } from "./AnimovaneKomponenty";
 import { pridajDar } from "@/lib/darcovia";
 import { KARTA_OD_EUR } from "./nastavenie";
@@ -35,7 +35,30 @@ function useBlok() {
 }
 
 // ---------------- A · rýchle sumy v € ----------------
-export function RychleSumyEur({ sumy, doplnok, kDaru, otvor }: { sumy: number[]; doplnok?: string; kDaru?: (s: number) => number; otvor: OtvorPlatbu }) {
+/** OPRAVY 304: rýchla suma registrovaného = podržať a zaplatené (bez okna); krátky ťuk = „Podržte“, klávesnica = zaplatí hneď.
+ *  Po zaplatení na tom istom tlačidle „Ďakujeme ✓ 3 €“. Neregistrovaný ide cez okno (vypĺňa kartu / IBAN). */
+function RychlaDlazdica({ s, bg, bd, hlavne, popis, popisFarba, onTuk, drzat, tukom }: { s: number; bg: string; bd: string; hlavne: ReactNode; popis: string; popisFarba: string;
+  onTuk: () => void; drzat?: (s: number) => void; /** nastavenie „Potvrdiť ťuknutím“ */ tukom?: boolean }) {
+  const [st, setSt] = useState<"" | "drzi" | "ok" | "hint">("");
+  const t = useRef<number | undefined>(undefined), drzi = useRef(false);
+  const zaplat = () => { drzi.current = false; drzat?.(s); try { navigator.vibrate?.([10, 40, 18]); } catch { /* bez vibrácie */ } setSt("ok"); window.setTimeout(() => setSt(""), 2400); };
+  const zac = () => { if (!drzat || tukom || st === "ok") return; drzi.current = true; setSt("drzi"); t.current = window.setTimeout(zaplat, 900); };
+  const stop = (hint: boolean) => { if (!drzi.current) return; drzi.current = false; window.clearTimeout(t.current); setSt(hint ? "hint" : ""); if (hint) window.setTimeout(() => setSt((x) => (x === "hint" ? "" : x)), 1800); };
+  const klik = (e: MouseEvent) => { if (!drzat) { onTuk(); return; } if (st === "ok") return; if (tukom || e.detail === 0) zaplat(); };
+  return (
+    <button type="button" className="zb-dlazdica" onClick={klik} onPointerDown={zac} onPointerUp={() => stop(true)} onPointerLeave={() => stop(false)} onPointerCancel={() => stop(false)} onContextMenu={(e) => { if (drzat) e.preventDefault(); }}
+      aria-label={drzat ? `${tukom ? "Ťuknite" : "Podržte"} a darujte ${eurTxt(s)}` : undefined}
+      style={{ ...dlazdica(st === "ok" ? "var(--gSoft)" : bg, st === "ok" ? "var(--gBd)" : bd), overflow: "hidden", userSelect: "none", WebkitUserSelect: "none", WebkitTouchCallout: "none", touchAction: "manipulation" } as CSSProperties}>
+      {drzat && <span aria-hidden="true" style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: st === "drzi" ? "100%" : "0%", background: "var(--gSoft)", transition: st === "drzi" ? "width .9s linear" : "none" }} />}
+      {st === "ok" ? <span role="status" style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 1, color: "var(--gInk)" }}>
+          <b style={{ fontSize: "clamp(14px,4vw,16px)", whiteSpace: "nowrap" }}>Ďakujeme ✓</b><span style={{ fontSize: 12.5, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{eurTxt(s)}</span></span>
+        : <>{hlavne}
+          <span style={{ position: "relative", fontSize: "clamp(10.5px,3vw,12px)", fontWeight: 700, color: st === "hint" ? "var(--gInk)" : popisFarba, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", maxWidth: "100%", padding: "0 4px", boxSizing: "border-box" }}>{st === "hint" ? "Podržte" : popis}</span></>}
+    </button>);
+}
+
+export function RychleSumyEur({ sumy, doplnok, kDaru, otvor, drzat, tukom }: { sumy: number[]; doplnok?: string; kDaru?: (s: number) => number; otvor: OtvorPlatbu;
+  /** OPRAVY 304: registrovaný — podržať a zaplatené (dar bez okna) */ drzat?: (s: number) => void; tukom?: boolean }) {
   return (
     <>
       <NadpisSekcie text="DARY V EURÁCH" doplnok={doplnok} />
@@ -45,11 +68,9 @@ export function RychleSumyEur({ sumy, doplnok, kDaru, otvor }: { sumy: number[];
           const bonus = kDaru?.(s) ?? 0;
           const popis = bonus > 0 ? `→ ${eurTxt(s + bonus)}` : s < KARTA_OD_EUR ? "SEPA" : "SEPA · karta";
           return (
-            <button key={s} type="button" className="zb-dlazdica" onClick={() => otvor({ kanal: "eur", suma: s })} style={dlazdica(bg, bd)}>
-              {/* OPRAVY 257: suma a popis nikdy nepretečú z dlaždice */}
-              <span style={{ fontSize: "clamp(17px,5vw,20px)", fontWeight: 800, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{cislo(s)}{"\u00A0"}<span style={{ fontSize: 13, fontWeight: 700 }}>€</span></span>
-              <span style={{ fontSize: "clamp(10.5px,3vw,12px)", fontWeight: 700, color: bonus > 0 ? "var(--gold)" : "var(--ink3)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", maxWidth: "100%", padding: "0 4px", boxSizing: "border-box" }}>{popis}</span>
-            </button>
+            <RychlaDlazdica key={s} s={s} bg={bg} bd={bd} popis={popis} popisFarba={bonus > 0 ? "var(--gold)" : "var(--ink3)"} onTuk={() => otvor({ kanal: "eur", suma: s })} drzat={drzat} tukom={tukom}
+              hlavne={/* OPRAVY 257: suma a popis nikdy nepretečú z dlaždice */
+              <span style={{ position: "relative", fontSize: "clamp(17px,5vw,20px)", fontWeight: 800, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{cislo(s)}{"\u00A0"}<span style={{ fontSize: 13, fontWeight: 700 }}>€</span></span>} />
           );
         })}
       </div>
