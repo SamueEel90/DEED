@@ -1,7 +1,7 @@
 // KARTA 14 · Reťaz dobra — tvorca nastaví rad zbierok a percentá (5–100 %, po 5), zhrnutie, podrž a zapečať, beží.
 // Beží vždy len jedna zbierka; po zapečatení sa nedá meniť nič. Centrálny QR tvorcu sa nikde neukazuje —
 // len QR bežiacej dvojice tvorca + zbierka.
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { Component, useEffect, useRef, useState, type CSSProperties, type ErrorInfo, type ReactNode } from "react";
 import { DeedQr } from "@/components/deedqr";
 import { ohlasZbierku, obnovRetaz, nacitajRetaz, pripravRetaz, zapecatRetaz, zrusRetaz, beziaca, verejneBeziace, zbierkaVRetazi, zaokruhliPct, useZmenyRetaze, type Retaz, type Strana, type StavVRetazi, type ZbierkaVRetazi } from "@/lib/retaz";
 import { KartaStrany, ZnakStrany, StitStrany, useRobiRetaz } from "./StranaZmluvy";
@@ -84,7 +84,31 @@ function PercentaRiadku({ pct, onPct }: { pct: number; onPct: (v: number) => voi
 const nadpisZmluvy: CSSProperties = { fontSize: 13.5, fontWeight: 800, color: "var(--gInk)" };
 const datum = (ms: number) => { const d = new Date(ms); return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`; };
 
-export function RetazDobraHarok({ zbierka, onClose }: { zbierka: { id: string; nazov: string; org?: string; ciel?: number | null; vyzbierane?: number; strana?: Strana; /** OPRAVY 295: titulná fotka */ foto?: string }; onClose: () => void }) {
+/** OPRAVY 319: keď niečo v okne spadne, nikdy čierna obrazovka — Niečo sa pokazilo · Skúsiť znova · ‹ Späť na rad */
+class HraniceRetaze extends Component<{ onSpat: () => void; children: ReactNode; /** celé okno (keď spadne samotné okno) */ obal?: (n: ReactNode) => ReactNode }, { chyba: boolean; n: number }> {
+  state = { chyba: false, n: 0 };
+  static getDerivedStateFromError() { return { chyba: true }; }
+  componentDidCatch(e: Error, i: ErrorInfo) { console.error("Reťaz dobra", e, i.componentStack); }
+  render() {
+    if (!this.state.chyba) return <div key={this.state.n} style={{ display: "contents" }}>{this.props.children}</div>;
+    const znova = () => this.setState((s) => ({ chyba: false, n: s.n + 1 }));
+    const o = this.props.obal ?? ((n: ReactNode) => n);
+    return o(
+      <div role="alert" style={{ display: "flex", flexDirection: "column", gap: 10, padding: "14px 16px", borderRadius: 16, background: "var(--errBg, #F2E3DC)", border: "2px solid var(--cRed, #A34A2A)" }}>
+        <b style={{ fontSize: 16.5, color: "var(--cRed, #A34A2A)" }}>Niečo sa pokazilo</b>
+        <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>Okno sa nepodarilo zobraziť. Nič sa neuložilo.</span>
+        <Tlacidlo label="Skúsiť znova" onClick={znova} />
+        <Tlacidlo label="‹ Späť na rad" druhe onClick={() => { this.props.onSpat(); znova(); }} />
+      </div>);
+  }
+}
+
+type ZbierkaHaroka = { id: string; nazov: string; org?: string; ciel?: number | null; vyzbierane?: number; strana?: Strana; /** OPRAVY 295: titulná fotka */ foto?: string };
+/** OPRAVY 319: aj keď spadne samotné okno, ostane Harok s hláškou (znova = rad od začiatku) */
+export function RetazDobraHarok(p: { zbierka: ZbierkaHaroka; onClose: () => void }) {
+  return <HraniceRetaze onSpat={() => undefined} obal={(n) => <Harok onClose={p.onClose} hlavicka={<b style={{ fontSize: 17 }}>Reťaz dobra</b>}>{n}</Harok>}><RetazDobraOkno {...p} /></HraniceRetaze>;
+}
+function RetazDobraOkno({ zbierka, onClose }: { zbierka: ZbierkaHaroka; onClose: () => void }) {
   const zbierkaId = zbierka.id;
   // zbierka, z ktorej sa reťaz otvára, je v rade prvá (aj keď nie je v katalógu)
   useState(() => ohlasZbierku(zbierka.id, { nazov: zbierka.nazov, org: zbierka.org ?? "", ciel: zbierka.ciel ?? null, zaklad: zbierka.vyzbierane ?? 0, strana: zbierka.strana, foto: zbierka.foto }));
@@ -303,7 +327,7 @@ export function RetazDobraHarok({ zbierka, onClose }: { zbierka: { id: string; n
       </span>
     </>
   );
-  return <Harok onClose={onClose} hlavicka={hlavicka}><div ref={obalRef} style={{ display: "flex", flexDirection: "column", gap: 12 }}>{obsah}
+  return <Harok onClose={onClose} hlavicka={hlavicka}><div ref={obalRef} style={{ display: "flex", flexDirection: "column", gap: 12 }}><HraniceRetaze onSpat={() => { setChyst(null); setChyba(null); setKrok("nastavenie"); }}>{obsah}</HraniceRetaze>
     {/* balík 8 C · 10: Testovanie v plnej miere — len testovací režim */}
     {TESTOVACIA && krok !== "vyber" && <TestovanieRetaze onOdznova={() => { setChyst(null); setChyba(null); setKrok("nastavenie"); }} />}
   </div></Harok>;

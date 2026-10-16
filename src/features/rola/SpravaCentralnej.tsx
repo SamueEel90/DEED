@@ -19,7 +19,7 @@ import { cistyText } from "@/lib/richtext";
 import { stiahniPlagat } from "@/lib/plagatPdf";
 import { KartaModulu } from "@/features/verejny-profil/ModulProfilu";
 import { odkazQrStranky } from "@/features/verejny-profil/otvor";
-import { suhrnHlavnej, datumOmse } from "@/lib/zvoncekOmse";
+import { suhrnHlavnej, datumOmse, textRiadkuOmse } from "@/lib/zvoncekOmse";
 import { useZvoncek, podakovanieZvoncek } from "@/lib/zvoncekZbierka";
 import { useSlovaFarnosti } from "@/lib/mojeFarnosti";
 import { usePouzivatel } from "@/lib/pouzivatel";
@@ -131,7 +131,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const farnostDary: [string, string, string][] = !farnost ? [] : [
     // OPRAVY 294: skončená omša je v daroch Hlavnej (server 0096) — v Štatistikách jeden riadok s dátumom a časom
     ...darcoviaPre(idZbierky).map((r): [string, string, string] => r.omsa
-      ? [`${r.omsa.nazov}${podZv ? ` · ${podZv}` : ""}`, datumOmse(r.id), eur(r.suma)]
+      ? [textRiadkuOmse(r, podZv), datumOmse(r.id), eur(r.suma)]
       : [identitaDarcu(r, ja, "viera"), relCas(r.cas), ""]),
   ].slice(0, 3);
   const realne: [string, string, string][] = farnost ? farnostDary : darcoviaPre(idZbierky).slice(0, 3).map((r) => [identitaDarcu(r, undefined, sektor), relCas(r.cas), zobrazenaSuma(r) ?? ""]);

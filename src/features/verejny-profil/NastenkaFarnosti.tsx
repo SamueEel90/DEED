@@ -74,7 +74,7 @@ import { useLayout } from "@/components/context";
 import "@/styles/nastenka.css";
 import { useObrazokNavrhu, type PayloadEditora } from "@/components/EditorOznameni";
 import { ParteMedailon, ZnackaReakcie, TvarOznamu, PARTE, SVADBA, JUBILEUM, BLAHOZELANIE, ZAKLAD, BORDOVA, symbolCirkvi, kickerTvaru, SERIF_TVARU, type Paleta } from "./Medailony";
-import { Darcovia } from "@/features/zbierka/Riadky";
+import { Darcovia, TextOmse } from "@/features/zbierka/Riadky";
 import { useQrObrazok } from "@/lib/qrObrazok";
 import { useAutorNaStranke, type AutorF } from "@/lib/autorFarnosti";
 import { DNI_UH, casyUH, maUH, textCasu } from "@/lib/uradneHodiny";
@@ -2011,7 +2011,7 @@ function DarcoviaDetailu({ refId, n, ukoncena }: { refId: string; n: number; /**
       </div>
       {dary.length === 0 && <span style={{ fontSize: 15, color: INK3, padding: "10px 0", borderTop: `1px solid ${LINKA}` }}>Zatiaľ tu nie je žiadny dar.</span>}
       {zobraz.map((d) => <span key={d.id} style={{ display: "flex", alignItems: "baseline", gap: 10, padding: "10px 0", borderTop: `1px solid ${LINKA}`, fontSize: 15.5 }}>
-        <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{identitaDarcu(d, ja, "viera")}</span>
+        <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.omsa ? <TextOmse r={d} /> /* OPRAVY 319: omša s poďakovaním */ : identitaDarcu(d, ja, "viera")}</span>
         {(d.omsa || ukazSumy) && zobrazenaSuma(d) && <b style={{ flex: "none", fontVariantNumeric: "tabular-nums" }}>{zobrazenaSuma(d)}</b>}
         <span style={{ flex: "none", fontSize: 13.5, color: INK3 }}>{relCas(d.cas)}</span>
       </span>)}

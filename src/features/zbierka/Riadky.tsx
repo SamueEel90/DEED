@@ -11,6 +11,7 @@ import { vycerpane, zostatok, type Dorovnanie } from "@/lib/dorovnanie";
 import type { Oblubeny } from "@/types";
 import { sumaEur } from "@/lib/suma";
 import { useZvoncek, podakovanieZvoncek } from "@/lib/zvoncekZbierka";
+import { textRiadkuOmse } from "@/lib/zvoncekOmse";
 import { useSlovaFarnosti } from "@/lib/mojeFarnosti";
 
 const eK = (n: number) => `${sumaEur(n)}`;
@@ -163,9 +164,10 @@ function spojPary(r: DarRiadok[]): Par[] {
 }
 const sumaVZozname = (r: DarRiadok) => r.omsa ? eK(r.suma) : (r.firma || (r.registrovany && r.zobrazSumu)) && r.suma > DARCOVIA_CFG.prahSumy ? eK(r.suma) : null;
 /** OPRAVY 294: „Ranná omša 6:00 · Pán Boh zaplať“ — poďakovanie podľa farnosti (zvončeková / cirkev) */
-function TextOmse({ omsa }: { omsa: NonNullable<DarRiadok["omsa"]> }) {
-  const pod = podakovanieZvoncek(useZvoncek(omsa.stranka), useSlovaFarnosti(omsa.stranka));
-  return <>{omsa.nazov}{pod ? ` · ${pod}` : ""}</>;
+export function TextOmse({ r }: { r: DarRiadok }) {
+  const st = r.omsa?.stranka ?? "";
+  const pod = podakovanieZvoncek(useZvoncek(st), useSlovaFarnosti(st));
+  return <>{textRiadkuOmse(r, pod)}</>;
 }
 
 export function Darcovia({ refId, nadpis = "DARCOVIA", cezTvorcu, bezDorovnania, skoncena }: { refId: string; nadpis?: string; cezTvorcu?: string; /** KARTA 46 · modul bez dorovnania firmy: bez zlatých riadkov firmy */ bezDorovnania?: boolean; /** ukončená zbierka: bez „rastie naživo" */ skoncena?: boolean }) {
@@ -191,7 +193,7 @@ export function Darcovia({ refId, nadpis = "DARCOVIA", cezTvorcu, bezDorovnania,
       {zobraz.map(({ darca, firma }, i) => (
         <div key={darca.id} className={i === 0 ? "zb-novy-riadok" : undefined} style={{ borderTop: "1px solid var(--cardBd)", padding: "10px 0" }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-            <span style={{ flex: 1, minWidth: 0, fontSize: 14.5, fontWeight: 700, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{darca.omsa ? <TextOmse omsa={darca.omsa} /> : identitaDarcu(darca, ja, sektor)}</span>
+            <span style={{ flex: 1, minWidth: 0, fontSize: 14.5, fontWeight: 700, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{darca.omsa ? <TextOmse r={darca} /> : identitaDarcu(darca, ja, sektor)}</span>
             {(ukazSumy || darca.omsa) && sumaVZozname(darca) && <span style={{ fontSize: 14.5, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{sumaVZozname(darca)}</span>}
             <span style={{ width: 70, textAlign: "right", fontSize: 12, color: "var(--ink4)", flex: "none" }}>{relCas(darca.cas)}</span>
           </div>
