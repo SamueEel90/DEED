@@ -615,11 +615,13 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
       : um1 ? ["Úmysel je zapísaný ✓", "Ide len farárovi. Na stránke ho nikto nevidí. Farár vám potvrdí čas omše."]
       : [v.upravene ? "Zmeny sú uložené ✓" : "Zverejnené ✓", `${druhT(v.druh)} je na stránke farnosti v ${b?.[1] ?? "Oznamy farnosti"}.`];
     const ok1 = !v.caka;
-    return <div role="status" style={{ margin: 16, padding: 16, borderRadius: 14, display: "flex", flexDirection: "column", gap: 12, background: ok1 ? "#E3EDDA" : "var(--goldBg)", border: `2px solid ${ok1 ? "#4B7A35" : ZLATA}`, color: "#1D211B" }}>
-      <b style={{ fontSize: 22, fontWeight: 800, color: ok1 ? "#2F5A22" : "#6B5214" }}>{t}</b>
-      <span style={{ fontSize: 15.5, lineHeight: 1.45 }}>{s0}</span>
+    // OPRAVY 329: plný kontrast v oboch režimoch (pevné farby, nie premenné pozadia) — čaká: tmavozlatá karta, nadpis #E2C27A, text #F2EDE2
+    const ink = ok1 ? "#1D211B" : "#F2EDE2";
+    return <div role="status" style={{ margin: 16, padding: 18, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12, background: ok1 ? "#E3EDDA" : "#2A2214", border: `2px solid ${ok1 ? "#4B7A35" : ZLATA}`, color: ink }}>
+      <b style={{ fontSize: 22, fontWeight: 800, color: ok1 ? "#2F5A22" : "#E2C27A" }}>{t}</b>
+      <span style={{ fontSize: 15.5, lineHeight: 1.45, color: ink }}>{s0}</span>
       {ok1 && !um1 && <button type="button" onClick={() => { const id = v.id; zavri(); onPozriet(id); }} style={{ minHeight: 58, border: "none", borderRadius: 14, background: ZELENA, color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 18, fontWeight: 800 }}>Pozrieť na stránke ›</button>}
-      <button type="button" onClick={zavri} style={{ minHeight: 52, borderRadius: 14, border: "1.5px solid var(--cardBd)", background: "transparent", color: "var(--ink)", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800 }}>Hotovo · späť na stránku farnosti</button>
+      <button type="button" onClick={zavri} style={{ minHeight: 56, borderRadius: 14, border: `1.5px solid ${ok1 ? "#4B7A35" : ZLATA}`, background: "transparent", color: ink, cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800 }}>Hotovo · späť na stránku farnosti</button>
     </div>;
   };
   // KARTA 57C §2: formulár nad stránkou — hore „‹ Späť na stránku farnosti", stránka presvitá
@@ -632,7 +634,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
       </div>
       <div className="sc-tokeny" style={{ position: "relative", flex: 1, minHeight: 0, width: "100%", maxWidth: 520, borderRadius: 20, overflow: "hidden", background: "var(--bg)", color: "var(--ink)", display: "flex", flexDirection: "column" }}>
         <div style={{ flex: "none", padding: "14px 16px 10px", borderBottom: "1px solid var(--cardBd)" }}><b style={{ fontSize: 19 }}>{edId ? `Upraviť · ${T?.t ?? ""}` : T?.t}</b></div>
-        {vys ? <div style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>{kartaVysledku(vys)}</div> : <>
+        {vys ? <div style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", justifyContent: "center" }}>{/* OPRAVY 329: karta v strede okna, nie pod prázdnou plochou */}{kartaVysledku(vys)}</div> : <>
         <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
           <div style={{ padding: "8px 16px 24px", display: "flex", flexDirection: "column", gap: 14 }}>{formular}</div>
         </div>

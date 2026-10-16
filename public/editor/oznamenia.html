@@ -1211,6 +1211,11 @@ const _ie=window.initEditor;window.initEditor=function(){NAVRAT=false;KOK=false;
 .hk-hl>div:last-child{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
 .hk-t{font-size:22px;font-weight:800;color:#2F5A22}
 .hk-chyba .hk-t{color:#A34A2A}
+/* OPRAVY 329: Odoslané · čaká na schválenie — tmavozlatá karta, plný kontrast */
+.hk-ok.hk-cak{background:#2A2214;border:2px solid #C9A24A;color:#F2EDE2}
+.hk-cak .hk-t{color:#E2C27A}
+.hk-cak .hk-s{color:#F2EDE2}
+#hkSpat{min-height:56px}
 .hk-s{font-size:15.5px;line-height:1.45}
 .hk-mini{width:72px;height:108px;flex:none;overflow:hidden;position:relative;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,.18);background:#fff}
 .hk-mini .parte{position:absolute;left:0;top:0;transform-origin:0 0;box-shadow:none;max-width:none}
@@ -1241,7 +1246,7 @@ function karta(){postav();const k=$("hotKarta"),typ=TYP[st.typ]||"Oznámenie",bl
  if(ULOZ==="caka"){k.innerHTML='<div class="hk hk-caka" role="status"><b class="hk-s">Ukladá sa…</b></div>';return}
  if(ULOZ==="chyba"){k.innerHTML='<div class="hk hk-chyba" role="alert"><b class="hk-t">Neuložilo sa</b><span class="hk-s"></span><button type="button" class="btn primary" id="hkZnova">Skúsiť znova</button></div>';
   k.querySelector(".hk-s").textContent=(VYS.chyba?VYS.chyba.replace(/\s*$/,"")+" ":"")+"Rozpísané ostáva, nič sa nestratilo.";$("hkZnova").onclick=()=>window.edZnova();return}
- k.innerHTML=`<div class="hk hk-ok" role="status"><div class="hk-hl"><div class="hk-mini" id="hkMini"></div><div><b class="hk-t">${VYS.caka?"Odoslané ✓ · čaká na schválenie farára":VYS.uprava?"Zmeny sú uložené ✓":"Zverejnené ✓"}</b><span class="hk-s"></span></div></div>${typeof CFG.onPozriet==="function"&&!VYS.caka?'<button type="button" class="btn primary" id="hkPozriet" style="min-height:58px;font-size:18px">Pozrieť na stránke ›</button>':""}</div>`;
+ k.innerHTML=`<div class="hk hk-ok${VYS.caka?" hk-cak":""}" role="status"><div class="hk-hl"><div class="hk-mini" id="hkMini"></div><div><b class="hk-t">${VYS.caka?"Odoslané ✓ · čaká na schválenie farára":VYS.uprava?"Zmeny sú uložené ✓":"Zverejnené ✓"}</b><span class="hk-s"></span></div></div>${typeof CFG.onPozriet==="function"&&!VYS.caka?'<button type="button" class="btn primary" id="hkPozriet" style="min-height:58px;font-size:18px">Pozrieť na stránke ›</button>':""}</div>`;
  k.querySelector(".hk-s").textContent=VYS.caka?"Farár ho pozrie a zverejní. Dáme vám vedieť.":`${typ} je na stránke farnosti v ${blok}.`;/* OPRAVY 310 */
  const p=$("p"),c=p.cloneNode(true);c.id="";c.style.transform="";c.style.width="420px";c.querySelectorAll(".ph").forEach(x=>x.remove());c.style.maxWidth="none";c.style.boxShadow="none";$("hkMini").appendChild(c);c.style.transformOrigin="0 0";c.style.transform=`scale(${72/420})`;
  const pz=$("hkPozriet");if(pz)pz.onclick=()=>{try{CFG.onPozriet()}catch(e){}}}
