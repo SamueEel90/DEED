@@ -2,6 +2,7 @@
 // KARTA 56D: Správa od prvého príchodu — všetky funkcie, žiadne ukážkové dáta (prototyp „Sprava farnosti - prvy prichod").
 // Profil, logo a percento = profil_stranky (ako charita), pripnuté = sprava_piny, hlavná zbierka = profil_stranky.centralna.
 // Omše, oznamy a nastavenia farnosti z modulu Viera (stav.ts — localStorage + zrkadlo naboz_stav) pod kľúčom stránky.
+import { KartaNastavenia, IK_PORADIE } from "./KartaNastavenia";
 import { TlZbalit } from "@/features/verejny-profil/zbalit";
 import { cielSpravyPre } from "@/lib/mojeStranky";
 import { UsporiadatStranku } from "./UsporiadatStranku";
@@ -577,11 +578,8 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     popis="Jeden QR na dvere kostola. Dostali ste ho pri registrácii a nikdy sa nemení. Keď spustíte hlavnú zbierku, ten istý QR povedie rovno na ňu. Netreba nič tlačiť znova." />;
   const kick = (t: string) => <span style={mobil ? { ...kicker, letterSpacing: ".07em", padding: "4px 2px 0" } : kicker}>{t}</span>;
   // OPRAVY 292: Usporiadať stránku — v Nástrojoch, nie v Nastaveniach (aby si farár omylom nič nepokazil)
-  const usporiadatKarta = (
-    <button type="button" onClick={() => setUspOtv(true)} style={{ ...karta, borderRadius: mobil ? 18 : 22, padding: mobil ? "12px 14px" : "16px 20px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none", width: "100%" }}>
-      <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15.5 }}>Usporiadať stránku</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>poradie blokov, ukázať alebo skryť, nadpisy · pre všetky vzhľady</span></span>
-      <span aria-hidden="true" style={{ flex: "none", fontSize: 18, color: "var(--ink3)" }}>›</span>
-    </button>);
+  // OPRAVY 324: zlatá karta nástroja (rovnaká ako Čo môžu veriaci pridávať), nie riadok ako štatistiky
+  const usporiadatKarta = <KartaNastavenia nadpis="Usporiadať stránku" stav="Poradie blokov, ukázať alebo skryť, nadpisy · pre všetky vzhľady" tlacidlo="Usporiadať" ikona={IK_PORADIE} mobil={mobil} onClick={() => setUspOtv(true)} />;
   const nastroje = uspOtv ? <UsporiadatStranku strankaId={strankaId} mobil={mobil} onSpat={() => setUspOtv(false)} />
     : <>{nadpis("Nástroje a štatistiky", "Sledujúci, darcovia, QR do kostola, viditeľnosť súm")}{kick("ŠTATISTIKY")}{statistikyL}{kick("NÁSTROJE")}{usporiadatKarta}{qrFarnosti}{viditKarta}{nastrojeL}</>;
   // KARTA 57 B.4: Peňaženka je hore v Nastaveniach (z menu PC vypadla)
