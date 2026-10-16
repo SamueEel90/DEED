@@ -19,7 +19,7 @@ import { Lupa } from "@/components/icons";
 import { MDlazdica, MIkona, MLista, MNadpis, PasX, Sipky, sirkaKarty, useAspon, usePas, type MBlokId } from "./ModerneFarnosti";
 import { KartaMiesta, najblizsiaOmsa, NaseKostolyBlok, PodstrankaMiesta, otvorKostolPoPrichode, vezmiCakajuciKostol } from "./NaseKostoly";
 import { uradneUdaje } from "@/lib/uradneUdaje";
-import { OknoUpozorneni, type CielUpozorneni } from "./OknoUpozorneni";
+import { OknoUpozorneni, useCoChodi, type CielUpozorneni } from "./OknoUpozorneni";
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
 import { useUsporiadanie, nadpisBloku as nadpisUsp, viditelne, type BlokStranky } from "@/lib/usporiadanieStranky";
 import { useZvoncek, nazovZvoncek, ZVONCEK_TEXT } from "@/lib/zvoncekZbierka";
@@ -29,7 +29,7 @@ import { cistyText, jeHtmlText } from "@/lib/richtext";
 import { FormatovanyText } from "@/components/formattext";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { useMojeStranky } from "@/lib/mojeStranky";
-import { CIRKVI, useMojeFarnosti, useSlovaFarnosti, pridajSledovanu, odstranSledovanu, nazovFarnosti, otvorAdresar, sledujemKostol, sledujKostol, prestanKostol, nastavMojKostol, type SledovanyKostol } from "@/lib/mojeFarnosti";
+import { CIRKVI, useMojeFarnosti, useSlovaFarnosti, pridajSledovanu, odstranSledovanu, nazovFarnosti, otvorAdresar, sledujemKostol, sledujKostol, prestanKostol, nastavMojKostol, farnostiSuhrn, nastavFarnostiSuhrn, blokyFarnosti, blokyKostola, type SledovanyKostol } from "@/lib/mojeFarnosti";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
 import { otvorVerejnyProfil, odkazQrStranky } from "./otvor";
 import { nacitajVerejne } from "@/lib/verejneNastavenia";
@@ -1731,7 +1731,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
           </>; })()}
         </div>
       </div>, document.body)}
-      {upoz && <OknoUpozorneni ciel={upoz} onZavri={() => setUpoz(null)} />}
+      {upoz && <OknoUpozorneni ciel={upoz} onZavri={() => setUpoz(null)} onUlozene={(t) => toast(t)} />}
       {mfOn && <MojeFarnostiOkno strankaId={strankaId} domovska={MF.domovska} sled={MF.sled} kostoly={MF.kostoly} mojKostol={MF.mojKostol} onKostol={setMiestoId} hlaska={mfHl}
         onHlaska={(t) => { setMfHl(t); window.setTimeout(() => setMfHl(null), 3000); }} onZavri={() => setMfOn(false)} />}
     </div></VideneKontext.Provider>);
@@ -2146,7 +2146,10 @@ function DetailZbierky({ d, strankaId, onZavri }: { d: DetailF; strankaId: strin
 /** KARTA 60 §3 — okno Moje farnosti (tlačidlo Moja farnosť ⌄ / Sledovaná farnosť ⌄ na stránke farnosti) */
 function MojeFarnostiOkno({ strankaId, domovska, sled, kostoly, mojKostol, onKostol, hlaska, onHlaska, onZavri }: { strankaId: string; domovska: string | null; sled: string[];
   /** KARTA 62 */ kostoly: SledovanyKostol[]; mojKostol: string | null; onKostol: (miesto: string) => void; hlaska: string | null; onHlaska: (t: string) => void; onZavri: () => void }) {
-  useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === "Escape") onZavri(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onZavri]);
+  // OPRAVY 298: pri každej farnosti a kostole „Upozornenia: … ›“ = okno O čom vám dáme vedieť (to isté ako po Sledovať)
+  const [upozM, setUpozM] = useState<CielUpozorneni | null>(null);
+  useEffect(() => { if (upozM) return; const k = (e: KeyboardEvent) => { if (e.key === "Escape") onZavri(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onZavri, upozM]);
+  const suhrn = farnostiSuhrn();
   const riadky: [string, boolean][] = [...(domovska ? [[domovska, true] as [string, boolean]] : []), ...sled.map((id) => [id, false] as [string, boolean])];
   return createPortal(
     <div onClick={onZavri} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(20,17,11,.45)", display: "flex", alignItems: "flex-start", justifyContent: "flex-end", padding: 20, boxSizing: "border-box", fontFamily: "'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif", ...PREMENNE }}>
@@ -2155,17 +2158,25 @@ function MojeFarnostiOkno({ strankaId, domovska, sled, kostoly, mojKostol, onKos
           <b style={{ flex: 1, fontSize: 22 }}>Moje farnosti</b>
           <button type="button" onClick={onZavri} autoFocus style={{ minHeight: 48, padding: "0 16px", borderRadius: 12, border: `1px solid ${LINKA}`, background: PAPIER, fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer", color: INK }}>× Zavrieť</button>
         </div>
+        {/* OPRAVY 298 (1b): Spolu najviac 1 správa denne */}
+        <button type="button" role="switch" aria-checked={suhrn} onClick={() => { nastavFarnostiSuhrn(!suhrn); onHlaska(!suhrn ? "Uložené ✓ najviac 1 správa denne" : "Uložené ✓ správy prídu hneď"); }}
+          style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 14, border: `1px solid ${LINKA}`, background: PAPIER, fontFamily: "inherit", textAlign: "left", cursor: "pointer", color: INK, boxShadow: "none" }}>
+          <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15.5 }}>Spolu najviac 1 správa denne</b><span style={{ fontSize: 13, color: INK3 }}>súhrn zo všetkých farností · zrušená omša a parte hneď</span></span>
+          <span aria-hidden="true" style={{ position: "relative", width: 50, height: 30, borderRadius: 15, background: suhrn ? "#4B7A35" : LINKA, flex: "none", transition: "background .2s" }}>
+            <span style={{ position: "absolute", top: 3, left: 3, width: 24, height: 24, borderRadius: "50%", background: "#fff", transform: `translateX(${suhrn ? 20 : 0}px)`, transition: "transform .2s" }} /></span>
+        </button>
         {riadky.map(([id, hl]) => { const tu = id === strankaId; return (
           <div key={id} style={{ padding: "10px 12px", borderRadius: 14, border: tu ? `2px solid ${ZELENA}` : `1px solid ${LINKA}`, background: tu ? "var(--nf-gSoft)" : PAPIER, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <button type="button" onClick={() => { onZavri(); if (!tu) otvorVerejnyProfil(id); }} style={{ flex: "1 1 180px", minWidth: 0, minHeight: 48, textAlign: "left", border: "none", background: "transparent", padding: 0, cursor: "pointer", display: "flex", flexDirection: "column", justifyContent: "center", gap: 2, color: INK, fontFamily: "inherit" }}>
               <b style={{ fontSize: 17 }}>{nazovFarnosti(id)}</b>
               <span style={{ fontSize: 14, color: hl ? "var(--nf-gInk)" : INK3 }}>{hl ? "hlavná farnosť" : "sledovaná"}{tu ? " · práve ste tu" : ""}</span>
             </button>
-            {!hl && <DrzTlacidlo ms={1200} styl={{ flex: "none", minHeight: 48, padding: "0 14px", borderRadius: 12, border: `1.5px solid ${CERVENA}`, background: PAPIER, color: CERVENA, fontSize: 14.5, fontWeight: 800 }}
-              onHotovo={() => { const n = nazovFarnosti(id); void odstranSledovanu(id).catch((e: Error) => toast(e.message)); onHlaska(`Odstránené zo sledovaných ✓ ${n}`); }}>Podržte · odstrániť</DrzTlacidlo>}
             {hl && <MojKostolVolba stranka={id} mojKostol={mojKostol} />}
+            <RiadokUpozorneni stranka={id} onTap={() => setUpozM({ stranka: id, nazovFarnosti: nazovFarnosti(id) })} />
+            {!hl && <DrzTlacidlo ms={1200} styl={odstranStyl}
+              onHotovo={() => { const n = nazovFarnosti(id); void odstranSledovanu(id).catch((e: Error) => toast(e.message)); onHlaska(`Odstránené zo sledovaných ✓ ${n}`); }}>Podržte · odstrániť</DrzTlacidlo>}
           </div>); })}
-        {kostoly.map((k) => <KostolRiadok key={`${k.stranka}|${k.miesto}`} k={k} tu={k.stranka === strankaId} onHlaska={onHlaska}
+        {kostoly.map((k) => <KostolRiadok key={`${k.stranka}|${k.miesto}`} k={k} tu={k.stranka === strankaId} onHlaska={onHlaska} onUpoz={setUpozM}
           onOtvor={() => { onZavri(); if (k.stranka === strankaId) onKostol(k.miesto); else { otvorKostolPoPrichode(k.stranka, k.miesto); otvorVerejnyProfil(k.stranka); } }} />)}
         {hlaska && <span role="status" style={{ padding: "12px 14px", borderRadius: 14, background: "var(--nf-gSoft)", border: `2px solid ${ZELENA}`, fontSize: 15.5, fontWeight: 800, color: "var(--nf-gInk)" }}>{hlaska}</span>}
         <span style={{ fontSize: 14, lineHeight: 1.5, color: INK3 }}>Domovskú zmeníte v Adresári cirkví.</span>
@@ -2175,11 +2186,24 @@ function MojeFarnostiOkno({ strankaId, domovska, sled, kostoly, mojKostol, onKos
         </button>
         <span style={{ fontSize: 14, lineHeight: 1.5, color: INK3, paddingTop: 4 }}>Ťuknite na farnosť a otvorí sa jej stránka.</span>
       </div>
+      {upozM && <OknoUpozorneni ciel={upozM} onZavri={() => setUpozM(null)} onUlozene={onHlaska} onPrestal={() => onHlaska(`Odstránené zo sledovaných ✓ ${upozM.miesto?.nazov ?? upozM.nazovFarnosti}`)} />}
     </div>, document.body);
+}
+/** OPRAVY 298: menšie „Podržte · odstrániť“ dole pod upozorneniami (nemýli sa s nastavením) */
+const odstranStyl: CSSProperties = { flex: "none", minHeight: 40, padding: "0 12px", borderRadius: 10, border: `1px solid ${CERVENA}`, background: PAPIER, color: CERVENA, fontSize: 13, fontWeight: 800 };
+/** OPRAVY 298: „Upozornenia: Oznamy, Zmeny omší, Spomíname ›“ — ťuk = okno O čom vám dáme vedieť */
+function RiadokUpozorneni({ stranka, miesto, onTap }: { stranka: string; miesto?: string; onTap: () => void }) {
+  useMojeFarnosti();
+  const co = useCoChodi(stranka, miesto ? blokyKostola(stranka, miesto) : blokyFarnosti(stranka));
+  return (
+    <button type="button" onClick={onTap} style={{ flex: "1 1 100%", minHeight: 48, padding: "8px 12px", borderRadius: 12, border: `1.5px solid ${LINKA}`, background: "#fff", fontFamily: "inherit", textAlign: "left", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, color: INK, boxShadow: "none" }}>
+      <span style={{ flex: 1, minWidth: 0, fontSize: 14.5, lineHeight: 1.35 }}><b>Upozornenia:</b> {co}</span>
+      <span aria-hidden="true" style={{ flex: "none", fontSize: 18, fontWeight: 800, color: "var(--nf-gInk)" }}>›</span>
+    </button>);
 }
 
 /** KARTA 62: riadok sledovaného kostola v okne Moje farnosti („Notre Dame · Farnosť Trenčín“) */
-function KostolRiadok({ k, tu, onOtvor, onHlaska }: { k: SledovanyKostol; tu: boolean; onOtvor: () => void; onHlaska: (t: string) => void }) {
+function KostolRiadok({ k, tu, onOtvor, onHlaska, onUpoz }: { k: SledovanyKostol; tu: boolean; onOtvor: () => void; onHlaska: (t: string) => void; onUpoz: (c: CielUpozorneni) => void }) {
   const m = useMiesta(k.stranka, true).find((x) => x.id === k.miesto);
   const n = `${m?.nazov ?? "Kostol"} · ${nazovFarnosti(k.stranka)}`;
   return (
@@ -2188,7 +2212,8 @@ function KostolRiadok({ k, tu, onOtvor, onHlaska }: { k: SledovanyKostol; tu: bo
         <b style={{ fontSize: 17 }}>{n}</b>
         <span style={{ fontSize: 14, color: INK3 }}>sledovaný kostol{tu ? " · farnosť, kde práve ste" : ""}</span>
       </button>
-      <DrzTlacidlo ms={1200} styl={{ flex: "none", minHeight: 48, padding: "0 14px", borderRadius: 12, border: `1.5px solid ${CERVENA}`, background: PAPIER, color: CERVENA, fontSize: 14.5, fontWeight: 800 }}
+      <RiadokUpozorneni stranka={k.stranka} miesto={k.miesto} onTap={() => onUpoz({ stranka: k.stranka, nazovFarnosti: nazovFarnosti(k.stranka), miesto: { id: k.miesto, nazov: m?.nazov ?? "Kostol" } })} />
+      <DrzTlacidlo ms={1200} styl={odstranStyl}
         onHotovo={() => { void prestanKostol(k.stranka, k.miesto).catch((e: Error) => toast(e.message)); onHlaska(`Odstránené zo sledovaných ✓ ${n}`); }}>Podržte · odstrániť</DrzTlacidlo>
     </div>);
 }

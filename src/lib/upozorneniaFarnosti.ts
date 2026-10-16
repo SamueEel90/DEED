@@ -36,7 +36,7 @@ export function nastavPredvoleneUpoz(stranka: string, druh: DruhUpoz, on: boolea
 
 /** blok stránky, ktorého sledujúcim upozornenie ide, a jeho názov vo vete „ktorí sledujú …“ */
 export const BLOK_VETA: Record<Blok, string> = {
-  oz: "Oznamy farnosti", om: "Zmeny a zrušenia omší", pr: "Príď a zaži s nami", po: "Pomôž", de: "Deti a mládež",
+  oz: "Oznamy farnosti", om: "Zmeny a zrušenia omší", pr: "Príď a zaži s nami", po: "Pomôž", de: "Deti a mládež", vy: "Vypočuj si",
   te: "Teš sa s nami", sp: "Spomíname", mo: "Modli sa s nami", ve: "Od veriacich", zb: "Zbierky",
 };
 /** parte a zmena omše idú hneď, ostatné v dennom súhrne */

@@ -13,12 +13,17 @@ import { zaregistrujKluc, zmenene } from "./mojeData";
 export interface SledovanyKostol { stranka: string; miesto: string; /** KARTA 63 */ bloky?: string[] }
 
 // ---- KARTA 63: o čom chce sledujúci vedieť (bloky stránky farnosti, 0087) ----
-export type Blok = "oz" | "om" | "pr" | "po" | "de" | "te" | "sp" | "mo" | "ve" | "zb";
+export type Blok = "oz" | "om" | "pr" | "po" | "de" | "vy" | "te" | "sp" | "mo" | "ve" | "zb";
+/** OPRAVY 298: všetky kategórie podľa blokov stránky, v poradí zo zadania (pribudlo Vypočuj si — server od 0098) */
 export const BLOKY: [Blok, string, string][] = [
   ["oz", "Oznamy farnosti", "nedeľné oznamy a dôležité správy"], ["om", "Zmeny a zrušenia omší", "príde hneď"], ["pr", "Príď a zaži s nami", "akcie, púte, koncerty"],
-  ["po", "Pomôž", "brigády a dobrovoľníci"], ["de", "Deti a mládež", "stretká, miništranti, tábory"], ["te", "Teš sa s nami", "svadby, jubileá, blahoželania"],
-  ["sp", "Spomíname", "parte · príde hneď"], ["mo", "Modli sa s nami", "prosby o modlitbu"], ["ve", "Od veriacich", "čo pridali ostatní"], ["zb", "Zbierky", "nová zbierka a míľniky"],
+  ["po", "Pomôž", "brigády a dobrovoľníci"], ["de", "Deti a mládež", "stretká, miništranti, tábory"], ["vy", "Vypočuj si", "príhovory a nahrávky"],
+  ["mo", "Modli sa s nami", "prosby o modlitbu"], ["te", "Teš sa s nami", "svadby, jubileá, blahoželania"], ["sp", "Spomíname", "parte · príde hneď"],
+  ["ve", "Od veriacich", "čo pridali ostatní"], ["zb", "Zbierky", "nová zbierka a míľniky"],
 ];
+/** OPRAVY 298: blok upozornení → blok stránky (premenovaný nadpis z Usporiadať stránku, bod 292); omše nemajú blok */
+export const BLOK_STRANKY: Partial<Record<Blok, "ozn" | "prid" | "pom" | "deti" | "vyp" | "mod" | "tes" | "spom" | "ver" | "zbierky">> = {
+  oz: "ozn", pr: "prid", po: "pom", de: "deti", vy: "vyp", mo: "mod", te: "tes", sp: "spom", ve: "ver", zb: "zbierky" };
 /** kostol má len bloky svojej podstránky (oznamy, omše, akcie, zbierka na miesto) */
 export const BLOKY_KOSTOLA: Blok[] = ["oz", "om", "pr", "zb"];
 export const PREDVOLENE_FARNOST: Blok[] = ["oz", "om", "sp"], PREDVOLENE_KOSTOL: Blok[] = ["oz", "om"];
@@ -145,7 +150,12 @@ export const blokyKostola = (stranka: string, miesto: string): string[] => stav.
 export async function nastavBloky(stranka: string, miesto: string | null, bloky: string[]): Promise<void> {
   if (miesto === null) nastav({ ...stav, bloky: { ...stav.bloky, [stranka]: bloky } });
   else nastav({ ...stav, kostoly: stav.kostoly.map((k) => (k.stranka === stranka && k.miesto === miesto ? { ...k, bloky } : k)) });
-  if (supabase) { const { error } = await supabase.rpc("nastav_bloky", { p_stranka: stranka, p_miesto: miesto, p_bloky: bloky }); chyba(error); }
+  if (supabase) {
+    let { error } = await supabase.rpc("nastav_bloky", { p_stranka: stranka, p_miesto: miesto, p_bloky: bloky });
+    // OPRAVY 298: kým nebeží 0098, server nepozná Vypočuj si — ostatné sa uložia, Vypočuj si len na tomto zariadení
+    if (error && bloky.includes("vy")) ({ error } = await supabase.rpc("nastav_bloky", { p_stranka: stranka, p_miesto: miesto, p_bloky: bloky.filter((b) => b !== "vy") }));
+    chyba(error);
+  }
 }
 /** Profil → Upozornenia → Moje farnosti: „Spolu najviac 1 správa denne“ (moje_data, server podľa neho skladá súhrn) */
 const KLUC_SUHRN = "deed.farnostiSuhrn";
