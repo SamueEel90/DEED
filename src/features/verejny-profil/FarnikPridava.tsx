@@ -32,7 +32,6 @@ import { toast } from "@/shared";
 import { useLayout } from "@/components/context";
 import { ZdrojFotiekKontext, zdrojMoje } from "@/components/VyberZGalerie";
 import { mojeFotky } from "@/lib/galeriaFotiek";
-import { useRamPisania } from "@/components/RamPisania";
 import { CelaGaleria } from "@/components/celaGaleria";
 import { nacitajKoncept, ulozKoncept, zmazKoncept, useUkladajKoncept } from "@/lib/koncept";
 import { MateRozpisane, ZahoditRozpisane } from "@/components/RamPisania";
@@ -274,7 +273,6 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   const [sheet, setSheet] = useState(false);
   const fabRez = useFabRezim();
   useEffect(() => { const f = () => setSheet(true); window.addEventListener("deed:farnik-pridaj", f); return () => window.removeEventListener("deed:farnik-pridaj", f); }, []);
-  const [galOtv, setGalOtv] = useState(false); // OPRAVY 212: galéria pri svadbe a jubileu
   const [k, setK] = useState<DruhFarnika | null>(null);
   const [edId, setEdId] = useState<string | null>(null);
   const [f, setF] = useState<FormularVeriaceho>(prazdnyF);
@@ -323,7 +321,6 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   const mojKluc = klucJa(ja);
   const zdrojFotiek = useMemo(() => zdrojMoje(() => mojeFotky(strankaId, mojKluc)), [strankaId, mojKluc]);
   useZamokVrstvy(!!k); // OPRAVY 240: stránka pod formulárom sa neposúva
-  const ramOn = useRamPisania(); // OPRAVY 258: Editor oznámení na mobile v ráme na celú obrazovku
   // OPRAVY 271: rozpísaný príspevok (oznam, udalosť, úmysel, modlitba, fotky) ostane na zariadení, kým sa nezverejní alebo nezahodí
   const KONV = `veriaci.${strankaId}`;
   const maObsahV = !!(f.nad.trim() || cistyText(f.txt).trim() || f.datum || f.cas || f.kde.trim() || media.length);
@@ -338,7 +335,6 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   const fotky = media.filter((m) => m.typ === "foto");
   const kto = klucJa(ja);
   const jeEd = !!k && CEZ_EDITOR.includes(k);
-  const galeriaEd = k === "svadba" || k === "ine";
   const pz = f.pozv as 0 | 1 | 2;
   const limitN = pz === 2 ? parseInt(f.limit, 10) || undefined : undefined;
 
@@ -594,14 +590,6 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
 
   const um = k === "umysel";
   // ---- Editor oznámení (parte, svadba, jubileum): PC v okne, OPRAVY 258 mobil a tablet na výšku v ráme na celú obrazovku ----
-  const galRiadok = <>
-    {/* OPRAVY 212: tá istá galéria ako všade, s popisom fotky */}
-    <button type="button" onClick={() => setGalOtv((o) => !o)} aria-expanded={galOtv} style={{ width: "100%", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 8, textAlign: "left", color: "var(--ink)" }}>
-      <b style={{ flex: 1, fontSize: 15 }}>Fotky · nepovinné{fotky.length ? ` · ${fotiekT(fotky.length)}` : ""}</b>
-      <span aria-hidden="true" style={{ fontSize: 16, color: "var(--ink3)" }}>{galOtv ? "⌃" : "⌄"}</span>
-    </button>
-    {galOtv && <GaleriaEditor media={media} onMedia={setMedia} ph={mobil} max={8} bezVidea nadpis="Fotky" dovetok=" Ukážu sa po ťuknutí na oznámenie. Pod fotku môžete napísať popis." />}
-  </>;
   // OPRAVY 299: ten istý komponent rozhodne sám — mobil rám na celú obrazovku, PC okno s živým náhľadom
   const editorEl = (ram: { extra?: ReactNode; vrstva?: ReactNode }) => k && (
     <EditorOznameni ref={edRef} title={T?.t} onSend={(p) => { void naEditor(p); }} onUdalost={(e) => zapisEditora({ udalost: e.akcia, typ: TYP_EDITORA[k]!, papier: e.papier ?? null, ...kdeStat })}
@@ -626,7 +614,8 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   };
   // KARTA 57C §2: formulár nad stránkou — hore „‹ Späť na stránku farnosti", stránka presvitá
   // OPRAVY 331: na mobile rovnaká cesta ako parte — fotka sa vyberá na 1. strane editora (Vybrať fotku), nie v páse nad ním
-  const okno = jeEd ? editorEl({ extra: galeriaEd && !ramOn ? <div style={{ padding: "8px 16px", borderBottom: ramOn ? "1px solid var(--cardBd)" : undefined }}>{galRiadok}</div> : undefined })
+  // OPRAVY 334: v editore len 1 fotka (tá v šablóne) — pás Fotky nad editorom aj na PC preč; uložené fotky starších oznámení ostávajú
+  const okno = jeEd ? editorEl({})
     : k && createPortal(
     <div role="dialog" aria-modal="true" aria-label={T?.t} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(20,17,11,.82)", overscrollBehavior: "contain", display: "flex", flexDirection: "column", alignItems: "center", gap: mobil ? 10 : 12, padding: mobil ? "calc(10px + env(safe-area-inset-top, 0px)) 10px 10px" : 16, boxSizing: "border-box" }}>
       <div style={{ width: "100%", maxWidth: 520, flex: "none", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
