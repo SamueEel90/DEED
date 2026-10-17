@@ -47,6 +47,8 @@ export interface NovaZbierkaData {
   /** KARTA 56E · migrácia 0065: split zbierky s overovateľom — server ho pri zapečatení zapíše do zbierka_podiel
    *  a každý dar (zbierka_dar) z neho vytvorí podiely v ledgeri. Podiely sú zlomky, súčet 1. */
   rozdelenie?: PodielZbierky[];
+  /** OPRAVY 338 · migrácia 0104: id osobného overenia príjemcu (sken QR + kód) — server podľa neho pustí registrovaný účet */
+  overenie_prijemcu?: string;
 }
 export type PodielZbierky =
   | { druh: "prijemca"; ucet: string; text: string; podiel: number }

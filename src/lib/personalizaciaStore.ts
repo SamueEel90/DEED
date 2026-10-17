@@ -249,7 +249,12 @@ export async function nacitajZbierkyDB(): Promise<MojaZbierka[]> {
   // 0037: vyzbierané nie je zapísané číslo — pohľad zbierka_moja ho počíta z ledgera
   const { data, error } = await supabase.from("zbierka_moja").select("*").order("vytvorene", { ascending: false });
   if (error) throw error;
-  return (data || []).map(riadokNaZbierka);
+  // OPRAVY 338 · 0104: aj zbierky, kde som príjemca (pohreb, svadba — zbierku založil a overil farár)
+  const p = await supabase.rpc("moje_zbierky_prijemcu");
+  const moje = (data || []) as Parameters<typeof riadokNaZbierka>[0][];
+  const prijate = ((p.error ? [] : p.data) || []) as Parameters<typeof riadokNaZbierka>[0][];
+  const ids = new Set(moje.map((r) => r.id));
+  return [...moje, ...prijate.filter((r) => !ids.has(r.id))].map(riadokNaZbierka);
 }
 
 /** Vloží novú zbierku (pouzivatel = auth.uid() cez default). Duplikát id ignoruj. */
@@ -268,6 +273,14 @@ export async function vytvorZbierkuDB(z: MojaZbierka): Promise<void> {
 /** Upraví zbierku (ukončiť / doklady / poďakovanie) — owner-only. */
 export async function upravZbierkuDB(id: string, patch: Partial<MojaZbierka>): Promise<void> {
   if (!supabase) return;
+  // OPRAVY 338: ukončenie cez ukonci_zbierku (0090/0104) — smie zakladateľ, správca stránky aj príjemca zbierky
+  if (patch.stav === "ukoncena") {
+    const r = await supabase.rpc("ukonci_zbierku", { p_id: id });
+    if (r.error) throw r.error;
+    const { stav: _s, ...zvysok } = patch; void _s;
+    if (Object.keys(zvysok).length === 0) return;
+    patch = zvysok;
+  }
   const row: Record<string, unknown> = { upravene: new Date().toISOString() };
   if (patch.stav !== undefined) row.stav = patch.stav;
   if (patch.doklady !== undefined) row.doklady = patch.doklady;
