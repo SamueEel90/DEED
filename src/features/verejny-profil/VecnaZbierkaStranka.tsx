@@ -5,6 +5,7 @@
 import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { FormatovanyText } from "@/components/formattext";
+import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { nacitajPredvolbu, ulozPredvolbu, useSektorDarcu, volbaBezMena, relCas, type VerziaIdentity } from "@/lib/darcovia";
@@ -130,7 +131,8 @@ export function VecnaDarca({ strankaId, z, org, onZavri, onPozriet, onPrihlasit 
           <button type="button" onClick={() => setMenit((x) => !x)} aria-expanded={menit} style={{ minHeight: 52, padding: "0 14px", borderRadius: 14, border: `1.5px solid ${LINKA}`, background: "transparent", color: INK, cursor: "pointer", fontFamily: "inherit", fontSize: 15, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, textAlign: "left" }}>
             <span>Zapíšete sa ako <b>{meno}</b></span><span style={{ flex: "none", color: "var(--nf-gInk)", fontWeight: 800 }}>{menit ? "Zbaliť ⌃" : "Zmeniť ›"}</span></button>
           {menit && <div role="radiogroup" aria-label="Ako sa zapíšete" style={{ display: "flex", flexDirection: "column", gap: 6 }}>{moznosti.map(([v, t]) => <button key={v} type="button" role="radio" aria-checked={v === volba.verzia} onClick={() => vyber(v)} style={{ ...chip(v === volba.verzia), textAlign: "left", padding: "0 14px", fontSize: 15.5 }}>{t}</button>)}</div>}
-          {chyba && <span role="alert" style={{ padding: "12px 14px", borderRadius: 14, background: "#F6E3DC", border: "1.5px solid #A34A2A", color: "#7A2E16", fontSize: 14.5, fontWeight: 800, lineHeight: 1.45 }}>{chyba}</span>}
+          {/* OPRAVY 335: chyba priamo nad tlačidlom (na mobile aj okno) */}
+          <ChybaPriTlacidle text={chyba || null} uklada={uklada} onZnova={() => { void zapis(); }} nadpis="Nezapísalo sa" />
           <div style={{ ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo label={uklada ? "Zapisujem…" : "Podržte · daroval som"} trvanie={1000} disabled={uklada} onConfirm={() => { void zapis(); }} /></div>
         </> : <>
           <span role="status" style={{ padding: "12px 14px", borderRadius: 14, background: KARTA, fontSize: 15, lineHeight: 1.5, color: INK }}>Bez prihlásenia sa zapísať nedá. Po prihlásení sa vrátite sem a zapíšete sa.</span>

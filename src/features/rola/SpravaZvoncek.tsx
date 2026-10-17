@@ -13,6 +13,7 @@ import { useSlovaFarnosti } from "@/lib/mojeFarnosti";
 import { useZvoncek, ulozZvoncek, nastavenieZvoncek, nazovZvoncek, podakovanieZvoncek, ZVONCEK_NAZOV, type NastavenieZvoncek } from "@/lib/zvoncekZbierka";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { HLAVNA_NAZOV_MAX } from "@/lib/centralnaZbierka";
+import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { ZvoncekKarta } from "@/features/verejny-profil/NastenkaFarnosti";
 import { TextovePolia, GaleriaEditor } from "./obsahZbierky";
@@ -35,6 +36,19 @@ export function SpravaZvoncek({ strankaId, mobil, toast, onSpat }: { strankaId: 
   useEffect(() => () => window.clearTimeout(tm.current), []);
   // OPRAVY 313: po každej zmene pri poli „Uložené ✓“ (alebo „Neuložilo sa · Skúsiť znova“), dole pás Všetko je uložené
   const u = useUkladanie();
+  const [chybaUk, setChybaUk] = useState<string | null>(null);
+  const [ukl, setUkl] = useState(false);
+  const ukonci = async () => {
+    if (ukl) return;
+    const kon = !n.ukoncena;
+    setUkl(true); setChybaUk(null);
+    let e: string | null;
+    try { e = await ulozZvoncek(strankaId, { ...n, ukoncena: kon }); } catch (x) { e = x instanceof Error ? x.message : "Neuložilo sa. Skúste znova."; }
+    setUkl(false);
+    if (e) { setChybaUk(e); return; }
+    setHotovo(kon ? `${nazovZvoncek(n)} je ukončená ✓` : `${nazovZvoncek(n)} beží ✓`);
+    tm.current = window.setTimeout(onSpat, 1800);
+  };
   const zmen = (p: Partial<NastavenieZvoncek>, pole: string) => u.sleduj([pole], ulozZvoncek(strankaId, { ...n, ...p }), () => ulozZvoncek(strankaId, nastavenieZvoncek(strankaId)));
   const dalsia = dalsiaOmsa(om.okno, strankaId);
 
@@ -118,13 +132,10 @@ export function SpravaZvoncek({ strankaId, mobil, toast, onSpat }: { strankaId: 
           ? "Na stránke farnosti sa neukazuje. Keď ju spustíte znova, ukáže sa s tým istým názvom, textom a fotkami."
           : `Na stránke farnosti sa prestane ukazovať. Čo sa vyzbieralo (${eur(spolu)}), ostáva v Hlavnej zbierke, nič sa nevracia.`}</span>
         <div style={{ ["--gGrad" as string]: n.ukoncena ? "linear-gradient(90deg,#4B7A35,#8DB866)" : undefined }}>
-          <PodrzTlacidlo label={n.ukoncena ? "Podržte a spustite znova" : "Podržte a ukončite"} trvanie={1500}
-            onConfirm={() => {
-              const kon = !n.ukoncena;
-              zmen({ ukoncena: kon }, "ukoncenie");
-              setHotovo(kon ? `${nazovZvoncek(n)} je ukončená ✓` : `${nazovZvoncek(n)} beží ✓`);
-              tm.current = window.setTimeout(onSpat, 1800);
-            }} />
+          {/* OPRAVY 335: hotovo až po uložení; chyba priamo nad tlačidlom */}
+          <ChybaPriTlacidle text={chybaUk} uklada={ukl} onZnova={() => { void ukonci(); }} />
+          <PodrzTlacidlo label={ukl ? "Ukladá sa…" : n.ukoncena ? "Podržte a spustite znova" : "Podržte a ukončite"} trvanie={1500}
+            onConfirm={() => { void ukonci(); }} />
         </div>
         <span style={drobneK}>Držte prst na tlačidle, kým sa nenaplní.</span>
       </section>;

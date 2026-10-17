@@ -26,6 +26,7 @@ import { odkazQrStranky } from "./otvor";
 import { TextOznamu } from "@/features/rola/OznamyFarnosti";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
 import { EditorOznameni, type EditorApi, type PayloadEditora, type TypEditora } from "@/components/EditorOznameni";
+import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { zapisEditora, zapisZPayloadu } from "@/lib/editorStat";
 import { toast } from "@/shared";
@@ -279,6 +280,8 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   useEffect(() => { const f = () => setSheet(true); window.addEventListener("deed:farnik-pridaj", f); return () => window.removeEventListener("deed:farnik-pridaj", f); }, []);
   const [k, setK] = useState<DruhFarnika | null>(null);
   const [varIne, setVarIne] = useState<VarIne>("blahozelanie");
+  // OPRAVY 335: chyba uloženia priamo nad tlačidlom (na mobile aj okno), rozpísané aj fotky ostávajú
+  const [chybaUl, setChybaUl] = useState<string | null>(null);
   const [edId, setEdId] = useState<string | null>(null);
   const [f, setF] = useState<FormularVeriaceho>(prazdnyF);
   const [txtKey, setTxtKey] = useState(0);
@@ -301,7 +304,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   /** OPRAVY 315: krátky formulár po odoslaní — tá istá karta ako editor (301 / 310 C), na mieste tlačidla, nie len hláška */
   const [vys, setVys] = useState<{ id: string; druh: DruhFarnika; upravene: boolean; caka: boolean } | null>(null);
   const edRef = useRef<EditorApi>(null);
-  const zavri = () => { setK(null); setHotovo(null); setEdId(null); setVys(null); };
+  const zavri = () => { setK(null); setHotovo(null); setEdId(null); setVys(null); setChybaUl(null); };
   /** ‹ Späť na stránku farnosti — po uloženom oznámení z editora hláška a posun k bloku */
   const spatNaStranku = () => { const h = hotovo, kk = k; zavri(); if (h && kk && CEZ_EDITOR.includes(kk)) naStranke(h, kk, false); };
   useEffect(() => {
@@ -334,7 +337,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   if (!self.on || !povol.length) return null;
 
   const set = (z: Partial<FormularVeriaceho>) => { setF((q) => ({ ...q, ...z })); setChyba(false); };
-  const otvor = (kk: DruhFarnika, v: VarIne = "blahozelanie") => { setF(prazdnyF()); setTxtKey((n) => n + 1); setMedia([]); setChyba(false); setHotovo(null); setEdId(null); setSheet(false); setK(kk); setVarIne(v); };
+  const otvor = (kk: DruhFarnika, v: VarIne = "blahozelanie") => { setF(prazdnyF()); setTxtKey((n) => n + 1); setMedia([]); setChyba(false); setHotovo(null); setEdId(null); setSheet(false); setK(kk); setVarIne(v); setChybaUl(null); };
   const T0 = DRUHY_FARNIKA.find((d) => d.k === k);
   const T = T0 && k === "ine" ? { ...T0, t: VOLBY_INE.find((v) => v[0] === varIne)![1].replace(" · blahoželanie", "") } : T0;
   const edTyp: TypEditora | undefined = k === "ine" ? varIne : k ? TYP_EDITORA[k] : undefined;
@@ -361,6 +364,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   const umNaDen = k === "umysel" && f.umK === 1 && f.datum ? odFarnikov(strankaId).filter((x) => x.k === "umysel" && x.f?.umK === 1 && x.f.datum === f.datum && x.id !== edId).length : 0;
 
   const uloz = async () => {
+    setChybaUl(null);
     if (!k || uklada) return;
     setUklada(true);
     const c = dokonciCas(f.cas), ff = { ...f, cas: CAS_OK(c) ? c : f.cas };
@@ -384,10 +388,10 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
       upravene: povodny ? true : undefined, stav: caka ? "caka" : povodny?.stav };
     // E.3: fotky natrvalo (Storage), nie data URL
     let it: PolozkaFarnika;
-    try { it = await bezDataUrl(zaklad, "od-veriacich"); } catch (e) { toast(e instanceof Error ? e.message : "Fotky sa nepodarilo uložiť."); setUklada(false); return; }
+    try { it = await bezDataUrl(zaklad, "od-veriacich"); } catch (e) { setChybaUl(e instanceof Error ? e.message : "Fotky sa nepodarilo uložiť. Skúste znova."); setUklada(false); return; }
     // OPRAVY 273: „Zverejnené“ až po naozajstnom uložení, inak hláška a formulár ostane
     const eUl = await zapisOdFarnikaIsto(strankaId, it, !!povodny);
-    if (eUl) { toast(eUl); setUklada(false); return; }
+    if (eUl) { setChybaUl(eUl); setUklada(false); return; }
     if (!povodny) zmazKoncept(KONV);
     // OPRAVY 170: udalosť veriaceho sa do kalendára farnosti nezapisuje
     // KARTA 57C §2: formulár sa zavrie, dole hláška a stránka sa posunie k bloku
@@ -641,6 +645,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
           <div style={{ padding: "12px 16px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
             {!edId && maObsahV && <ZahoditRozpisane onZahodit={() => { zmazKoncept(KONV); zavri(); }} />}
             {chyba && ch.length > 0 && <span role="alert" style={{ padding: "12px 14px", borderRadius: 12, background: "var(--goldBg)", border: `1.5px solid ${ZLATA}`, fontSize: 15, fontWeight: 800, color: "var(--ink)" }}>Ešte doplňte: {ch.map((c) => c[1]).join(", ")}. Označili sme to vyššie.</span>}
+            <ChybaPriTlacidle text={chybaUl} uklada={uklada} onZnova={() => { void uloz(); }} dovetok="Rozpísané ostáva." />
             {plati ? <>
               {/* PLACEBO — karta 56I: poplatok za oznam sa zatiaľ neplatí (žiadny pohyb v ledgeri), zverejní sa po podržaní */}
               {ch.length

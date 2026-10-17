@@ -8,6 +8,7 @@
 // „Podržte a uložte“ + „Obnoviť pôvodné“, hláška na mieste, zlyhanie má tvár. Ukladá sa na server (verejné nastavenia).
 // ============================================================
 import { useRef, useState, type CSSProperties } from "react";
+import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { BLOKY_STRANKY, PREMENOVAT, NAZOV_MAX, POVODNE, normalizuj, ulozUsporiadanie, useUsporiadanie, nadpisBloku, mozeVedla, radyVedla, type BlokStranky, type Usporiadanie } from "@/lib/usporiadanieStranky";
 import { ROZLOZENIA, rozlozenieZPamate } from "@/lib/rozlozenieFarnosti";
@@ -113,11 +114,9 @@ export function UsporiadatStranku({ strankaId, mobil, onSpat }: { strankaId: str
       </div>
       <div style={sivy}><span style={stitok}>VŽDY POSLEDNÁ</span><b style={{ fontSize: 15 }}>Päta · kalendár, kancelária, úradné hodiny</b></div>
       {zmenene && !hlaska && <span style={{ fontSize: 13.5, fontWeight: 700, color: "#8A6A1C" }}>Zmeny ešte nie sú uložené.</span>}
-      {hlaska && <div role={hlaska.ok ? "status" : "alert"} style={{ padding: "12px 14px", borderRadius: 14, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", fontSize: 14.5, fontWeight: 800, lineHeight: 1.45,
-        ...(hlaska.ok ? { background: "var(--gSoft)", border: "1.5px solid var(--gBd)", color: "var(--gInk)" } : { background: "#F6E3DC", border: "1.5px solid #A34A2A", color: "#A34A2A" }) }}>
-        <span style={{ flex: "1 1 200px" }}>{hlaska.ok ? hlaska.t : `Neuložilo sa. ${hlaska.t}`}</span>
-        {!hlaska.ok && <button type="button" onClick={() => void ulozit()} style={{ minHeight: 40, padding: "0 14px", borderRadius: 10, border: "1.5px solid #A34A2A", background: "transparent", color: "#A34A2A", fontFamily: "inherit", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>Skúsiť znova</button>}
-      </div>}
+      {hlaska?.ok && <div role="status" style={{ padding: "12px 14px", borderRadius: 14, fontSize: 14.5, fontWeight: 800, lineHeight: 1.45, background: "var(--gSoft)", border: "1.5px solid var(--gBd)", color: "var(--gInk)" }}>{hlaska.t}</div>}
+      {/* OPRAVY 335: chyba priamo nad tlačidlom (na mobile aj okno) */}
+      <ChybaPriTlacidle text={hlaska && !hlaska.ok ? hlaska.t : null} uklada={uklada} onZnova={() => void ulozit()} />
       <div style={{ display: "flex", gap: 10, marginTop: 4, flexWrap: mobil ? "wrap" : "nowrap" }}>
         <div style={{ flex: "1 1 220px", ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo label={uklada ? "Ukladá sa…" : "Podržte a uložte"} trvanie={1200} disabled={uklada} onConfirm={() => { void ulozit(); }} /></div>
         <button type="button" onClick={() => { zmen({ ...POVODNE, poradie: [...POVODNE.poradie] }); setEd(null); }} style={{ flex: mobil ? "1 1 100%" : "none", minHeight: 54, padding: "0 18px", borderRadius: 14, border: "1.5px solid var(--cardBd)", background: "transparent", color: "var(--ink)", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, cursor: "pointer" }}>Obnoviť pôvodné</button>

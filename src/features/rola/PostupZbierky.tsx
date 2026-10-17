@@ -8,6 +8,7 @@ import { useState, type CSSProperties } from "react";
 import { TextovePolia, GaleriaEditor, cistyText } from "./obsahZbierky";
 import { kartaK, nadpisK, textK } from "./spravaCasti";
 import { PodrzZmaz } from "@/components/HromadnyVyber";
+import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import { nacitajStav, ulozStavIsto, useZmenySpravy, type StavZbierky, type SpravaPostupu, zoradPostup, datumPostupu } from "@/lib/zbierkaSprava";
 import type { SpustenaZbierka } from "@/lib/novaZbierka";
 
@@ -44,7 +45,9 @@ export function PostupZbierky({ z, aktivna, mobil }: { z: SpustenaZbierka; aktiv
     setSprava(e ? { ok: false, t: `Nezmazalo sa. ${e}` } : { ok: true, t: "Správa je zmazaná zo stránky zbierky ✓" });
   };
 
-  const hlaska = sprava && <span role={sprava.ok ? "status" : "alert"} style={{ padding: "12px 14px", borderRadius: 14, fontSize: 14.5, fontWeight: 800, lineHeight: 1.45, ...(sprava.ok ? { background: "var(--gSoft)", border: "1.5px solid var(--gBd)", color: "var(--gInk)" } : { background: "#F6E3DC", border: "1.5px solid #C2410C", color: "#9A3412" }) }}>{sprava.t}</span>;
+  const hlaska = sprava?.ok && <span role="status" style={{ padding: "12px 14px", borderRadius: 14, fontSize: 14.5, fontWeight: 800, lineHeight: 1.45, background: "var(--gSoft)", border: "1.5px solid var(--gBd)", color: "var(--gInk)" }}>{sprava.t}</span>;
+  // OPRAVY 335: chyba priamo nad tlačidlom Uložiť správu (na mobile aj okno)
+  const chybaEl = <ChybaPriTlacidle text={sprava && !sprava.ok ? sprava.t.replace(/^Neuložilo sa\.\s*/, "").replace(/^Nezmazalo sa\.\s*/, "") : null} uklada={uklada} nadpis={sprava && /^Nezmazalo/.test(sprava.t) ? "Nezmazalo sa" : "Neuložilo sa"} onZnova={f && plna ? () => { void uloz(); } : undefined} />;
 
   if (f) return (
     <section style={{ ...kartaK, gap: 16 }}>
@@ -56,7 +59,7 @@ export function PostupZbierky({ z, aktivna, mobil }: { z: SpustenaZbierka; aktiv
           popisHlavneho="Najviac 12 riadkov, ľudia ho uvidia hneď." placeholder="Tento týždeň sme…" />
       </div>
       <GaleriaEditor media={f.media} onMedia={(m) => zmen({ media: m })} ph={mobil} nadpis="Fotky · ako to vyzerá" popisNapoveda="Popis (nepovinné)" dovetok="" />
-      {hlaska}
+      {chybaEl}
       <div style={{ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : "1fr 1fr", gap: 10 }}>
         <button type="button" disabled={uklada} onClick={() => void uloz()} style={{ minHeight: 56, border: "none", borderRadius: 16, background: "var(--green)", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "#fff", boxShadow: "none" }}>{uklada ? "Ukladá sa…" : "Uložiť správu"}</button>
         <button type="button" disabled={uklada} onClick={() => { setF(null); setNova(false); setSprava(null); }} style={{ minHeight: 56, borderRadius: 16, border: "1.5px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "var(--ink)", boxShadow: "none" }}>Zrušiť</button>
@@ -68,7 +71,7 @@ export function PostupZbierky({ z, aktivna, mobil }: { z: SpustenaZbierka; aktiv
       <b style={{ fontSize: 22, letterSpacing: "-.02em" }}>Ako to pokračuje</b>
       <span style={textK}>{aktivna ? "Ukážte darcom, ako práce pokračujú. Zbierka beží ďalej. Pri ukončení pridáte poslednú správu: poďakovanie." : "Správy o postupe sú na stránke zbierky. Poďakovanie je posledná správa."}</span>
       <button type="button" onClick={otvorNovu} style={{ alignSelf: "flex-start", minHeight: 52, padding: "0 20px", border: "none", borderRadius: 15, background: "var(--green)", cursor: "pointer", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, color: "#fff", boxShadow: "none" }}>+ Pridať správu o postupe</button>
-      {hlaska}
+      {hlaska}{chybaEl}
       {spravy.length === 0 ? <span style={textK}>Zatiaľ žiadna správa.</span> : spravy.map((s) => (
         <div key={s.id} style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 12, borderTop: "1px solid var(--cardBd)" }}>
           <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>{datumPostupu(s.datum)}{s.media.length ? ` · ${s.media.length} ${s.media.length === 1 ? "fotka" : s.media.length < 5 ? "fotky" : "fotiek"}` : ""}</span>

@@ -13,6 +13,7 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { kartaK, nadpisK, textK, useZmenaSum, useUkladanie, UlozenePri, PasUlozene } from "./spravaCasti";
 import { TextovePolia, GaleriaEditor, cistyText } from "./obsahZbierky";
 import { AnoNie } from "@/components/AnoNie";
+import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { nacitajStav, ulozStavIsto, useZmenySpravy, type StavZbierky, type PodakovanieZbierky } from "@/lib/zbierkaSprava";
 import { pridajOznamDarcom } from "@/lib/oznamyDarcom";
@@ -93,9 +94,12 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat, menoSt
     const e = await ulozStavIsto(z.id, { ...st, podakovanie: { ...st.podakovanie, zmazane: new Date().toISOString() } });
     setDakSprava(e ? { ok: false, t: `Neuložilo sa. ${e}` } : { ok: true, t: "Zbierka už nie je na stránke farnosti ✓ V Archíve ostáva aj s poďakovaním." });
   };
+  const opakDak = useRef<(() => void) | null>(null);
+  const [dakZnova, setDakZnova] = useState(true);
   const ulozDak = async (ukoncit: boolean) => {
     if (dakUklada) return;
-    if (!plneDak && !ukoncit) { setDakSprava({ ok: false, t: "Napíšte poďakovanie alebo pridajte fotky." }); return; }
+    opakDak.current = () => { void ulozDak(ukoncit); }; setDakZnova(true);
+    if (!plneDak && !ukoncit) { opakDak.current = null; setDakZnova(false); setDakSprava({ ok: false, t: "Poďakovanie je prázdne. Napíšte poďakovanie alebo pridajte fotky." }); return; }
     setDakUklada(true); setDakSprava(null);
     const st = stav0(), teraz = new Date().toISOString();
     const posli = plneDak && poslat && !st.podakovanie?.poslane;
@@ -224,7 +228,9 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat, menoSt
             <span style={{ display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15 }}>Poslať poďakovanie darcom</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>každý darca dostane upozornenie</span></span>
             <AnoNie value={poslat} onChange={setPoslat} label="Poslať poďakovanie darcom" />
           </div>}
-        {dakSprava && <span role={dakSprava.ok ? "status" : "alert"} style={{ padding: "12px 14px", borderRadius: 14, fontSize: 14.5, fontWeight: 800, lineHeight: 1.45, ...(dakSprava.ok ? { background: "var(--gSoft)", border: "1.5px solid var(--gBd)", color: "var(--gInk)" } : { background: "#F6E3DC", border: "1.5px solid #A34A2A", color: "#A34A2A" }) }}>{dakSprava.t}</span>}
+        {dakSprava?.ok && <span role="status" style={{ padding: "12px 14px", borderRadius: 14, fontSize: 14.5, fontWeight: 800, lineHeight: 1.45, background: "var(--gSoft)", border: "1.5px solid var(--gBd)", color: "var(--gInk)" }}>{dakSprava.t}</span>}
+        {/* OPRAVY 335: chyba priamo nad tlačidlami (na mobile aj okno) */}
+        <ChybaPriTlacidle text={dakSprava && !dakSprava.ok ? dakSprava.t.replace(/^Neuložilo sa\.\s*/, "") : null} uklada={dakUklada} onZnova={dakZnova ? () => opakDak.current?.() : undefined} />
         {aktivna ? <div style={{ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : "1fr 1fr", gap: 10, alignItems: "stretch" }}>
           <button type="button" disabled={dakUklada} onClick={() => void ulozDak(false)} style={{ minHeight: 60, padding: "6px 14px", borderRadius: 16, border: "1.5px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", color: "var(--ink)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1, boxShadow: "none" }}>
             <b style={{ fontSize: 15 }}>Uložiť poďakovanie</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>zbierka beží ďalej</span></button>

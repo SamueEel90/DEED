@@ -10,6 +10,7 @@ import { otvorVerejnyProfil, zavriVerejnyProfil } from "@/features/verejny-profi
 import { TESTOVACIA } from "@/lib/testovacia";
 import { TestovanieRetaze } from "./RetazStranky";
 import { Harok } from "./Zdielat";
+import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import PodrzTlacidlo from "./PodrzTlacidlo";
 import { potvrditTuknutim } from "./Platba";
 import { sumaEur } from "@/lib/suma";
@@ -251,10 +252,8 @@ function RetazDobraOkno({ zbierka, onClose }: { zbierka: ZbierkaHaroka; onClose:
         </div>
         <div style={nadpis}>DARCA POD QR UVIDÍ</div>
         <div style={{ alignSelf: "flex-start", padding: "9px 16px", borderRadius: 999, background: "#1D211B", color: "#F1ECE1", fontSize: 14.5, fontWeight: 800 }}>{stitokDarcu(rad[0]?.pct ?? 100, rad[0]?.zbierkaId ?? null)}</div>
-        {chyba && <div role="alert" style={{ padding: "12px 14px", borderRadius: 14, background: "var(--errBg, #F2E3DC)", border: "2px solid var(--cRed, #A34A2A)", display: "flex", flexDirection: "column", gap: 2 }}>
-          <b style={{ fontSize: 15.5, color: "var(--cRed, #A34A2A)" }}>Neuložilo sa</b>
-          <span style={{ fontSize: 14, color: "var(--ink2)" }}>{chyba}</span>
-        </div>}
+        {/* OPRAVY 335: chyba nad tlačidlom (Skúsiť znova je hneď pod ňou), na mobile aj okno */}
+        <ChybaPriTlacidle text={chyba} uklada={uklada} onZnova={() => void zapecatTeraz()} />
         <div style={{ display: "flex", gap: 10, alignItems: "stretch" }}>
           <Tlacidlo label="Späť" druhe onClick={() => { setPreco(chyba); setChyba(null); setKrok("nastavenie"); }} />
           <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>

@@ -146,3 +146,45 @@ export async function nahrajSuborUrl(f: Blob, priecinok: string, ext: string): P
 /** je to URL súboru zo Storage v danom priečinku (napr. „video", „prilohy")? */
 export const jeVStorage = (src: string | undefined, priecinok: string) =>
   !!src && /\/storage\/v1\/object\/public\/prispevky\//.test(src) && src.includes(`/${priecinok}/`);
+
+// ============================================================
+// OPRAVY 335: bez servera (locale) ide fotka do pamäte prehliadača — zmenší sa rovnako ako pre Storage
+// (dlhšia strana najviac 1 600 px, JPEG 80 %), aby sa oznam s fotkami zmestil. Staré rozpísané koncepty
+// sa pri ukladaní uvoľnia, keď miesto nestačí.
+// ============================================================
+const ZARIADENIE_MAX = 1600, ZARIADENIE_KVALITA = 0.8;
+async function zmensiJeden(src: string): Promise<string> {
+  if (!/^data:image\/(jpeg|jpg|png|webp);base64,/.test(src) || src.length < 250_000) return src;
+  return new Promise((ok) => {
+    const im = new Image();
+    im.onload = () => {
+      const k = Math.min(1, ZARIADENIE_MAX / Math.max(im.naturalWidth || 1, im.naturalHeight || 1));
+      const c = document.createElement("canvas"); c.width = Math.max(1, Math.round(im.naturalWidth * k)); c.height = Math.max(1, Math.round(im.naturalHeight * k));
+      const g = c.getContext("2d"); if (!g) { ok(src); return; }
+      g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
+      try { const out = c.toDataURL("image/jpeg", ZARIADENIE_KVALITA); ok(out.length < src.length ? out : src); } catch { ok(src); }
+    };
+    im.onerror = () => ok(src);
+    im.src = src;
+  });
+}
+/** bez servera: všetky fotky (data URL) v objekte zmenšené; so serverom bez zmeny (fotky idú do Storage) */
+export async function zmensiPreZariadenie<T>(obj: T): Promise<T> {
+  if (supabase || obj == null) return obj;
+  const prejdi = async (v: unknown): Promise<unknown> => {
+    if (typeof v === "string") return zmensiJeden(v);
+    if (Array.isArray(v)) return Promise.all(v.map(prejdi));
+    if (v && typeof v === "object") { const out: Record<string, unknown> = {}; for (const [k, x] of Object.entries(v as Record<string, unknown>)) out[k] = await prejdi(x); return out; }
+    return v;
+  };
+  return (await prejdi(obj)) as T;
+}
+/** uvoľní miesto: zmaže rozpísané koncepty na zariadení (deed.koncept.*); vráti počet */
+export function uvolniKoncepty(): number {
+  try {
+    const kl: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith("deed.koncept.")) kl.push(k); }
+    kl.forEach((k) => localStorage.removeItem(k));
+    return kl.length;
+  } catch { return 0; }
+}

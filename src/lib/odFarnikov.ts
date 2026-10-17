@@ -104,6 +104,8 @@ let verzia = 0;
 const posl = new Set<() => void>();
 const zmena = () => { verzia++; posl.forEach((f) => f()); };
 export function ulozSmie(id: string, s: SmieFarnika) { ulozStav("farniksmie", id, s); zmena(); }
+/** OPRAVY 335: zápis, na ktorý sa čaká — chyba ako text alebo null */
+export async function ulozSmieIsto(id: string, s: SmieFarnika): Promise<string | null> { const e = await ulozStavIsto("farniksmie", id, s); zmena(); return e; }
 // ---- OPRAVY 330 (0099): čakajúce a zamietnuté nie sú vo verejnom poli na serveri — číta ich len autor a farár (odfarnikov_caka).
 // Lokálne: verejné pole (naboz_stav) + vlastná kópia čakajúcich (len toto zariadenie, nikdy do naboz_stav). Bez DB všetko ostáva v poli.
 const klucCaka = (id: string) => `deed.odfcaka.${id}`;
@@ -180,6 +182,7 @@ export function upravOdFarnika(id: string, pid: string, patch: Partial<PolozkaFa
 export interface NastavenieOdVeriacich { upozornit: boolean; videne: number }
 export const nastavenieOdVeriacich = (id: string): NastavenieOdVeriacich => ({ upozornit: true, videne: 0, ...nacitajStav<Partial<NastavenieOdVeriacich>>("odfnast", id, {}) });
 export function ulozNastavenieOdVeriacich(id: string, n: Partial<NastavenieOdVeriacich>) { ulozStav("odfnast", id, { ...nastavenieOdVeriacich(id), ...n }); zmena(); }
+export async function ulozNastavenieOdVeriacichIsto(id: string, n: Partial<NastavenieOdVeriacich>): Promise<string | null> { const e = await ulozStavIsto("odfnast", id, { ...nastavenieOdVeriacich(id), ...n }); zmena(); return e; }
 /** Treba vybaviť: nové príspevky, nahlásené, nové úmysly */
 export function pocetyOdVeriacich(id: string) {
   const l = odFarnikov(id), v = nastavenieOdVeriacich(id).videne;

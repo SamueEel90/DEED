@@ -8,10 +8,10 @@
 // Obsah · Fotky a video · Suma a účet · Platby · Kontrola — bez dĺžky, dokladovania, pravidelnej podpory a štítu;
 // účet zamknutý „Na účet hlavnej zbierky"; náhľad „Na stránke farnosti" bez cudzích zbierok.
 // ============================================================
-import { toast } from "@/components/toast";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { OrezFotky } from "@/components/orezfotky";
 import { ZbierkaModul, type ZbierkaData } from "@/features/zbierka/ZbierkaModul";
+import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { potvrditTuknutim } from "@/features/zbierka/Platba";
 import { PROGRAM_TIER, nacitajIbanOrg, type Pozicia, type Tier } from "./stav";
@@ -107,13 +107,18 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   const naKrok = (n: number) => { if (n <= maxK) zmen({ krok: n }); };
   const dalej = () => { if (!chyba && ki < KROKY.length - 1) zmen({ krok: KROKY[ki + 1] }); };
   const spat = () => { if (ki > 0) zmen({ krok: KROKY[ki - 1] }); };
+  // OPRAVY 335: chyba spustenia priamo nad tlačidlom Podržte a zapečaťte
+  const [chybaSp, setChybaSp] = useState<string | null>(null);
+  const [spusta, setSpusta] = useState(false);
   const zapecat = async () => {
-    if (chyba) return;
+    if (chyba || spusta) return;
+    setChybaSp(null); setSpusta(true);
     try {
       const z = await spustiZbierku(strankaId, zadarmo ? { ...d, typ: "kratka", iban: "", prav: false, ...(farnost ? { ucel: null, farnost: { druh: "farnost" as const, ...(naMiesto ? { miesto: naMiesto.id } : {}), upoz } } : {}) } : d, zadarmo ? hlavnyUcet : d.iban, farnost ? "nabozenstvo" : undefined);
       if (farnost) { farnost.onSpustena(z); return; }
       setHotovo(z);
-    } catch (e) { toast(e instanceof Error ? e.message : "Zbierku sa nepodarilo spustiť."); }
+    } catch (e) { setChybaSp(e instanceof Error ? e.message : "Zbierku sa nepodarilo spustiť. Skúste znova."); }
+    finally { setSpusta(false); }
   };
 
   // ---------- súhrn a odvodené údaje ----------
@@ -374,7 +379,8 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
     ? <button type="button" onClick={dalej} aria-disabled={!!chyba} style={{ flex: ph ? 1 : "none", height: 52, padding: "0 24px", border: "none", borderRadius: 14, background: chyba ? "#CFC9BC" : "var(--green)", color: chyba ? "#6B6C62" : "#fff", cursor: chyba ? "default" : "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>Pokračovať{!ph && <Ik d={I.vpravo} s={17} w={2.4} />}</button>
     : tuk
       ? <button type="button" onDoubleClick={() => void zapecat()} aria-disabled={!!chyba} style={{ flex: ph ? 1 : "none", height: 52, padding: "0 24px", border: "none", borderRadius: 14, background: chyba ? "#CFC9BC" : "var(--green)", color: chyba ? "#6B6C62" : "#fff", cursor: chyba ? "default" : "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800 }}>Dvakrát kliknite a zapečaťte</button>
-      : <div style={{ flex: ph ? 1 : "none", width: ph ? undefined : 280, ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo label="Podržte a zapečaťte" disabled={!!chyba} onConfirm={() => void zapecat()} /></div>;
+      : <div style={{ flex: ph ? 1 : "none", width: ph ? undefined : 280, ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo label={spusta ? "Spúšťa sa…" : "Podržte a zapečaťte"} disabled={!!chyba} onConfirm={() => void zapecat()} /></div>;
+  const chybaSpEl = <ChybaPriTlacidle text={ki === KROKY.length - 1 ? chybaSp : null} uklada={spusta} onZnova={() => void zapecat()} nadpis="Zbierka sa nespustila" />;
   const spatEl = ki > 0 ? <button type="button" onClick={spat} aria-label="Späť" style={{ flex: "none", height: 52, minWidth: 52, padding: ph ? 0 : "0 18px 0 12px", borderRadius: 14, border: "1.5px solid var(--cardBd)", background: ph ? "var(--field)" : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--ink)", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}><Ik d={I.vlavo} s={18} w={2.4} />{!ph && "Späť"}</button> : null;
 
   const pravidlaEl = pravidla ? <PravidlaObsahu ph={ph} stit={stit} onZavri={() => setPravidla(false)} /> : null;
@@ -383,13 +389,14 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
     <div ref={hore} />
     <RamPisania nazov={KROKY_ZBIERKY[k - 1] ?? "Nová zbierka"} kroky={{ i: ki, n: KROKY.length }} teloRef={ramTelo}
       onSpat={() => { if (ki > 0) spat(); else onMojeZbierky(); }} onNahlad={() => setNahlad("str")}
-      dole={<>{chybaEl}<div style={{ display: "flex", gap: 10 }}>{spatEl}{dalejEl}</div></>} vrstva={pravidlaEl}>
+      dole={<>{chybaSpEl}{chybaEl}<div style={{ display: "flex", gap: 10 }}>{spatEl}{dalejEl}</div></>} vrstva={pravidlaEl}>
       <div style={{ padding: "16px 16px 28px", display: "flex", flexDirection: "column", gap: 16 }}>{obsah}</div>
     </RamPisania>
   </>);
   return (<>
     <div ref={hore} style={{ display: "flex", flexDirection: "column", gap: 18, width: "100%", maxWidth: 980, margin: "0 auto" }}>{stepper}<div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%", maxWidth: 820, margin: "0 auto" }}>{obsah}</div></div>{pravidlaEl}
-    <div style={{ position: "sticky", bottom: 0, zIndex: 4, marginTop: 4, padding: "14px 0 16px", display: "flex", alignItems: "center", gap: 14, background: "var(--bg)", borderTop: "1px solid var(--cardBd)" }}>
+    <div style={{ position: "sticky", bottom: 0, zIndex: 4, marginTop: 4, padding: "14px 0 16px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", background: "var(--bg)", borderTop: "1px solid var(--cardBd)" }}>
+      {chybaSp && <div style={{ flex: "1 1 100%" }}>{chybaSpEl}</div>}
       {spatEl}<span style={{ flex: 1 }} />{chybaEl}{dalejEl}
     </div>
   </>);

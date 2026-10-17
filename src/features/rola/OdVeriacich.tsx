@@ -7,8 +7,9 @@
 import { KartaNastavenia, NADPIS_SEKCIE, farbaStitku } from "./KartaNastavenia";
 import { TlZbalit } from "@/features/verejny-profil/zbalit";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { nacitajSelfAdd, ulozSelfAdd } from "@/features/viera/UserOznamy";
-import { DRUHY_FARNIKA, CEZ_EDITOR, KAM_DRUHU, nacitajSmie, ulozSmie, stupen, rozhodniOdFarnikov, type Stupen, type SmieFarnika, odFarnikov, upravOdFarnika, zmazOdFarnika, zmazOdFarnikov, nastavenieOdVeriacich, ulozNastavenieOdVeriacich, useOdFarnikov, useCerstveOdFarnikov, pocetNahl, pocetSus, vyprsal, type DruhFarnika, type PolozkaFarnika } from "@/lib/odFarnikov";
+import { nacitajSelfAdd, ulozSelfAddIsto } from "@/features/viera/UserOznamy";
+import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
+import { DRUHY_FARNIKA, CEZ_EDITOR, KAM_DRUHU, nacitajSmie, ulozSmieIsto, stupen, rozhodniOdFarnikov, type Stupen, type SmieFarnika, odFarnikov, upravOdFarnika, zmazOdFarnika, zmazOdFarnikov, nastavenieOdVeriacich, ulozNastavenieOdVeriacich, ulozNastavenieOdVeriacichIsto, useOdFarnikov, useCerstveOdFarnikov, pocetNahl, pocetSus, vyprsal, type DruhFarnika, type PolozkaFarnika } from "@/lib/odFarnikov";
 import { TextOznamu } from "./OznamyFarnosti";
 import { PodrzZmaz, useHromadnyVyber, TlacidloVyberu, ListaVyberu, OznacitSkupinu, PolickoVyberu, PasVyberu } from "@/components/HromadnyVyber";
 import { cistyText } from "./obsahZbierky";
@@ -33,11 +34,18 @@ function NastavitPravidla({ strankaId, mobil, toast, onSpat, fokus }: { strankaI
   const [upoz, setUpoz] = useState(() => nastavenieOdVeriacich(strankaId).upozornit);
   const vsetky = PORADIE.map((k) => m[k]), rovnake = PORADIE.filter((k) => k !== "umysel").every((k) => m[k] === m.parte) && (m.umysel === m.parte || (m.parte === "schvalenie" && m.umysel === "povolene"));
   const naraz = (st: Stupen) => setM(Object.fromEntries(PORADIE.map((k) => [k, k === "umysel" && st === "schvalenie" ? "povolene" : st])) as Record<DruhFarnika, Stupen>);
-  const uloz = () => {
+  // OPRAVY 335: uložené až keď je naozaj uložené; chyba nad tlačidlom Podržte a uložte
+  const [chybaU, setChybaU] = useState<string | null>(null);
+  const [uklada, setUklada] = useState(false);
+  const uloz = async () => {
+    if (uklada) return;
+    setUklada(true); setChybaU(null);
     const sm: SmieFarnika = Object.fromEntries(PORADIE.map((k) => [k, m[k]])) as SmieFarnika;
-    ulozSmie(strankaId, sm);
-    ulozSelfAdd(strankaId, { on: vsetky.some((x) => x !== "zakazane"), poplatok: 0 }); // poplatok za oznam zrušený
-    ulozNastavenieOdVeriacich(strankaId, { upozornit: upoz });
+    const e = await ulozSmieIsto(strankaId, sm)
+      ?? await ulozSelfAddIsto(strankaId, { on: vsetky.some((x) => x !== "zakazane"), poplatok: 0 }) // poplatok za oznam zrušený
+      ?? await ulozNastavenieOdVeriacichIsto(strankaId, { upozornit: upoz });
+    setUklada(false);
+    if (e) { setChybaU(e); return; }
     toast("Uložené ✓ Veriaci to uvidia hneď.");
     onSpat();
   };
@@ -67,7 +75,8 @@ function NastavitPravidla({ strankaId, mobil, toast, onSpat, fokus }: { strankaI
       </div>
       <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--gInk)" }}>Poplatok za oznam zrušený. Všetko je zadarmo.</span>
     </section>
-    <div style={{ ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo label="Podržte a uložte" trvanie={1200} onConfirm={uloz} /></div>
+    <ChybaPriTlacidle text={chybaU} uklada={uklada} onZnova={() => { void uloz(); }} />
+    <div style={{ ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo label={uklada ? "Ukladá sa…" : "Podržte a uložte"} trvanie={1200} onConfirm={() => { void uloz(); }} /></div>
   </>;
 }
 

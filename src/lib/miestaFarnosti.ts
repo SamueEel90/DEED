@@ -7,7 +7,7 @@
 // Kľúč miesta je zároveň kľúč kostola v kalendári farnosti (omše a udalosti per miesto).
 // ============================================================
 import { useEffect, useSyncExternalStore } from "react";
-import { nacitajStav, ulozStav, obnovOblast } from "@/features/viera/stav";
+import { nacitajStav, ulozStavIsto, obnovOblast } from "@/features/viera/stav";
 import type { KostolFarnosti } from "@/features/viera/mock";
 import type { MediumZbierky } from "./novaZbierka";
 import { bezDataUrl } from "./uploadFoto";
@@ -65,14 +65,17 @@ export function useMiesta(stranka: string, vsetky = false): Miesto[] {
 export const noveIdMiesta = () => `m${Date.now().toString(36)}`;
 export const prazdneMiesto = (): Miesto => ({ id: noveIdMiesta(), druh: "kostol", nazov: "", adresa: "", media: [], popis: "", historia: "", vytvorene: new Date().toISOString() });
 
-async function zapis(stranka: string, f: (l: Miesto[]) => Miesto[]) {
+/** OPRAVY 335: vráti chybu ako text alebo null (Podržte a uložte ukáže chybu nad tlačidlom) */
+async function zapis(stranka: string, f: (l: Miesto[]) => Miesto[]): Promise<string | null> {
   await obnovOblast("miesta", stranka).catch(() => false);
-  ulozStav("miesta", stranka, f(vsetkyMiesta(stranka)));
+  const e = await ulozStavIsto("miesta", stranka, f(vsetkyMiesta(stranka)));
   zmena();
+  return e;
 }
-export async function ulozMiesto(stranka: string, m: Miesto): Promise<void> {
-  const x = await bezDataUrl(m, "stranky");
-  await zapis(stranka, (l) => (l.some((y) => y.id === x.id) ? l.map((y) => (y.id === x.id ? x : y)) : [...l, x]));
+export async function ulozMiesto(stranka: string, m: Miesto): Promise<string | null> {
+  let x: Miesto;
+  try { x = await bezDataUrl(m, "stranky"); } catch (e) { return e instanceof Error ? e.message : "Fotky sa nepodarilo nahrať. Skúste znova."; }
+  return zapis(stranka, (l) => (l.some((y) => y.id === x.id) ? l.map((y) => (y.id === x.id ? x : y)) : [...l, x]));
 }
 /** odobratie = zamrznutie (stránka miesta sa nezmaže, dá sa obnoviť); cena klesne od ďalšej platby */
 export const zamrazMiesto = (stranka: string, id: string, ano: boolean) => zapis(stranka, (l) => l.map((y) => (y.id === id ? { ...y, zamrznute: ano || undefined, platca: undefined } : y)));

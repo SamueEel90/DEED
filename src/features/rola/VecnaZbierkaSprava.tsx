@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { TextovePolia, GaleriaEditor, cistyText } from "./obsahZbierky";
+import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { AnoNie } from "@/components/AnoNie";
 import { profilZPamate } from "@/lib/profilStranky";
@@ -78,7 +79,8 @@ export function VecnaNova({ strankaId, mobil, onZavri, onHotovo }: { strankaId: 
     </div>
     <GaleriaEditor media={media} onMedia={setMedia} ph={mobil} bezVidea nadpis="Fotky" dovetok=" Prvá fotka (HLAVNÁ) ide aj na plagát." />
     {chyby.length > 0 && <div role="alert" style={{ padding: "12px 14px", borderRadius: 14, background: "var(--goldBg)", border: "1.5px solid #C9A24A", fontSize: 14.5, fontWeight: 800 }}>Ešte chýba: {chyby.join(", ")}</div>}
-    {err && <div role="alert" style={{ padding: "12px 14px", borderRadius: 14, background: "#F6E3DC", border: "1.5px solid #A34A2A", color: "#7A2E16", fontSize: 14.5, fontWeight: 800 }}>{err}</div>}
+    {/* OPRAVY 335: chyba spustenia priamo nad tlačidlom */}
+    <ChybaPriTlacidle text={err || null} uklada={uklada} onZnova={() => { void spusti(); }} nadpis="Nespustilo sa" />
     <div style={{ ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo label={uklada ? "Spúšťa sa…" : "Podržte a spustite"} trvanie={1200} disabled={uklada} onConfirm={() => { void spusti(); }} /></div>
   </section>;
 }
@@ -142,6 +144,9 @@ export function VecnaSprava({ strankaId, meno, z: z0, nova, mobil, onSpat }: { s
   const [z, setZ] = useState(z0);
   const [ulozene, setUlozene] = useState<"" | "uklada" | "ok" | "chyba">("");
   const [chybaT, setChybaT] = useState("");
+  // OPRAVY 335: chyba ukončenia / poďakovania priamo nad tlačidlom
+  const [chybaTl, setChybaTl] = useState<string | null>(null);
+  const [tlZnova, setTlZnova] = useState<"ukonci" | "dak" | null>(null);
   const tm = useRef<number | undefined>(undefined);
   const prvy = useRef(true);
   useEffect(() => {
@@ -170,18 +175,18 @@ export function VecnaSprava({ strankaId, meno, z: z0, nova, mobil, onSpat }: { s
   };
   const ukonci = async () => {
     let n: VecnaZbierka = { ...z, stav: "ukoncena", koniec: Date.now(), ...(plneDak ? { podakovanie: { ...dak, ulozene: Date.now() } } : {}) };
-    setUlozene("uklada"); setPosl(null);
+    setUlozene("uklada"); setPosl(null); setChybaTl(null);
     const e = await ulozVecnu(strankaId, n);
-    if (e) { setUlozene("chyba"); setChybaT(e); return; }
+    if (e) { setUlozene("chyba"); setChybaT(e); setTlZnova("ukonci"); setChybaTl(e); return; }
     const n2 = await posliDarcom(n);
     if (n2 !== n) { n = n2; await ulozVecnu(strankaId, n); }
     prvy.current = true; setZ(n); setUlozene("ok"); setKoniec(true);
   };
   const ulozDak = async () => {
-    if (!plneDak) { setUlozene("chyba"); setChybaT("Napíšte poďakovanie alebo pridajte fotky."); return; }
+    if (!plneDak) { setUlozene("chyba"); setChybaT("Napíšte poďakovanie alebo pridajte fotky."); setTlZnova(null); setChybaTl("Poďakovanie je prázdne. Napíšte poďakovanie alebo pridajte fotky."); return; }
     let n: VecnaZbierka = { ...z, podakovanie: { ...dak, ulozene: Date.now(), zmazane: z.podakovanie?.zmazane, poslane: z.podakovanie?.poslane, poslaneKomu: z.podakovanie?.poslaneKomu } };
-    setUlozene("uklada"); setPosl(null); const e = await ulozVecnu(strankaId, n);
-    if (e) { setUlozene("chyba"); setChybaT(e); return; }
+    setUlozene("uklada"); setPosl(null); setChybaTl(null); const e = await ulozVecnu(strankaId, n);
+    if (e) { setUlozene("chyba"); setChybaT(e); setTlZnova("dak"); setChybaTl(e); return; }
     const n2 = await posliDarcom(n);
     if (n2 !== n) { n = n2; await ulozVecnu(strankaId, n); }
     prvy.current = true; setZ(n); setUlozene("ok");
@@ -232,6 +237,7 @@ export function VecnaSprava({ strankaId, meno, z: z0, nova, mobil, onSpat }: { s
           <AnoNie value={poslat} onChange={setPoslat} label="Poslať poďakovanie darcom" />
         </div>}
       {posl && <span role={posl.ok ? "status" : "alert"} style={{ fontSize: 14.5, fontWeight: 800, color: posl.ok ? "var(--gInk)" : "#A34A2A" }}>{posl.t}</span>}
+      <ChybaPriTlacidle text={chybaTl} uklada={ulozene === "uklada"} onZnova={tlZnova ? () => { void (tlZnova === "ukonci" ? ukonci() : ulozDak()); } : undefined} />
       {aktivna ? <div style={{ ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo label={plneDak ? "Podržte a ukončite s poďakovaním" : "Podržte a ukončite"} trvanie={1500} onConfirm={() => { void ukonci(); }} /></div>
         : <button type="button" onClick={() => void ulozDak()} style={tlPlne}>Uložiť poďakovanie</button>}
       {!aktivna && z.podakovanie?.ulozene && !z.podakovanie.zmazane && <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 12, borderTop: "1px solid var(--cardBd)" }}>

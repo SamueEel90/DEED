@@ -17,6 +17,7 @@ import { RichTextInput } from "@/components/richtext";
 import { spracujFotku } from "@/lib/obrazok";
 import { useVzhlad } from "@/lib/vzhladStranky";
 import type { MediumZbierky } from "@/lib/novaZbierka";
+import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { GaleriaEditor, cistyText, NASTROJE } from "./obsahZbierky";
 import { vlastnePrispevky, zmazPrispevok, type VieraFeedItem } from "@/features/viera/mock";
@@ -298,7 +299,8 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   const KON = `oznam.${strankaId}`;
   type KonOz = { dr: Druh; n: string; txt: string; plati: number; usp: 0 | 1; dat: string; cas: string; miesto: string; media: MediumZbierky[]; plagat?: string; pozv: number; limit: string; odr: number; osp: 0 | 1; u: UdajeOznamu; volba: VolbaSablony; kde: string[] | null; ozIne?: boolean; kdeU: string };
   const [konRozh, setKonRozh] = useState(false); // „Máte rozpísané“ už rozhodnuté (Pokračovať / Zahodiť)
-  const kon = formOn && !edit && !hotovo && !konRozh ? nacitajKoncept<KonOz>(KON) : null;
+  // OPRAVY 335: „Máte rozpísané“ len pred výberom druhu — počas písania (koncept sa ukladá priebežne) nie, inak by Pokračovať vrátil koncept bez fotiek
+  const kon = formOn && !edit && !hotovo && !konRozh && !vyb ? nacitajKoncept<KonOz>(KON) : null;
   const maObsah = !!(n.trim() || cistyText(txt).trim() || media.length || dat || cas || miesto.trim() || plagat || u.meno.trim());
   useUkladajKoncept<KonOz>(KON, { dr, n, txt, plati, usp, dat, cas, miesto, media, plagat, pozv, limit, odr, osp, u, volba, kde, kdeU, ozIne }, formOn && !edit && !hotovo && !kon && maObsah && !jub);
   const pokracuj = (k: KonOz) => {
@@ -462,13 +464,9 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   const potvrdenie = jub ? null : ch.length || chybaSab
       ? <div role="status" style={{ padding: "12px 14px", borderRadius: 12, background: "var(--goldBg)", border: `1.5px solid ${ZLATA}`, fontSize: 14.5, fontWeight: 800 }}>{ch.length ? `Ešte chýba: ${ch.join(", ")}` : chybaSab}</div>
       : <div style={{ ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo key={edit ?? "novy"} label={edit ? "Podržte a uložte zmeny" : "Podržte a zverejnite"} trvanie={1500} onConfirm={zverejni} /></div>;
-  const chybaEl = chybaUl && (
-    <div role="alert" style={{ padding: "12px 14px", borderRadius: 14, background: "var(--errBg, #F2E3DC)", border: "2px solid var(--cRed, #A34A2A)", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-      <span style={{ flex: "1 1 200px", display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15.5, color: "var(--cRed, #A34A2A)" }}>Neuložilo sa</b><span style={{ fontSize: 14, color: "var(--ink2)" }}>{chybaUl} Rozpísané ostáva.</span></span>
-      <button type="button" disabled={uklada} onClick={() => opakuj.current?.()} style={{ minHeight: 48, padding: "0 18px", borderRadius: 12, border: "none", background: "var(--cRed, #A34A2A)", color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800 }}>{uklada ? "Ukladá sa…" : "Skúsiť znova"}</button>
-    </div>);
+  // OPRAVY 335: chyba pri ukladaní priamo nad tlačidlom Podržte… (na mobile aj okno uprostred), nikdy len hore vo formulári
+  const chybaEl = <ChybaPriTlacidle text={chybaUl} uklada={uklada} onZnova={() => opakuj.current?.()} dovetok="Rozpísané ostáva." />;
   const polia = <>
-    {chybaEl}
     {dr === 1 && <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={lbl}>Ako ho chcete ukázať</span><Segment label="Ako ho chcete ukázať" vol={[[0, "Text a fotky"], [1, "Vlastný plagát"]]} cur={usp} set={(v) => setUsp(v as 0 | 1)} />
       <span style={{ fontSize: 13, color: "var(--ink3)" }}>{usp === 1 ? "Plagát sa ukáže celý, nič sa neoreže. Hodí sa na pozvánku, oznámenie alebo plagát." : "Fotky sa ukážu na šírku (16 : 9). Pozvánku alebo plagát dajte radšej ako Vlastný plagát."}</span></div>}
     {dr === 2 && <>
@@ -516,6 +514,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     {/* KARTA 63: aj pri oznámení z Editora (parte, svadba, jubileum) */}
     {<UpozornitSledujucich strankaId={strankaId} blok={blokUpoz} miesta={dr === 0 && viacMiest && !ozIne && kde && kde.length < miestaF.length ? kde : dr === 1 && viacMiest && kdeK ? [kdeK] : undefined} value={upoz} onChange={setUpozV} />}
     {!edit && (jub ? !!jubKon : maObsah) && <ZahoditRozpisane onZahodit={zahod} />}
+    {!ramSprava && chybaEl}
     {!ramSprava && potvrdenie}
   </>;
   const lavy = (
@@ -623,7 +622,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     <NastavenieUpozorneni strankaId={strankaId} />
     {ramSprava && <RamPisania nazov={`${edit ? "Úprava · " : ""}${dr === 2 ? ODRUHY[odr][0] : dr === 1 ? "Udalosť" : "Krátky oznam"}`} teloRef={ramTelo} onSpat={() => { if (edit) vycisti(); setVyb(false); }}
       onNahlad={jub ? undefined : () => setNahlOtv(true)} nahlad={nahlOtv && !jub} onZavriNahlad={() => setNahlOtv(false)} nahladObsah={nahladPisania}
-      dole={jub ? <button type="button" onClick={() => setJubOtv(true)} style={{ minHeight: 54, border: "none", borderRadius: 14, background: "#4B7A35", cursor: "pointer", fontFamily: "inherit", fontSize: 16.5, fontWeight: 800, color: "#fff", boxShadow: "none" }}>{jubKon?.typ === edTyp || edit ? "Pokračovať v Editore oznámení ›" : "Otvoriť Editor oznámení ›"}</button> : potvrdenie}>
+      dole={jub ? <button type="button" onClick={() => setJubOtv(true)} style={{ minHeight: 54, border: "none", borderRadius: 14, background: "#4B7A35", cursor: "pointer", fontFamily: "inherit", fontSize: 16.5, fontWeight: 800, color: "#fff", boxShadow: "none" }}>{jubKon?.typ === edTyp || edit ? "Pokračovať v Editore oznámení ›" : "Otvoriť Editor oznámení ›"}</button> : <>{chybaEl}{potvrdenie}</>}>
       <div style={{ padding: "18px 16px 28px", display: "flex", flexDirection: "column", gap: 14 }}>{editEl}{polia}</div>
     </RamPisania>}
     {jub && jubOtv && <EditorOznameni key={`${edit ?? "novy"}-${edTyp}`} ref={edRef} title={ODRUHY[odr][0]} onSend={(p) => { void naEditor(p); }} onUdalost={(e) => zapisEditora({ udalost: e.akcia, typ: edTyp, papier: e.papier ?? null, kto: "farar", stranka_typ: "farnost", stranka: strankaId, pri_zbierke: false })}

@@ -11,7 +11,7 @@
 // ============================================================
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { bezDataUrl, nahrajSuborUrl } from "@/lib/uploadFoto";
+import { bezDataUrl, nahrajSuborUrl, zmensiPreZariadenie, uvolniKoncepty } from "@/lib/uploadFoto";
 import { nacitajStav, ulozStav, synchronizujStav } from "./stav";
 import type { VieraFeedItem } from "./mock";
 
@@ -51,7 +51,13 @@ const bezLokalnehoVidea = (it: VieraFeedItem): VieraFeedItem => (it.video && /^(
 export async function zapisPrispevokIsto(fid: string, it: VieraFeedItem, uprava = false): Promise<string | null> {
   const lok = nacitajStav<VieraFeedItem[]>("prispevky", fid, []);
   const doZoznamu = (x: VieraFeedItem) => (uprava ? lok.map((y) => (y.id === x.id ? x : y)) : [x, ...lok.filter((y) => y.id !== x.id)]);
-  if (!supabase) return ulozStav("prispevky", fid, doZoznamu(it)) ? null : "Na zariadení nie je miesto. Zmenšite alebo vynechajte fotku a skúste znova.";
+  // OPRAVY 335: bez servera fotky zmenšené ako pre Storage; keď miesto nestačí, uvoľnia sa staré rozpísané koncepty a skúsi sa znova
+  if (!supabase) {
+    const mensi = await zmensiPreZariadenie(it);
+    if (ulozStav("prispevky", fid, doZoznamu(mensi))) return null;
+    if (uvolniKoncepty() && ulozStav("prispevky", fid, doZoznamu(mensi))) return null;
+    return "Na zariadení nie je miesto. Zmenšite alebo vynechajte fotku a skúste znova.";
+  }
   let cist: VieraFeedItem;
   try { cist = await bezDataUrl(it, "prispevky"); } catch (e) { return e instanceof Error ? e.message : "Fotky sa nepodarilo nahrať. Skúste znova."; }
   // ako bezObrazkov (Samuel, bod 270): video z galérie udalosti do Storage, nenahraté ostane len na tomto zariadení
