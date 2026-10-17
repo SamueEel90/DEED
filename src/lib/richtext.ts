@@ -100,12 +100,18 @@ export function sanitizujHtml(spinave: string): string {
   prepisDeti(doc.body, out, doc);
   // prázdne odseky (Word ich sype) — von; <p> s len whitespace zmaž
   out.querySelectorAll("p, h3, li").forEach((p) => { if (!p.textContent?.trim() && !p.querySelector("br")) p.remove(); });
+  // OPRAVY 336: text mimo odseku (iPhone píše prvý riadok bez <p>) → vlastný odsek, nech uložené HTML vždy začína značkou
+  let volne: Node[] = [];
+  const zabal = (pred: Node | null) => { if (!volne.length) return; if (volne.some((n) => n.textContent?.trim() || n.nodeName === "BR")) { const p = doc.createElement("p"); out.insertBefore(p, pred); volne.forEach((n) => p.appendChild(n)); } else volne.forEach((n) => n.parentNode?.removeChild(n)); volne = []; };
+  [...out.childNodes].forEach((n) => { const blok = n.nodeType === Node.ELEMENT_NODE && /^(P|H3|UL|OL)$/.test(n.nodeName); if (blok) zabal(n); else volne.push(n); });
+  zabal(null);
   return out.innerHTML.trim();
 }
 
 /** Je uložený text HTML (z editora), alebo starý čistý text (render cez pre-wrap)? */
 export function jeHtmlText(t?: string | null): boolean {
-  return !!t && /^\s*</.test(t) && /<\/?(p|br|strong|em|h3|ul|ol|li|a|span)[\s>/]/i.test(t);
+  // OPRAVY 336: HTML aj keď nezačína značkou (iPhone: prvý riadok bez <p>, ďalšie v <div>/<p>) — inak sa ukázali surové „<p>“, „<strong>“, „&nbsp;“
+  return !!t && (/<\/?(p|br|strong|em|b|i|h3|ul|ol|li|a|span|div)(\s[^>]*)?\/?>/i.test(t) || /&(nbsp|amp|lt|gt|quot);/.test(t));
 }
 
 /** Čistý text z HTML — pre krátke náhľady v kartách/riadkoch (tam HTML nepatrí). */
@@ -113,7 +119,7 @@ export function cistyText(t?: string | null): string {
   if (!t) return "";
   if (!jeHtmlText(t)) return t;
   // OPRAVY 262: odseky, nadpisy a riadky zoznamu oddelené novým riadkom — nikdy zlepené slová („históriaFarský“)
-  const doc = new DOMParser().parseFromString(t.replace(/<br\s*\/?>/gi, "\n").replace(/<\/(p|h[1-6]|li|div|ul|ol)>/gi, "$&\n"), "text/html");
+  const doc = new DOMParser().parseFromString(t.replace(/<br\s*\/?>/gi, "\n").replace(/<(p|h[1-6]|li|div|ul|ol)(\s[^>]*)?>/gi, "\n$&").replace(/<\/(p|h[1-6]|li|div|ul|ol)>/gi, "$&\n"), "text/html");
   return (doc.body.textContent || "").split("\n").map((r) => r.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n");
 }
 

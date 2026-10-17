@@ -36,14 +36,30 @@ export async function nacitajNastavenia(id: string): Promise<void> {
   zmena();
 }
 
-/** zapíše hodnotu a naplánuje uloženie celej stránky */
+/** OPRAVY 336: na server idú len zmenené kľúče a server ich zlúči s uloženým objektom (0103 nastavenia_zapis).
+ *  Predtým sa zapisoval celý objekt — zariadenie so starou alebo ešte nenačítanou kópiou prepísalo kľúče,
+ *  ktoré nemenilo (napr. farár „duch“ v Ľuďoch zmizol po zmene iného nastavenia na inom zariadení). */
+let zmeneneKluce = new Set<string>();
+async function posliKluce(id: string, kluce: string[], hodnoty: Record<string, unknown>): Promise<void> {
+  if (!supabase || !kluce.length) return;
+  const cast = Object.fromEntries(kluce.map((k) => [k, hodnoty[k]]));
+  const { error } = await supabase.rpc("nastavenia_zapis", { p_stranka: id, p_data: cast });
+  if (!error) return;
+  // 0103 ešte nebeží: prečítaj uložené, zlúč len zmenené kľúče, zapíš (nikdy nie celá stará kópia)
+  if (!/nastavenia_zapis|PGRST202|42883|function/i.test(`${error.code ?? ""} ${error.message ?? ""}`)) return;
+  const { data: r } = await supabase.from("nastavenia_stranky").select("data").eq("stranka", id).maybeSingle();
+  const ulozene = r?.data && typeof r.data === "object" ? (r.data as Record<string, unknown>) : {};
+  await supabase.from("nastavenia_stranky").upsert({ stranka: id, data: { ...ulozene, ...cast } }, { onConflict: "stranka" });
+}
+
+/** zapíše hodnotu a naplánuje uloženie zmenených kľúčov */
 export function zapisNastavenie(kluc: string, hodnota: unknown): void {
   data = { ...data, [kluc]: hodnota };
   zmena();
   if (!supabase || !stranka) return;
-  const id = stranka, obsah = data;
+  const id = stranka;
+  zmeneneKluce.add(kluc);
   if (casovac) clearTimeout(casovac);
-  // pri ukladaní tej istej stránky ide najnovší stav (aj to, čo prišlo zo servera medzitým)
-  cakajuce = () => { void supabase!.from("nastavenia_stranky").upsert({ stranka: id, data: stranka === id ? data : obsah }, { onConflict: "stranka" }); };
+  cakajuce = () => { const k = [...zmeneneKluce], h = data; zmeneneKluce = new Set(); void posliKluce(id, k, h); };
   casovac = setTimeout(dopis, 600);
 }

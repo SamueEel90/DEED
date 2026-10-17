@@ -134,7 +134,25 @@ export function usePrispevkySync(fid?: string): number {
     let zije = true;
     void Promise.all([synchronizujPrispevky(fid), synchronizujStav(fid)])
       .then(([a, b]) => { if (zije && (a || b)) setVerzia((v) => v + 1); });
-    return () => { zije = false; };
+    // OPRAVY 336: oznam z iného zariadenia sa ukáže do 5 s — malý dotaz (id + čas úpravy), celé stiahnutie len pri zmene
+    if (!supabase) return () => { zije = false; };
+    let podpis = "", bezi = false;
+    const skontroluj = async () => {
+      if (bezi || document.visibilityState === "hidden") return;
+      bezi = true;
+      try {
+        const { data, error } = await supabase!.from("naboz_prispevok").select("id,upravene").eq("farnost_id", fid);
+        if (error || !zije) return;
+        const p = (data ?? []).map((r) => `${r.id}@${r.upravene}`).sort().join("|");
+        if (podpis && p !== podpis && (await synchronizujPrispevky(fid)) && zije) setVerzia((v) => v + 1);
+        podpis = p;
+      } finally { bezi = false; }
+    };
+    void skontroluj();
+    const t = window.setInterval(() => { void skontroluj(); }, 5000);
+    const naFokus = () => { void skontroluj(); };
+    window.addEventListener("focus", naFokus); document.addEventListener("visibilitychange", naFokus);
+    return () => { zije = false; window.clearInterval(t); window.removeEventListener("focus", naFokus); document.removeEventListener("visibilitychange", naFokus); };
   }, [fid]);
   return verzia;
 }

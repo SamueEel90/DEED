@@ -21,7 +21,7 @@ import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { GaleriaEditor, cistyText, NASTROJE } from "./obsahZbierky";
 import { vlastnePrispevky, zmazPrispevok, type VieraFeedItem } from "@/features/viera/mock";
-import { zapisPrispevokIsto } from "@/features/viera/prispevkyDB";
+import { zapisPrispevokIsto, usePrispevkySync } from "@/features/viera/prispevkyDB";
 import { Plagat, prazdneUdaje, prvaVolba, chybaOznamu, popisOznamu, type DruhOznamu, type UdajeOznamu, type VolbaSablony } from "@/features/viera/Sablony";
 import { zmenKostol, CAS_OK, pekny, type KalKostol } from "@/lib/kalendarFarnosti";
 import { stitokOznamu } from "./OmseKalendar";
@@ -291,6 +291,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       : (dr !== 0 || !!obrazok) && (obrazok && jePlagat ? <ObrazokPlagatu src={obrazok} /> : <ObrazokOznamu src={obrazok} inic={iniciy(meno)} />) });
 
   // ---- zverejniť / uložiť zmeny ----
+  usePrispevkySync(strankaId); // OPRAVY 336: Správa oznamov vždy so serverom (oznam z telefónu sa na PC ukáže do 5 s, staré nezmiznú)
   const zoznam = vlastnePrispevky(strankaId);
   const odruh = ODRUHY[odr]?.[1];
   const blokUpoz = dr === 0 ? "oz" as const : dr === 1 ? "pr" as const : odruh === "parte" ? "sp" as const : "te" as const;

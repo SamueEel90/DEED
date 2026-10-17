@@ -722,6 +722,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   const dm = (d: Date) => `${d.getDate()}. ${d.getMonth() + 1}.`;
   const den = (d: Date) => DNW_V[dvt(d)].toLocaleLowerCase("sk-SK");
   const suhrn = (...x: (string | false | undefined | null)[]) => x.filter(Boolean).join(" · ");
+  const ozNovych = vidO ? ozAll.filter((x) => { const st = vidO.stav(x.id, psOz(x)); return st === "nove" || st === "zmenene"; }).length : 0;
   const modliN = prosby.reduce((a, x) => a + reakV(x, "modl").zoznam.length, 0);
   const deti1 = stretnutiaF.filter((x) => !skoncilo(x)).sort((a, b) => a.dat.localeCompare(b.dat));
   // OPRAVY 330: čakajúci príspevok nikdy v súhrne bloku (nadpis by sa prečítal mimo rozmazanej karty)
@@ -732,7 +733,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   const telS = k?.telefony.map((t) => t.cislo.trim()).find(Boolean) || k?.emaily.map((e) => e.adresa.trim()).find(Boolean) || "";
   const uhS = maUH(uh) ? DNI_UH.map((dn, i) => { const c = casyUH(uh, i); return c.length ? `${dn} ${c.map(textCasu).join(", ")}` : ""; }).find(Boolean) : "";
   const S = {
-    ozn: suhrn(poc(ozAll.length, "oznam", "oznamy", "oznamov"), (ozAll.find((o) => o.zm) ?? ozAll[0])?.t),
+    // OPRAVY 336: počet = všetky platné oznamy (aj videné), k tomu koľko je nových
+    ozn: suhrn(poc(ozAll.length, "oznam", "oznamy", "oznamov"), ozNovych ? poc(ozNovych, "nový", "nové", "nových") : null, (ozAll.find((o) => o.zm) ?? ozAll[0])?.t),
     vypN: p ? suhrn("Príhovor farára", `pridaný ${dd(p.cas)}`) : VO.length ? poc(VO.length, "video", "videá", "videí") : "",
     vypK: suhrn(p ? "Príhovor farára" : VO.length > 0 && poc(VO.length, "video", "videá", "videí"), zivoT ? "naživo" : dalsiaOnline && `${p ? "aj online" : "Online"} omša ${dalsiaOnline}`),
     mod: suhrn(poc(prosby.length, "prosba", "prosby", "prosieb"), modliN > 0 && `${modliN} sa modlí`),
@@ -797,7 +799,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
             <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><span style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".1em", color: x.zm ? CERVENA : INK3 }}>{x.chip}</span>{kde && <span style={{ padding: "2px 8px", borderRadius: 7, background: "var(--nf-gSoft)", color: "var(--nf-gInk)", fontSize: 12.5, fontWeight: 800 }}>{kde}</span>}</span>
             <b style={{ fontSize: 19, lineHeight: 1.3, overflowWrap: "anywhere" }}>{x.t}</b>
-            {x.txt && <div className="vid-skry">{o ? <Viac text={x.txt} velkost={16} riadkov={40} /> : <button type="button" onClick={() => setOzOtv(x.id)} style={{ padding: 0, border: "none", background: "transparent", color: INK2, fontFamily: "inherit", fontSize: 16, textAlign: "left", cursor: "pointer", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{x.txt}</button>}</div>}
+            {x.txt && <div className="vid-skry">{o ? <Viac text={x.txt} velkost={16} riadkov={40} /> : <button type="button" onClick={() => setOzOtv(x.id)} style={{ padding: 0, border: "none", background: "transparent", color: INK2, fontFamily: "inherit", fontSize: 16, textAlign: "left", cursor: "pointer", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{cistyText(x.txt)}</button>}</div>}
             {x.foto && <div className="vid-skry"><button type="button" onClick={() => otvorGal(x.t, x.gal)} aria-label="Fotky na celú obrazovku" style={{ alignSelf: "flex-start", border: "none", padding: 0, borderRadius: 12, overflow: "hidden", cursor: "zoom-in", marginTop: 4, position: "relative" }}><img src={x.foto} alt="" style={{ width: 220, maxWidth: "100%", aspectRatio: "16 / 9", objectFit: "cover", display: "block" }} /><OdznakFotiek m={x.gal} /></button></div>}
             {o && hlavickaFar(x.af)}{o && <TlZbalit onZbal={() => setOzOtv(null)} />}
           </span>
@@ -1127,7 +1129,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
         <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><span style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".1em", color: x.zm ? CERVENA : INK3 }}>{x.chip}</span>{kde && <span style={{ padding: "2px 8px", borderRadius: 7, background: "var(--nf-gSoft)", color: "var(--nf-gInk)", fontSize: 12.5, fontWeight: 800 }}>{kde}</span>}</span>
         <b style={{ fontSize: 19, lineHeight: 1.3, overflowWrap: "anywhere" }}>{x.t}</b>
-        {x.txt && (o ? <Viac text={x.txt} velkost={16} riadkov={40} /> : <button type="button" onClick={() => setOzOtv(x.id)} style={{ padding: 0, border: "none", background: "transparent", color: INK2, fontFamily: "inherit", fontSize: 16, textAlign: "left", cursor: "pointer", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{x.txt}</button>)}
+        {x.txt && (o ? <Viac text={x.txt} velkost={16} riadkov={40} /> : <button type="button" onClick={() => setOzOtv(x.id)} style={{ padding: 0, border: "none", background: "transparent", color: INK2, fontFamily: "inherit", fontSize: 16, textAlign: "left", cursor: "pointer", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{cistyText(x.txt)}</button>)}
         {x.foto && <button type="button" onClick={() => otvorGal(x.t, x.gal)} aria-label="Fotky na celú obrazovku" style={{ alignSelf: "flex-start", border: "none", padding: 0, borderRadius: 12, overflow: "hidden", cursor: "zoom-in", marginTop: 4, position: "relative" }}><img src={x.foto} alt="" style={{ width: 220, maxWidth: "100%", aspectRatio: "16 / 9", objectFit: "cover", display: "block" }} /><OdznakFotiek m={x.gal} /></button>}
         {o && hlavickaFar(x.af)}{o && <TlZbalit onZbal={() => setOzOtv(null)} />}
       </span>
@@ -1245,7 +1247,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   type MB = { id: MBlokId; t: string; popis: string; suhrn: string; ma: boolean; obsah: (vo2: boolean) => ReactNode; sipky?: { text: string; zvisle?: boolean; posun: (s: 1 | -1) => void; ukaz: boolean }; pozadie?: string };
   const MBL: Record<string, MB> = {
     zbierky: { id: "zbierky", t: "Zbierky farnosti", popis: "", suhrn: stvorce.length ? poc(stvorce.length, "zbierka", "zbierky", "zbierok") : zbS, ma: maZbierky, obsah: () => mZbierky },
-    ozn: { id: "ozn", t: "Oznamy farnosti", popis: "Čo farnosť oznamuje tento týždeň.", suhrn: poc(ozAll.length, "oznam", "oznamy", "oznamov"), ma: ozAll.length > 0, obsah: (vo2) => zoznamY(pasOzn, ozZor.map(mOznRiadok), vo2), sipky: { text: "Ďalšie oznamy", zvisle: true, posun: posOzn, ukaz: ozAll.length > 3 } },
+    ozn: { id: "ozn", t: "Oznamy farnosti", popis: "Čo farnosť oznamuje tento týždeň.", suhrn: suhrn(poc(ozAll.length, "oznam", "oznamy", "oznamov"), ozNovych ? poc(ozNovych, "nový", "nové", "nových") : null), ma: ozAll.length > 0, obsah: (vo2) => zoznamY(pasOzn, ozZor.map(mOznRiadok), vo2), sipky: { text: "Ďalšie oznamy", zvisle: true, posun: posOzn, ukaz: ozAll.length > 3 } },
     vyp: { id: "vyp", t: nzB("vyp", "Vypočuj si"), popis: "Krátky príhovor farára.", suhrn: S.vypK, ma: maVyp, obsah: () => mVyp },
     mod: { id: "mod", t: nzB("mod", "Modli sa s nami"), popis: "Prosby veriacich. Ťuknite Modlím sa s vami, človek uvidí, že nie je sám.", suhrn: poc(prosby.length, "prosba", "prosby", "prosieb"), ma: prosby.length > 0, obsah: () => mModli, sipky: { text: "Ďalšie prosby", posun: posMod, ukaz: prosby.length > Math.floor(nPas(3.25)) } },
     pom: { id: "pom", t: nzB("pom", "Pomôž"), popis: "Priložte ruku k dielu. Brigáda a služba pri omši.", suhrn: poc(pomoz.length, "prosba o pomoc", "prosby o pomoc", "prosieb o pomoc"), ma: pomoz.length > 0, obsah: () => mPomoz },
@@ -1333,7 +1335,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
     const stred = <>
       {r.kicker && <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".1em", color: r.kickerFarba ?? INK3 }}>{r.kicker}</span>}
       {r.onTap ? <button type="button" onClick={r.onTap} style={{ padding: 0, border: "none", background: "transparent", color: INK, fontFamily: "inherit", textAlign: "left", cursor: "pointer" }}>{nadpis}</button> : nadpis}
-      {r.txt && <span className="vid-skry" style={{ fontSize: pc ? 17 : 16, lineHeight: 1.55, color: INK2, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden", overflowWrap: "anywhere" }}>{r.txt}</span>}
+      {r.txt && <span className="vid-skry" style={{ fontSize: pc ? 17 : 16, lineHeight: 1.55, color: INK2, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden", overflowWrap: "anywhere" }}>{cistyText(r.txt)}</span>}
       {r.extra && <span className="vid-skry" style={{ display: "contents" }}>{r.extra}</span>}
     </>;
     if (!pc) return (
