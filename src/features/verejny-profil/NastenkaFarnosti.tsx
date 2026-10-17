@@ -46,10 +46,10 @@ import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import { ZmensenyModul } from "@/features/zbierka/ZmensenyModul";
 import type { TestProfil, TestSektor } from "@/lib/testProfily";
 import { kedyBrigady } from "@/features/rola/BrigadyFarnosti";
-import { nacitajStav as stavSpravyZbierky, useZmenySpravy, type PodakovanieZbierky } from "@/lib/zbierkaSprava";
+import { nacitajStav as stavSpravyZbierky, useZmenySpravy, type PodakovanieZbierky, type SpravaPostupu, zoradPostup, datumPostupu } from "@/lib/zbierkaSprava";
 import { useDarcovia, sucetDarov, relCas, nastavCiste, identitaDarcu, zobrazenaSuma, useUkazSumy, SumyDarcovKontext, SektorDarcuKontext } from "@/lib/darcovia";
 import { useZvoncekOkno, nadpisOkna } from "@/lib/zvoncekOmse";
-import { nacitajZbierkyStranky, zbierkyStrankyZPamate, useZmenyZbierok, cielCislo, type SpustenaZbierka } from "@/lib/novaZbierka";
+import { nacitajZbierkyStranky, zbierkyStrankyZPamate, useZmenyZbierok, cielCislo, type SpustenaZbierka, type MediumZbierky } from "@/lib/novaZbierka";
 import { useKalendar, kostolKal, omseDna, polozkyDna, druhPolozky, minuty, iso, dvt, nazovOmse, rozsahTyzdna, DNI_D, MES_G } from "@/lib/kalendarFarnosti";
 import { stiahniIcs } from "@/lib/kalendar";
 import { sumaEur } from "@/lib/suma";
@@ -2068,18 +2068,6 @@ function ZbierkaKarta({ z, chip = "ZBIERKA", onTap }: { z: SpustenaZbierka; chip
   return <KartaNF foto={foto} chip={chip} farba={TEAL} nazov={z.nazov || "Zbierka"} onTap={onTap} />; // OPRAVY 293: bez súm
 }
 
-/** OPRAVY 293 (4): fotka na celú obrazovku cez všetko (× Zavrieť 44 px); stránka pod ňou sa nehýbe, po zavretí ostane tam, kde bola */
-function FotoCela({ src, onZavri }: { src: string; onZavri: () => void }) {
-  useEffect(() => {
-    const k = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopImmediatePropagation(); onZavri(); } };
-    window.addEventListener("keydown", k, true); return () => window.removeEventListener("keydown", k, true);
-  }, [onZavri]);
-  return createPortal(<div role="dialog" aria-modal="true" aria-label="Fotka" onClick={onZavri} style={{ position: "fixed", inset: 0, zIndex: 1400, background: "#0B0A08", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, overscrollBehavior: "contain", touchAction: "none" }}>
-    <img src={src} alt="" onClick={(e) => e.stopPropagation()} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
-    <button type="button" onClick={onZavri} autoFocus style={{ position: "absolute", top: "max(14px, env(safe-area-inset-top))", right: 14, minHeight: 44, minWidth: 44, padding: "0 16px", borderRadius: 22, border: "none", background: "rgba(255,255,255,.14)", color: "#fff", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" }}>× Zavrieť</button>
-  </div>, document.body);
-}
-
 /** OPRAVY 293 (2, 3): darcovia hneď pod zbierkou — posledné 3 (mobil 2), mená a čas bez súm; riadok omše so sumou (294) */
 function DarcoviaDetailu({ refId, n, ukoncena }: { refId: string; n: number; /** OPRAVY 314: ukončená zbierka — bez „rastie naživo“ */ ukoncena?: boolean }) {
   const dary = useDarcovia(refId);
@@ -2104,12 +2092,69 @@ function DarcoviaDetailu({ refId, n, ukoncena }: { refId: string; n: number; /**
     </div>);
 }
 
+/** OPRAVY 332: správa pri zbierke farnosti — priebežná (postup) alebo posledná (poďakovanie) */
+interface PolozkaSpravyZb { id: string; kicker: string; datum: string; popis: string; popis2: string; media: MediumZbierky[] }
+/** OPRAVY 332: fotky správy — tá istá galéria ako hore pri zbierke (261): veľká fotka „1 / N · zväčšiť“, pod ňou rad miniatúr (mobil do boku), ťuk = celá obrazovka */
+function GaleriaSpravy({ media, nadpis, wide, onFoto }: { media: MediumZbierky[]; nadpis: string; wide: boolean; onFoto: (m: MediumGalerie[], i: number, t: string) => void }) {
+  const g: MediumGalerie[] = [...media.filter((m) => m.typ === "foto" && ziveObr(m.src)), ...media.filter((m) => m.typ === "video" && ziveObr(m.src))]
+    .map((m) => (m.typ === "video" ? { typ: "video" as const, src: m.src, popis: m.popis } : { typ: "foto" as const, src: m.src, popis: m.popis }));
+  if (!g.length) return null;
+  const prva = g[0], tile = wide ? 72 : 64;
+  const stitok: CSSProperties = { position: "absolute", bottom: 8, height: 28, padding: "0 10px", borderRadius: 8, background: "rgba(10,8,5,.72)", color: "#fff", fontSize: 13.5, fontWeight: 800, display: "flex", alignItems: "center", gap: 4, fontVariantNumeric: "tabular-nums" };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+      <button type="button" onClick={() => onFoto(g, 0, nadpis)} aria-label={g.length > 1 ? `Fotky, ${g.length}` : "Zväčšiť fotku"} style={{ position: "relative", width: "100%", aspectRatio: "16 / 9", padding: 0, border: "none", borderRadius: 14, overflow: "hidden", background: BG, cursor: "zoom-in", boxShadow: "none" }}>
+        {prva.typ === "foto" ? <img src={prva.src} alt={prva.popis ?? ""} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          : <span aria-hidden="true" style={{ position: "absolute", left: "50%", top: "50%", marginLeft: -9, marginTop: -14, width: 0, height: 0, borderLeft: "24px solid #fff", borderTop: "14px solid transparent", borderBottom: "14px solid transparent" }} />}
+        <span style={{ ...stitok, left: 8 }}>1 / {g.length}</span>
+        <span style={{ ...stitok, right: 8, fontSize: 13 }}>⤢ zväčšiť</span>
+      </button>
+      {g.length > 1 && <div style={{ display: "flex", gap: 8, overflowX: "auto", overscrollBehaviorX: "contain", scrollbarWidth: "none", paddingBottom: 2 } as CSSProperties}>
+        {g.slice(1).map((m, k) => <button key={k} type="button" onClick={() => onFoto(g, k + 1, nadpis)} aria-label={`Fotka ${k + 2} z ${g.length}${m.popis ? `: ${m.popis}` : ""}`} style={{ position: "relative", flex: "none", width: tile, height: tile, padding: 0, border: "none", borderRadius: 10, overflow: "hidden", background: "#2A2620", cursor: "zoom-in", boxShadow: "none" }}>
+          {m.typ === "foto" ? <img src={m.src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+            : <span aria-hidden="true" style={{ position: "absolute", left: "50%", top: "50%", marginLeft: -5, marginTop: -8, width: 0, height: 0, borderLeft: "14px solid #fff", borderTop: "8px solid transparent", borderBottom: "8px solid transparent" }} />}
+        </button>)}
+      </div>}
+    </div>);
+}
+/** OPRAVY 332: „Ako to pokračuje · N“ — najnovšia hore celá, staršie zbalené (dátum · prvý riadok ›), ťuk rozbalí, Zbaliť */
+function SpravyZbierky({ l, wide, onFoto }: { l: PolozkaSpravyZb[]; wide: boolean; onFoto: (m: MediumGalerie[], i: number, t: string) => void }) {
+  const [otv, setOtv] = useState<Set<string>>(() => new Set());
+  const [viac, setViac] = useState<Set<string>>(() => new Set());
+  const prepni = (set: (f: (x: Set<string>) => Set<string>) => void, id: string, on: boolean) => set((x) => { const n = new Set(x); if (on) n.add(id); else n.delete(id); return n; });
+  return (
+    <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <b style={{ fontSize: wide ? 22 : 20, letterSpacing: "-.01em", color: INK, padding: "4px 2px 0" }}>Ako to pokračuje · {l.length}</b>
+      {l.map((x, i) => {
+        const cela = i === 0 || otv.has(x.id), t = celyText(x.popis, x.popis2), dlhy = !!cistyText(x.popis2), plny = wide || viac.has(x.id) || !dlhy;
+        const nadpis = x.kicker || (x.datum ? `Správa · ${x.datum}` : "Správa");
+        if (!cela) return (
+          <button key={x.id} type="button" onClick={() => prepni(setOtv, x.id, true)} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 56, padding: "10px 16px", borderRadius: 16, border: "none", background: KARTA, color: INK, fontFamily: "inherit", textAlign: "left", cursor: "pointer", boxShadow: "none" }}>
+            <span style={{ flex: "none", fontSize: 14, fontWeight: 800, color: INK3, fontVariantNumeric: "tabular-nums" }}>{x.datum}</span>
+            <span style={{ flex: 1, minWidth: 0, fontSize: 15.5, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cistyText(x.popis || x.popis2) || "Fotky"}</span>
+            <span aria-hidden="true" style={{ flex: "none", fontSize: 20, color: INK3 }}>›</span>
+          </button>);
+        return (
+          <div key={x.id} style={{ padding: "16px 18px", borderRadius: 18, background: KARTA, color: INK, display: "flex", flexDirection: "column", gap: 10 }}>
+            <span style={kicker(x.kicker ? "var(--nf-zlInk, #8A6A1C)" : INK3)}>{x.kicker ? `${x.kicker}${x.datum ? ` · ${x.datum}` : ""}` : x.datum}</span>
+            {t && (plny
+              ? <>{viac.has(x.id) && !wide && cistyText(t).length > 900 && <TlZbalit onZbal={() => prepni(setViac, x.id, false)} />}<FormatovanyText text={t} style={{ fontSize: 16.5, lineHeight: 1.55, color: INK2 }} />{viac.has(x.id) && !wide && <TlZbalit onZbal={() => prepni(setViac, x.id, false)} />}</>
+              : <span style={{ display: "flex", flexDirection: "column", gap: 4 }}><FormatovanyText text={x.popis} style={{ fontSize: 16.5, lineHeight: 1.55, color: INK2 }} />
+                  <button type="button" onClick={() => prepni(setViac, x.id, true)} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "var(--nf-gInk)", cursor: "pointer", boxShadow: "none" }}>… viac</button></span>)}
+            <GaleriaSpravy media={x.media} nadpis={nadpis} wide={wide} onFoto={onFoto} />
+            {i > 0 && <TlZbalit onZbal={() => prepni(setOtv, x.id, false)} />}
+          </div>);
+      })}
+    </section>);
+}
+
 /** KARTA 57C §3 — detail zbierky: vľavo zbierka alebo parte (ostáva na mieste), vpravo platobný modul; mobil pod sebou */
 export interface DetailF { data: ZbierkaData; typ: "hl" | "zv" | "far" | "rodina" | "pin" | "ukon"; chip: string; t: string; txt: string; obr?: string; parte?: boolean; /** OPRAVY 187 */ pin?: ZbierkaNaPripnutie;
   /** OPRAVY 314 (C): ukončená zbierka s poďakovaním — bez platobného modulu */ dak?: PodakovanieZbierky }
 function DetailZbierky({ d, strankaId, onZavri }: { d: DetailF; strankaId: string; onZavri: () => void }) {
   const [galI, setGalI] = useState<number | null>(null); // OPRAVY 317: otvorený prehliadač fotiek (Esc zavrie len ten)
-  useEffect(() => { if (galI != null) return; const k = (e: KeyboardEvent) => { if (e.key === "Escape") onZavri(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onZavri, galI]);
+  const [galS, setGalS] = useState<{ m: MediumGalerie[]; i: number; t: string } | null>(null); // OPRAVY 332: fotky správy (postup, poďakovanie)
+  useEffect(() => { if (galI != null || galS != null) return; const k = (e: KeyboardEvent) => { if (e.key === "Escape") onZavri(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onZavri, galI, galS]);
   const rod = d.typ === "rodina", ram = d.pin ? farbaPripnutej(d.pin) : rod ? FIALOVA : TEAL, hc = rod ? FIALOVA : ZELENA;
   // OPRAVY 187: dar z detailu pripnutej zbierky nesie zdroj = táto farnosť
   useEffect(() => { if (!d.pin || d.pin.ukazkova) return; nastavZdrojDaru(d.data.id, strankaId); return () => nastavZdrojDaru(d.data.id, null); }, [d.pin, d.data.id, strankaId]);
@@ -2120,8 +2165,13 @@ function DetailZbierky({ d, strankaId, onZavri }: { d: DetailF; strankaId: strin
   const ukonD = d.typ === "ukon";
   const daryU = useDarcovia(ukonD ? d.data.id : "");
   const ludiU = daryU.length; // ako DARCOVIA · N nižšie
-  const [fotoDak, setFotoDak] = useState<string | null>(null);
-  const [viacDak, setViacDak] = useState(false);
+  // OPRAVY 332: Ako to pokračuje — priebežné správy farára (zbierka farnosti, nie Hlavná), pri ukončenej navrchu poďakovanie
+  useZmenySpravy();
+  const postup: SpravaPostupu[] = d.typ === "far" || d.typ === "ukon" ? zoradPostup(stavSpravyZbierky(d.data.id)?.postup ?? []) : [];
+  const spravyZb: PolozkaSpravyZb[] = [
+    ...(ukonD && d.dak ? [{ id: "dak", kicker: "ĎAKUJEME · NA ČO SME PENIAZE POUŽILI", datum: d.dak.ulozene ? datumPostupu(d.dak.ulozene.slice(0, 10)) : "", popis: d.dak.popis, popis2: d.dak.popis2, media: d.dak.media }] : []),
+    ...postup.map((p) => ({ id: p.id, kicker: "", datum: datumPostupu(p.datum), popis: p.popis, popis2: p.popis2, media: p.media })),
+  ];
   // OPRAVY 293: zbierky farnosti — malá fotka vedľa názvu (PC) / na šírku (mobil), ťuk = celá fotka, darcovia hneď pod zbierkou
   const [viacTxt, setViacTxt] = useState(false);
   const novy = farska && !d.parte;
@@ -2168,21 +2218,11 @@ function DetailZbierky({ d, strankaId, onZavri }: { d: DetailF; strankaId: strin
                 <div style={{ padding: "14px 18px", borderRadius: 16, background: "var(--nf-gSoft)", border: "1.5px solid var(--nf-gBd)" }}>
                   <b style={{ fontSize: 19, color: "var(--nf-gInk)" }}>Vyzbierali sme {eur(daryU.reduce((a, r) => a + r.suma, 0))} od {ludiU} {ludiU === 1 ? "človeka" : "ľudí"}</b>
                 </div>
-                <div style={{ padding: "16px 18px", borderRadius: 18, background: KARTA, color: INK, display: "flex", flexDirection: "column", gap: 10 }}>
-                  <span style={kicker("var(--nf-zlInk, #8A6A1C)")}>ĎAKUJEME · NA ČO SME PENIAZE POUŽILI</span>
-                  {(() => { const t = celyText(d.dak.popis, d.dak.popis2); return t ? (wide || viacDak || !cistyText(d.dak.popis2)
-                    ? <>{viacDak && !wide && cistyText(t).length > 900 && <TlZbalit onZbal={() => setViacDak(false)} />}<FormatovanyText text={wide || viacDak ? t : d.dak.popis} style={{ fontSize: 16.5, lineHeight: 1.55, color: INK2 }} />{viacDak && !wide && <TlZbalit onZbal={() => setViacDak(false)} />}</>
-                    : <span style={{ display: "flex", flexDirection: "column", gap: 4 }}><FormatovanyText text={d.dak.popis} style={{ fontSize: 16.5, lineHeight: 1.55, color: INK2 }} />
-                        <button type="button" onClick={() => setViacDak(true)} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "var(--nf-gInk)", cursor: "pointer", boxShadow: "none" }}>… viac</button></span>) : null; })()}
-                  {d.dak.media.filter((m) => m.typ === "foto" && ziveObr(m.src)).length > 0 && <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 }}>
-                    {d.dak.media.filter((m) => m.typ === "foto" && ziveObr(m.src)).map((m) => <button key={m.id} type="button" onClick={() => setFotoDak(m.src)} aria-label={m.popis ? `Fotka: ${m.popis}` : "Zväčšiť fotku"} style={{ padding: 0, border: "none", borderRadius: 12, overflow: "hidden", aspectRatio: "4 / 3", background: BG, cursor: "zoom-in", boxShadow: "none" }}>
-                      <img src={m.src} alt={m.popis ?? ""} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /></button>)}
-                  </div>}
-                </div>
-                {fotoDak && <FotoCela src={fotoDak} onZavri={() => setFotoDak(null)} />}
               </>}
+              {spravyZb.length > 0 && <SpravyZbierky l={spravyZb} wide={wide} onFoto={(m, i) => setGalS({ m, i, t: d.t })} />}
               <DarcoviaDetailu refId={d.data.id} n={wide ? 3 : 2} ukoncena={ukonD} />
               {galI != null && <CelaGaleria media={galZb} start={galI} nadpis={d.t} onClose={() => setGalI(null)} />}
+              {galS && <CelaGaleria media={galS.m} start={galS.i} nadpis={galS.t} onClose={() => setGalS(null)} />}
             </> : <div style={{ border: `3px solid ${ram}`, background: PAPIER, color: INK, display: "flex", flexDirection: "column", borderRadius: d.parte || rod ? 0 : 22, overflow: "hidden" }}>
               {d.obr && <img src={d.obr} alt="" style={{ width: "100%", maxHeight: "72vh", objectFit: "contain", display: "block", background: BG }} />}
               {d.parte && !d.obr ? <div style={{ padding: "32px 28px 24px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 10 }}>

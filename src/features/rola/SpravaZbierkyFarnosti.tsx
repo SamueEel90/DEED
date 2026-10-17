@@ -20,6 +20,7 @@ import { PodrzZmaz } from "@/components/HromadnyVyber";
 import { VlastnePeniaze } from "./VlastnePeniaze";
 import { SumyPriDarcoch } from "./SumyPriDarcoch";
 import { sumaEur } from "@/lib/suma";
+import { PostupZbierky } from "./PostupZbierky";
 
 const eur = (n: number) => `${sumaEur(n)}`;
 const cis = (n: number) => n.toLocaleString("sk-SK");
@@ -72,6 +73,7 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat, menoSt
   const podiel = rozdelenieZbierkyF(z);
   const foto = fotoZbierky(z);
   const aktivna = z.stav !== "ukoncena" && z.stav !== "vyuctovana";
+  const zbFarnosti = (z.farnost?.druh ?? "farnost") === "farnost";
 
   // ---- OPRAVY 314: Ukončenie a poďakovanie — poďakovanie je v správe zbierky (zbierka_sprava, 0083b), na stránke pri ukončenej zbierke ----
   useZmenySpravy();
@@ -139,7 +141,8 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat, menoSt
       </span>
     </section>
     <div role="tablist" aria-label="Správa zbierky" style={{ flex: "none", display: "flex", gap: 4, borderBottom: "1px solid var(--cardBd)", overflowX: "auto" }}>
-      {["Štatistiky", "Upraviť zbierku", "Ukončenie a poďakovanie"].map((t, i) => <button key={t} type="button" role="tab" aria-selected={tab === i} onClick={() => setTab(i)} style={tabSt(tab === i)}>{t}</button>)}
+      {/* OPRAVY 332: Ako to pokračuje — len zbierka farnosti (rodiny nie, Hlavná má vlastnú Správu) */}
+      {([[0, "Štatistiky"], [1, "Upraviť zbierku"], ...(zbFarnosti ? [[3, "Ako to pokračuje"]] : []), [2, "Ukončenie a poďakovanie"]] as [number, string][]).map(([i, t]) => <button key={t} type="button" role="tab" aria-selected={tab === i} onClick={() => setTab(i)} style={tabSt(tab === i)}>{t}</button>)}
     </div>
 
     {tab === 0 && <>
@@ -190,6 +193,8 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat, menoSt
       </section>
       <PasUlozene u={u} onSpat={onSpat} mobil={mobil} />
     </>}
+
+    {tab === 3 && zbFarnosti && <PostupZbierky z={z} aktivna={aktivna} mobil={mobil} />}
 
     {/* OPRAVY 314 (B): Ukončenie a poďakovanie */}
     {tab === 2 && (hotovo ? (
