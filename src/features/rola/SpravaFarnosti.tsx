@@ -657,7 +657,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       <button type="button" onClick={() => go("profil")} style={{ height: 44, padding: "0 16px", borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--ink)", boxShadow: "none" }}>‹ Späť na úpravu</button>
       <span style={{ fontSize: 14, color: "var(--ink3)" }}>Náhľad · zobrazené je len to, čo ste vyplnili</span>
     </div>
-    <div style={{ borderRadius: 18, overflow: "hidden", border: "1px solid var(--cardBd)" }}><NastenkaFarnosti strankaId={strankaId} meno={cistyNazov(prof.ulozeny?.meno ?? nazov) || "Vaša farnosť"} profil={prof.ulozeny} stit="Silver" /></div>
+    <div style={{ borderRadius: 18, overflow: "hidden", border: "1px solid var(--cardBd)" }}><NastenkaFarnosti bezVidenych strankaId={strankaId} meno={cistyNazov(prof.ulozeny?.meno ?? nazov) || "Vaša farnosť"} profil={prof.ulozeny} stit="Silver" /></div>
   </>;
 
   // KARTA 56B: hlavnú zbierku nejde zmazať, kým beží zbierka farnosti (na jej účet). Zbierky pre veriacich od nej nezávisia (OPRAVY 161).

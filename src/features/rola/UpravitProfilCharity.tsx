@@ -190,7 +190,7 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
           <button type="button" onClick={() => setPohlad("uprava")} style={{ ...tl("obrys", 44), border: "none", color: "var(--gInk)", padding: "0 10px" }}>Upraviť</button>
           <button type="button" onClick={onHotovo} style={tl("zelene", 44)}>Hotovo · späť do Správy</button>
         </div>}
-      <div style={{ borderRadius: 18, overflow: "hidden", border: "1px solid var(--cardBd)" }}><NastenkaFarnosti strankaId={strankaId} meno={menoF} profil={p} stit="Silver" /></div>
+      <div style={{ borderRadius: 18, overflow: "hidden", border: "1px solid var(--cardBd)" }}><NastenkaFarnosti bezVidenych strankaId={strankaId} meno={menoF} profil={p} stit="Silver" /></div>
     </div>);
 
   // ---------- NÁHĽAD / PROFIL ULOŽENÝ = skutočný verejný profil s lištou (OPRAVY 107) ----------

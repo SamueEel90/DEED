@@ -147,6 +147,8 @@ export interface NastenkaProps {
   nahlad?: boolean;
   /** OPRAVY 274: „Pozrieť na stránke ›“ zo Správy — blok s týmto oznamom sa hneď rozbalí */
   doOznamu?: string;
+  /** OPRAVY 333: náhľad v Správe (malý aj „Takto vašu stránku vidia veriaci“) — videné sa nečíta ani nezapisuje */
+  bezVidenych?: boolean;
   /** štít stránky (riadok „kto za zbierku zodpovedá“ v module) */
   stit: StitLevel;
 }
@@ -224,14 +226,14 @@ function ObsahTvaru({ t, velky }: { t: Tes; velky?: boolean }) {
 /** kľúč na zväčšenie: obrázok alebo šablóna farára */
 type Velke = { src: string } | { it: VieraFeedItem };
 
-export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit: stitStranky, doOznamu }: NastenkaProps) {
+export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit: stitStranky, doOznamu, bezVidenych }: NastenkaProps) {
   const kal = useKalendar(strankaId);
   useZmenyPrihovoru(); useZmenyCentralnej(); useZmenyZbierok(); useOdFarnikov(); useReakcieF();
   useCerstveOdFarnikov(strankaId); useCerstveReakcieF(strankaId); usePrispevkySync(strankaId);
   // OPRAVY 307 · 308: pri otvorení stránky vždy aktuálne zo servera (Hlavná zbierka, vzhľad a ďalšie nastavenia farára)
   useEffect(() => { void nacitajCentralnuZbierku(strankaId); void nacitajZbierkyStranky(strankaId); void nacitajVerejne(strankaId, true); }, [strankaId]);
   const vz = useVzhlad(strankaId, false);
-  const vid = useVidenePocas(strankaId); // OPRAVY 297: videné oznamy a akcie sa pri ďalšej návšteve zbalia
+  const vid = useVidenePocas(strankaId, !!nahlad || !!bezVidenych); // OPRAVY 297 · 333 (náhľad zo Správy nič nezapisuje): videné oznamy a akcie sa pri ďalšej návšteve zbalia
   const ja = usePouzivatel();
   useMojeStranky(); // OPRAVY 256: zmena roly v Konáš ako → stránka sa hneď prepočíta
   const kto = klucJa(ja), reg = ja.typ !== "pasivny", mojeMeno = ja.celeMeno?.trim() || "veriaci";
@@ -524,7 +526,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   // OPRAVY 197: krátke oznamy veriacich nepatria medzi oznamy farnosti — majú vlastný blok Od veriacich
   const oznVer = OD.filter((x) => x.k === "oznam").sort((a, b) => b.cas - a.cas);
   // OPRAVY 297: neprečítané celé a hore, videné zbalené pod nimi (náhľad v Správe nezbaľuje a nič neoznačí)
-  const vidO = nahlad ? null : vid;
+  const vidO = vid;
   const psOz = (x: Oz) => podpis(x.t, x.txt, x.foto, x.chip, x.mi?.join(","), x.mimo);
   const psUd = (u: Ud) => podpis(u.t, u.txt, u.kedy, u.foto, u.od);
   const ozZor = zoradVidene(vidO, ozAll, (x) => [x.id, psOz(x)]);
