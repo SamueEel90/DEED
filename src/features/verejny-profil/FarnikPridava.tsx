@@ -64,6 +64,10 @@ type KonVer = { k: DruhFarnika; f: FormularVeriaceho; media: MediumZbierky[] };
 const SKUPINY: [string, DruhFarnika[]][] = [["LEN PRE FARÁRA · NIKTO INÝ NEVIDÍ", ["umysel"]], ["NA STRÁNKU FARNOSTI", ["modlitba", "oznam", "udalost", "fotky"]], ["", ["svadba", "ine", "parte"]]];
 /** BLOK C 235: „Jubileum a iné oznámenie“ vo Viere = Blahoželanie (Pozvánka na oslavu sa vo Viere neponúka) */
 const TYP_EDITORA: Partial<Record<DruhFarnika, TypEditora>> = { parte: "parte", svadba: "svadba", ine: "blahozelanie" };
+/** OPRAVY 334: „Jubileum a iné oznámenie“ v hárku ako dve voľby — Jubileum (Blahoželanie) a Iné oznámenie (Ďakovný list, Ocenenie, Poďakovanie, Pozvánka, Vlastné);
+ *  editor je rovnaký ako u farára, len podpis = meno veriaceho z profilu. Povolenie a blok na stránke ostávajú spoločné (druh „ine“). */
+type VarIne = "blahozelanie" | "ine";
+const VOLBY_INE: [VarIne, string, string][] = [["blahozelanie", "Jubileum · blahoželanie", "výročie, narodeniny, blahoželanie"], ["ine", "Iné oznámenie", "ďakovný list, poďakovanie, pozvánka"]];
 const POZVANIA: [string, string][] = [["Bez prihlásenia", "len informácia"], ["Nezáväzne · Zúčastním sa", "ľudia ťuknú, viete, koľko ich asi príde"], ["Záväzne · Prihlásiť sa", "prihlásia sa menom, napr. na púť do autobusu. Môžete dať limit."]];
 /** kľúč účtu pre Zúčastním sa, Modlím sa, Sústrasť, Nahlásiť, autora */
 export const klucJa = (ja: { ucetId: string | null; demo?: boolean; celeMeno: string }) => ja.ucetId ?? (ja.demo ? "demo" : `meno:${ja.celeMeno}`);
@@ -274,6 +278,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   const fabRez = useFabRezim();
   useEffect(() => { const f = () => setSheet(true); window.addEventListener("deed:farnik-pridaj", f); return () => window.removeEventListener("deed:farnik-pridaj", f); }, []);
   const [k, setK] = useState<DruhFarnika | null>(null);
+  const [varIne, setVarIne] = useState<VarIne>("blahozelanie");
   const [edId, setEdId] = useState<string | null>(null);
   const [f, setF] = useState<FormularVeriaceho>(prazdnyF);
   const [txtKey, setTxtKey] = useState(0);
@@ -313,7 +318,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     if (x) {
       const ff = x.f ?? { ...prazdnyF(), nad: x.t, txt: naHtml(x.s), anon: !!x.anon };
       setF(ff); setTxtKey((n) => n + 1); setMedia((x.k === "udalost" || x.k === "fotky" || x.k === "oznam" || x.k === "svadba" || x.k === "ine" ? x.fotky ?? [] : []).map((src, i) => ({ id: i + 1, typ: "foto" as const, src, ...(x.popisy?.[i] ? { popis: x.popisy[i] } : {}) })));
-      setEdId(x.id); setK(x.k); setHotovo(null); setChyba(false); setSheet(false);
+      setEdId(x.id); setK(x.k); setVarIne(x.editor?.typ === "ine" ? "ine" : "blahozelanie"); setHotovo(null); setChyba(false); setSheet(false);
     }
   }
   useEffect(() => { if (naUpravu) nastavUpravu(null); }, [naUpravu]);
@@ -329,8 +334,12 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   if (!self.on || !povol.length) return null;
 
   const set = (z: Partial<FormularVeriaceho>) => { setF((q) => ({ ...q, ...z })); setChyba(false); };
-  const otvor = (kk: DruhFarnika) => { setF(prazdnyF()); setTxtKey((n) => n + 1); setMedia([]); setChyba(false); setHotovo(null); setEdId(null); setSheet(false); setK(kk); };
-  const T = DRUHY_FARNIKA.find((d) => d.k === k);
+  const otvor = (kk: DruhFarnika, v: VarIne = "blahozelanie") => { setF(prazdnyF()); setTxtKey((n) => n + 1); setMedia([]); setChyba(false); setHotovo(null); setEdId(null); setSheet(false); setK(kk); setVarIne(v); };
+  const T0 = DRUHY_FARNIKA.find((d) => d.k === k);
+  const T = T0 && k === "ine" ? { ...T0, t: VOLBY_INE.find((v) => v[0] === varIne)![1].replace(" · blahoželanie", "") } : T0;
+  const edTyp: TypEditora | undefined = k === "ine" ? varIne : k ? TYP_EDITORA[k] : undefined;
+  /** rozpísané v editore: Iné oznámenie má vlastný koncept (blahoželanie ostáva pod starým kľúčom) */
+  const kluKon = `${strankaId}|${k}${k === "ine" && varIne === "ine" ? "|ine" : ""}`;
   const plati = pop > 0 && !T?.zadarmo && !edId;
   const fotky = media.filter((m) => m.typ === "foto");
   const kto = klucJa(ja);
@@ -393,12 +402,12 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   const naEditor = async (p: PayloadEditora) => {
     if (!k) return;
     zapisZPayloadu(p, kdeStat); // KARTA 57 F: štatistika editora
-    if (p.stav === "koncept" && !edId && !hotovo) konceptEd.set(`${strankaId}|${k}`, p);
+    if (p.stav === "koncept" && !edId && !hotovo) konceptEd.set(kluKon, p);
     if (p.stav !== "hotovo") return;
     const P = p.polia ?? {}, str = (x: string) => String(P[x] ?? "").trim();
-    const t = k === "parte" ? str("meno") : k === "svadba" ? [str("sNev"), str("sZen")].filter(Boolean).join(" a ") : str("jMeno") || str("bMeno");
+    const t = p.typ === "ine" ? str("iNad") || String(p.druhNazov ?? "") : k === "parte" ? str("meno") : k === "svadba" ? [str("sNev"), str("sZen")].filter(Boolean).join(" a ") : str("jMeno") || str("bMeno");
     const s = k === "parte" ? (P.neskor ? "Termín rozlúčky oznámime." : [fmtD(str("rd")), str("rc"), str("rm")].filter(Boolean).join(" · "))
-      : k === "svadba" ? [fmtD(str("sD")), str("sC"), str("sM")].filter(Boolean).join(" · ") : [fmtD(str("jD")), str("jC"), str("jM")].filter(Boolean).join(" · ");
+      : k === "svadba" ? [fmtD(str("sD")), str("sC"), str("sM")].filter(Boolean).join(" · ") : p.typ === "ine" ? "" : [fmtD(str("jD")), str("jC"), str("jM")].filter(Boolean).join(" · ");
     const obr = (await edRef.current?.nahlad(k === "parte" ? undefined : { verejny: true })) || ""; // OPRAVY 275: verejný hárok
     let it: PolozkaFarnika;
     const povId = edId ?? hotovo; // OPRAVY 301: po zverejnení Upraviť = úprava toho istého
@@ -410,7 +419,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     catch (e) { edRef.current?.vysledok({ ok: false, chyba: e instanceof Error ? e.message : "Oznámenie sa nepodarilo uložiť." }); return; }
     const eUl = await zapisOdFarnikaIsto(strankaId, it, !!povodny); // OPRAVY 273
     if (eUl) { edRef.current?.vysledok({ ok: false, chyba: eUl }); return; }
-    konceptEd.delete(`${strankaId}|${k}`);
+    konceptEd.delete(kluKon);
     setHotovo(it.id);
     // OPRAVY 301: karta Zverejnené ✓ v editore (namiesto krátkej hlášky)
     if (caka && !povodny) pridajMojeCakajuce({ stranka: strankaId, id: it.id, t: it.t, cas: it.cas });
@@ -442,8 +451,8 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
           {SKUPINY.map(([nad, ks]) => { const l = ks.map((kk) => povol.find((d) => d.k === kk)).filter((d): d is (typeof povol)[number] => !!d); return l.length > 0 && <div key={nad || "ozn"} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {nad && <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)", padding: "6px 2px 0" }}>{nad}</span>}
             {!nad && <span aria-hidden="true" style={{ height: 6 }} />}
-            {l.map((d) => (
-              <button key={d.k} type="button" onClick={() => otvor(d.k)} style={{ minHeight: 66, padding: "10px 16px", borderRadius: 16, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 12, color: "var(--ink)" }}>
+            {l.flatMap((d): { k: DruhFarnika; t: string; sv: string; zadarmo: boolean; v?: VarIne; kl: string }[] => d.k === "ine" ? VOLBY_INE.map(([v, t, sv]) => ({ ...d, t, sv, v, kl: `ine-${v}` })) : [{ ...d, kl: d.k }]).map((d) => (
+              <button key={d.kl} type="button" onClick={() => otvor(d.k, d.v)} style={{ minHeight: 66, padding: "10px 16px", borderRadius: 16, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 12, color: "var(--ink)" }}>
                 <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
                   <b style={{ fontSize: 17 }}>{d.t}</b>
                   <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{d.sv}{d.k === "umysel" ? " · len farárovi" : ""}{pop && !d.zadarmo ? ` · ${pop} €` : " · zadarmo"}</span>
@@ -592,10 +601,10 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   // ---- Editor oznámení (parte, svadba, jubileum): PC v okne, OPRAVY 258 mobil a tablet na výšku v ráme na celú obrazovku ----
   // OPRAVY 299: ten istý komponent rozhodne sám — mobil rám na celú obrazovku, PC okno s živým náhľadom
   const editorEl = (ram: { extra?: ReactNode; vrstva?: ReactNode }) => k && (
-    <EditorOznameni ref={edRef} title={T?.t} onSend={(p) => { void naEditor(p); }} onUdalost={(e) => zapisEditora({ udalost: e.akcia, typ: TYP_EDITORA[k]!, papier: e.papier ?? null, ...kdeStat })}
+    <EditorOznameni ref={edRef} title={T?.t} onSend={(p) => { void naEditor(p); }} onUdalost={(e) => zapisEditora({ udalost: e.akcia, typ: edTyp!, papier: e.papier ?? null, ...kdeStat })}
       ram={ram} onZavri={spatNaStranku} spatText="‹ Späť na stránku farnosti" onPozriet={spatNaStranku} onHotovo={zavri} hotovoText="Hotovo · späť na stránku farnosti" nadpis={edId ? `Upraviť · ${T?.t ?? ""}` : T?.t}
-      cfg={{ typ: TYP_EDITORA[k]!, sektor: "viera", rezim: "plny", qrObrazok: k === "parte" ? qrStr : undefined, miesta: k === "parte" ? ["v Dome smútku", "vo farskom kostole", "na miestnom cintoríne"] : undefined, kontext: { stranka: strankaId, veriaci: true },
-        navrh: edId ? odFarnikov(strankaId).find((y) => y.id === edId)?.editor ?? null : konceptEd.get(`${strankaId}|${k}`) ?? null }} />);
+      cfg={{ typ: edTyp!, sektor: "viera", rezim: "plny", podpis: edTyp === "ine" ? ja.celeMeno || undefined : undefined, qrObrazok: k === "parte" ? qrStr : undefined, miesta: k === "parte" ? ["v Dome smútku", "vo farskom kostole", "na miestnom cintoríne"] : undefined, kontext: { stranka: strankaId, veriaci: true },
+        navrh: edId ? odFarnikov(strankaId).find((y) => y.id === edId)?.editor ?? null : konceptEd.get(kluKon) ?? null }} />);
   // OPRAVY 315: karta po odoslaní krátkeho formulára (rovnaká ako v editore: 301 Zverejnené ✓ / 310 C Odoslané · čaká na schválenie)
   const kartaVysledku = (v: NonNullable<typeof vys>) => {
     const um1 = v.druh === "umysel", b = BLOK_DRUHU[v.druh];

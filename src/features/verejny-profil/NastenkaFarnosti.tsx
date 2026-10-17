@@ -506,6 +506,9 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   });
   const tesVer: Tes[] = OD.filter((x) => x.k === "svadba" || x.k === "ine").map((x) => {
     const ed = x.editor, P0 = (ed?.polia ?? {}) as Record<string, unknown>, pole = (k: string) => String(P0[k] ?? "").trim(), sv = x.k === "svadba";
+    // OPRAVY 334: Iné oznámenie veriaceho z Editora — štítok podľa druhu, hárok v štvorci
+    if (ed?.typ === "ine") { const dn = String(ed.druhNazov ?? "Oznámenie");
+      return { id: x.id, druh: "blaho", pal: ZAKLAD.blaho, x, meno: x.t, datum: "", vek: "", nadpis: x.t, r: reakV(x, "blaho"), mena: x.mena ?? {}, ine: true, stitok: dn.toLocaleUpperCase("sk-SK"), foto: ziveObr(x.obr) ? x.obr : x.fotky?.find(ziveObr) }; }
     // BLOK C 235: vo Viere je „Jubileum a iné oznámenie“ Blahoželanie z Editora
     if (ed?.typ === "blahozelanie") return tesBlaho(ed, { id: x.id, x, nadpis: x.t, r: reakV(x, "blaho"), mena: x.mena ?? {} });
     // OPRAVY 229: kosoštvorec len jubileum (pozvánka z Editora); iné oznámenie veriaceho = štvorec s nadpisom
