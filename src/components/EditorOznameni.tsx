@@ -10,7 +10,7 @@ import { createPortal } from "react-dom";
 import { RamPisania, useRamPisania } from "@/components/RamPisania";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 
-export type TypEditora = "parte" | "svadba" | "jubileum" | "blahozelanie";
+export type TypEditora = "parte" | "svadba" | "jubileum" | "blahozelanie" | /** OPRAVY 334: Ďakovný list, Ocenenie za službu, Poďakovanie dobrovoľníkom, Pozvánka, Vlastné */ "ine";
 export interface PayloadEditora {
   verzia?: number; stav: "koncept" | "hotovo" | "doplnene"; typ: TypEditora; sablona?: string; rezim?: string;
   pohlavie?: string | null; foto?: string | null; bezTerminu?: boolean; rozlucka?: string | null;
@@ -22,7 +22,7 @@ export interface PayloadEditora {
 export interface CfgEditora {
   typ: TypEditora; /** BLOK C: viera = Parte, Svadba, Blahoželanie · podnik = Pozvánka na oslavu, Svadba, Blahoželanie */ sektor?: "viera" | "podnik"; rezim?: "plny" | "rychly"; bezTlace?: boolean; qrObrazok?: string; miesta?: string[];
   navrh?: PayloadEditora | null; kontext?: Record<string, unknown>;
-  /** BLOK C 235: predvolený podpis blahoželania (Správa farnosti „Blahoželá farnosť“) */ podpis?: string;
+  /** BLOK C 235: predvolený podpis blahoželania (Správa farnosti „Blahoželá farnosť“) · OPRAVY 334: pri Iné podpis „Farnosť …“ */ podpis?: string;
 }
 export interface EditorApi {
   /** krok späť v editore; false = už je na prvom kroku */

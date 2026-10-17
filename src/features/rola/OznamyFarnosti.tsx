@@ -385,6 +385,10 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     } else if (p.typ === "svadba") {
       const m = [str("sNev"), str("sZen")].filter(Boolean).join(" a ");
       it = { ...zaklad, tag: "Oznam", nazov: `Svadba · ${m || "snúbenci"}`, popis: [m, [str("sD"), str("sC"), str("sM")].filter(Boolean).join(" · ")].filter(Boolean).join(" · "), datum: str("sD") || undefined, ukat: "svadba", reakciaTyp: "blahozelanie" };
+    } else if (p.typ === "ine") {
+      // OPRAVY 334: Ďakovný list, Ocenenie, Poďakovanie dobrovoľníkom, Pozvánka, Vlastné — na stránke v Teš sa s nami
+      const druhN = String(p.druhNazov ?? "Oznámenie"), nad = str("iNad");
+      it = { ...zaklad, tag: "Oznámenie", nazov: nad || druhN, popis: str("iText"), reakciaTyp: "blahozelanie" };
     } else {
       const menoB = str("bMeno") || str("jMeno");
       it = { ...zaklad, tag: odr === INE ? "Oznámenie" : "Jubileum", nazov: `Blahoželanie · ${menoB || "jubilant"}`, popis: menoB, reakciaTyp: "blahozelanie" };
@@ -421,9 +425,11 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   const upravovany = edit ? zoznam.find((x) => x.id === edit) : undefined;
   const upravovanyEd = upravovany?.oz?.ed ?? (upravovany?.oz ? upravovany.smutocny?.editor : undefined) // OPRAVY 273: parte má návrh v smutocny.editor
     ?? (upravovany && !upravovany.plagat ? navrhZoStarych(upravovany) : undefined); // OPRAVY 284 (4): starý formulár → údaje do Editora
-  const ED_TYP: TypEditora[] = ["parte", "svadba", "blahozelanie", "blahozelanie"];
-  const edTyp = ED_TYP[odr] ?? "blahozelanie";
-  const jubCfg = { typ: edTyp, sektor: "viera" as const, rezim: "plny" as const, podpis: edTyp === "blahozelanie" ? "Blahoželá farnosť" : undefined,
+  // OPRAVY 334: Iné = vlastný typ editora (druh s predpísanými textami); staršie Iné uložené ako blahoželanie sa upravujú ako blahoželanie
+  const ED_TYP: TypEditora[] = ["parte", "svadba", "blahozelanie", "ine"];
+  const edTyp: TypEditora = (edit && upravovanyEd?.typ) || (ED_TYP[odr] ?? "blahozelanie");
+  const podpisFar = /^farnos/i.test(meno.trim()) ? meno.trim() : `Farnosť ${meno.trim()}`;
+  const jubCfg = { typ: edTyp, sektor: "viera" as const, rezim: "plny" as const, podpis: edTyp === "blahozelanie" ? "Blahoželá farnosť" : edTyp === "ine" ? podpisFar : undefined,
     qrObrazok: edTyp === "parte" ? qrFar : undefined, miesta: edTyp === "parte" ? ["v Dome smútku", "vo farskom kostole", "na miestnom cintoríne"] : undefined,
     kontext: { stranka: strankaId, farnost: true }, navrh: (edit ? upravovanyEd : jubKon?.typ === edTyp ? jubKon : null) ?? null };
   // OPRAVY 258 · 271: všetko, čo sa v Správe oznamov píše na telefóne (krátky oznam, udalosť, oznámenie) = rám na celú obrazovku, náhľad na ťuk

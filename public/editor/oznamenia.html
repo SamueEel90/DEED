@@ -269,6 +269,11 @@ input[type=range]{min-height:44px;padding:0}
     <fieldset><div class="chips" id="typ"></div></fieldset>
   </section>
 
+  <section class="step" data-s="druhI" hidden>
+    <h2>Čo chcete vytvoriť?</h2>
+    <div class="i-druhy" id="iDruh" role="radiogroup" aria-label="Čo chcete vytvoriť"></div>
+  </section>
+
   <section class="step" data-s="koho" hidden>
     <h2>Pre koho je parte?</h2>
     <fieldset><div class="chips big" id="sex"></div></fieldset>
@@ -389,6 +394,15 @@ input[type=range]{min-height:44px;padding:0}
   </fieldset>
   </div>
 
+  <div id="fsI" style="display:flex;flex-direction:column;gap:16px" hidden>
+  <fieldset><legend>Texty na hárku</legend>
+    <p class="i-veta" id="iVeta"></p>
+    <div class="i-pole"><div class="i-hl"><label for="iNad">Nadpis</label><button type="button" class="i-pre" data-p="iNad"></button></div><input id="iNad" maxlength="60"><button type="button" class="i-vrat" data-p="iNad" hidden>Vrátiť pôvodný text</button></div>
+    <div class="i-pole"><div class="i-hl"><label for="iText">Hlavný text</label><button type="button" class="i-pre" data-p="iText"></button></div><textarea id="iText" rows="5" maxlength="420"></textarea><button type="button" class="i-vrat" data-p="iText" hidden>Vrátiť pôvodný text</button></div>
+    <div class="i-pole"><div class="i-hl"><label for="iPod">Podpis</label><button type="button" class="i-pre" data-p="iPod"></button></div><input id="iPod" maxlength="70"><button type="button" class="i-vrat" data-p="iPod" hidden>Vrátiť pôvodný text</button></div>
+  </fieldset>
+  </div>
+
   </section>
 
   <section class="step" data-s="hotovo" hidden>
@@ -489,13 +503,27 @@ const TB=TJ.map(t=>({...t,id:"b"+t.id.slice(1),head:BH[t.id]})).concat([
  {id:"b15",n:"Foto bok",bg:"#f4f1ea",fg:"#25221e",mu:"#57514a",ac:"#a0522d",foto:true,lay:"side",frame:"none",head:"Všetko najlepšie"},
  {id:"b16",n:"Kartička",bg:"repeating-linear-gradient(45deg,#d9c3a0 0 2px,#dcc7a5 2px 5px)",fg:"#2e2216",mu:"#4a3a28",ac:"#7a4a1e",foto:false,frame:"kraft",hand:true,head:"Všetko najlepšie"}]);
 const SJ={torta:["Torta","torta"],balon:["Balón","balon"],hviezda:["Hviezda","hviezda"],srdce:["Srdce","srdce"],sampus:["Šampanské","sampus"],ziadny:["Bez symbolu",""]};
-const TYP={parte:"Parte",svadba:"Svadba",jubileum:"Pozvánka na oslavu",blahozelanie:"Blahoželanie"};
-const SEKTOR={viera:["parte","svadba","blahozelanie"],podnik:["jubileum","svadba","blahozelanie"]};
+/* OPRAVY 334: Iné = druh (Ďakovný list · Ocenenie za službu · Poďakovanie dobrovoľníkom · Pozvánka · Vlastné) s predpísanými textami v otvorených poliach */
+const TI=[["i1",T,"m4","Krém rám"],["i2",TB,"b6","Elegancia"],["i3",TB,"b5","Zlatá"],["i4",TB,"b7","Kvetinové"],["i5",TB,"b13","Kytica"],["i6",TB,"b11","Akvarel"],
+ ["i7",T,"z7","Oblúk"],["i8",TB,"b12","Foto hore"],["i9",TB,"b15","Foto bok"],["i10",T,"m1","Decent"],["i11",TB,"b14","Zlaté konfety"],["i12",TS,"s12","Smaragd"]]
+ .map(([id,L,z,n])=>({...L.find(x=>x.id===z),id,n,head:false}));
+const SI={kriz:["Kríž","kriz"],holub:["Holubica","holub"],svieca:["Sviečka","svieca"],srdce:["Srdce","srdce"],hviezda:["Hviezda","hviezda"],kvet:["Kvet","kvet"],ziadny:["Bez symbolu",""]};
+const PRED={
+ dak:{n:"Ďakovný list",s:"poďakovanie človeku alebo rodine",nad:"Ďakujeme",text:"Z celého srdca ďakujeme za Vašu pomoc, obetavosť a čas, ktorý ste venovali našej farnosti. Nech Vám to Pán bohato odmení.",sym:"srdce",t:"i1"},
+ ocen:{n:"Ocenenie za službu",s:"kostolník, organista, katechétka",nad:"Ocenenie za službu",text:"S vďakou za dlhoročnú vernú službu v našej farnosti. Vaša obetavosť je pre nás všetkých požehnaním.",sym:"hviezda",t:"i2"},
+ dobr:{n:"Poďakovanie dobrovoľníkom",s:"brigáda, púť, farský deň",nad:"Ďakujeme dobrovoľníkom",text:"Ďakujeme všetkým, ktorí priložili ruku k dielu. Bez Vás by sa to nepodarilo. Pán Boh zaplať!",sym:"srdce",t:"i4"},
+ pozv:{n:"Pozvánka",s:"slávnosť, stretnutie, koncert",nad:"Pozvánka",text:"Srdečne Vás pozývame na slávnosť našej farnosti. Tešíme sa na stretnutie s Vami.",sym:"kriz",t:"i10"},
+ vlas:{n:"Vlastné",s:"prázdne, napíšete sami",nad:"",text:"",sym:"kriz",t:"i1",uk:{iNad:"Napríklad: Primície",iText:"Napríklad: Pozývame Vás na primičnú svätú omšu…",iPod:"Farnosť …"}}};
+const podpisI=()=>(typeof CFG!=="undefined"&&CFG.podpis)||"Farnosť";
+const predI=(id)=>{const d=st.idr&&PRED[st.idr];if(!d)return"";return id==="iNad"?d.nad:id==="iText"?d.text:st.idr==="vlas"?"":podpisI()};
+const typNazov=()=>st.typ==="ine"&&st.idr&&PRED[st.idr]?PRED[st.idr].n:TYP[st.typ];
+const TYP={parte:"Parte",svadba:"Svadba",jubileum:"Pozvánka na oslavu",blahozelanie:"Blahoželanie",ine:"Iné"};
+const SEKTOR={viera:["parte","svadba","blahozelanie","ine"],podnik:["jubileum","svadba","blahozelanie"]};
 const povolene=()=>(typeof CFG!=="undefined"&&SEKTOR[CFG.sektor])||Object.keys(TYP);
 const DEN=["nedeľa","pondelok","utorok","streda","štvrtok","piatok","sobota"];
 const S={kriz:["Kríž","kriz"],prav:["Pravoslávny kríž","prav"],david:["Dávidova hviezda","david"],mesiac:["Polmesiac","mesiac"],svieca:["Sviečka","svieca"],ruza:["Ruža","ruza"],holub:["Holubica","holub"],ziadny:["Bez symbolu",""]};
 const C={sablona:["Podľa šablóny",null],zlata:["Zlatá","#b08d34"],strieborna:["Strieborná","#9aa0ab"],cierna:["Čierna","#1c1c1c"],bordova:["Bordová","#7a3048"],levandula:["Levanduľa","#7d6f9e"],zelena:["Šalviová","#6f8466"]};
-let typ0=(location.hash||"").slice(1);const st={typ:TYP[typ0]?typ0:"parte",t:"m1",sym:"kriz",col:"sablona",sex:null,foto:null,vz:[],pk:{}};const DEF={parte:["m1","kriz"],svadba:["s1","prstene"],jubileum:["j1","torta"],blahozelanie:["b1","torta"]};[st.t,st.sym]=DEF[st.typ];
+let typ0=(location.hash||"").slice(1);const st={typ:TYP[typ0]?typ0:"parte",t:"m1",sym:"kriz",col:"sablona",sex:null,foto:null,vz:[],pk:{}};const DEF={parte:["m1","kriz"],svadba:["s1","prstene"],jubileum:["j1","torta"],blahozelanie:["b1","torta"],ine:["i1","kriz"]};[st.t,st.sym]=DEF[st.typ];
 const $=id=>document.getElementById(id);
 const PH=t=>`<span class="ph">${t}</span>`;
 const V=(id,t)=>{const x=$(id).value.trim();return x?esc(x):PH(t)};
@@ -504,12 +532,12 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",
 function chipGroup(el,obj,key,cls){el.innerHTML="";for(const k in obj){const b=document.createElement("button");b.type="button";b.className=cls||"chip";
  b.textContent=Array.isArray(obj[k])?obj[k][0]:obj[k];b.setAttribute("aria-pressed",st[key]===k);b.onclick=()=>{if(key==="sex"&&st.sex!==k){st.vz=[];if(st.pk.vztah!=="vlastny")$("vztah").value=""}st[key]=k;if(key==="sex")ukazChybu("");init();render()};el.appendChild(b)}}
 function init(){
- const sv=st.typ==="svadba",jb=st.typ==="jubileum",bl=st.typ==="blahozelanie",TL=bl?TB:jb?TJ:sv?TS:T;
+ const sv=st.typ==="svadba",jb=st.typ==="jubileum",bl=st.typ==="blahozelanie",ie=st.typ==="ine",TL=ie?TI:bl?TB:jb?TJ:sv?TS:T;
  const tp=$("tpls");tp.innerHTML="";TL.forEach(t=>{const b=document.createElement("button");b.type="button";b.className="tpl";b.style.background=t.bg;b.style.color=t.ac;b.style.borderColor=st.t===t.id?"":t.ac+"55";
   b.textContent=t.n;b.setAttribute("aria-pressed",st.t===t.id);b.onclick=()=>{st.t=t.id;init();render()};tp.appendChild(b)});
- chipGroup($("syms"),(jb||bl)?SJ:sv?SS:S,"sym");
+ chipGroup($("syms"),ie?SI:(jb||bl)?SJ:sv?SS:S,"sym");
  $("typ").innerHTML="";for(const k of povolene()){const b=document.createElement("button");b.type="button";b.className="chip";b.textContent=TYP[k];b.setAttribute("aria-pressed",st.typ===k);b.onclick=()=>{if(st.typ===k)return;st.typ=k;[st.t,st.sym]=DEF[k];init();render()};$("typ").appendChild(b)}
- $("fsP").hidden=sv||jb||bl;$("fsB").hidden=!bl;$("fsS").hidden=!sv;$("fsJ").hidden=!jb;chipGroup($("cols"),C,"col");chipGroup($("sex"),{m:"Muž",z:"Žena"},"sex");picks();
+ $("fsP").hidden=sv||jb||bl||ie;$("fsI").hidden=!ie;$("fsB").hidden=!bl;$("fsS").hidden=!sv;$("fsJ").hidden=!jb;chipGroup($("cols"),C,"col");chipGroup($("sex"),{m:"Muž",z:"Žena"},"sex");picks();
  $("rodL").hidden=st.sex!=="z";}
 function fmt(d){if(!d)return PH("dátum");const[y,m,x]=d.split("-");return `${+x}. ${+m}. ${y}`}
 const DNI=["v nedeľu","v pondelok","v utorok","v stredu","vo štvrtok","v piatok","v sobotu"];
@@ -583,8 +611,8 @@ function frameHTML(t,ac,on){if(!on)return"";
   `<div style="position:absolute;top:10px;left:50%;transform:translateX(-50%);line-height:0">${orn(ac)}</div><div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);line-height:0">${orn(ac)}</div>`}
  return""}
 function render(){
- const sv=st.typ==="svadba",jb=st.typ==="jubileum",bl=st.typ==="blahozelanie";
- const t=(bl?TB:jb?TJ:sv?TS:T).find(x=>x.id===st.t),ac=C[st.col][1]||t.ac,on=$("orn").checked,z=st.sex==="z";
+ const sv=st.typ==="svadba",jb=st.typ==="jubileum",bl=st.typ==="blahozelanie",ie=st.typ==="ine";
+ const t=(ie?TI:bl?TB:jb?TJ:sv?TS:T).find(x=>x.id===st.t),ac=C[st.col][1]||t.ac,on=$("orn").checked,z=st.sex==="z";
  const v=vek($("nar").value,$("umr").value);const vg=vekG($("nar").value,$("umr").value);$("vekTxt").textContent=vg||"–";
  const neskor=$("neskor").checked,kruh=$("kruh").checked;$("rozBox").style.display=neskor||kruh?"none":"flex";
  let roz;
@@ -601,7 +629,16 @@ function render(){
  const p=$("p");p.style.background=t.bg;p.style.color=t.fg;p.className="parte lay-"+lay+($("bw").checked?" bw":"")+(t.gold&&st.col==="sablona"?" gold"+(t.dk?" golddk":""):"")+(t.glow?" glow":"")+(t.shimmer?" shimmer":"")+(t.kids?" kids":"")+(t.retro?" retro":"")+(t.hand?" hand":"");
  p.style.setProperty("--n1",ac);p.style.setProperty("--n2",t.n2||ac);p.style.setProperty("--gac",ac);
  let text;
- if(bl){const nar=$("bNar").value,dd=$("bD").value,av=vek(nar,dd);$("bVekTxt").textContent=av==null?"–":av;
+ if(ie){const uk=(st.idr&&PRED[st.idr].uk)||{},VI=(id,ph)=>{const x=$(id).value.trim();return x?esc(x).replace(/\n/g,"<br>"):PH(esc(uk[id]||ph))};
+  text=`<div class="p-sym">${symHTML(st.sym,ac)}</div>`+
+  (lay==="ornate"?`<div class="p-foto orn-foto" style="border:3px double ${ac};color:${ac}">${img}</div>`:"")+
+  (lay==="stack"&&t.foto?`<div class="p-foto" style="border:2px solid ${ac};background:${t.bg.startsWith("#")?t.bg:"#fff"};color:${ac}">${img}</div>`:"")+
+  (lay==="arch"?`<div class="p-foto arch" style="color:${ac};background:${ac}22">${img}</div>`:"")+
+  `<div class="p-head i-nad" data-pole="iNad" style="color:${ac}">${VI("iNad","Nadpis")}</div>`+
+  `<div class="p-ozn b-text" data-pole="iText" style="color:${t.mu}">${VI("iText","Hlavný text")}</div>`+
+  (on&&lay!=="neon"&&lay!=="modern"?`<div class="p-orn">${orn(ac)}</div>`:(lay==="modern"?`<div class="m-line" style="background:${ac}"></div>`:""))+
+  `<div class="p-pod" data-pole="iPod">${VI("iPod",podpisI())}</div>`;
+ } else if(bl){const nar=$("bNar").value,dd=$("bD").value,av=vek(nar,dd);$("bVekTxt").textContent=av==null?"–":av;
   const n=+$("bVek").value||av||"";
   const d=dd?new Date(dd):null;
   const BI=Math.max(0,TB.findIndex(x=>x.id===st.t)),PR=[`K Vášmu krásnemu životnému jubileu Vám prajeme pevné zdravie, veľa šťastia, lásky a pohody v kruhu najbližších.`,`Nech Vás Pán žehná a sprevádza aj v ďalších rokoch. Prajeme veľa zdravia, pokoja a radosti.`,`Ďakujeme za všetku lásku a dobro, ktoré rozdávate. Prajeme pevné zdravie a veľa krásnych chvíľ.`,`Do ďalších rokov Vám prajeme zdravie, pokoj v duši a radosť z najbližších.`];
@@ -720,8 +757,9 @@ function picks(){
    b.onclick=()=>{st.pk[id]=k;if(k==="vlastny")ta.value="";picks();render();if(k==="vlastny")ta.focus()};bx.appendChild(b)});
   ta.hidden=sel!=="vlastny";if(sel!=="vlastny")ta.value=typeof sel==="number"?opts[sel]:""}}
 const POVINNE={parte:[["meno","meno"],["umr","dátum úmrtia"]],svadba:[["sNev","meno nevesty"],["sZen","meno ženícha"],["sD","dátum obradu"],["sM","miesto obradu"]],
- jubileum:[["jMeno","meno"],["jD","dátum oslavy"]],blahozelanie:[["bMeno","meno"]]};
+ jubileum:[["jMeno","meno"],["jD","dátum oslavy"]],blahozelanie:[["bMeno","meno"]],ine:[["iNad","nadpis"],["iText","hlavný text"]]};
 function chyby(krok){document.querySelectorAll(".miss").forEach(e=>e.classList.remove("miss"));
+ if(krok==="druhI"&&!st.idr){$("iDruh").classList.add("miss");return"Ťuknite, čo chcete vytvoriť."}
  if(krok==="koho"&&!st.sex){$("sex").classList.add("miss");return"Ťuknite Muž alebo Žena."}
  if(krok==="udaje"){const ch=[];for(const[id,n]of POVINNE[st.typ]){const e=$(id);if(!e.value.trim()){ch.push(n);e.classList.add("miss")}}
   if(ch.length)return"Ešte doplňte: "+ch.join(", ")+"."}
@@ -731,20 +769,20 @@ function obnovChybu(){odomkni();if($("err").hidden)return;ukazChybu(chyby(kroky(
 function ukazChybu(t){const e=$("err");e.textContent=t;e.hidden=!t}
 function mozeDalej(){const k=kroky()[STEP],t=chyby(k);ukazChybu(t);return!t}
 const VERZIA="1.0";let CFG={},STEP=0;
-const KROKY={druh:"Druh",koho:"Muž / Žena",vzhlad:"Vzhľad",udaje:"Údaje",hotovo:"Hotovo"};
-const TLIST=()=>st.typ==="svadba"?TS:st.typ==="jubileum"?TJ:st.typ==="blahozelanie"?TB:T;
-function kroky(){const a=[];if(!CFG.typ)a.push("druh");if(st.typ==="parte")a.push("koho");a.push("vzhlad","udaje","hotovo");return a}
+const KROKY={druh:"Druh",druhI:"Druh",koho:"Muž / Žena",vzhlad:"Vzhľad",udaje:"Údaje",hotovo:"Hotovo"};
+const TLIST=()=>st.typ==="ine"?TI:st.typ==="svadba"?TS:st.typ==="jubileum"?TJ:st.typ==="blahozelanie"?TB:T;
+function kroky(){const a=[];if(!CFG.typ)a.push("druh");if(st.typ==="ine")a.push("druhI");if(st.typ==="parte")a.push("koho");a.push("vzhlad","udaje","hotovo");return a}
 function showStep(){const a=kroky();STEP=Math.max(0,Math.min(STEP,a.length-1));const cur=a[STEP];
  document.querySelectorAll(".step").forEach(x=>x.hidden=x.dataset.s!==cur);ukazChybu("");
  $("wzSteps").innerHTML=a.map((k,i)=>`<li class="${i<STEP?"done":i===STEP?"on":""}"><button type="button" data-i="${i}">${i+1}. ${KROKY[k]}</button></li>`).join("");
  $("wzSteps").querySelectorAll("button").forEach(b=>b.onclick=()=>{const c=+b.dataset.i;while(STEP<c){if(!mozeDalej())return;STEP++}STEP=c;showStep()});
  $("btnBack").style.visibility=STEP?"visible":"hidden";$("btnNext").hidden=cur==="hotovo";if(cur!=="hotovo")skryKontrolu();
- if(cur==="hotovo")$("sumar").textContent=`${TYP[st.typ]} · šablóna ${TLIST().find(x=>x.id===st.t).n}. Rozpracované sa ukladá samo. Skontrolujte náhľad a ťuknite Hotovo · uložiť.`}
+ if(cur==="hotovo")$("sumar").textContent=`${typNazov()} · šablóna ${TLIST().find(x=>x.id===st.t).n}. Rozpracované sa ukladá samo. Skontrolujte náhľad a ťuknite Hotovo · uložiť.`}
 function polia(){const o={};$("f").querySelectorAll("input[id],textarea[id]").forEach(e=>{if(e.type==="file")return;o[e.id]=e.type==="checkbox"?e.checked:e.value});return o}
-function payload(stav){return{verzia:VERZIA,stav,typ:st.typ,sablona:st.t,symbol:st.sym,farba:st.col,ozdoby:$("orn").checked,pohlavie:st.sex,
+function payload(stav){return{verzia:VERZIA,stav,typ:st.typ,druhIne:st.typ==="ine"?st.idr||null:undefined,druhNazov:st.typ==="ine"?typNazov():undefined,sablona:st.t,symbol:st.sym,farba:st.col,ozdoby:$("orn").checked,pohlavie:st.sex,
  foto:st.foto,fotoCB:$("bw").checked,vztahVyber:st.vz,bezTerminu:st.typ==="parte"&&!$("kruh").checked&&($("neskor").checked||!$("rd").value),rozlucka:st.typ!=="parte"?null:$("kruh").checked?"sukromna":$("neskor").checked?"neskor":"termin",rezim:CFG.rezim==="rychly"?"rychly":"plny",rsvp:st.typ==="svadba"?$("rsvpS").checked:st.typ==="jubileum"?$("rsvpJ").checked:false,smutiaci:st.smut||[],fotoPozicia:st.fx,miniatura:miniatura(),qr:$("qrOn").checked,qrUmiestnenie:$("qrOn").checked?qrMiesto(TLIST().find(x=>x.id===st.t)):null,terminIny:st.iny||{},vyber:st.pk,polia:polia(),html:$("p").outerHTML,kontext:CFG.kontext??null,cas:new Date().toISOString()}}
-function vycisti(){$("f").querySelectorAll("input[id],textarea[id]").forEach(e=>{if(e.type==="file")e.value="";else if(e.type==="checkbox")e.checked=e.id==="orn"||e.id==="vekOn";else e.value=""});st.foto=null;st.col="sablona";st.sex=null;st.vz=[];st.pk={};st.smut=[];st.smV=null;st.iny={};st.fx={x:50,y:50,z:1};$("rsvpS").checked=true;$("rsvpJ").checked=true}
-function obnov(n){vycisti();/* OPRAVY 284: návrh zo starého formulára farnosti nemusí mať šablónu ani symbol */const _d=DEF[n.typ]||DEF.parte;Object.assign(st,{typ:n.typ,t:n.sablona||(n.typ==="parte"?(n.pohlavie==="z"?"z1":"m1"):_d[0]),sym:n.symbol||_d[1],col:n.farba||"sablona",sex:n.pohlavie||null,foto:n.foto||null,vz:n.vztahVyber||[],pk:n.vyber||{},smut:n.smutiaci||[],fx:n.fotoPozicia||{x:50,y:50,z:1},iny:n.terminIny||{}});
+function vycisti(){$("f").querySelectorAll("input[id],textarea[id]").forEach(e=>{if(e.type==="file")e.value="";else if(e.type==="checkbox")e.checked=e.id==="orn"||e.id==="vekOn";else e.value=""});st.foto=null;st.col="sablona";st.sex=null;st.vz=[];st.pk={};st.smut=[];st.smV=null;st.iny={};st.fx={x:50,y:50,z:1};st.idr=null;$("rsvpS").checked=true;$("rsvpJ").checked=true}
+function obnov(n){vycisti();/* OPRAVY 284: návrh zo starého formulára farnosti nemusí mať šablónu ani symbol */const _d=DEF[n.typ]||DEF.parte;Object.assign(st,{typ:n.typ,t:n.sablona||(n.typ==="parte"?(n.pohlavie==="z"?"z1":"m1"):_d[0]),sym:n.symbol||_d[1],col:n.farba||"sablona",sex:n.pohlavie||null,foto:n.foto||null,vz:n.vztahVyber||[],pk:n.vyber||{},smut:n.smutiaci||[],fx:n.fotoPozicia||{x:50,y:50,z:1},iny:n.terminIny||{},idr:n.druhIne||null});
  for(const[k,v]of Object.entries(n.polia||{})){const e=$(k);if(!e||e.type==="file")continue;if(e.type==="checkbox")e.checked=!!v;else e.value=v}
  $("orn").checked=n.ozdoby!==false;$("bw").checked=!!n.fotoCB;$("fz").value=st.fx.z}
 function odosli(stav){const pl=payload(stav);try{if(typeof CFG.onSend==="function")CFG.onSend(pl);else if(window.parent&&window.parent!==window)window.parent.postMessage({deedEditor:pl},"*")}catch(e){}
@@ -789,8 +827,8 @@ function vtesnaj(){const p=$("p"),tx=p.querySelector(":scope>.txt");
 const _render=render;render=function(){pevneTexty();_render();const q=$("qrOn").checked&&qrMiesto(TLIST().find(x=>x.id===st.t))==="vnutri";$("p").classList.toggle("qr-in",q);vtesnaj();qrVloz();fit()};
 
 /* miniatúra pre medailón: podklad = pozadie šablóny, rám = farba ozdôb */
-function miniatura(){const t=TLIST().find(x=>x.id===st.t)||{};return{podklad:t.bg,ram:C[st.col]&&C[st.col][1]||t.ac,tvar:st.typ==="jubileum"||(st.typ==="blahozelanie"&&(+(document.getElementById("bVek")||{}).value||vek((document.getElementById("bNar")||{}).value,(document.getElementById("bD")||{}).value)))?"kosostvorec":st.typ==="blahozelanie"?"stvorec":st.typ==="svadba"?"kruh":"oval",roky:+(document.getElementById("bVek")||{}).value||vek((document.getElementById("bNar")||{}).value,(document.getElementById("bD")||{}).value)||null,sablona:t.id,nazov:t.n}}
-window.sablony=()=>({parte:T,svadba:TS,jubileum:TJ,blahozelanie:TB});
+function miniatura(){const t=TLIST().find(x=>x.id===st.t)||{};return{podklad:t.bg,ram:C[st.col]&&C[st.col][1]||t.ac,tvar:st.typ==="jubileum"||(st.typ==="blahozelanie"&&(+(document.getElementById("bVek")||{}).value||vek((document.getElementById("bNar")||{}).value,(document.getElementById("bD")||{}).value)))?"kosostvorec":st.typ==="blahozelanie"||st.typ==="ine"?"stvorec":st.typ==="svadba"?"kruh":"oval",roky:+(document.getElementById("bVek")||{}).value||vek((document.getElementById("bNar")||{}).value,(document.getElementById("bD")||{}).value)||null,sablona:t.id,nazov:t.n}}
+window.sablony=()=>({parte:T,svadba:TS,jubileum:TJ,blahozelanie:TB,ine:TI});
 /* ===== 2. kolo ===== */
 document.body.appendChild($("printArea"));
 const CASY=["10:00","11:00","13:00","14:00","15:00"];
@@ -823,6 +861,7 @@ function kontrolaHTML(){const f=x=>fmt(x).replace(/<[^>]+>/g,"");
  if(st.typ==="parte")return `<div class="k-meno">${esc($("meno").value)}</div><div class="k-dat">${$("nar").value?"* "+f($("nar").value)+" &nbsp; ":""}† ${f($("umr").value)}</div>`;
  if(st.typ==="svadba")return `<div class="k-meno">${esc($("sNev").value)} a ${esc($("sZen").value)}</div><div class="k-dat">${f($("sD").value)}${$("sC").value?" o "+$("sC").value:""}</div>`;
  if(st.typ==="jubileum")return `<div class="k-meno">${esc($("jMeno").value)}</div><div class="k-dat">${f($("jD").value)}${$("jC").value?" o "+$("jC").value:""}</div>`;
+ if(st.typ==="ine")return `<div class="k-meno">${esc($("iNad").value)}</div><div class="k-dat">${esc(typNazov())}</div>`;
  return `<div class="k-meno">${esc($("bMeno").value)}</div>`}
 function skryKontrolu(){$("kontrola").hidden=true;$("hlavne").hidden=false}
 $("btnDone").onclick=()=>{const a=kroky();for(let i=0;i<a.length;i++){const t=chyby(a[i]);if(t){STEP=i;showStep();ukazChybu(t);return}}
@@ -963,7 +1002,7 @@ body.ram.ram-nahlad .parte{flex:none}
 const $=id=>document.getElementById(id);
 const ram=()=>document.body.classList.contains("ram");
 let RN=null,_vys=0;
-function stav(){const a=kroky();return Object.assign({i:STEP,n:a.length,nazvy:a.map(k=>KROKY[k]),typ:TYP[st.typ]||"",hotovo:a[STEP]==="hotovo",ulozene:!!$("btnDone").disabled,kontrola:!$("kontrola").hidden},typeof window.edStav303==="function"?window.edStav303():{})}
+function stav(){const a=kroky();return Object.assign({i:STEP,n:a.length,nazvy:a.map(k=>KROKY[k]),typ:typNazov()||"",hotovo:a[STEP]==="hotovo",ulozene:!!$("btnDone").disabled,kontrola:!$("kontrola").hidden},typeof window.edStav303==="function"?window.edStav303():{})}
 function hlas(){if(!ram()||typeof CFG.onKrok!=="function")return;try{CFG.onKrok(stav())}catch(e){}}
 window.edHlas=hlas;
 function vyska(){if(!ram()||RN||typeof CFG.onVyska!=="function")return;const h=Math.ceil(document.querySelector(".app").getBoundingClientRect().height);if(h&&h!==_vys){_vys=h;try{CFG.onVyska(h)}catch(e){}}}
@@ -1077,7 +1116,7 @@ let NAVRAT=false,KOK=false,ZOZ={};
 const OSOBA={parte:"Zosnulý",svadba:"Snúbenci",jubileum:"Oslávenec",blahozelanie:"Oslávenec"};
 const DRUHA={parte:"Posledná rozlúčka",svadba:"Obrad",jubileum:"Oslava",blahozelanie:"Blahoželanie"};
 Object.assign(KROKY,{ozdoby:"Ozdoby",osoba:"Údaje",udaje2:"Údaje",kontrola:"Kontrola"});
-const DATA=["druh","koho","vzhlad","ozdoby","osoba","udaje2","udaje"];
+const DATA=["druh","druhI","koho","vzhlad","ozdoby","osoba","udaje2","udaje"];
 function nazov(k){return k==="osoba"?OSOBA[st.typ]:k==="udaje2"?DRUHA[st.typ]:k==="ozdoby"?"Ozdoby":KROKY[k]}
 /* kroky v ráme: dlhá cesta 5 stránok, rýchla cesta farára Muž / Žena · Vzhľad · Údaje; potom Kontrola a Hotovo */
 const _kr=kroky;kroky=function(){if(!ram())return _kr();const a=[];if(!CFG.typ)a.push("druh");if(st.typ==="parte")a.push("koho");
@@ -1119,6 +1158,7 @@ function kData(){const v=id=>{const e=$(id);return e&&e.value?String(e.value).tr
   if(!R)r.push(["Podpis",esc(v("pod")||"Smútiaca rodina"),U]);return r}
  if(st.typ==="svadba")return[["Snúbenci",esc(P([v("sNev"),v("sZen")].filter(Boolean).join(" a "))),O,1],["Sobáš",kedy(v("sD"),v("sC"),v("sM")),U]];
  if(st.typ==="jubileum")return[["Meno",esc(P(v("jMeno"))),O,1],["Vek",roky(+v("jVek")||vek(v("jNar"),v("jD"))),O],["Dátum oslavy",kedy(v("jD"),v("jC"),v("jM")),O]];
+ if(st.typ==="ine")return[["Čo vytvárate",esc(typNazov()),"druhI"],["Nadpis",esc(P(v("iNad"))),"udaje",1],["Podpis",esc(P(v("iPod"))),"udaje"]];
  return[["Meno",esc(P(v("bMeno"))),O,1],["Vek",roky(+v("bVek")||vek(v("bNar"),v("bD"))),O],["Dátum",esc(den(v("bD"))||"—"),O],["Podpis",esc(P(v("bOd"))),U]]}
 function kontrolaUI(){const bx=$("kRiadky");if(!bx)return;
  bx.innerHTML=kData().map(([t,h,k,vel])=>`<div class="k-r"><span class="k-t"><small>${t}</small><b class="${vel?"vel":""}">${h}</b></span><button type="button" class="k-opr" data-k="${k}">Opraviť ›</button></div>`).join("");
@@ -1238,7 +1278,7 @@ function postav(){if($("hotKarta"))return;const sec=document.querySelector('.ste
  const ref=$("btnPrint");sec.insertBefore(lab,ref);sec.insertBefore(d,ref);["btnPrint","tlac","btnPng","btnCitaj"].forEach(id=>{const e=$(id);if(e)d.appendChild(e)});
  const u=document.createElement("button");u.type="button";u.className="btn ghost";u.id="btnUpravit";u.textContent="Upraviť";u.hidden=true;u.onclick=()=>window.edUpravit();d.appendChild(u);
  const sp=document.createElement("button");sp.type="button";sp.className="btn ghost";sp.id="hkSpat";sp.hidden=true;sp.onclick=()=>{try{CFG.onHotovo&&CFG.onHotovo()}catch(e){}};d.after(sp)}
-function karta(){postav();const k=$("hotKarta"),typ=TYP[st.typ]||"Oznámenie",blok=VYS.blok||(st.typ==="parte"?"Spomíname":"Teš sa s nami");
+function karta(){postav();const k=$("hotKarta"),typ=typNazov()||"Oznámenie",blok=VYS.blok||(st.typ==="parte"?"Spomíname":"Teš sa s nami");
  document.body.classList.toggle("hk-on",!!ULOZ);k.hidden=!ULOZ;
  const ok=ULOZ==="ok";$("hkDalsiL").hidden=!ok;$("hkDalsie").classList.toggle("mal",ok);$("btnUpravit").hidden=!ok;$("hkDalsie").hidden=ULOZ==="caka"||ULOZ==="chyba";
  const sp=$("hkSpat");sp.hidden=!ok;sp.textContent=CFG.hotovoText||"Hotovo · späť na stránku farnosti";
@@ -1509,18 +1549,18 @@ body.p331 fieldset.p331-prazdny{display:none!important}
 <script>/* OPRAVY 331: Svadba · Jubileum · Blahoželanie — dlhá cesta v ráme ako parte (318): najprv mená a fotka, potom šablóna */(function(){
 const $=id=>document.getElementById(id);
 const ram=()=>document.body.classList.contains("ram");
-const TYPY=["svadba","jubileum","blahozelanie"];
+const TYPY=["svadba","jubileum","blahozelanie","ine"];
 const P=()=>ram()&&TYPY.includes(st.typ)&&CFG.rezim!=="rychly";
-const TL=()=>st.typ==="blahozelanie"?TB:st.typ==="jubileum"?TJ:TS;
+const TL=()=>st.typ==="ine"?TI:st.typ==="blahozelanie"?TB:st.typ==="jubileum"?TJ:TS;
 /* polia 1. strany (mená, dátum, vek) — ostatné ostanú na strane Text */
-const POLIA={svadba:["sNev","sD"],jubileum:["jMeno","jNar","jVek"],blahozelanie:["bMeno","bNar","bVek"]};
-const NADPIS={svadba:"Snúbenci",jubileum:"Oslávenec",blahozelanie:"Komu blahoželáte?"};
+const POLIA={svadba:["sNev","sD"],jubileum:["jMeno","jNar","jVek"],blahozelanie:["bMeno","bNar","bVek"],ine:[]};
+const NADPIS={svadba:"Snúbenci",jubileum:"Oslávenec",blahozelanie:"Komu blahoželáte?",ine:"Čo chcete vytvoriť?"};
 const SPAT=[];let ZAP=null;
 function presun(el,kam){if(!el||!kam||el.parentNode===kam)return;if(!el.parentNode){kam.appendChild(el);SPAT.push([el,null]);return}const z=document.createComment("331");el.parentNode.insertBefore(z,el);SPAT.push([el,z]);kam.appendChild(el)}
 function obal(id){const e=$(id);if(!e)return null;return e.closest(".row")||e.closest("label")}
 function vypni(){if(!ZAP)return;ZAP=null;while(SPAT.length){const[el,z]=SPAT.pop();if(!z){el.remove();continue}z.parentNode.insertBefore(el,z);z.remove()}document.body.classList.remove("p331")}
 function zapni(){if(ZAP===st.typ)return;vypni();
- const kh=document.querySelector('.step[data-s="koho"]');if(!kh)return;ZAP=st.typ;
+ const kh=document.querySelector(st.typ==="ine"?'.step[data-s="druhI"]':'.step[data-s="koho"]');if(!kh)return;ZAP=st.typ;
  if(!$("fotoRiadok")&&typeof render==="function"){ZAP=null;render();ZAP=st.typ}
  let k=$("k331");if(!k){k=document.createElement("div");k.id="k331";kh.appendChild(k)}
  POLIA[st.typ].forEach(id=>presun(obal(id),k));
@@ -1540,13 +1580,14 @@ function chybaFoto(t){const fe=$("fe331");if(!fe)return;fe.hidden=!t;if(!t){fe.i
  fe.innerHTML='<span></span><button type="button">Skúsiť znova</button>';fe.firstChild.textContent=t;fe.querySelector("button").onclick=()=>{chybaFoto("");const b=$("btnFotoVyb");if(b)b.click()}}
 const _nf=window.edNastavFotku;window.edNastavFotku=function(src){if(!P()||!src)return _nf.apply(this,arguments);
  const im=new Image();im.onload=()=>{chybaFoto("");_nf(src)};im.onerror=()=>chybaFoto("Fotku sa nepodarilo nahrať.");im.src=src};
-const _kr=kroky;kroky=function(){if(!P())return _kr();const a=[];if(!CFG.typ)a.push("druh");a.push("koho","vzhlad","ozdoby","udaje","kontrola","hotovo");return a};
+const _kr=kroky;kroky=function(){if(!P())return _kr();const a=[];if(!CFG.typ)a.push("druh");a.push(st.typ==="ine"?"druhI":"koho","vzhlad","ozdoby","udaje","kontrola","hotovo");return a};
 const _ch=chyby;chyby=function(k){if(!P())return _ch.apply(this,arguments);
  if(k==="koho"){document.querySelectorAll(".miss").forEach(e=>e.classList.remove("miss"));const box=$("k331"),ch=[];
   for(const[id,n]of POVINNE[st.typ]){const e=$(id);if(e&&box&&box.contains(e)&&!e.value.trim()){ch.push(n);e.classList.add("miss")}}
   return ch.length?"Ešte doplňte: "+ch.join(", ")+".":""}
+ if(k==="druhI")return _ch.apply(this,arguments);
  if(k==="vzhlad"||k==="ozdoby"||k==="kontrola")return"";return _ch.call(this,"udaje")};
-const MENA={koho:"Vzhľad",vzhlad:"Ozdoby",ozdoby:"Text"};
+const MENA={koho:"Vzhľad",druhI:"Vzhľad",vzhlad:"Ozdoby",ozdoby:"Text"};
 const _ss=showStep;showStep=function(){const r=_ss.apply(this,arguments);
  if(!P()){vypni();return r}
  zapni();document.body.classList.add("p318","p331");const cur=kroky()[STEP];document.documentElement.classList.add("r318");document.documentElement.classList.toggle("r318v",cur==="vzhlad");
@@ -1569,7 +1610,7 @@ function ui331(){if(!P())return;const L=TL(),tp=$("tpls"),sF=!!st.foto;let vid=0
 let MINI="",_mt=0,_mk="";
 function mini(){clearTimeout(_mt);_mt=setTimeout(async()=>{if(!P()||typeof window.edKresli!=="function")return;const kl=JSON.stringify([st,...POLIA[st.typ].map(id=>($(id)||{}).value),$("orn").checked,$("bw").checked]);if(kl===_mk&&MINI)return;
  try{const cv=await window.edKresli({w:120});MINI=cv.toDataURL("image/jpeg",.8);_mk=kl;if(window.edHlas)window.edHlas()}catch(e){}},350)}
-const MENO=()=>st.typ==="svadba"?[($("sNev")||{}).value,($("sZen")||{}).value].map(x=>(x||"").trim()).filter(Boolean).join(" & "):(($(st.typ==="jubileum"?"jMeno":"bMeno")||{}).value||"").trim();
+const MENO=()=>st.typ==="ine"?(($("iNad")||{}).value||"").trim():st.typ==="svadba"?[($("sNev")||{}).value,($("sZen")||{}).value].map(x=>(x||"").trim()).filter(Boolean).join(" & "):(($(st.typ==="jubileum"?"jMeno":"bMeno")||{}).value||"").trim();
 const _es=window.edStav303;window.edStav303=function(){const o=_es();if(!P())return o;const t=TL().find(x=>x.id===st.t);
  o.dalsi=MENA[o.kluc]||null;o.p318=true;o.mini=Object.assign({},o.mini,{img:MINI,t:[MENO(),t?t.n:""].filter(Boolean).join(" · ")});return o};
 const _r=render;render=function(){const r=_r.apply(this,arguments);try{ui331()}catch(e){}return r};
@@ -1580,4 +1621,65 @@ const _f=fit;fit=function(){const r=_f.apply(this,arguments);
   const w=p.offsetWidth,h=p.offsetHeight,H=Math.max(200,v.clientHeight-40);if(w&&h){const k=Math.min((innerWidth-32)/w,H/h);p.style.transformOrigin="top center";p.style.transform=`scale(${k})`;p.style.marginBottom=Math.round(h*k-h)+"px"}}
  return r};
 const _ie=window.initEditor;window.initEditor=function(){vypni();const r=_ie.apply(this,arguments);try{showStep()}catch(e){}return r};
+})();</script>
+<style>/* OPRAVY 334: Iné — výber druhu (veľké dlaždice), predpísané texty v otvorených poliach, Prepísať · Vrátiť pôvodný text, ťuk na text v náhľade = jeho pole */
+.i-druhy{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.i-dl{min-height:76px;display:flex;flex-direction:column;justify-content:center;gap:4px;padding:12px 16px;border-radius:14px;border:1.5px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;text-align:left;cursor:pointer}
+.i-dl b{font-size:17px;line-height:1.25}
+.i-dl span{font-size:14px;line-height:1.35;color:var(--muted)}
+.i-dl[aria-checked=true]{border:2.5px solid #4B7A35;background:#E3EDDA;color:#1D211B}
+.i-dl[aria-checked=true] span{color:#3B4A33}
+.i-druhy.miss{outline:2px solid var(--err);outline-offset:4px;border-radius:14px}
+body.ram .step[data-s=druhI]>h2{display:block;font-size:23px;margin:0}
+body.ram .i-druhy{grid-template-columns:minmax(0,1fr)}
+body.ram .i-dl{min-height:64px}
+body.p331[data-pg=druhI] .form{gap:10px;padding-top:12px;padding-bottom:12px}
+.i-veta{margin:0;padding:10px 12px;border-radius:12px;background:#F3E7C8;color:#3A2F14;font-size:15px;font-weight:700;line-height:1.4}
+.i-pole{display:flex;flex-direction:column;gap:6px}
+.i-hl{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.i-hl label{font-size:14px;font-weight:700;color:var(--muted)}
+.i-pre{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border-radius:10px;border:1.5px solid #4B7A35;background:transparent;color:#4B7A35;font:inherit;font-size:14.5px;font-weight:800;cursor:pointer}
+.i-pre svg{width:16px;height:16px;flex:none}
+.i-pole input,.i-pole textarea{font-size:16px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--fg)}
+.i-pole textarea{min-height:120px;resize:vertical;line-height:1.45}
+.i-pole input:focus,.i-pole textarea:focus{border-color:#4B7A35}
+.i-pole.skok input,.i-pole.skok textarea{outline:3px solid #C9A24A;outline-offset:2px}
+.i-vrat{align-self:flex-start;min-height:44px;padding:0;border:0;background:transparent;color:var(--muted);font:inherit;font-size:14px;font-weight:700;text-decoration:underline;cursor:pointer}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .i-veta{background:#2A2214;color:#F2EDE2}:root:not([data-theme="light"]) .i-dl[aria-checked=true]{background:#24301D;color:#EFE9DD}:root:not([data-theme="light"]) .i-dl[aria-checked=true] span{color:#C9D3BF}}
+:root[data-theme="dark"] .i-veta{background:#2A2214;color:#F2EDE2}:root[data-theme="dark"] .i-dl[aria-checked=true]{background:#24301D;color:#EFE9DD}:root[data-theme="dark"] .i-dl[aria-checked=true] span{color:#C9D3BF}
+.parte [data-pole]{cursor:text}
+</style>
+<script>/* OPRAVY 334: Iné — druh, predpísané texty, Prepísať, Vrátiť pôvodný text, skok z náhľadu na pole */(function(){
+const $=id=>document.getElementById(id);
+const POLE=["iNad","iText","iPod"];
+const CERUZKA='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/></svg>';
+function vyberDruh(k){const st0=st.idr;
+ /* predpísané texty: polia, ktoré človek ešte neprepísal (prázdne alebo rovnaké ako predošlý predpis), dostanú texty nového druhu */
+ const stary={};POLE.forEach(id=>stary[id]=predI(id));st.idr=k;const d=PRED[k];
+ POLE.forEach(id=>{const e=$(id);if(!e)return;const v=e.value.trim();if(!v||v===stary[id].trim())e.value=predI(id)});
+ if(st0!==k){st.sym=d.sym;if(!st0)st.t=d.t;}
+ document.querySelectorAll(".miss").forEach(e=>e.classList.remove("miss"));
+ if(typeof init==="function")init();render();if(typeof obnovChybu==="function")obnovChybu();if(typeof autosave==="function")autosave()}
+function druhyUI(){const bx=$("iDruh");if(!bx)return;
+ if(!bx.children.length){Object.keys(PRED).forEach(k=>{const b=document.createElement("button");b.type="button";b.className="i-dl";b.setAttribute("role","radio");b.dataset.k=k;
+  b.innerHTML="<b></b><span></span>";b.querySelector("b").textContent=PRED[k].n;b.querySelector("span").textContent=PRED[k].s;b.onclick=()=>vyberDruh(k);bx.appendChild(b)})}
+ [...bx.children].forEach(b=>b.setAttribute("aria-checked",String(st.idr===b.dataset.k)))}
+function poliaUI(){if(typeof st==="undefined"||st.typ!=="ine")return;const vl=st.idr==="vlas",uk=(st.idr&&PRED[st.idr].uk)||{};
+ const v=$("iVeta");if(v)v.textContent=vl?"Napíšte vlastné texty. Sivý text v poli je len ukážka.":"Texty sme predpísali. Ťuknite a prepíšte ich, ako chcete.";
+ POLE.forEach(id=>{const e=$(id);if(!e)return;e.placeholder=uk[id]||(id==="iPod"?podpisI():"");
+  const pre=document.querySelector(`.i-pre[data-p="${id}"]`);if(pre&&!pre.innerHTML)pre.innerHTML=CERUZKA+"<span>Prepísať</span>";
+  const vr=document.querySelector(`.i-vrat[data-p="${id}"]`),p=predI(id);if(vr)vr.hidden=!p||e.value.trim()===p.trim()})}
+function skokNaPole(id){const e=$(id);if(!e)return;const a=kroky(),i=a.indexOf("udaje");if(i>=0&&a[STEP]!=="udaje"){STEP=i;showStep()}
+ const w=e.closest(".i-pole");try{e.focus({preventScroll:true});e.scrollIntoView({block:"center"})}catch(er){e.focus()}
+ try{const n=e.value.length;e.setSelectionRange(n,n)}catch(er){}
+ if(w){w.classList.add("skok");setTimeout(()=>w.classList.remove("skok"),1400)}}
+document.addEventListener("click",e=>{const pr=e.target.closest&&e.target.closest(".i-pre");if(pr){skokNaPole(pr.dataset.p);const x=$(pr.dataset.p);try{x.select()}catch(er){}return}
+ const vr=e.target.closest&&e.target.closest(".i-vrat");if(vr){const x=$(vr.dataset.p);if(x){x.value=predI(vr.dataset.p);render();if(typeof autosave==="function")autosave();poliaUI()}}});
+/* ťuk na text v náhľade = jeho pole (nie celá obrazovka) */
+document.addEventListener("click",e=>{if(typeof st==="undefined"||st.typ!=="ine"||document.body.classList.contains("ram-nahlad"))return;
+ const t=e.target.closest&&e.target.closest("#p [data-pole]");if(!t)return;e.stopImmediatePropagation();e.preventDefault();skokNaPole(t.dataset.pole)},true);
+document.addEventListener("input",e=>{if(e.target&&POLE.includes(e.target.id))poliaUI()});
+const _r=render;render=function(){const r=_r.apply(this,arguments);try{druhyUI();poliaUI()}catch(er){}return r};
+const _ie=window.initEditor;window.initEditor=function(){const r=_ie.apply(this,arguments);try{druhyUI();poliaUI()}catch(er){}return r};
+const _ss=showStep;showStep=function(){const r=_ss.apply(this,arguments);try{if(st.typ==="ine"){const h=document.querySelector('.step[data-s="kontrola"]>h2');if(h)h.textContent="Skontrolujte texty"}}catch(er){}return r};
 })();</script>

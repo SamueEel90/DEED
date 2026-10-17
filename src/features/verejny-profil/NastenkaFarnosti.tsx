@@ -165,6 +165,7 @@ interface Tes { af?: AutorF; id: string; druh: "svadba" | "jubileum" | "blaho"; 
   /** OPRAVY 229: štvorec poďakovania (Ďakujem) — inak Blahoželám */ dakuje?: boolean;
   /** Martin 13. 10.: „Iné“ (vysviacka, primície…) = OZNÁMENIE, nikdy nie vymyslené Poďakovanie */ ine?: boolean;
   /** OPRAVY 241: prvá fotka alebo plagát Iné — v štvorci orezaná, štítok a nadpis pod ním */ foto?: string;
+  /** OPRAVY 334: Iné z Editora — štítok podľa druhu (ĎAKOVNÝ LIST, OCENENIE ZA SLUŽBU, …) */ stitok?: string;
   r: { zoznam: string[]; prepni: () => void }; mena: Record<string, string> }
 const rok = (s?: string) => s?.match(/\d{4}/)?.[0] ?? "";
 const rokyParte = (nar: string, umr: string) => { const a = rok(nar), b = rok(umr); return a || b ? [a && `* ${a}`, b && `† ${b}`].filter(Boolean).join(" ") : nar; };
@@ -191,6 +192,8 @@ function tesBlaho(ed: PayloadEditora, z: Pick<Tes, "id" | "nadpis" | "r" | "mena
 }
 
 const krstne = (m: string) => m.trim().split(/\s+/)[0] ?? "";
+/** štítok položky Teš sa s nami (OPRAVY 334: Iné podľa druhu) */
+const stTes = (t: Tes) => t.stitok ?? (t.ine ? "OZNÁMENIE" : t.druh === "svadba" ? "SVADBA" : t.druh === "jubileum" ? "JUBILEUM" : t.dakuje ? "POĎAKOVANIE" : "BLAHOŽELANIE");
 /** OPRAVY 328: riadok pod značkou Teš sa — rovnaká výška pri každej značke (2 riadky), aby autori a značky boli v jednej línii.
  *  Jubileum: meno 16 px tučne, najviac 2 riadky, nikdy orezané. Svadba a ostatné: prázdny riadok rovnakej výšky. */
 function MenoPodZnackou({ t }: { t: Tes }) {
@@ -216,7 +219,7 @@ function ObsahTvaru({ t, velky }: { t: Tes; velky?: boolean }) {
   // OPRAVY 241: Iné s fotkou alebo plagátom = obrázok orezaný na štvorec (štítok a nadpis sú pod tvarom)
   if (t.ine && t.foto) return <span style={{ alignSelf: "stretch", margin: "0 -14px", height: "100%", borderRadius: 20, overflow: "hidden", display: "block" }}><img src={t.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /></span>;
   return <>
-    <span style={kickerTvaru(t.pal.ac)}>{t.ine ? "OZNÁMENIE" : t.dakuje ? "POĎAKOVANIE" : "BLAHOŽELANIE"}</span>
+    <span style={kickerTvaru(t.pal.ac)}>{stTes(t)}</span>
     {/* OPRAVY 229 · 241: v tvare len nadpis, najviac 3 riadky a „…“, text až po ťuknutí */}
     <i style={{ fontFamily: SERIF_TVARU, fontSize: 22 * k, lineHeight: 1.15, maxWidth: "100%", overflowWrap: "anywhere", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{sestSlov(t.nadpis)}</i>
     {t.pod && <span style={{ fontFamily: SERIF_TVARU, fontSize: 16 * k, lineHeight: 1.2, marginTop: 4, maxWidth: "100%", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{t.pod}</span>}
@@ -481,6 +484,10 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   // ---------- Teš sa s nami ----------
   // OPRAVY 205: tvar podľa druhu (svadba kruh · jubileum kosoštvorec · blahoželanie štvorec), pozvánka (miesto, čas) sa neukazuje
   const tesFar: Tes[] = OZ.filter((x) => ["SVADBA", "JUBILEUM", "BLAHOŽELANIE"].includes(stit(x))).map((x) => {
+    // OPRAVY 334: Iné z Editora (Ďakovný list, Ocenenie, Poďakovanie dobrovoľníkom, Pozvánka, Vlastné) — štvorec s hárkom, štítok podľa druhu
+    if (x.oz?.ed?.typ === "ine") { const dn = String(x.oz.ed.druhNazov ?? "Oznámenie");
+      return { id: x.id, druh: "blaho", pal: ZAKLAD.blaho, it: x, meno: x.nazov ?? dn, nadpis: x.nazov ?? dn, datum: "", vek: "", r: reakF(x.id, "blaho"), mena: reakcieF(strankaId, x.id).mena ?? {}, af: x.af,
+        ine: true, stitok: dn.toLocaleUpperCase("sk-SK"), foto: x.fotky?.find(ziveObr) }; }
     // BLOK C 235: jubileum zo Správy = Blahoželanie z Editora
     if (x.oz?.ed?.typ === "blahozelanie") return { ...tesBlaho(x.oz.ed, { id: x.id, nadpis: x.nazov ?? "", r: reakF(x.id, "blaho"), mena: reakcieF(strankaId, x.id).mena ?? {}, af: x.af }), it: x };
     // OPRAVY 272: svadba (aj jubileum) zo Správy z Editora oznámení — ako od veriaceho
@@ -862,7 +869,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   // OPRAVY 275: karta Teš sa — celý hárok na výšku (uložený obrázok s fotkou, nič orezané), pod ním meno, roky, dátum
   const tesKarta = (t: Tes, styl: CSSProperties) => {
     const d = t.datum && /^\d{4}-\d{2}-\d{2}/.test(t.datum) ? zIso(t.datum.slice(0, 10)) : t.it?.vytvorene ? new Date(t.it.vytvorene) : t.x?.cas ? new Date(t.x.cas) : undefined;
-    const st = t.ine ? "OZNÁMENIE" : t.druh === "svadba" ? "SVADBA" : t.druh === "jubileum" ? "JUBILEUM" : t.dakuje ? "POĎAKOVANIE" : "BLAHOŽELANIE";
+    const st = stTes(t);
     const obr = (t.x ? obrVer(t.x) || undefined : undefined) ?? (t.it ? obrFar(t.it) || undefined : undefined) ?? t.foto ?? t.it?.fotky?.find(ziveObr);
     const roky = t.druh === "jubileum" && t.vek ? `${t.vek} ${rokyT(Number(t.vek)).toLocaleLowerCase("sk-SK")}` : "";
     return (
@@ -1363,7 +1370,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
       akcia: reakcia({ ...reakV(x, "modl"), t: "Modlím sa s vami", tJa: "Modlíte sa s nami ✓", poc: (n) => `${n} sa modlí` }), extra: <MenuPrispevku x={x} strankaId={strankaId} kto={kto} moje={moje(x)} /> })) },
     { id: "tes", t: nzB("tes", "Teš sa s nami"), suhrn: S.tes, ma: maTes, riadky: () => tesy.map((t) => {
       const d = t.datum && /^\d{4}-\d{2}-\d{2}/.test(t.datum) ? zIso(t.datum.slice(0, 10)) : t.it?.vytvorene ? new Date(t.it.vytvorene) : t.x?.cas ? new Date(t.x.cas) : undefined;
-      const st = t.ine ? "OZNÁMENIE" : t.druh === "svadba" ? "SVADBA" : t.druh === "jubileum" ? "JUBILEUM" : t.dakuje ? "POĎAKOVANIE" : "BLAHOŽELANIE";
+      const st = stTes(t);
       const veta = t.ine ? "" : [t.druh === "jubileum" && t.vek ? `${t.vek} ${rokyT(Number(t.vek)).toLocaleLowerCase("sk-SK")}` : "", t.pod ?? ""].filter(Boolean).join(" · ");
       return kRiadok({ key: t.id, kicker: `${st}${d ? ` · ${dLbl(d)}` : ""}`, kickerFarba: t.druh === "svadba" ? "var(--nf-teal)" : ZLATA, t: t.ine ? t.nadpis : t.meno, serif: true, txt: veta || undefined, onTap: () => setTes(t),
         extra: fotkyOdkaz(t.ine ? t.nadpis : t.meno, [t.foto, ...(t.it?.fotky ?? []), ...(t.x?.fotky ?? [])].filter((v, i, l) => l.indexOf(v) === i)) }); }) },
@@ -1682,7 +1689,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
             onTap={() => setTes(t)} pod={<>
               {!(t.ine && t.foto) && <MenoPodZnackou t={t} />}
               {t.ine && t.foto && <span style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, textAlign: "center", maxWidth: 220 }}>
-                <span style={kickerTvaru(t.pal.ac)}>OZNÁMENIE</span>
+                <span style={kickerTvaru(t.pal.ac)}>{stTes(t)}</span>
                 <i style={{ fontFamily: SERIF_TVARU, fontSize: 19, lineHeight: 1.2, ...riadkyMax(3) }}>{sestSlov(t.nadpis)}</i>
               </span>}
               {t.x ? hlavickaAutora(t.x) : t.zb ? null : hlavickaFar(t.af)}
