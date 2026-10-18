@@ -5,6 +5,10 @@
 import { useState, type CSSProperties } from "react";
 import { TextovePolia, cistyText } from "./obsahZbierky";
 import { podakujDarcomFarnosti } from "@/lib/podakovanieFarnosti";
+import { nacitajStav, ulozStavIsto } from "@/features/viera/stav";
+
+// odpovede 18. 10.: pod tlačidlom posledné poslanie (kedy · komu), uložené pri stránke
+type Posledne = { cas: string; komu: string };
 
 export function PodakovatDarcom({ strankaId, mobil, ciele }: { strankaId: string; mobil: boolean; /** [kľúč, názov] — vsetci, hlavna, id zbierky */ ciele: [string, string][] }) {
   const [otv, setOtv] = useState(false);
@@ -12,11 +16,13 @@ export function PodakovatDarcom({ strankaId, mobil, ciele }: { strankaId: string
   const [txt, setTxt] = useState("");
   const [st, setSt] = useState<{ k: "busy" } | { k: "ok"; n: number } | { k: "err"; e: string } | null>(null);
   const text = cistyText(txt);
+  const [posledne, setPosledne] = useState<Posledne | null>(() => nacitajStav<Posledne | null>("podakovanieDarcom", strankaId, null));
   const posli = async () => {
     if (!text || st?.k === "busy") return;
     setSt({ k: "busy" });
     const v = await podakujDarcomFarnosti(strankaId, komu, text.slice(0, 1500));
     setSt("e" in v ? { k: "err", e: v.e } : { k: "ok", n: v.n });
+    if (!("e" in v)) { const p = { cas: new Date().toISOString(), komu: ciele.find(([k]) => k === komu)?.[1] ?? "" }; setPosledne(p); void ulozStavIsto("podakovanieDarcom", strankaId, p); }
   };
   const karta: CSSProperties = { flex: "none", borderRadius: mobil ? 18 : 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: mobil ? 16 : "18px 20px", display: "flex", flexDirection: "column", gap: 12 };
   if (!otv) return <button type="button" onClick={() => setOtv(true)} style={{ alignSelf: "flex-start", minHeight: 52, padding: "0 22px", border: "none", borderRadius: 14, background: "#4B7A35", color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, boxShadow: "none" }}>Poďakovať darcom</button>;
@@ -37,6 +43,7 @@ export function PodakovatDarcom({ strankaId, mobil, ciele }: { strankaId: string
       <button type="button" aria-busy={st?.k === "busy"} onClick={() => void posli()} style={{ minHeight: 52, padding: "0 20px", border: tl.bd, borderRadius: 14, background: tl.bg, color: tl.c, cursor: text ? "pointer" : "default", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, boxShadow: "none" }}>{tl.t}</button>
       {st?.k === "ok" && <span role="status" style={{ fontSize: 13.5, color: "var(--gInk)", fontWeight: 700 }}>{st.n === 1 ? "Dostane ho 1 darca." : st.n > 1 && st.n < 5 ? `Dostanú ho ${st.n} darcovia.` : `Dostane ho ${st.n} darcov.`}</span>}
       {st?.k === "err" && <span role="alert" style={{ fontSize: 13.5, color: "var(--cRed)", fontWeight: 700 }}>{st.e}</span>}
+      {posledne && <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>Naposledy poslané {(() => { const d = new Date(posledne.cas); return `${d.getDate()}. ${d.getMonth() + 1}.`; })()} · {posledne.komu}</span>}
       <button type="button" onClick={() => { setOtv(false); setSt(null); }} style={{ alignSelf: "flex-start", minHeight: 44, padding: "0 16px", border: "1.5px solid var(--cardBd)", borderRadius: 12, background: "var(--btn)", color: "var(--ink)", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, boxShadow: "none" }}>Zavrieť</button>
     </section>);
 }
