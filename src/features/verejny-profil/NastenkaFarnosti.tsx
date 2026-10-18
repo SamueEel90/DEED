@@ -75,7 +75,7 @@ import { useLayout, useUpgrade } from "@/components/context";
 
 import "@/styles/nastenka.css";
 import { useObrazokNavrhu, type PayloadEditora } from "@/components/EditorOznameni";
-import { ParteMedailon, ZnackaReakcie, TvarOznamu, PARTE, SVADBA, JUBILEUM, BLAHOZELANIE, ZAKLAD, BORDOVA, symbolCirkvi, kickerTvaru, SERIF_TVARU, type Paleta } from "./Medailony";
+import { ZnackaReakcie, TvarOznamu, PARTE, SVADBA, JUBILEUM, BLAHOZELANIE, ZAKLAD, BORDOVA, symbolCirkvi, kickerTvaru, SERIF_TVARU, type Paleta } from "./Medailony";
 import { Darcovia, TextOmse } from "@/features/zbierka/Riadky";
 import { useQrObrazok } from "@/lib/qrObrazok";
 import { useAutorNaStranke, type AutorF } from "@/lib/autorFarnosti";
@@ -194,13 +194,6 @@ function tesBlaho(ed: PayloadEditora, z: Pick<Tes, "id" | "nadpis" | "r" | "mena
 const krstne = (m: string) => m.trim().split(/\s+/)[0] ?? "";
 /** štítok položky Teš sa s nami (OPRAVY 334: Iné podľa druhu) */
 const stTes = (t: Tes) => t.stitok ?? (t.ine ? "OZNÁMENIE" : t.druh === "svadba" ? "SVADBA" : t.druh === "jubileum" ? "JUBILEUM" : t.dakuje ? "POĎAKOVANIE" : "BLAHOŽELANIE");
-/** OPRAVY 328: riadok pod značkou Teš sa — rovnaká výška pri každej značke (2 riadky), aby autori a značky boli v jednej línii.
- *  Jubileum: meno 16 px tučne, najviac 2 riadky, nikdy orezané. Svadba a ostatné: prázdny riadok rovnakej výšky. */
-function MenoPodZnackou({ t }: { t: Tes }) {
-  return <span style={{ minHeight: 40, maxWidth: 230, display: "flex", alignItems: "flex-start", justifyContent: "center", textAlign: "center" }}>
-    {t.druh === "jubileum" && <b style={{ fontSize: 16, fontWeight: 800, lineHeight: 1.25, overflowWrap: "anywhere" }}>{t.meno}</b>}
-  </span>;
-}
 /** OPRAVY 205: obsah tvaru — svadba mená a dátum, jubileum roky a meno, blahoželanie nadpis */
 function ObsahTvaru({ t, velky }: { t: Tes; velky?: boolean }) {
   const k = velky ? 1.35 : 1;
@@ -260,9 +253,6 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   const otvorGal = (t: string, m: MediumGalerie[], i = 0) => { if (m.length) setGal({ t, m, i }); };
   const [osoba, setOsoba] = useState<string | null>(null); // OPRAVY 196: profil autora
   const { wide: siroka, desktop: pc } = useLayout();
-  /** OPRAVY 205: na mobile medailóny a tvary menšie, dva vedľa seba */
-  const mriezkaTvarov: CSSProperties = siroka ? { display: "flex", flexWrap: "wrap", gap: "28px 36px", alignItems: "flex-start" } : { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px 8px", justifyItems: "center", alignItems: "start" };
-  const zmensi: CSSProperties = siroka ? {} : { zoom: 0.72 } as CSSProperties;
   const [parte, setParte] = useState<Spom | null>(null); // OPRAVY 204: parte + zbierka rodiny
   const [tes, setTes] = useState<Tes | null>(null); // OPRAVY 205: Blahoželám a zoznam
   const [zoz, setZoz] = useState<string | null>(null);
@@ -906,19 +896,53 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
         </span>
       </div>);
   };
-  // --- Teš sa s nami: karty vedľa seba (PC 2–3 v rade), mobil na celú šírku ---
+  // OPRAVY 360: Teš sa s nami a Spomíname vyrovnané (Kronika aj Nástenka) — 4 v rade na PC, 2 na mobile,
+  // rovnaká výška karty a rovnaké meno; oslava = nižší náhľad (horná časť oznámenia), Spomíname = veľký ovál, tlmenejšie, bez farebného štítku
+  const mriezka4: CSSProperties = { display: "grid", gridTemplateColumns: `repeat(${siroka ? 4 : 2},minmax(0,1fr))`, gap: siroka ? 16 : 12, alignItems: "stretch" };
+  const NAHLAD = "4 / 5";
+  const menoKarty: CSSProperties = { fontSize: siroka ? 18 : 16, lineHeight: 1.25, fontWeight: 800, overflowWrap: "anywhere", ...riadkyMax(2) };
+  const kartaOS: CSSProperties = { position: "relative", width: "100%", minWidth: 0, height: "100%", padding: siroka ? 10 : 8, border: "none", borderRadius: 18, background: KARTA, color: INK, display: "flex", flexDirection: "column", gap: 10, textAlign: "left", cursor: "pointer", fontFamily: "inherit", boxSizing: "border-box" };
+  const oslavaKarta = (t: Tes) => {
+    const d = t.datum && /^\d{4}-\d{2}-\d{2}/.test(t.datum) ? zIso(t.datum.slice(0, 10)) : t.it?.vytvorene ? new Date(t.it.vytvorene) : t.x?.cas ? new Date(t.x.cas) : undefined;
+    const obr = (t.x ? obrVer(t.x) || undefined : undefined) ?? (t.it ? obrFar(t.it) || undefined : undefined) ?? t.foto ?? t.it?.fotky?.find(ziveObr);
+    const meno = t.ine ? t.nadpis : t.meno;
+    const tvar = t.druh === "svadba" ? "50%" : t.druh === "jubileum" ? 4 : 6;
+    return (
+      <button key={t.id} type="button" data-oz={t.id} onClick={() => setTes(t)} aria-label={`${meno} · otvoriť`} style={kartaOS}>
+        <span style={{ position: "relative", display: "flex", width: "100%", aspectRatio: NAHLAD, borderRadius: 12, overflow: "hidden", background: obr ? "#fff" : t.pal.bg, color: t.pal.fg }}>
+          {znTes(t)}
+          {obr ? <img src={obr} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "50% 0", display: "block" }} />
+            : <span style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, padding: 10, textAlign: "center", minWidth: 0 }}>
+              <span aria-hidden="true" style={{ width: 30, height: 30, border: `3px solid ${t.pal.ac}`, borderRadius: tvar, transform: t.druh === "jubileum" ? "rotate(45deg) scale(.82)" : undefined }} />
+              <span style={kickerTvaru(t.pal.ac)}>{stTes(t)}</span>
+              <i style={{ fontFamily: SERIF_TVARU, fontSize: siroka ? 19 : 17, lineHeight: 1.2, overflowWrap: "anywhere", ...riadkyMax(2) }}>{t.druh === "svadba" ? t.meno.replace(/^\s*svadba\b[\s·:,–-]*/i, "") : meno}</i>
+            </span>}
+        </span>
+        <span style={{ display: "flex", flexDirection: "column", gap: 3, padding: "0 2px 2px", minHeight: siroka ? 64 : 58 }}>
+          <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: t.druh === "svadba" ? "var(--nf-teal)" : ZLATA }}>{[stTes(t), d ? dm(d) : ""].filter(Boolean).join(" · ")}</span>
+          <b style={menoKarty}>{meno}</b>
+        </span>
+      </button>);
+  };
+  const spomKarta = (sp: Spom) => (
+    <button key={sp.id} type="button" data-oz={sp.id} onClick={() => setParte(sp)} aria-label={`${sp.d.meno} · parte${sp.zb ? " a zbierka rodiny" : ""}`} style={kartaOS}>
+      <span style={{ position: "relative", display: "flex", width: "100%", aspectRatio: NAHLAD }}>
+        {znSpom(sp)}
+        <span style={{ flex: 1, borderRadius: "50%", border: "2px solid #C9A24A", overflow: "hidden", background: sp.foto ? undefined : "linear-gradient(160deg,#3A2E3E,#1C1820)", display: "flex", alignItems: "center", justifyContent: "center", color: "#C9A24A", fontSize: siroka ? 44 : 36 }}>
+          {sp.foto ? <span style={{ width: "100%", height: "100%", background: `center/cover no-repeat url('${sp.foto}')`, filter: sp.siva ? "grayscale(1)" : undefined }} /> : symbol}
+        </span>
+      </span>
+      <span style={{ display: "flex", flexDirection: "column", gap: 3, padding: "0 2px 2px", minHeight: siroka ? 64 : 58, color: INK2 }}>
+        <b style={{ ...menoKarty, color: INK }}>{sp.d.meno}</b>
+        {rokyParte(sp.d.nar, sp.d.umr) && <span style={{ fontSize: 14.5 }}>{rokyParte(sp.d.nar, sp.d.umr)}</span>}
+      </span>
+    </button>);
   const kTes = maTes && sekcia("tes", nzB("tes", "Teš sa s nami"), S.tes, <>
-    <div style={{ display: "grid", gridTemplateColumns: siroka ? "repeat(auto-fill,minmax(184px,240px))" : "minmax(0,1fr)", gap: 14 }}>
-      {tesy.map((t) => tesKarta(t, {}))}
-    </div>
+    <div style={mriezka4}>{tesy.map(oslavaKarta)}</div>
   </>);
   // --- Spomíname = zápis na tmavšom pozadí ---
   const kSpom = maSpom && sekcia("spom", nzB("spom", "Spomíname"), S.spom, <>
-    {/* OPRAVY 322: na PC mriežka (najviac 3 vedľa seba), nie riadok cez celú šírku na jedného */}
-    <div style={pc ? { ...MRIEZKA3, columnGap: 24, rowGap: 0 } : { display: "flex", flexDirection: "column", borderTop: "1px solid color-mix(in srgb,var(--nf-linka) 70%,transparent)" }}>
-      {spomienky.map((sp) => { const n = sp.x ? pocetSus(sp.x) : (reakcieF(strankaId, sp.zb?.id ?? sp.id).sustrast ?? []).length; return (
-        <SpomZapis key={sp.id} oz={sp.id} foto={sp.foto} siva={sp.siva} znacka={znSpom(sp, -6)} symbol={symbol} meno={sp.d.meno} roky={rokyParte(sp.d.nar, sp.d.umr)} rozlucka={[rozluckaT(sp.d.rd, sp.d.rc), sp.d.rm].filter(Boolean).join(" · ")} zbierka={!!sp.zb} sustrast={n} onTap={() => setParte(sp)} />); })}
-    </div>
+    <div style={mriezka4}>{spomienky.map(spomKarta)}</div>
   </>, { pozadie: "var(--nf-spom)" });
   // --- Od veriacich ---
   const kVer = oznVer.length > 0 && sekcia("ver", nzB("ver", "Od veriacich"), S.ver, <>
@@ -1704,26 +1728,13 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
       tes: <>
       {/* ---------- Teš sa s nami (OPRAVY 205: tvar podľa druhu, bez tlačidiel; Blahoželám a zoznam po ťuknutí) ---------- */}
       {maTes && blokN("tes", nzB("tes", "Teš sa s nami"), "Svadby, jubileá a poďakovania. Ťuknite a zablahoželajte.", S.tes, <>
-        <div style={{ flex: "999 1 520px", minWidth: 0, ...mriezkaTvarov }}>
-          {tesy.map((t) => <div key={t.id} data-oz={t.id} style={{ ...zmensi, position: "relative" }}>{znTes(t)}<TvarOznamu tvar={t.druh === "svadba" ? "kruh" : t.druh === "jubileum" ? "kosostvorec" : "stvorec"} pal={t.pal} label={`${t.meno} · otvoriť`}
-            onTap={() => setTes(t)} pod={<>
-              {!(t.ine && t.foto) && <MenoPodZnackou t={t} />}
-              {t.ine && t.foto && <span style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, textAlign: "center", maxWidth: 220 }}>
-                <span style={kickerTvaru(t.pal.ac)}>{stTes(t)}</span>
-                <i style={{ fontFamily: SERIF_TVARU, fontSize: 19, lineHeight: 1.2, ...riadkyMax(3) }}>{sestSlov(t.nadpis)}</i>
-              </span>}
-              {t.x ? hlavickaAutora(t.x) : t.zb ? null : hlavickaFar(t.af)}
-            </>}><ObsahTvaru t={t} /></TvarOznamu></div>)}
-        </div>
+        <div style={{ flex: "999 1 520px", minWidth: 0, ...mriezka4 }}>{tesy.map(oslavaKarta)}</div>
       </>)}
       </>,
       spom: <>
       {/* ---------- Spomíname (OPRAVY 205: medailóny bez tlačidiel, ťuk = parte a zbierka rodiny) ---------- */}
       {maSpom && blokN("spom", nzB("spom", "Spomíname"), "Parte a spomienky. Ťuknite na medailón, otvorí sa parte a zbierka rodiny.", S.spom, <>
-        <div style={{ flex: "999 1 520px", minWidth: 0, ...mriezkaTvarov }}>
-          {spomienky.map((sp) => <div key={sp.id} data-oz={sp.id} style={zmensi}><ParteMedailon pal={sp.pal} foto={sp.foto} siva={sp.siva} znacka={znSpom(sp)} symbol={symbol} meno={sp.d.meno}
-            roky={rokyParte(sp.d.nar, sp.d.umr)} rozlucka={rozluckaT(sp.d.rd, sp.d.rc)} zbierka={!!sp.zb} onTap={() => setParte(sp)} /></div>)}
-        </div>
+        <div style={{ flex: "999 1 520px", minWidth: 0, ...mriezka4 }}>{spomienky.map(spomKarta)}</div>
       </>, "var(--nf-spom)")}
       </>,
       ver: <>
