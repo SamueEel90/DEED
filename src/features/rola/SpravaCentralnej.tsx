@@ -27,7 +27,7 @@ import { Prepinac } from "@/features/profil/nastUi";
 import {
   useSektory, cislaSektora, obsahSektora, ulozObsahSektora, pridajSektor, zmazSektor, premenujSektor, ziadostUctu, poziadajOZmenuUctu,
   zavretaCentralna, zavriCentralnu, otvorCentralnu, vyberCentralnej, nastavVyberCentralnej, useZmenySektorov,
-  CENTRALNA_CISLA, CENTRALNA_SLUG, NULA, SEKTORY_MAX, SEKTORY_OD_TIERU, STANOVY_CINNOSTI, type SektorCharity,
+  CENTRALNA_CISLA, NULA, SEKTORY_MAX, SEKTORY_OD_TIERU, STANOVY_CINNOSTI, type SektorCharity,
 } from "@/lib/sektoryCharity";
 import { nacitajStav, ulozStav, OVERENY_SKEN, type StavZbierky } from "@/lib/zbierkaSprava";
 import { nastavCiste, sucetDarov, darcoviaPre, identitaDarcu, relCas, zobrazenaSuma, useZmenyDarov, useSektorDarcu } from "@/lib/darcovia";
@@ -225,7 +225,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const qr = farnost
     ? <QrKarta nazov={nazov} slug={strankaId} odkaz={odkazQrStranky(strankaId)} cislo={cisloObjektu("Z", idZbierky)} toast={toast} nadpis="QR farnosti" onPlagat={() => setPlOkno(true)}
         popis="Ten istý QR z registrácie. Vedie rovno na Hlavnú zbierku." /* OPRAVY 350 */ />
-    : <QrKarta nazov={sek ? `${nazov} · ${sek.nazov}` : nazov} slug={sek ? sek.slug : CENTRALNA_SLUG} cislo={cisloObjektu("Z", idZbierky)} toast={toast} />;
+    : <QrKarta nazov={sek ? `${nazov} · ${sek.nazov}` : nazov} slug={strankaId} odkaz={odkazQrStranky(strankaId)} cislo={cisloObjektu("Z", idZbierky)} toast={toast} />; /* OPRAVY 358: /z/{slug} centrálnej neexistuje — QR vedie na stránku (centrálna je na nej hore) */
   // farnosť pred spustením: namiesto QR karta „ešte nebeží" + Spustiť (bez Z-čísla a odkazu)
   const spustit = () => { const n = { ...d, spustena: new Date().toISOString() }; zmenene.current = false; setD(n); void ulozCentralnuZbierku(strankaId, n); setUlozene(true); };
   // KARTA 56D §5: kontrola pred spustením — ťuk na chýbajúce posunie na pole
