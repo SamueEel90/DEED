@@ -29,7 +29,7 @@ export function PodakovatDarcom({ strankaId, mobil, ciele }: { strankaId: string
   const tl = !text ? { t: "Najprv napíšte poďakovanie", bg: "var(--btn)", c: "var(--ink3)", bd: "none" }
     : st?.k === "busy" ? { t: "Posielam …", bg: "#4B7A35", c: "#fff", bd: "none" }
     : st?.k === "ok" ? { t: "Poslané ✓ · príde im do Oznámení", bg: "var(--gSoft)", c: "var(--gInk)", bd: "none" }
-    : st?.k === "err" ? { t: "Nepodarilo sa · Skúsiť znova", bg: "var(--rBg)", c: "var(--cRed)", bd: "1.5px solid var(--rBd)" }
+    : st?.k === "err" ? { t: `${st.e} · Skúsiť znova`, bg: "var(--rBg)", c: "var(--cRed)", bd: "none" } /* OPRAVY 351: chyba len na tlačidle */
     : { t: "Poslať poďakovanie", bg: "#4B7A35", c: "#fff", bd: "none" };
   return (
     <section style={karta}>
@@ -40,9 +40,8 @@ export function PodakovatDarcom({ strankaId, mobil, ciele }: { strankaId: string
       <TextovePolia popis={txt} popis2="" onPopis={(h) => { setTxt(h); if (st?.k !== "busy") setSt(null); }} onPopis2={() => undefined} ph={mobil} bezPokracovania
         popisHlavneho="Napíšte darcom pár viet poďakovania." placeholder="Ďakujeme, že ste s nami. Vďaka vašim darom…" />
       <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>Príde darcom do Oznámení od farnosti.</span>
-      <button type="button" aria-busy={st?.k === "busy"} onClick={() => void posli()} style={{ minHeight: 52, padding: "0 20px", border: tl.bd, borderRadius: 14, background: tl.bg, color: tl.c, cursor: text ? "pointer" : "default", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, boxShadow: "none" }}>{tl.t}</button>
+      <button type="button" aria-busy={st?.k === "busy"} aria-live="polite" onClick={() => void posli()} style={{ minHeight: 52, padding: "0 20px", border: tl.bd, borderRadius: 14, background: tl.bg, color: tl.c, cursor: text ? "pointer" : "default", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, boxShadow: "none" }}>{tl.t}</button>
       {st?.k === "ok" && <span role="status" style={{ fontSize: 13.5, color: "var(--gInk)", fontWeight: 700 }}>{st.n === 1 ? "Dostane ho 1 darca." : st.n > 1 && st.n < 5 ? `Dostanú ho ${st.n} darcovia.` : `Dostane ho ${st.n} darcov.`}</span>}
-      {st?.k === "err" && <span role="alert" style={{ fontSize: 13.5, color: "var(--cRed)", fontWeight: 700 }}>{st.e}</span>}
       {posledne && <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>Naposledy poslané {(() => { const d = new Date(posledne.cas); return `${d.getDate()}. ${d.getMonth() + 1}.`; })()} · {posledne.komu}</span>}
       <button type="button" onClick={() => { setOtv(false); setSt(null); }} style={{ alignSelf: "flex-start", minHeight: 44, padding: "0 16px", border: "1.5px solid var(--cardBd)", borderRadius: 12, background: "var(--btn)", color: "var(--ink)", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, boxShadow: "none" }}>Zavrieť</button>
     </section>);
