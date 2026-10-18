@@ -4,7 +4,7 @@
 // Nezávisí od hlavnej zbierky: peniaze idú príjemcovi, podiel overovateľa (0 – 3 %, po 0,5 %, najviac 100 €) farnosti.
 // Rozdelenie ide do nastavenie.rozdelenie → server ho pri zapečatení zapíše ako split (0065) a overí účet každého príjemcu.
 // Kroky: 1 sken príjemcu (živý QR, 15 s) · 2 oznámenie (už je na stránke / nahrať vlastné / zo šablóny) ·
-// 3 rozdelenie (podiel overovateľa + zvyšok rozhoduje príjemca: nechať si / podeliť sa) · 4 kód + zapečatiť · 5 hotovo.
+// 3 rozdelenie (podiel overovateľa + zvyšok rozhoduje príjemca: nechať si / podeliť sa) · 4 potvrdenie + zapečatiť · 5 hotovo.
 // Nová zbierka začína vždy úplne prázdna. Prototyp „Sprava farnosti - prvy prichod" (pre-kodera-7-10-b).
 // ============================================================
 import { ADRESA } from "@/lib/adresa";
@@ -37,6 +37,13 @@ import {
 
 type Druh = Exclude<ZbierkaFarnosti["druh"], "farnost">;
 const DRUH_OZN: Record<Druh, DruhOznamu> = { pohreb: "parte", svadba: "svadba", ine: "ine" };
+/** OPRAVY 364: „na jeho / jej obrazovke“ podľa mena príjemcu (priezvisko na -ová / -á = žena); bez mena „na obrazovke príjemcu“ */
+const naObrazovke = (meno?: string | null) => {
+  const p = (meno ?? "").trim().split(/\s+/).filter(Boolean);
+  if (p.length < 2 || /^Člen DEED$/i.test(meno ?? "")) return "Na obrazovke príjemcu";
+  return /(ová|á)$/i.test(p[p.length - 1]) ? "Na jej obrazovke" : "Na jeho obrazovke";
+};
+const muJej = (meno?: string | null) => { const o = naObrazovke(meno); return o === "Na jej obrazovke" ? "jej" : o === "Na jeho obrazovke" ? "mu" : "príjemcovi"; };
 const PZT: Record<Druh, { t: string; nazov: string; chip: string; kto: string; komu: string; ozn: string; sabS: string; kedy: string; meno: string; po: string; pred: string; k1: string; k2: string; prijM: string; prijK: string; prijD: string; phMeno: string; phKde: string }> = {
   pohreb: { t: "Pohreb", nazov: "Pohrebná zbierka", chip: "POHREBNÁ ZBIERKA", kto: "Pozostalý", komu: "pozostalému", ozn: "parte", sabS: "fotka, meno, dátumy, pohreb, kto oznamuje", kedy: "ROZLÚČKA · KEDY (NEPOVINNÉ)", meno: "MENO A PRIEZVISKO ZOSNULÉHO", po: "pohrebe", pred: "Rozlúčka", k1: "Sken pozostalého", k2: "Parte", prijM: "Rodina", prijK: "rodina", prijD: "rodine", phMeno: "Meno a priezvisko zosnulého", phKde: "napr. kostol, dom smútku" },
   svadba: { t: "Svadba", nazov: "Svadobná zbierka", chip: "SVADOBNÁ ZBIERKA", kto: "Snúbenec", komu: "snúbencovi", ozn: "svadobné oznámenie", sabS: "fotka, mená, dátum a miesto sobáša", kedy: "SOBÁŠ · KEDY (NEPOVINNÉ)", meno: "MENÁ SNÚBENCOV", po: "svadbe", pred: "Svadba", k1: "Sken snúbenca", k2: "Oznámenie", prijM: "Snúbenci", prijK: "snúbenci", prijD: "snúbencom", phMeno: "Mená snúbencov", phKde: "napr. farský kostol" },
@@ -235,11 +242,12 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
   const [sadaE, setSadaE] = useState(1);
   const rozdelenieT = [`${T.prijD} ${prijemcovi === 0 && podelit ? "0 % · všetko darované" : pct(prijemcovi)}`, ...(podelit ? spolu.map((x) => `${x.nazov} ${pct(x.pct)}`) : []), `farnosti ${pct(podiel)}`].join(" · ");
 
-  // ---- 4 · kód, potvrdenie a zapečatenie ----
+  // ---- 4 · potvrdenie a zapečatenie (OPRAVY 364: bez kódu — farár pošle na potvrdenie, príjemca podrží) ----
   const [znova, setZnova] = useState(false);
+  const [poslane, setPoslane] = useState(false);
   useEffect(() => { if (!znova) return; const t = window.setTimeout(() => setZnova(false), 2000); return () => window.clearTimeout(t); }, [znova]);
   const [potvrdil, setPotvrdil] = useState(false);
-  // OPRAVY 338: farár sleduje overenie — krok 1 čaká na „som to ja“, krok 4 na kód od príjemcu (každé 2 s)
+  // OPRAVY 338: farár sleduje overenie — krok 1 čaká na „som to ja“, krok 4 na potvrdenie príjemcu (každé 2 s)
   useEffect(() => {
     if (!OVP_NAOSTRO || !ovpId) return;
     const caka1 = krok === 1 && !prijemca, caka4 = krok === 4 && !potvrdil && !!prijemca;
@@ -260,7 +268,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
   const posliKod = async (znovaPoslane?: boolean) => {
     if (!ovpId || kodPosiela) return;
     setKodPosiela(true); setKodChyba(null);
-    try { await ovpKod(ovpId, velke(rozdelenieT)); if (znovaPoslane) setZnova(true); }
+    try { await ovpKod(ovpId, velke(rozdelenieT)); setPoslane(true); if (znovaPoslane) setZnova(true); }
     catch (e) { setKodChyba(textChyby(e)); }
     finally { setKodPosiela(false); }
   };
@@ -273,7 +281,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
   const zapecat = async () => {
     const nazov = `${T.pred} · ${menoOzn || "—"}`;
     // účet príjemcu prinesie sken v jeho appke (PLACEBO — karta 56E); v testovacom režime je príjemcom prihlásený tester
-    // OPRAVY 338: naostro účet z overenia (sken + kód); simulácia v DEV = prihlásený tester
+    // OPRAVY 338: naostro účet z overenia (sken + potvrdenie); simulácia v DEV = prihlásený tester
     const ucetPrijemcu = prijemca?.ucet ?? (TESTOVACIA ? ja.ucetId ?? undefined : undefined);
     setZapChyba(null);
     const rozdelenie: PodielZbierky[] = [
@@ -312,7 +320,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
     return () => { spatRef.current = null; };
   });
   useEffect(() => { onSpatText?.(krok >= 5 ? "" : spatT); }, [spatT, krok, onSpatText]);
-  const kroky = [`1 · ${T.k1}`, `2 · ${T.k2}`, "3 · Rozdelenie", "4 · Kód", "5 · Hotovo"];
+  const kroky = [`1 · ${T.k1}`, `2 · ${T.k2}`, "3 · Rozdelenie", "4 · Potvrdenie", "5 · Hotovo"];
   // OPRAVY 338: simulácia len v DEV zostavení (npm run dev); na Verceli je sken a kód naostro
   const test = (t: string, onClick: () => void) => import.meta.env.DEV || !OVP_NAOSTRO
     ? <button type="button" onClick={onClick} style={{ ...tlO, alignSelf: "flex-start", height: 44, borderStyle: "dashed" }}>{t}</button>
@@ -526,22 +534,32 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
           </>}
         </section>
         <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink3)" }}>Zbierka beží do 7 dní po {T.po}, môžete ju ukončiť skôr. Rozdelenie uvidí darca pred darom. Po zapečatení sa nemení.</span>
-        <button type="button" onClick={() => { setKrok(4); if (prijemca) void posliKod(); }} style={{ ...tlZ, alignSelf: "flex-start" }}>Pokračovať ›</button>
+        <button type="button" onClick={() => { setKrok(4); setPoslane(false); }} style={{ ...tlZ, alignSelf: "flex-start" }}>Pokračovať ›</button>
       </>}
 
-      {krok === 4 && (!potvrdil ? <div key="kod" style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-        <span aria-hidden="true" style={{ flex: "none", width: 44, height: 44, borderRadius: "50%", background: "var(--green)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 800 }}>✓</span>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <b style={{ fontSize: 17 }}>{kodPosiela ? "Posielam kód…" : kodChyba ? "Kód sa neposlal" : `Kód sme poslali: ${prijemca ? prijemca.meno : T.komu}`}</b>
-          <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Príde mu ako upozornenie v appke. Napíše ho a potvrdí rozdelenie ({rozdelenieT}). Kód platí 5 minút. {prijemca && !kodChyba ? "Keď potvrdí, tu sa sám ukáže posledný krok." : ""}</span>
-          <ChybaPriTlacidle text={kodChyba} nadpis="Kód sa neposlal" uklada={kodPosiela} onZnova={() => void posliKod()} />
-          <span style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-            <button type="button" disabled={kodPosiela} onClick={() => { if (prijemca) void posliKod(true); else setZnova(true); }} style={{ ...tlO, height: 44, ...(znova ? { borderColor: "var(--green)", color: "var(--gInk)" } : {}) }}>{znova ? "Poslané znova ✓" : "Poslať znova"}</button>
-            {test("Simulovať potvrdenie (test)", () => setPotvrdil(true))}
-          </span>
+      {krok === 4 && (!potvrdil ? <div key="potvrdenie" style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+        <span aria-hidden="true" style={{ flex: "none", width: 44, height: 44, borderRadius: "50%", background: poslane ? "var(--green)" : "var(--track)", color: poslane ? "#fff" : "var(--ink2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 800 }}>{poslane ? "✓" : "4"}</span>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+          {!poslane ? <>
+            <b style={{ fontSize: 17 }}>Potvrdenie rozdelenia</b>
+            <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>{velke(rozdelenieT)}. Po poslaní sa {muJej(prijemca?.meno)} hneď ukáže na obrazovke, podrží a potvrdí.</span>
+            <ChybaPriTlacidle text={kodChyba} nadpis="Neposlalo sa" uklada={kodPosiela} onZnova={() => void posliKod()} />
+            <span style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <button type="button" disabled={kodPosiela || !prijemca} onClick={() => void posliKod()} style={{ ...tlZ, opacity: prijemca ? 1 : 0.55 }}>{kodPosiela ? "Posielam…" : "Poslať na potvrdenie"}</button>
+              {test("Simulovať potvrdenie (test)", () => setPotvrdil(true))}
+            </span>
+          </> : <>
+            <b style={{ fontSize: 17 }}>Poslané: {prijemca?.meno ?? T.kto}</b>
+            <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>{naObrazovke(prijemca?.meno)} sa ukázalo rozdelenie ({rozdelenieT}), podrží a potvrdí. Platí 5 minút. Keď potvrdí, tu sa sám ukáže posledný krok.</span>
+            <ChybaPriTlacidle text={kodChyba} nadpis="Neposlalo sa" uklada={kodPosiela} onZnova={() => void posliKod()} />
+            <span style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <button type="button" disabled={kodPosiela} onClick={() => void posliKod(true)} style={{ ...tlO, height: 44, ...(znova ? { borderColor: "var(--green)", color: "var(--gInk)" } : {}) }}>{znova ? "Poslané znova ✓" : "Poslať znova"}</button>
+              {test("Simulovať potvrdenie (test)", () => setPotvrdil(true))}
+            </span>
+          </>}
         </div>
       </div> : <section key="zapecatit" role="status" style={{ borderRadius: 18, background: "var(--gSoft)", border: "2px solid var(--green)", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
-        <b style={{ fontSize: 17, color: "var(--gInk)" }}>{T.kto} potvrdil rozdelenie ✓</b>
+        <b style={{ fontSize: 17, color: "var(--gInk)" }}>Príjemca potvrdil ✓</b>
         <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink)" }}>{velke(rozdelenieT)}. Posledný krok: zapečaťte zbierku. Potom sa spustí a rozdelenie sa už nedá zmeniť.</span>
 {ucetOk ? <>
         <ChybaPriTlacidle text={zapChyba} nadpis="Nezapečatilo sa" onZnova={() => void zapecat()} />

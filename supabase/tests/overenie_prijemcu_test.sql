@@ -57,18 +57,14 @@ do $$ begin
 exception when others then insert into t values ('bez súhlasu s rozdelením sa nezapečatí', sqlerrm = 'Príjemca nemá overený účet.'); end $$;
 select public.ovp_kod((select h from v where k = 'id')::uuid, 'pozostalému 97 % · farnosti 3 %');
 reset role;
-insert into v select 'kod', kod from public.overenie_prijemcu where id = (select h from v where k = 'id')::uuid;
-insert into t select 'príjemca má upozornenie s kódom', exists (select 1 from public.notifikacia where ucet_id = '7e57c100-0000-0000-0000-000000104a01'
-  and odkaz = 'ovp:t104-far:' || (select h from v where k = 'lis') and text like 'Kód: ' || (select h from v where k = 'kod') || '%');
+-- 0113: bez kódu — upozornenie s odkazom na obrazovku potvrdenia
+insert into t select 'príjemca má upozornenie', exists (select 1 from public.notifikacia where ucet_id = '7e57c100-0000-0000-0000-000000104a01'
+  and odkaz = 'ovp:t104-far:' || (select h from v where k = 'lis'));
 
 set role authenticated;
 select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-000000104a01', false);
 insert into t select 'príjemca vidí rozdelenie', (public.ovp_nahlad((select h from v where k = 'lis')))->>'rozdelenie' like 'pozostalému%';
-do $$ begin
-  perform public.ovp_suhlas((select h from v where k = 'lis'), '000000x');
-  insert into t values ('zlý kód nie', false);
-exception when others then insert into t values ('zlý kód nie', sqlerrm = 'zly_kod'); end $$;
-select public.ovp_suhlas((select h from v where k = 'lis'), (select h from v where k = 'kod'));
+select public.ovp_suhlas((select h from v where k = 'lis'));
 
 -- zapečatenie na registrovaný účet bez KYC
 select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-000000104f01', false);
