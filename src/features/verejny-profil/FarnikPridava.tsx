@@ -15,7 +15,6 @@ import { CasPole } from "@/components/CasPole";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { usePouzivatel } from "@/lib/pouzivatel";
-import { nacitajSelfAdd } from "@/features/viera/UserOznamy";
 import { DRUHY_FARNIKA, CEZ_EDITOR, BLOK_DRUHU, nacitajSmie, smie, stupen, naStranke as jeNaStranke, pridajMojeCakajuce, odFarnikov, zapisOdFarnikaIsto, zmazOdFarnika, prepniVPolozke, nahlasOdFarnika, pocetSus, useOdFarnikov, useCerstveOdFarnikov, PLATI_VERIACI, vyprsal, type DruhFarnika, type PolozkaFarnika, type FormularVeriaceho } from "@/lib/odFarnikov";
 import { dokonciCas, CAS_OK, pekny } from "@/lib/kalendarFarnosti";
 import { bezDataUrl } from "@/lib/uploadFoto";
@@ -264,7 +263,7 @@ export const otvorPridanie = () => window.dispatchEvent(new Event("deed:farnik-p
 /** je tlačidlo + Pridať zapnuté (farár povolil a aspoň 1 druh) */
 export function fabZapnuty(strankaId: string): boolean {
   const s = nacitajSmie(strankaId);
-  return nacitajSelfAdd(strankaId).on && DRUHY_FARNIKA.some((d) => smie(s, d.k));
+  return DRUHY_FARNIKA.some((d) => smie(s, d.k)); // OPRAVY 381
 }
 
 export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: string; mobil: boolean; onPozriet: (id: string) => void }) {
@@ -276,9 +275,9 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   const vpravo = mobil ? "16px" : desktop ? "max(28px, calc((100vw - 104px - 1440px) / 2 + 28px))" : "28px";
   // OPRAVY 204: parte veriaceho nemá vlastnú zbierku — QR vedie na stránku farnosti (Spomíname), nikdy nie ukážkový obrázok
   const qrStr = useQrObrazok(odkazQrStranky(strankaId));
-  const self = nacitajSelfAdd(strankaId), sm = nacitajSmie(strankaId);
+  const sm = nacitajSmie(strankaId);
   const povol = DRUHY_FARNIKA.filter((d) => smie(sm, d.k));
-  const pop = 0; // OPRAVY 310: poplatok za oznam zrušený — všetko zadarmo (self.poplatok sa ignoruje)
+  const pop = 0; // OPRAVY 310: poplatok za oznam zrušený — všetko zadarmo
   const [sheet, setSheet] = useState(false);
   const fabRez = useFabRezim();
   useEffect(() => { const f = () => setSheet(true); window.addEventListener("deed:farnik-pridaj", f); return () => window.removeEventListener("deed:farnik-pridaj", f); }, []);
@@ -347,7 +346,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   const maObsahV = !!(f.nad.trim() || cistyText(f.txt).trim() || f.datum || f.cas || f.kde.trim() || media.length);
   useUkladajKoncept<KonVer | null>(KONV, k ? { k, f, media } : null, !!k && !edId && !hotovo && !CEZ_EDITOR.includes(k) && maObsahV);
   const [, prekresliK] = useState(0);
-  if (!self.on || !povol.length) return null;
+  if (!povol.length) return null;
 
   const set = (z: Partial<FormularVeriaceho>) => { setF((q) => ({ ...q, ...z })); setChyba(false); };
   const otvor = (kk: DruhFarnika, v: VarIne = "blahozelanie") => { setF(prazdnyF()); setTxtKey((n) => n + 1); setMedia([]); setChyba(false); setHotovo(null); setEdId(null); setSheet(false); setK(kk); setVarIne(v); setChybaUl(null); };

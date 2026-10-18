@@ -21,19 +21,10 @@ import { SPACE, RADIUS, U } from "@/theme";
 import { Input, Switch, RichTextInput, FotoVyber, Foto } from "@/shared";
 import { cistyText } from "@/lib/richtext";
 import { pressable } from "@/components/pressable";
-import { N, SheetPanel } from "./ui";
-import { nacitajStav, ulozStav, ulozStavIsto } from "./stav";
+import { N } from "./ui";
 import type { Farnost, VieraFeedItem, ReakciaTyp } from "./mock";
 
 export type UserOznamTyp = "jubilejny" | "podakovanie" | "modlitba" | "spomienkovy";
-
-// ---- nastavenie farnosti: „useri pridávajú sami" ON/OFF + voliteľný poplatok (€) ----
-export interface SelfAddNastavenie { on: boolean; poplatok: number; }
-export const nacitajSelfAdd = (fid: string): SelfAddNastavenie =>
-  nacitajStav<SelfAddNastavenie>("selfadd", fid, { on: true, poplatok: 0 });
-export const ulozSelfAdd = (fid: string, v: SelfAddNastavenie) => ulozStav("selfadd", fid, v);
-/** OPRAVY 335: zápis, na ktorý sa čaká */
-export const ulozSelfAddIsto = (fid: string, v: SelfAddNastavenie) => ulozStavIsto("selfadd", fid, v);
 
 // ---- prednastavené obrázky (§5) — Unsplash mock; Foto má emoji fallback ----
 type Preset = { id: string; label: string; url: string; emoji: string };
@@ -319,32 +310,3 @@ function MetaChip({ children }: { children: React.ReactNode }) {
   return <span style={{ fontSize: 11, color: N.txt2, background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.pill, padding: `${SPACE.xxs}px ${SPACE.sm}px` }}>{children}</span>;
 }
 
-// ============================================================
-// [SPRÁVCA] NASTAVENIE SELF-ADD — ON/OFF + voliteľný poplatok (§2)
-// ============================================================
-export function SelfAddSheet({ farnost, onClose, toast }: { farnost: Farnost; onClose: () => void; toast: (m: string) => void }) {
-  const [v, setV] = useState<SelfAddNastavenie>(() => nacitajSelfAdd(farnost.id));
-  const uloz = () => { ulozSelfAdd(farnost.id, { on: v.on, poplatok: Math.max(0, +v.poplatok || 0) }); toast(v.on ? "Oznamy veriacich: zapnuté" : "Oznamy veriacich: vypnuté"); onClose(); };
-  return (
-    <SheetPanel title="Oznamy od veriacich" onClose={onClose}>
-      <div style={{ fontSize: 12, color: N.txt3, marginBottom: SPACE.md, lineHeight: 1.5 }}>
-        Self-add = odbremenenie farára (jubileá, poďakovania, prosby o modlitbu si veriaci pridajú sami, auto-publish). Feed tvorí primárne farár — toto je voliteľné.
-      </div>
-      <label style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: SPACE.gutter, fontSize: 14, fontWeight: 700 }}>
-        <Switch on={v.on} onChange={(on) => setV((s) => ({ ...s, on }))} ariaLabel="Useri pridávajú sami" />
-        Useri pridávajú sami
-      </label>
-      {v.on && (<>
-        <div style={{ fontSize: 11, fontWeight: 700, color: N.txt3, letterSpacing: ".03em", margin: `${SPACE.md}px 0 ${SPACE.xxs}px` }}>POPLATOK ZA OZNAM (€) — VOLITEĽNÉ</div>
-        <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm }}>
-          <div style={{ width: 110 }}><Input value={String(v.poplatok || "")} onChange={(x) => setV((s) => ({ ...s, poplatok: +x || 0 }))} type="number" placeholder="0" /></div>
-          <div style={{ fontSize: 11, color: N.txt3, lineHeight: 1.4 }}>Self-funding — poplatky pokryjú náklady appky. 0 = zadarmo.</div>
-        </div>
-        <div style={{ fontSize: 11.5, color: N.green, background: N.greenBg, border: `1px solid ${N.greenEdge}`, borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.sm}px`, marginTop: SPACE.sm, lineHeight: 1.45 }}>
-          🕊 <b>Prosba o modlitbu a smútočné oznamy sú VŽDY zadarmo</b> — nikdy sa nespoplatňujú ani v platenom režime (simónia).
-        </div>
-      </>)}
-      <button onClick={uloz} style={{ width: "100%", marginTop: SPACE.md, height: 48, border: "none", borderRadius: RADIUS.md, background: N.green, color: "#fff", fontWeight: 700, fontSize: 15, fontFamily: "inherit", cursor: "pointer" }}>Uložiť</button>
-    </SheetPanel>
-  );
-}

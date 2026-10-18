@@ -1,6 +1,6 @@
 // ============================================================
 // KARTA 56I — veriaci pridáva sám (zelené + Pridať na verejnej stránke farnosti).
-// Nastavenie farára: „Veriaci môžu pridávať oznamy" + poplatok = selfadd (viera/UserOznamy),
+// Nastavenie farára (OPRAVY 381: starý vypínač „Veriaci môžu pridávať oznamy“ zmazaný):
 // „Čo smú veriaci pridať sami" = 8 prepínačov (predvolene všetky zapnuté) = oblasť farniksmie.
 // Pridané položky = oblasť odfarnikov (KV stav farnosti, zrkadlo naboz_stav). Zverejní sa hneď, farár môže zmazať.
 // ============================================================

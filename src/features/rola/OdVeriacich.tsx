@@ -7,7 +7,6 @@
 import { KartaNastavenia, NADPIS_SEKCIE, farbaStitku } from "./KartaNastavenia";
 import { TlZbalit } from "@/features/verejny-profil/zbalit";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { nacitajSelfAdd, ulozSelfAddIsto } from "@/features/viera/UserOznamy";
 import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import { DRUHY_FARNIKA, CEZ_EDITOR, KAM_DRUHU, nacitajSmie, ulozSmieIsto, stupen, rozhodniOdFarnikov, type Stupen, type SmieFarnika, odFarnikov, upravOdFarnika, ponechajOdFarnika, zmazOdFarnika, zmazOdFarnikov, nastavenieOdVeriacich, ulozNastavenieOdVeriacich, ulozNastavenieOdVeriacichIsto, useOdFarnikov, useCerstveOdFarnikov, pocetNahl, pocetSus, vyprsal, type DruhFarnika, type PolozkaFarnika } from "@/lib/odFarnikov";
 import { TextOznamu } from "./OznamyFarnosti";
@@ -33,7 +32,7 @@ function NastavitPravidla({ strankaId, mobil, toast, onSpat, fokus }: { strankaI
   useEffect(() => { if (!fokus) return; const t = window.setTimeout(() => document.querySelector(`[data-kat="${fokus}"]`)?.scrollIntoView({ block: "center" }), 60); return () => window.clearTimeout(t); }, [fokus]);
   const [m, setM] = useState<Record<DruhFarnika, Stupen>>(() => { const sm = nacitajSmie(strankaId); return Object.fromEntries(PORADIE.map((k) => [k, stupen(sm, k)])) as Record<DruhFarnika, Stupen>; });
   const [upoz, setUpoz] = useState(() => nastavenieOdVeriacich(strankaId).upozornit);
-  const vsetky = PORADIE.map((k) => m[k]), rovnake = PORADIE.filter((k) => k !== "umysel").every((k) => m[k] === m.parte) && (m.umysel === m.parte || (m.parte === "schvalenie" && m.umysel === "povolene"));
+  const rovnake = PORADIE.filter((k) => k !== "umysel").every((k) => m[k] === m.parte) && (m.umysel === m.parte || (m.parte === "schvalenie" && m.umysel === "povolene"));
   const naraz = (st: Stupen) => setM(Object.fromEntries(PORADIE.map((k) => [k, k === "umysel" && st === "schvalenie" ? "povolene" : st])) as Record<DruhFarnika, Stupen>);
   // OPRAVY 335: uložené až keď je naozaj uložené; chyba nad tlačidlom Podržte a uložte
   const [chybaU, setChybaU] = useState<string | null>(null);
@@ -43,7 +42,6 @@ function NastavitPravidla({ strankaId, mobil, toast, onSpat, fokus }: { strankaI
     setUklada(true); setChybaU(null);
     const sm: SmieFarnika = Object.fromEntries(PORADIE.map((k) => [k, m[k]])) as SmieFarnika;
     const e = await ulozSmieIsto(strankaId, sm)
-      ?? await ulozSelfAddIsto(strankaId, { on: vsetky.some((x) => x !== "zakazane"), poplatok: 0 }) // poplatok za oznam zrušený
       ?? await ulozNastavenieOdVeriacichIsto(strankaId, { upozornit: upoz });
     setUklada(false);
     if (e) { setChybaU(e); return; }
@@ -168,8 +166,8 @@ export function OdVeriacich({ strankaId, meno, mobil, toast, cast, onSpat }: { s
   // OPRAVY 263: ten istý hromadný výber ako v Správe oznamov
   const hv = useHromadnyVyber(), selM = hv.zap, vyb = hv.vyb;
   const [nastOtv, setNastOtv] = useState<DruhFarnika | true | false>(false); // OPRAVY 324: true = celé nastavenie, druh = otvorené na tej kategórii
-  const smieF = nacitajSmie(strankaId), self = nacitajSelfAdd(strankaId);
-  const st = DRUHY_FARNIKA.map((d) => (self.on ? stupen(smieF, d.k) : "zakazane"));
+  const smieF = nacitajSmie(strankaId);
+  const st = DRUHY_FARNIKA.map((d) => stupen(smieF, d.k)); // OPRAVY 381: len „Čo môžu veriaci pridávať“ (starý vypínač zmazaný)
   const prepniVyb = hv.prepni;
   // OPRAVY 310: Čaká na vaše schválenie — Pozrieť · Zamietnuť · Zverejniť, Vybrať viac
   const [pozriC, setPozriC] = useState<string | null>(null);
