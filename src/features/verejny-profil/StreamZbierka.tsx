@@ -1,4 +1,4 @@
-// KARTA 47 · stránka, kam vedie QR / odkaz zo streamu: deed.sk/z/{zbierka}?s={stream}. 1 : 1 podľa „Stream - QR na zbierku.dc.html".
+// KARTA 47 · stránka, kam vedie QR / odkaz zo streamu: deedgood.eu/z/{zbierka}?s={stream}. 1 : 1 podľa „Stream - QR na zbierku.dc.html".
 // Vedie rovno na zbierku (nie na tvorcu). Pás „{tvorca} vysiela naživo" · prehrávač u nás (YouTube až po ťuku) · počítadlo
 // POČAS VYSIELANIA (nové dary každé 4 s) → po skončení STREAM VYZBIERAL · zbierka · „V streame sa ukážeš ako" · platobný modul
 // hneď otvorený (bez dorovnania). Neregistrovaný je v streame vždy Anonymný darca, bez registrácie pred platbou.

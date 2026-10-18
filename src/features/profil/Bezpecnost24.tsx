@@ -1,6 +1,7 @@
 // KARTA 24 · Nastavenia: Potvrdiť platbu, Predvolený okruh, Prihlásené zariadenia, E-mail / telefón / heslo,
 // Zablokovaní ľudia, Súhlasy (+ detail povinného súhlasu) a hlášky pri prihlásení (6. zariadenie, nové zariadenie,
 // 24 h obmedzenie). Overovanie kódov, zoznam zariadení a znenia súhlasov bude držať server — tu je appková časť.
+import { EMAIL_PODPORA, EMAIL_OCHRANA_UDAJOV } from "@/lib/kontakty";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { Prepinac } from "./nastUi";
@@ -310,7 +311,7 @@ function ZmenaHarok({ co, kontakt, onClose, onHotovo }: { co: "e" | "t" | "h"; k
         {krok === 0 && <>
           <div style={{ fontSize: 15, lineHeight: 1.5, color: "var(--ink2)" }}>{t("bezpecnost.zmena.najprv")}</div>
           <div role="radiogroup" aria-label={t("bezpecnost.zmena.sposob")} style={{ display: "flex", flexDirection: "column", gap: 6 }}>{SP.map(([k, l, s, d]) => <Volba key={k} on={ov === k} onClick={() => setOv(k)} t={l} s={s} ikona={d} />)}</div>
-          <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ink3)" }}>{t("bezpecnost.zmena.nemas")} <button type="button" onClick={() => toast(t("bezpecnost.zmena.podporaToast"))} style={{ border: "none", background: "transparent", padding: "8px 0", fontWeight: 800, color: "var(--green)", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>{t("bezpecnost.zmena.obnovit")}</button> {t("bezpecnost.zmena.obnovitS")}</div>
+          <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ink3)" }}>{t("bezpecnost.zmena.nemas")} <button type="button" onClick={() => toast(t("bezpecnost.zmena.podporaToast", { podpora: EMAIL_PODPORA }))} style={{ border: "none", background: "transparent", padding: "8px 0", fontWeight: 800, color: "var(--green)", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>{t("bezpecnost.zmena.obnovit")}</button> {t("bezpecnost.zmena.obnovitS")}</div>
           <button type="button" onClick={over} aria-disabled={!ov} style={{ ...hlavne, opacity: ov ? 1 : 0.45 }}>{ov === "bio" ? t("bezpecnost.overitTvarou") : ov === "kluc" ? t("bezpecnost.pouzitKluc") : t("bezpecnost.poslatKod")}</button>
         </>}
         {krok === 1 && <>
@@ -474,7 +475,7 @@ export function DetailSuhlasu({ typ, onBack }: { typ: "pod" | "ud"; onBack: () =
             <button type="button" key={c} onClick={() => { onBack(); toast(t("bezpecnost.najdes", { s: t(`bezpecnost.pr.${c}s`) })); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, minHeight: 56, border: "none", borderTop: i ? "1px solid var(--cardBd)" : "none", background: "transparent", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
               <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 15, fontWeight: 700 }}>{t(`bezpecnost.pr.${c}`)}</span><span style={{ display: "block", fontSize: 13, color: "var(--ink3)" }}>{t(`bezpecnost.pr.${c}s`)}</span></span><span style={{ color: "var(--ink3)", display: "flex" }}><Ik d={IK.sipka} s={16} w={2.4} /></span></button>))}
         </div></div>
-        <div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--field)", border: "1px solid var(--cardBd)", fontSize: 13.5, lineHeight: 1.55, color: "var(--ink2)" }}><b style={{ color: "var(--ink)" }}>{t("bezpecnost.otazky")}</b> {t("bezpecnost.otazky.text")}</div>
+        <div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--field)", border: "1px solid var(--cardBd)", fontSize: 13.5, lineHeight: 1.55, color: "var(--ink2)" }}><b style={{ color: "var(--ink)" }}>{t("bezpecnost.otazky")}</b> {t("bezpecnost.otazky.text", { ochrana: EMAIL_OCHRANA_UDAJOV })}</div>
       </>}
       <button type="button" onClick={pdf} style={{ ...vedlajsie, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Ik d={IK.pdf} s={17} />{t("bezpecnost.stiahnutPdf")}</button>
     </ObrazovkaSprava>);

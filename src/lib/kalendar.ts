@@ -1,3 +1,4 @@
+import { DOMENA_MAILU } from "./kontakty";
 // ============================================================
 // DEED · Kalendár — export udalosti do .ics (iCalendar RFC 5545).
 // „Pripomeň" stiahne súbor, ktorý telefón/PC otvorí v natívnom
@@ -37,7 +38,7 @@ export function icsObsah(u: IcsUdalost): string {
     "VERSION:2.0",
     "PRODID:-//DEED//platforma dobra//SK",
     "BEGIN:VEVENT",
-    `UID:deed-${u.id}@deed.sk`,
+    `UID:deed-${u.id}@${DOMENA_MAILU}`,
     `DTSTAMP:${teraz}`,
     zaciatok,
     koniec,

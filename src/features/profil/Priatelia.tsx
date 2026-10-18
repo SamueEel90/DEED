@@ -326,7 +326,7 @@ function Pozvanka({ onClose }: { onClose: () => void }) {
     </Harok>);
 }
 
-/** fotoaparát → QR priateľa (pozvánka deed.sk/p/<meno>) → karta osoby → Poslať žiadosť */
+/** fotoaparát → QR priateľa (pozvánka deedgood.eu/p/<meno>) → karta osoby → Poslať žiadosť */
 function SkenQr({ onClose }: { onClose: () => void }) {
   const t = useT();
   const video = useRef<HTMLVideoElement | null>(null);
@@ -338,7 +338,7 @@ function SkenQr({ onClose }: { onClose: () => void }) {
     // @zxing sa načíta až s kamerou (Zadanie 5 · 5.6 — nie v hlavnom balíku)
     import("@zxing/browser").then(({ BrowserQRCodeReader }) => new BrowserQRCodeReader().decodeFromVideoDevice(undefined, video.current ?? undefined, (r, _e, c) => {
       ctrl = c; if (zrus || !r) return;
-      const m = new RegExp(`(?:${DOMENA.replace(/\./g, "\\.")}|deed\\.sk)\\/p\\/([a-z0-9-]+)`, "i").exec(r.getText());
+      const m = new RegExp(`${DOMENA.replace(/\./g, "\\.")}\\/p\\/([a-z0-9-]+)`, "i").exec(r.getText());
       if (!m) { toast(tTeraz()("priatelia.sken.nieQr")); return; }
       c.stop(); setOsoba(m[1].split("-").filter(Boolean).map((x) => x[0].toUpperCase() + x.slice(1)).join(" "));
     })).then((c) => { ctrl = c; if (zrus) c.stop(); else setKamera("ide"); }).catch(() => { if (!zrus) setKamera("nie"); });

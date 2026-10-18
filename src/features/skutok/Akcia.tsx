@@ -59,7 +59,7 @@ function AkciaObrazovka({ a, onZavrete }: { a: Akcia; onZavrete: () => void }) {
     nastavAkciu({ ...x, uc: [...x.uc, { meno, neskor: x.stav === "bezi", ...(x.org ? { prichod: Date.now() } : {}) }] });
     vibruj(8);
   };
-  // kamera: číta QR „Na akciu" (deed.sk/q/akcia/…). Meno účastníka doplní server pri overení tokenu.
+  // kamera: číta QR „Na akciu" (deedgood.eu/q/akcia/…). Meno účastníka doplní server pri overení tokenu.
   useEffect(() => {
     if (!a.otvorena || !mozePridat || !videoRef.current) return;
     let zrusene = false;
