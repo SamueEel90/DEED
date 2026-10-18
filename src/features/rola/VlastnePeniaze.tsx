@@ -9,6 +9,7 @@ import { useSomFarar, useVklady, vlozVlastne, potvrdVklad, type Vklad } from "@/
 import { TESTOVACIA } from "@/lib/testovacia";
 import { kartaK } from "./spravaCasti";
 import { sumaEur } from "@/lib/suma";
+import { EMAIL_PODPORA } from "@/lib/kontakty";
 
 const eur = (n: number) => `${sumaEur(n)}`;
 const iban = (s: string) => s.replace(/\s/g, "").replace(/(.{4})/g, "$1 ").trim();
@@ -50,8 +51,8 @@ export function VlastnePeniaze({ stranka, menoStranky, refId, toast }: { stranka
     </div>
     <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>Pri zbierke sa ukáže, až keď platbu uvidíme na transparentnom účte. Kým nepríde, darcovia nič nevidia.</span>
     <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink3)" }}>{`Prevod: ${eur(v.suma)} · VS ${vs(v.vs)} · na ${iban(v.na_ucet)}`}</span>
-    {/* PLACEBO — Martin 13. 10. (prototyp Spolufinancovanie B): „Neprišla do 3 pracovných dní? Poslať výpis z účtu ›“ — ručné overenie výpisu zatiaľ nie je */}
-    <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink3)" }}>Neprišla do 3 pracovných dní? <button type="button" onClick={() => toast("Poslanie výpisu pripravujeme.")} style={{ padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--green)" }}>Poslať výpis z účtu ›</button> Overíme ho ručne.</span>
+    {/* OPRAVY 376: ručné overenie výpisu zatiaľ nie je — len kontakt na podporu */}
+    <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink3)" }}>Neprišla do 3 pracovných dní? Napíšte na <a href={`mailto:${EMAIL_PODPORA}`} style={{ color: "var(--gInk)", fontWeight: 800 }}>{EMAIL_PODPORA}</a>.</span>
     {TESTOVACIA && <button type="button" onClick={() => { void potvrdVklad(refId, v.id).then(() => setNove(null)).catch((e: Error) => toast(e.message)); }} style={{ height: 48, padding: "0 18px", borderRadius: 14, border: "1.5px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--ink2)", alignSelf: "flex-start", boxShadow: "none" }}>Simulovať: platba prišla</button>}
   </section>;
   return <section style={kartaK}>

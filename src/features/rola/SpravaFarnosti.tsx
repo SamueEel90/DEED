@@ -689,9 +689,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     {nadpis("Peňaženka", "Dary idú priamo na účet farnosti, DEED+ peniaze nedrží")}
     {riadky([
       { t: "Prišlo tento mesiac", s: mesDary.length ? `${mesDary.length} ${mesDary.length === 1 ? "dar" : mesDary.length < 5 ? "dary" : "darov"} · hlavná zbierka a omše` : "zatiaľ žiadne dary", v: eur(mesDary.reduce((a, r) => a + r.suma, 0)) },
-      { t: "Čaká na výplatu", s: "do 2 pracovných dní · pripravujeme" }, // PLACEBO — karta 56D: výplaty rieši platobný modul
-      { t: "Výplaty na účet", s: "pripravujeme" }, // PLACEBO — karta 56D
-      { t: "Dary v EURC", s: "pripravujeme" }, // PLACEBO — karta 56D
+      // OPRAVY 376: Čaká na výplatu · Výplaty na účet · Dary v EURC — kým ich platobný modul nemá, riadky sa neukazujú (len fakty)
     ])}
     {/* OPRAVY 222 (5): doklad o dare farnosti na cudziu zbierku */}
     {prispelaF.length > 0 && <>
