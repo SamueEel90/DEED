@@ -11,6 +11,7 @@ import { zbierkyStrankyZPamate } from "@/lib/novaZbierka";
 import { odFarnikov, useOdFarnikov } from "@/lib/odFarnikov";
 import { sumaEur } from "@/lib/suma";
 import { NADPIS_SEKCIE } from "./KartaNastavenia";
+import { textovePdf, stiahniBlob, type RiadokPdf } from "@/lib/textovePdf";
 
 const OBD = ["Dnes", "7 dní", "30 dní", "Rok"];
 const OBD_T = ["za dnes", "za 7 dní", "za 30 dní", "od januára"];
@@ -24,22 +25,28 @@ const darov = (n: number) => `${n} ${n === 1 ? "dar" : n >= 2 && n <= 4 ? "dary"
 const kicker: CSSProperties = { ...NADPIS_SEKCIE, paddingTop: 6 };
 
 /** jeden dar so sumou a časom (omša = súčet omše, darov = počet darov v nej) */
-type Polozka = { cas: number; suma: number; darov: number; zdroj: "hlavna" | "zvoncek" | "dalsie"; kto?: string };
+type Polozka = { cas: number; suma: number; darov: number; zdroj: "hlavna" | "zvoncek" | "dalsie"; kto?: string; zbierka?: string };
 
-export function StatistikyFarnosti({ strankaId, mobil }: { strankaId: string; mobil: boolean }) {
-  useZmenyDarov(); useOdFarnikov();
-  const [ob, setOb] = useState(2);
-  const od = zaciatok(ob);
+/** všetky dary farnosti (Hlavná bez riadkov omší, zvončeková po omšiach + bežiaca, ďalšie zbierky farnosti; nie zbierky rodiny) */
+export function useDaryFarnosti(strankaId: string): Polozka[] {
+  useZmenyDarov();
   const zv = useZvoncekOkno(strankaId);
   const hlavna = darcoviaPre(`${strankaId}-centralna`).filter((r) => !r.omsa);
   const dalsie = zbierkyStrankyZPamate(strankaId).filter((z) => !z.farnost || z.farnost.druh === "farnost");
   const kto = (r: DarRiadok) => (r.registrovany && (r.meno || r.moj) ? `m:${r.moj ? "ja" : identitaDarcu(r, undefined, "viera")}` : `d:${r.id}`);
-  const vsetko: Polozka[] = [
+  return [
     ...hlavna.map((r) => ({ cas: r.cas, suma: r.suma, darov: 1, zdroj: "hlavna" as const, kto: kto(r) })),
     ...zv.uzavrete.map((o) => ({ cas: new Date(`${o.den}T12:00:00`).getTime(), suma: o.suma, darov: o.darov, zdroj: "zvoncek" as const })),
     ...zv.dary.map((r) => ({ cas: r.cas, suma: r.suma, darov: 1, zdroj: "zvoncek" as const, kto: kto(r) })),
-    ...dalsie.flatMap((z) => darcoviaPre(z.id).map((r) => ({ cas: r.cas, suma: r.suma, darov: 1, zdroj: "dalsie" as const, kto: kto(r) }))),
+    ...dalsie.flatMap((z) => darcoviaPre(z.id).map((r) => ({ cas: r.cas, suma: r.suma, darov: 1, zdroj: "dalsie" as const, kto: kto(r), zbierka: z.nazov || "Zbierka farnosti" }))),
   ];
+}
+
+export function StatistikyFarnosti({ strankaId, mobil }: { strankaId: string; mobil: boolean }) {
+  useOdFarnikov();
+  const [ob, setOb] = useState(2);
+  const od = zaciatok(ob);
+  const vsetko = useDaryFarnosti(strankaId);
   const v = vsetko.filter((x) => x.cas >= od);
   const suma = v.reduce((a, x) => a + x.suma, 0), pocet = v.reduce((a, x) => a + x.darov, 0);
   // darcovia: registrovaní podľa mena, ostatní každý dar zvlášť (zvončeková omša má len súčet)
@@ -111,4 +118,90 @@ export function StatistikyFarnosti({ strankaId, mobil }: { strankaId: string; mo
       <span aria-live="polite" style={{ fontSize: 12.5, minHeight: 16, color: aktiv != null ? "var(--ink)" : "var(--ink3)", fontWeight: aktiv != null ? 700 : 400 }}>{aktiv != null ? `${MES[aktiv]} ${rok} · ${eur(mes[aktiv])}` : `Spolu ${eur(mes.reduce((a, x) => a + x, 0))} · ťuknite na stĺpec`}</span>
     </section>}
   </>;
+}
+
+// ============================================================
+// OPRAVY 346 · Ľudia → Sledujúci: len počty, nikdy mená (farár nesmie nikoho naháňať)
+// ============================================================
+export function SledujuciFarnosti({ kostoly, pocty, mobil }: { kostoly: { id: string; nazov: string }[]; pocty: Record<string, number> | null; mobil: boolean }) {
+  const ramec = (k: string, h: string, d: string) => (
+    <div key={k} style={{ minWidth: 0, padding: "12px 14px", borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", display: "flex", flexDirection: "column", gap: 2 }}>
+      <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink3)" }}>{k}</span>
+      <b style={{ fontSize: 24, lineHeight: 1.15, fontVariantNumeric: "tabular-nums" }}>{h}</b>
+      <span style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.35, color: "var(--ink3)" }}>{d}</span>
+    </div>);
+  return <>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>
+      {ramec("Sledujú farnosť", "—", "počet pripravujeme")}
+      {ramec("Noví za 30 dní", "—", "počet pripravujeme")}
+    </div>
+    <span style={kicker}>PODĽA KOSTOLOV</span>
+    <section style={{ borderRadius: mobil ? 18 : 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: mobil ? "4px 14px" : "6px 20px" }}>
+      {kostoly.map((m, i) => (
+        <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 56, padding: "8px 0", borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
+          <b style={{ flex: 1, minWidth: 0, fontSize: 14.5 }}>{m.nazov}</b>
+          <b style={{ flex: "none", fontSize: 14.5, fontVariantNumeric: "tabular-nums" }}>{pocty ? pocty[m.id] ?? 0 : "…"}</b>
+        </div>))}
+    </section>
+  </>;
+}
+
+// ============================================================
+// OPRAVY 346 · Nástroje → Ročný výpis: rok (len roky s dátami), čo obsahuje, Stiahnuť PDF s odozvou na tlačidle
+// ============================================================
+export function RocnyVypis({ strankaId, meno, mobil, prispela }: { strankaId: string; meno: string; mobil: boolean;
+  /** dary farnosti iným (doklad č.) */ prispela: { nazov: string; kto: string; cas: number; suma: number; vs?: string | number }[] }) {
+  const vsetko = useDaryFarnosti(strankaId);
+  const roky = [...new Set([...vsetko.map((x) => new Date(x.cas).getFullYear()), ...prispela.map((x) => new Date(x.cas).getFullYear())])].sort((a, b) => b - a);
+  const [rok, setRok] = useState<number | null>(null);
+  const r = rok ?? roky[0] ?? null;
+  const [stav, setStav] = useState<"" | "busy" | "ok" | "chyba">("");
+  const stiahni = async () => {
+    if (r == null || stav === "busy") return;
+    setStav("busy");
+    try {
+      await new Promise((ok) => window.setTimeout(ok, 50)); // prekreslenie „Pripravujem výpis …“
+      const v = vsetko.filter((x) => new Date(x.cas).getFullYear() === r), pr = prispela.filter((x) => new Date(x.cas).getFullYear() === r);
+      const spolu = v.reduce((a, x) => a + x.suma, 0), pocet = v.reduce((a, x) => a + x.darov, 0);
+      const darcovia = new Set(v.filter((x) => x.kto).map((x) => x.kto)).size;
+      const sum = (f: (x: Polozka) => boolean) => eur(v.filter(f).reduce((a, x) => a + x.suma, 0));
+      const dalsie = [...new Set(v.filter((x) => x.zdroj === "dalsie").map((x) => x.zbierka ?? ""))];
+      const riadky: RiadokPdf[] = [
+        { t: `Ročný výpis ${r}`, tucne: true, velkost: 20 },
+        { t: meno, tucne: true, velkost: 13, medzera: 4 },
+        { t: `Dary cez DEED+ · vytvorené ${new Date().toLocaleDateString("sk-SK")}`, velkost: 10, medzera: 2 },
+        { t: "VYZBIERANÉ PODĽA ZBIEROK", tucne: true, medzera: 14 },
+        { t: "Hlavná zbierka", v: sum((x) => x.zdroj === "hlavna") },
+        { t: "Zvončeková zbierka (pri omšiach)", v: sum((x) => x.zdroj === "zvoncek") },
+        ...dalsie.map((z) => ({ t: z, v: sum((x) => x.zdroj === "dalsie" && x.zbierka === z) })),
+        { t: "Spolu", v: eur(spolu), tucne: true },
+        { t: "VYZBIERANÉ PODĽA MESIACOV", tucne: true, medzera: 14 },
+        ...MES.map((m, i) => ({ t: `${m} ${r}`, v: sum((x) => new Date(x.cas).getMonth() === i) })),
+        { t: "POČET DAROV A DARCOV", tucne: true, medzera: 14 },
+        { t: "Počet darov", v: String(pocet) },
+        { t: "Darcovia (registrovaní podľa mena, ostatní podľa darov)", v: String(darcovia + v.filter((x) => !x.kto).length) },
+        { t: "PODIEL FARNOSTI ZO ZBIEROK RODINY", tucne: true, medzera: 14 },
+        { t: "Údaj pripravujeme." },
+        { t: "DARY FARNOSTI INÝM", tucne: true, medzera: 14 },
+        ...(pr.length ? pr.map((x) => ({ t: `${new Date(x.cas).toLocaleDateString("sk-SK")} · ${x.nazov} · ${x.kto}${x.vs ? ` · doklad č. ${x.vs}` : ""}`, v: eur(x.suma) })) : [{ t: "Žiadne." }]),
+      ];
+      stiahniBlob(textovePdf(riadky), `Rocny vypis ${r}.pdf`);
+      setStav("ok");
+    } catch { setStav("chyba"); }
+  };
+  const karta: CSSProperties = { borderRadius: mobil ? 18 : 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: mobil ? "14px 14px" : "16px 20px", display: "flex", flexDirection: "column", gap: 12 };
+  if (r == null) return <section style={karta}><b style={{ fontSize: 16 }}>Zatiaľ žiadne dary</b><span style={{ fontSize: 14, color: "var(--ink2)" }}>Výpis sa dá stiahnuť za rok, v ktorom farnosť dostala dar.</span></section>;
+  return <section style={karta}>
+    <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" }}>ROK</span>
+    <div role="radiogroup" aria-label="Rok výpisu" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      {roky.map((y) => { const on = y === r; return <button key={y} type="button" role="radio" aria-checked={on} onClick={() => { setRok(y); setStav(""); }} style={{ minHeight: 44, minWidth: 72, padding: "0 16px", borderRadius: 12, border: on ? "2px solid var(--green)" : "1.5px solid var(--cardBd)", background: on ? "var(--gSoft)" : "transparent", color: on ? "var(--gInk)" : "var(--ink)", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, boxShadow: "none" }}>{y}</button>; })}
+    </div>
+    <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" }}>VÝPIS OBSAHUJE</span>
+    <ul style={{ margin: 0, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 4, fontSize: 14.5, lineHeight: 1.45, color: "var(--ink)" }}>
+      <li>Vyzbierané podľa zbierok a mesiacov</li><li>Počet darov a darcov</li><li>Podiel farnosti zo zbierok rodiny</li><li>Dary farnosti iným (s číslom dokladu)</li>
+    </ul>
+    {stav === "chyba" && <span role="alert" style={{ fontSize: 14, fontWeight: 700, color: "var(--cRed)" }}>Nepodarilo sa · <button type="button" onClick={() => void stiahni()} style={{ padding: 0, border: "none", background: "transparent", color: "var(--cRed)", fontFamily: "inherit", fontSize: 14, fontWeight: 800, textDecoration: "underline", cursor: "pointer" }}>Skúsiť znova</button></span>}
+    <button type="button" aria-busy={stav === "busy"} onClick={() => void stiahni()} style={{ alignSelf: "flex-start", minHeight: 52, padding: "0 22px", border: "none", borderRadius: 14, background: stav === "ok" ? "var(--green)" : "#4B7A35", color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, boxShadow: "none" }}>
+      {stav === "busy" ? "Pripravujem výpis …" : stav === "ok" ? `Stiahnuté ✓ · Ročný výpis ${r}.pdf` : "Stiahnuť PDF"}</button>
+  </section>;
 }
