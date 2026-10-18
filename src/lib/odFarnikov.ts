@@ -238,6 +238,14 @@ export function rozhodniOdFarnikov(id: string, pids: string[], zverejnit: boolea
   }
   zmenZoznam(id, (l) => l.map((x) => (z.has(x.id) ? { ...x, stav: zverejnit ? undefined : "zamietnute", rozhodnute: t } : x)));
 }
+/** OPRAVY 375 (0117): správa farára k úmyslu — uloží sa a autorovi príde do zvončeka. Vráti chybu alebo null. */
+export async function posliSpravuUmyslu(id: string, pid: string, text: string): Promise<string | null> {
+  if (!supabase) { upravOdFarnika(id, pid, { sprava: { text, cas: Date.now() } }); return null; }
+  const { error } = await supabase.rpc("umysel_sprava", { p_stranka: id, p_id: pid, p_text: text });
+  if (error) return /nie_spravca/.test(error.message) ? "Túto stránku nespravujete." : "Správa sa neposlala. Skúste znova.";
+  await obnovCakajuce(id).catch(() => false); zmena();
+  return null;
+}
 /** KARTA 57 D.2: oprava farára (nadpis, text) */
 export function upravOdFarnika(id: string, pid: string, patch: Partial<PolozkaFarnika>) { zmenZoznam(id, (l) => l.map((x) => (x.id === pid ? { ...x, ...patch } : x))); }
 

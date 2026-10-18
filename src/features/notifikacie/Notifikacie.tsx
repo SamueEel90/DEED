@@ -26,7 +26,7 @@ import { useVazbyOsoby } from "@/lib/zamestnanci";
 import { dataFirmy, useMojaFirma } from "@/lib/mojaFirma";
 import "@/styles/platba.css";
 import { MojeFarnostiUpozornenia } from "./MojeFarnostiUpozornenia";
-import { mojeCakajuce, obnovMojeCakajuce, odFarnikov, useOdFarnikov } from "@/lib/odFarnikov";
+import { mojeCakajuce, obnovMojeCakajuce, odFarnikov, useOdFarnikov, obnovCakajuce } from "@/lib/odFarnikov";
 import { nazovFarnosti } from "@/lib/mojeFarnosti";
 import { otvorSpravuNa } from "@/lib/mojeStranky";
 import { otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
@@ -122,8 +122,11 @@ export function Zvoncek({ color = "var(--c-textSec)", toast }: { color?: string;
   const zavri = () => { setOtvor(false); requestAnimationFrame(() => tlacidlo.current?.focus()); };
   // OPRAVY 315: ťuk na upozornenie vždy niekam vedie — veriaci na svoj príspevok (alebo vysvetlenie), farár do Správy → Od veriacich
   const [nezv, setNezv] = useState<{ stranka: string; t: string } | null>(null);
+  // OPRAVY 375: správa od farnosti k úmyslu → okno s úmyslom (len autor a farár ho vidia, 0116)
+  const [um, setUm] = useState<{ stranka: string; id: string; text: string } | null>(null);
+  const umX = um ? odFarnikov(um.stranka).find((x) => x.id === um.id && x.k === "umysel") : undefined;
   const naOdkaz = (n: Notifikacia) => {
-    const m = /^(odv|prisp|nezv|vz|ovp|str):([^:]+):(.+)$/.exec(n.odkaz ?? "");
+    const m = /^(odv|prisp|nezv|vz|ovp|str|um):([^:]+):(.+)$/.exec(n.odkaz ?? "");
     oznac(n); setOtvor(false);
     if (!m) return;
     const [, druh, stranka, pid] = m;
@@ -132,6 +135,7 @@ export function Zvoncek({ color = "var(--c-textSec)", toast }: { color?: string;
     else if (druh === "ovp") otvorOverenie(pid); // OPRAVY 338: kód od farára → overenie príjemcu (napíše kód, potvrdí rozdelenie)
     else if (druh === "vz") otvorVerejnyProfil(stranka, { doVecnej: pid }); // OPRAVY 320: poďakovanie darcom vecnej zbierky → detail zbierky
     else if (druh === "str") otvorVerejnyProfil(stranka); // OPRAVY 349: poďakovanie od farnosti → stránka farnosti
+    else if (druh === "um") { setUm({ stranka, id: pid, text: n.text }); void obnovCakajuce(stranka); } // OPRAVY 375
     else setNezv({ stranka, t: mojeCakajuce().find((c) => c.id === pid)?.t ?? n.text });
   };
   useVrstva(otvor, () => setOtvor(false));
@@ -155,6 +159,19 @@ export function Zvoncek({ color = "var(--c-textSec)", toast }: { color?: string;
           <span style={{ fontSize: 15, lineHeight: 1.5, color: "var(--ink2)" }}>Na stránke farnosti {nazovFarnosti(nezv.stranka).replace(/^Farnosť\s+/, "")} sa neukáže. O tom, čo sa na stránke zverejní, rozhoduje farár. Ak chcete vedieť prečo, obráťte sa na farský úrad.</span>
           <button type="button" onClick={() => { const st = nezv.stranka; setNezv(null); otvorVerejnyProfil(st); }} style={{ minHeight: 52, borderRadius: 14, border: "1px solid var(--cardBd)", background: "var(--btn)", color: "var(--ink)", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" }}>Otvoriť stránku farnosti ›</button>
           <button type="button" onClick={() => setNezv(null)} style={{ minHeight: 52, borderRadius: 14, border: "none", background: "var(--green)", color: "#fff", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" }}>Rozumiem</button>
+        </div>
+      </div>, document.body)}
+      {um && createPortal(<div className="deed-platba" role="dialog" aria-modal="true" aria-label="Váš úmysel na omšu" style={{ position: "fixed", inset: 0, zIndex: 1200, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+        <div onClick={() => setUm(null)} style={{ position: "absolute", inset: 0, background: "rgba(10,9,6,.55)" }} />
+        <div style={{ position: "relative", width: "min(560px, 100%)", boxSizing: "border-box", padding: "20px 18px max(20px, env(safe-area-inset-bottom))", borderRadius: "24px 24px 0 0", background: "var(--bg)", display: "flex", flexDirection: "column", gap: 12, color: "var(--ink)" }}>
+          <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>VÁŠ ÚMYSEL NA OMŠU · {(nazovFarnosti(um.stranka) || "farnosť").toLocaleUpperCase("sk-SK")}</span>
+          {umX && <b style={{ fontSize: 19, lineHeight: 1.3 }}>{umX.t}</b>}
+          {umX?.zapis && <span style={{ fontSize: 15, fontWeight: 700, color: "var(--gInk)" }}>Zapísaný na omšu {Number(umX.zapis.d.slice(8))}. {Number(umX.zapis.d.slice(5, 7))}. o {umX.zapis.t}</span>}
+          <div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--card)", border: "1px solid var(--cardBd)", display: "flex", flexDirection: "column", gap: 4 }}>
+            <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" }}>SPRÁVA OD FARNOSTI</span>
+            <span style={{ fontSize: 15.5, lineHeight: 1.5, whiteSpace: "pre-line" }}>{umX?.sprava?.text ?? um.text}</span>
+          </div>
+          <button type="button" onClick={() => setUm(null)} style={{ minHeight: 52, borderRadius: 14, border: "none", background: "var(--green)", color: "#fff", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" }}>Zavrieť</button>
         </div>
       </div>, document.body)}
       {detail && <OznamDarcoviSheet zbierkaId={detail.zbierkaId} typ={detail.typ} text={detail.text} onClose={() => setDetail(null)} />}

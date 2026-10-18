@@ -9,7 +9,7 @@
 import { NADPIS_SEKCIE } from "./KartaNastavenia";
 import { TlZbalit } from "@/features/verejny-profil/zbalit";
 import { useState, type CSSProperties } from "react";
-import { odFarnikov, pridajOdFarnika, upravOdFarnika, zmazOdFarnika, type PolozkaFarnika } from "@/lib/odFarnikov";
+import { odFarnikov, pridajOdFarnika, upravOdFarnika, zmazOdFarnika, posliSpravuUmyslu, type PolozkaFarnika } from "@/lib/odFarnikov";
 import { useKalendar, kostolKal, omseDna, dniTyzdna, rozsahTyzdna, iso, dvt, DNI_K, minuty } from "@/lib/kalendarFarnosti";
 import { PodrzZmaz } from "./OznamyFarnosti";
 import { ukazZmazane } from "@/lib/zmazaneMiesto";
@@ -78,13 +78,16 @@ function KalendarOmsi({ strankaId, vybrany, ignoruj, onVyber }: { strankaId: str
 function SpravaVeriacemu({ u, strankaId, text0 }: { u: PolozkaFarnika; strankaId: string; text0: string }) {
   const [text, setText] = useState(text0);
   const [ok, setOk] = useState(false);
+  const [posiela, setPosiela] = useState(false), [chyba, setChyba] = useState<string | null>(null);
+  const posli = async () => { setPosiela(true); setChyba(null); const e = await posliSpravuUmyslu(strankaId, u.id, text.trim()); setPosiela(false); if (e) setChyba(e); else setOk(true); };
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <b style={{ fontSize: 14.5 }}>Správa veriacemu</b>
       <textarea value={text} onChange={(e) => { setText(e.target.value.slice(0, 500)); setOk(false); }} rows={3} aria-label="Správa veriacemu" style={{ padding: "10px 12px", borderRadius: 12, background: "var(--field)", border: "1px solid var(--cardBd)", fontFamily: "inherit", fontSize: 15, lineHeight: 1.45, color: "var(--ink)", outline: "none", resize: "vertical" }} />
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        {/* PLACEBO — OPRAVY 176: doručenie správy veriacemu (notifikácia) rieši server; ukladá sa pri úmysle */}
-        <button type="button" disabled={!text.trim()} onClick={() => { upravOdFarnika(strankaId, u.id, { sprava: { text: text.trim(), cas: terazMs() } }); setOk(true); }} style={{ minHeight: 46, padding: "0 18px", border: "none", borderRadius: 12, background: ok ? "var(--gSoft)" : "#4B7A35", color: ok ? "var(--gInk)" : "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800 }}>{ok ? "Správa poslaná ✓" : "Poslať správu"}</button>
+        {/* OPRAVY 375: správa príde veriacemu do zvončeka (0117) */}
+        <button type="button" disabled={!text.trim() || posiela} onClick={() => void posli()} style={{ minHeight: 46, padding: "0 18px", border: "none", borderRadius: 12, background: ok ? "var(--gSoft)" : "#4B7A35", color: ok ? "var(--gInk)" : "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800 }}>{posiela ? "Posiela sa…" : ok ? "Správa poslaná ✓" : "Poslať správu"}</button>
+        {chyba && <span role="alert" style={{ fontSize: 13, fontWeight: 700, color: "var(--cRed)" }}>{chyba}</span>}
         {u.sprava && !ok && <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>naposledy poslané {kedy(u.sprava.cas)}</span>}
       </div>
     </div>);
