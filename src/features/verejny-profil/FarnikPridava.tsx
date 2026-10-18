@@ -37,6 +37,7 @@ import { CelaGaleria } from "@/components/celaGaleria";
 import { nacitajKoncept, ulozKoncept, zmazKoncept, useUkladajKoncept } from "@/lib/koncept";
 import { MateRozpisane, ZahoditRozpisane } from "@/components/RamPisania";
 import { Volby } from "@/components/Volby";
+import { ukazZmazane } from "@/lib/zmazaneMiesto";
 
 const ZELENA = "#4B7A35", ZLATA = "#C9A24A";
 const lab = (zle: boolean): CSSProperties => ({ fontSize: 12.5, fontWeight: 800, letterSpacing: ".06em", color: zle ? "#A07A1C" : "var(--ink3)" });
@@ -129,7 +130,7 @@ export function MenuPrispevku({ x, strankaId, kto, moje, vMenu, bezZmazania, onZ
       {menu && <button type="button" onClick={() => { setMenu(false); setPotvrd(true); }} style={{ minHeight: 40, padding: "0 12px", borderRadius: 10, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--ink)" }}>Nahlásiť nevhodný príspevok</button>}
       {mozeUp && (!vMenu || menu) && <button type="button" onClick={() => nastavUpravu(x.id)} style={{ minHeight: 40, padding: "0 12px", borderRadius: 10, border: "1.5px solid var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--gInk)" }}>Upraviť · moje</button>}
       {mozeZmaz && (!vMenu || menu) && <DrzTlacidlo ms={1200} styl={{ minHeight: 40, padding: "0 12px", borderRadius: 10, border: "1.5px solid #A34A2A", background: "transparent", color: "#A34A2A", fontSize: 13.5, fontWeight: 800 }}
-        onHotovo={() => { zmazOdFarnika(strankaId, x.id); toast("Zmazané ✓"); onZmazane?.(); }}>Podržte · zmazať</DrzTlacidlo>}
+        onHotovo={() => { ukazZmazane(x.id); zmazOdFarnika(strankaId, x.id); onZmazane?.(); }}>Podržte · zmazať</DrzTlacidlo>}
     </div>
   </>;
 }

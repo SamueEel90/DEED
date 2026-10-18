@@ -43,6 +43,7 @@ import { useMiesta } from "@/lib/miestaFarnosti";
 import { UpozornitSledujucich, NastavenieUpozorneni } from "./UpozornitSledujucich";
 import { useNastavenieUpoz } from "@/lib/upozorneniaFarnosti";
 import { Volby, kartaVolby, FajkaVolby } from "@/components/Volby";
+import { ukazZmazane } from "@/lib/zmazaneMiesto";
 
 type Druh = 0 | 1 | 2; // Krátky oznam · Udalosť · Oznámenie
 const DRUHY: [string, string][] = [
@@ -569,7 +570,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     const st = stitokOznamu(x), zm = st === "ZMENA OMŠE", o = otv === x.id && !hv.zap, tx = textRiadku(x), on = hv.vyb.has(x.id);
     const editor = !!x.smutocny?.editor && !x.oz; // parte z Pohrebnej zbierky (bez oz) sa upravuje v Pohrebe, tu len maže
     return (
-      <div key={x.id} style={{ borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
+      <div key={x.id} data-oz={x.id} style={{ borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
         <button type="button" onClick={() => { if (hv.zap) { hv.prepni(x.id); return; } setOtv(o ? null : x.id); setPozri(null); }} aria-expanded={hv.zap ? undefined : o} aria-pressed={hv.zap ? on : undefined} style={{ width: "100%", minHeight: 60, padding: "8px 0", border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" }}>
           {hv.zap && <PolickoVyberu on={on} />}
           <span style={{ flex: "none", padding: "3px 9px", borderRadius: 8, ...farbaStitku(st === "PARTE" ? "parte" : zm || st === "SVADBA" || st === "JUBILEUM" ? "zlata" : "zelena"), fontSize: 11.5, fontWeight: 800, whiteSpace: "nowrap" }}>{st}</span>
@@ -582,7 +583,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {!zm && !editor && <button type="button" onClick={() => upravit(x)} style={{ minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--btn)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)", boxShadow: "none" }}>Upraviť</button>}
             <button type="button" onClick={() => setPozri(pozri === x.id ? null : x.id)} aria-expanded={pozri === x.id} style={{ minHeight: 44, padding: "0 14px", borderRadius: 12, border: "1.5px solid var(--gBd)", background: pozri === x.id ? "var(--gSoft)" : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--gInk)", boxShadow: "none" }}>Ako to vidia ľudia ›</button>
-            <PodrzZmaz onZmaz={() => { zmazOznam(x); setOtv(null); setPozri(null); obnov((y) => y + 1); toast(`„${x.nazov ?? ""}“ je zmazané.`); }} />
+            <PodrzZmaz onZmaz={() => { ukazZmazane(x.id); zmazOznam(x); setOtv(null); setPozri(null); obnov((y) => y + 1); }} />
           </div>
           {pozri === x.id && <div style={{ maxWidth: 460 }}>{nahladZverejneneho(x)}</div>}
           <TlZbalit onZbal={() => { setOtv(null); setPozri(null); }} />{/* OPRAVY 321 */}

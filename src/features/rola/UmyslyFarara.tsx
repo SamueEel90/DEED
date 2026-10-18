@@ -12,6 +12,7 @@ import { useState, type CSSProperties } from "react";
 import { odFarnikov, pridajOdFarnika, upravOdFarnika, zmazOdFarnika, type PolozkaFarnika } from "@/lib/odFarnikov";
 import { useKalendar, kostolKal, omseDna, dniTyzdna, rozsahTyzdna, iso, dvt, DNI_K, minuty } from "@/lib/kalendarFarnosti";
 import { PodrzZmaz } from "./OznamyFarnosti";
+import { ukazZmazane } from "@/lib/zmazaneMiesto";
 
 const karta: CSSProperties = { borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)" };
 const kicker: CSSProperties = { ...NADPIS_SEKCIE, paddingTop: 0 }; // OPRAVY 325 (medzera nad riadkom)
@@ -136,7 +137,7 @@ export function UmyslyFarara({ strankaId, meno, mobil, toast }: { strankaId: str
             <button type="button" onClick={() => { upravOdFarnika(strankaId, u.id, { odsluzene: terazMs() }); setOtv(null); toast("Odslúžené ✓"); }} style={tlB(true)}>Odslúžené ✓</button>
             <button type="button" onClick={() => { setPresun(u.id); setSpravaPre(null); }} style={tlB()}>Presunúť na inú omšu</button>
           </div>}
-          <div><PodrzZmaz onZmaz={() => { zmazOdFarnika(strankaId, u.id); setOtv(null); toast("Zmazané."); }} /></div>
+          <div><PodrzZmaz onZmaz={() => { ukazZmazane(u.id); zmazOdFarnika(strankaId, u.id); setOtv(null); }} /></div>
           <TlZbalit onZbal={() => { setOtv(null); setPresun(null); setSpravaPre(null); }} />{/* OPRAVY 321 */}
         </div>}
       </div>);

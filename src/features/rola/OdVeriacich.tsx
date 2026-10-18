@@ -18,6 +18,7 @@ import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { relCas } from "@/lib/darcovia";
 import { cielSpravyPre, zrusCielSpravy } from "@/lib/mojeStranky";
 import { zvyrazniOznam } from "@/features/verejny-profil/NastenkaFarnosti";
+import { ukazZmazane } from "@/lib/zmazaneMiesto";
 
 /** OPRAVY 310: Povolené · Po schválení · Zakázané */
 function Stupne({ v, on, moz = STUPNE, label }: { v: Stupen | null; on: (s: Stupen) => void; moz?: [Stupen, string][]; label: string }) {
@@ -232,7 +233,7 @@ export function OdVeriacich({ strankaId, meno, mobil, toast, cast, onSpat }: { s
             </>
             : <Oprava key={x.id} x={x} strankaId={strankaId} pred={nahl ? ponechat : undefined} />}
           {x.fotky?.length ? <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(110px,1fr))", gap: 6 }}>{x.fotky.slice(0, 8).map((f, j) => <img key={j} src={f} alt="" style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", borderRadius: 10, display: "block" }} />)}</div> : null}
-          <div><PodrzZmaz onZmaz={() => { zmazOdFarnika(strankaId, x.id); setOtv(null); toast("Zmazané."); }} /></div>
+          <div><PodrzZmaz onZmaz={() => { ukazZmazane(x.id); zmazOdFarnika(strankaId, x.id); setOtv(null); }} /></div>
           {nechcem(x.k)}
           <TlZbalit onZbal={() => setOtv(null)} />{/* OPRAVY 321 */}
         </div>}

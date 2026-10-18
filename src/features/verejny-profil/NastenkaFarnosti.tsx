@@ -1834,7 +1834,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
             {(() => { const m = medGal(t.x?.fotky ?? t.it?.fotky, t.x?.popisy ?? t.it?.popisy), nad = t.ine ? t.nadpis : t.meno; return m.length > 0 && <div style={{ alignSelf: "stretch", display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(96px,1fr))", gap: 6 }}>
               {m.map((f, i) => <button key={i} type="button" onClick={() => otvorGal(nad, m, i)} aria-label="Fotky na celú obrazovku" style={{ border: "none", padding: 0, borderRadius: 10, overflow: "hidden", cursor: "zoom-in", aspectRatio: "1" }}><img src={f.src} alt={f.popis ?? ""} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /></button>)}
             </div>; })()}
-            {t.x && <div style={{ alignSelf: "stretch" }}><MenuPrispevku x={t.x} strankaId={strankaId} kto={kto} moje={moje(t.x)} vMenu /></div>}
+            {t.x && <div style={{ alignSelf: "stretch" }}><MenuPrispevku x={t.x} strankaId={strankaId} kto={kto} moje={moje(t.x)} vMenu onZmazane={() => setTes(null)} /></div>}
           </>; })()}
         </div>
       </div>, document.body)}

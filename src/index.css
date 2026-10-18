@@ -264,3 +264,11 @@ label:has(> input[type="checkbox"]), label:has(> input[type="checkbox"]) *,
 input, textarea, select, [contenteditable], [contenteditable] *, .ftext, .ftext *, [role="textbox"], [role="textbox"] * {
   -webkit-user-select: text !important; user-select: text !important; -webkit-touch-callout: default !important;
 }
+
+/* OPRAVY 359 · zelená hláška na mieste zmazanej položky (lib/zmazaneMiesto.ts) */
+.zmazane-miesto { position: fixed; z-index: 10000; box-sizing: border-box; display: flex; align-items: center; justify-content: center; padding: 10px 16px; border-radius: 14px;
+  background: #E3EFD9; border: 2px solid #4B7A35; color: #2E5A1C; font-family: inherit; font-weight: 800; font-size: 15.5px; line-height: 1.3; text-align: center; pointer-events: none;
+  box-shadow: 0 6px 20px rgba(0,0,0,.12); animation: zmazane-in .18s ease-out; }
+html.dark .zmazane-miesto { background: #1E2B17; border-color: #6FA052; color: #BFE0A8; box-shadow: 0 6px 20px rgba(0,0,0,.45); }
+@keyframes zmazane-in { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .zmazane-miesto { animation: none; } }
