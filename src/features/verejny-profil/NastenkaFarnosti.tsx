@@ -2457,6 +2457,14 @@ function RiadokZbierky({ stitok, farba, nazov, obr, refId, ciel, pct: pct0, datu
  *  PC celý týždeň otvorený; mobil a tablet zbalené na dnes a zajtra + „Celý týždeň ⌄". Celý mesiac › · Vytlačiť ›. */
 /** OPRAVY 309: krátky názov kostola (Farský · Notre Dame · sv. Anny) */
 const kratkyKostol = (n: string) => { const x = n.trim(); if (/^farsk/i.test(x)) return "Farský"; return x.replace(/^(Rímskokatolícky\s+|Gréckokatolícky\s+)?(Kostol|Kaplnka|Chrám|Bazilika|Katedrála)\s+/i, "").trim() || x; };
+/** OPRAVY 369: pohreb, sobáš, krst = zlatý čip · udalosť, modlitba, vlastné = zelený čip · omša = obyčajný text */
+const RAM_KAL = { obrad: "#C9A24A", udalost: ZELENA } as const;
+function CipKal({ v, t, children, z }: { v: "obrad" | "udalost"; t: string; children: ReactNode; z?: boolean }) {
+  const f = RAM_KAL[v];
+  return <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minHeight: 38, maxWidth: "100%", boxSizing: "border-box", padding: "4px 12px", borderRadius: 10, border: `1.5px solid ${f}`,
+    background: `color-mix(in srgb, ${f} 12%, transparent)`, textDecoration: z ? "line-through" : "none", opacity: z ? 0.6 : 1, minWidth: 0 }}>
+    <b style={{ flex: "none", fontVariantNumeric: "tabular-nums" }}>{t}</b><span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{children}</span></span>;
+}
 function TyzdenFarnosti({ strankaId, slovo, siroka, cas, miestaF, mojKostol, bezNadpisu, okno }: { strankaId: string; slovo: string; siroka: boolean; cas: Date; /** OPRAVY 245: v zbalenom bloku nadpis nesie riadok */ bezNadpisu?: boolean;
   /** OPRAVY 309: okno Omše a kalendár — od dnes (minulé dni nie), na mobile deň pod sebou, nič nevyteká do boku */ okno?: boolean;
   /** KARTA 62: miesta farnosti — pri 2+ miestach „· názov miesta“ a čipy Všetky · miesta */ miestaF: Miesto[]; /** „Môj kostol“ — kalendár sa otvorí s jeho čipom */ mojKostol?: string | null }) {
@@ -2493,9 +2501,9 @@ function TyzdenFarnosti({ strankaId, slovo, siroka, cas, miestaF, mojKostol, bez
             : kost.length > 1 ? kost.map((kn) => { const l = d.o.filter((o) => ((o as { k?: string }).k ?? "") === kn); return (
               <span key={kn} style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: "2px 10px", minWidth: 0 }}>
                 <span style={{ fontSize: 15, fontWeight: 800, ...vedlajsi }}>{kratkyKostol(kn)}</span>
-                {l.map((o, i) => <b key={i} style={{ fontSize: 20, fontVariantNumeric: "tabular-nums", textDecoration: o.z ? "line-through" : "none", opacity: o.z ? 0.6 : 1 }}>{o.t}</b>)}
+                {l.map((o, i) => o.v ? <CipKal key={i} v={o.v} t={o.t} z={o.z}>{o.s}</CipKal> : <b key={i} style={{ fontSize: 20, fontVariantNumeric: "tabular-nums", textDecoration: o.z ? "line-through" : "none", opacity: o.z ? 0.6 : 1 }}>{o.t}</b>)}
               </span>); })
-            : d.o.map((o, i) => { const { hl, dr } = ozn(o), kn = (o as { k?: string }).k; return (
+            : d.o.map((o, i) => { const { hl, dr } = ozn(o), kn = (o as { k?: string }).k; if (o.v) return <span key={i} style={{ display: "flex", flexDirection: "column", gap: 2, alignItems: "flex-start", minWidth: 0 }}><CipKal v={o.v} t={o.t} z={o.z}>{o.s}</CipKal>{kn ? <span style={{ fontSize: 14, fontWeight: 700, ...vedlajsi }}>{kratkyKostol(kn)}</span> : null}</span>; return (
               <span key={i} style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0, textDecoration: o.z ? "line-through" : "none", opacity: o.z ? 0.6 : 1 }}>
                 <span style={{ display: "flex", alignItems: "baseline", gap: 8, minWidth: 0, whiteSpace: "nowrap" }}>
                   <b style={{ flex: "none", fontSize: 20, fontVariantNumeric: "tabular-nums" }}>{o.t}</b>
@@ -2512,7 +2520,7 @@ function TyzdenFarnosti({ strankaId, slovo, siroka, cas, miestaF, mojKostol, bez
         <span style={{ display: "flex", flexDirection: siroka ? "row" : "column", flexWrap: "wrap", gap: siroka ? "8px 18px" : 4, alignItems: siroka ? "center" : "flex-start", paddingTop: siroka ? 0 : 2 }}>
           {!siroka && <span style={{ fontSize: 12, fontWeight: 800 }}>{pozn ?? d.w}</span>}
           {d.o.length === 0 ? <span style={{ fontSize: 15, opacity: .6 }}>bez {slovo.replace(/^sv\. /, "")}</span>
-            : d.o.map((o, i) => <span key={i} style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: siroka ? 16 : 15.5, textDecoration: o.z ? "line-through" : "none", opacity: o.z ? 0.6 : 1 }}><b style={{ flex: "none", fontVariantNumeric: "tabular-nums", minWidth: siroka ? undefined : 44 }}>{o.t}</b><span style={{ minWidth: 0 }}>{o.s}{(o as { k?: string }).k ? <span style={{ color: INK3 }}> · {(o as { k?: string }).k}</span> : null}</span></span>)}
+            : d.o.map((o, i) => o.v ? <span key={i} style={{ display: "inline-flex", fontSize: siroka ? 16 : 15.5, maxWidth: "100%" }}><CipKal v={o.v} t={o.t} z={o.z}>{o.s}{(o as { k?: string }).k ? <span style={{ color: INK3 }}> · {(o as { k?: string }).k}</span> : null}</CipKal></span> : <span key={i} style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: siroka ? 16 : 15.5, textDecoration: o.z ? "line-through" : "none", opacity: o.z ? 0.6 : 1 }}><b style={{ flex: "none", fontVariantNumeric: "tabular-nums", minWidth: siroka ? undefined : 44 }}>{o.t}</b><span style={{ minWidth: 0 }}>{o.s}{(o as { k?: string }).k ? <span style={{ color: INK3 }}> · {(o as { k?: string }).k}</span> : null}</span></span>)}
           {(() => { const v = k.uradne?.[d.key]; return v && (v.zrus || (v.od && v.do)) ? <span style={{ fontSize: 14, fontWeight: 700, color: dn ? "inherit" : "var(--nf-cervena, #A3341F)" }}>{v.zrus ? "úradné hodiny zrušené" : `úradné hodiny zmenené na ${textCasu(v)}`}</span> : null; })()}
         </span>
       </button>);
@@ -2521,7 +2529,7 @@ function TyzdenFarnosti({ strankaId, slovo, siroka, cas, miestaF, mojKostol, bez
     const f = document.createElement("iframe"); f.style.cssText = "position:fixed;width:0;height:0;border:0;right:0;bottom:0"; document.body.appendChild(f);
     const doc = f.contentDocument; if (!doc) return;
     const esc = (x: string) => x.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
-    const riadky = t0.map((d) => `<tr><td style="padding:3mm 4mm 3mm 0;vertical-align:top;white-space:nowrap"><b>${esc(d.w)}</b><br>${esc(d.dt)}</td><td style="padding:3mm 0">${d.o.length ? d.o.map((o) => `<div style="${o.z ? "text-decoration:line-through;opacity:.6" : ""}"><b>${esc(o.t)}</b> ${esc(o.s)}</div>`).join("") : "—"}</td></tr>`).join("");
+    const riadky = t0.map((d) => `<tr><td style="padding:3mm 4mm 3mm 0;vertical-align:top;white-space:nowrap"><b>${esc(d.w)}</b><br>${esc(d.dt)}</td><td style="padding:3mm 0">${d.o.length ? d.o.map((o) => `<div style="${o.z ? "text-decoration:line-through;opacity:.6;" : ""}${o.v ? `display:inline-block;margin:0.6mm 0;padding:0.8mm 2.4mm;border-radius:2mm;border:0.4mm ${o.v === "obrad" ? "solid" : "dashed"} #000;` : ""}"><b>${esc(o.t)}</b> ${esc(o.s)}</div>${o.v ? "<br>" : ""}`).join("") : "—"}</td></tr>`).join("");
     doc.open(); doc.write(`<!doctype html><html><head><meta charset="utf-8"><title>Tento týždeň vo farnosti</title><style>@page{size:A4;margin:14mm}body{font-family:"Plus Jakarta Sans",-apple-system,"Segoe UI",sans-serif;font-size:12pt;color:#111}table{width:100%;border-collapse:collapse}tr{border-top:0.3mm solid #ccc}</style></head><body><h2 style="margin:0 0 2mm">Tento týždeň vo farnosti</h2><div style="margin-bottom:6mm;color:#444">${esc(rozsahTyzdna(0, true))}</div><table>${riadky}</table></body></html>`); doc.close();
     window.setTimeout(() => { f.contentWindow?.focus(); f.contentWindow?.print(); window.setTimeout(() => f.remove(), 1500); }, 400);
   };

@@ -538,7 +538,8 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, tel = false, toa
 }
 
 /** plagát / verejný výpis týždňa — len zaškrtnuté v „Čo uvidia ľudia" */
-interface PlagatRiadok { t: string; s: string; z: boolean }
+/** OPRAVY 369: v = značenie na stránke — obrad (pohreb, sobáš, krst · zlatý čip), udalosť (zelený čip); omša bez v */
+interface PlagatRiadok { t: string; s: string; z: boolean; v?: "obrad" | "udalost" }
 /** štítok oznamu (zoznam v Oznamoch, plagát na nástenku) */
 export function stitokOznamu(it: VieraFeedItem): string {
   if (it.tag === "Zmena omše") return "ZMENA OMŠE";
@@ -562,7 +563,8 @@ export function plagatTyzdna(k: KalKostol, VJ: KalendarFarnosti["verejne"], off:
       ...polozkyDna(k, d).filter((p) => VJ[druhPolozky(p.typ).kat]).map((p) => {
         const x = druhPolozky(p.typ);
         const sMenom = x.kat !== "omse" || VJ.umysel;
-        return { t: p.t, s: x.kratko + (p.m.trim() && sMenom ? ` · ${p.m.trim()}` : ""), z: false };
+        const v: PlagatRiadok["v"] = ["pohreb", "sobas", "krst"].includes(x.k) ? "obrad" : x.kat === "omse" ? undefined : "udalost";
+        return { t: p.t, s: x.kratko + (p.m.trim() && sMenom ? ` · ${p.m.trim()}` : ""), z: false, v };
       }),
     ].sort((a, b) => minuty(a.t) - minuty(b.t));
     return { key: iso(d), w: DNI_D[dvt(d)], dt: `${d.getDate()}. ${MES_G[d.getMonth()]}`, o };
