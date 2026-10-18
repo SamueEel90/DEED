@@ -27,11 +27,12 @@ function Retaz({ x, y, farba }: { x: number; y: number; farba: string }) {
   );
 }
 
-export function DeedQr({ data, odznak = "D+", retaz = false, suma, delenie, variant = "svetly", size = 260, bezOdznaku = false, farba }: {
+export function DeedQr({ data, odznak = "D+", retaz = false, suma, delenie, variant = "svetly", size = 260, bezOdznaku = false, farba, priehladne = false }: {
   data: string; odznak?: DeedOdznak; retaz?: boolean; suma?: string | null; delenie?: string | null;
   /** osobný QR (karta 18) — bez odznaku vľavo hore */ bezOdznaku?: boolean;
   variant?: DeedQrVariant; size?: number;
   /** farba rámu a oporných štvorcov (pracovný QR = zlatá #C9A24A); predvolene zelená DEED */ farba?: string;
+  /** OPRAVY 347: logo v bočnom paneli — biela výplň len vnútri D, mimo D priehľadné */ priehladne?: boolean;
 }) {
   const inv = variant === "inverzny";
   const zel = farba ?? ZELENA;
@@ -77,9 +78,10 @@ export function DeedQr({ data, odznak = "D+", retaz = false, suma, delenie, vari
   const delenieW = delenie ? Math.min(560, Math.max(260, 60 + delenie.length * 17)) : 0;
 
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width={size} height={size} role="img" aria-label={`DEED+ QR ${odznak}${retaz ? " reťaz" : ""}`} style={{ display: "block", borderRadius: size * 0.04 }}>
-      <rect width={1000} height={1000} fill={pozadie} />
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width={size} height={size} role="img" aria-label={`DEED+ QR ${odznak}${retaz ? " reťaz" : ""}`} style={{ display: "block", borderRadius: priehladne ? 0 : size * 0.04 }}>
+      {!priehladne && <rect width={1000} height={1000} fill={pozadie} />}
       <g transform="translate(-31.5,-12)">
+        {priehladne && <path d="M 78 64 H 580 C 796 64 973 276.96 973 512 C 973 747.04 796 951 580 951 H 78 Z" fill={pozadie} />}
         <rect x={64} y={72} width={14} height={880} rx={7} fill={ramik} />
         <path d="M 90 56 H 580 C 800 56 999 249.84 999 512 C 999 774.16 800 977 580 977 H 90 V 951 H 580 C 796 951 973 747.04 973 512 C 973 276.96 796 64 580 64 H 90 Z" fill={ramik} />
         <path d="M 86 56 L 86 977 L 94 977 Q 106 512 94 56 Z" fill={ramik} />
