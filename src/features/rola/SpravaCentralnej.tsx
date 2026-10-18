@@ -142,7 +142,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const dary = realne.length ? realne : ukazky ? (farnost ? DARY_TEST.map(([m, k]) => [m === "Anonymný darca" ? "Bohu známy veriaci" : m, k.replace(" · mesačne", ""), ""] as [string, string, string]) : DARY_TEST) : [];
   const nazovPol = sek ? sek.nazov : farnost ? nazovHlavnej(d) : "Celá činnosť";
   const chip = sek ? `SEKTOR ${typ}` : farnost ? "HLAVNÁ ZBIERKA" : "CENTRÁLNA ZBIERKA";
-  const podnadpis = sek ? "jedna téma · peniaze idú len sem · bez cieľa a konca" : farnost ? "stála zbierka farnosti · hore na profile · nikdy vo verejnom feede" : "na celú činnosť · stále hore na profile · nikdy vo verejnom feede";
+  const podnadpis = sek ? "jedna téma · peniaze idú len sem · bez cieľa a konca" : farnost ? "stála zbierka farnosti · hore na profile" /* OPRAVY 350 */ : "na celú činnosť · stále hore na profile · nikdy vo verejnom feede";
   const profil = profilZPamate(strankaId).ulozeny;
   const foto = d.media.find((m) => m.typ === "foto")?.src ?? (sek?.foto || profil?.cover || "");
   const bgFoto = "#3a3530";
@@ -224,7 +224,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   // OPRAVY 162: farnosť — ten istý QR farnosti z registrácie (po spustení vedie rovno na hlavnú zbierku)
   const qr = farnost
     ? <QrKarta nazov={nazov} slug={strankaId} odkaz={odkazQrStranky(strankaId)} cislo={cisloObjektu("Z", idZbierky)} toast={toast} nadpis="QR farnosti" onPlagat={() => setPlOkno(true)}
-        popis="Ten istý QR, ktorý ste dostali pri registrácii. Teraz vedie rovno na hlavnú zbierku. Ak už visí na kostole, netreba ho meniť." />
+        popis="Ten istý QR z registrácie. Vedie rovno na Hlavnú zbierku." /* OPRAVY 350 */ />
     : <QrKarta nazov={sek ? `${nazov} · ${sek.nazov}` : nazov} slug={sek ? sek.slug : CENTRALNA_SLUG} cislo={cisloObjektu("Z", idZbierky)} toast={toast} />;
   // farnosť pred spustením: namiesto QR karta „ešte nebeží" + Spustiť (bez Z-čísla a odkazu)
   const spustit = () => { const n = { ...d, spustena: new Date().toISOString() }; zmenene.current = false; setD(n); void ulozCentralnuZbierku(strankaId, n); setUlozene(true); };

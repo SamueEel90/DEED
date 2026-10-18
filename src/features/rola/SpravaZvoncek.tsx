@@ -52,7 +52,10 @@ export function SpravaZvoncek({ strankaId, mobil, toast, onSpat, meno = "", star
     tm.current = window.setTimeout(onSpat, 1800);
   };
   const zmen = (p: Partial<NastavenieZvoncek>, pole: string) => u.sleduj([pole], ulozZvoncek(strankaId, { ...n, ...p }), () => ulozZvoncek(strankaId, nastavenieZvoncek(strankaId)));
+  const [teraz0] = useState(() => Date.now());
   const dalsia = dalsiaOmsa(om.okno, strankaId);
+  // OPRAVY 350: dnes bez omše → najbližšia omša z kalendára (okno v budúcnosti je ona, inak ďalšia po okne)
+  const najblizsia = !om.okno ? "" : om.okno.zac > teraz0 ? nadpisOmse(om.okno) : dalsia.startsWith("ďalšia omša ") && !dalsia.includes("zatiaľ") ? dalsia.slice(12) : "zatiaľ nie je v kalendári";
 
   // ---- čísla (prázdne = 0) ----
   const teraz = om.dary.reduce((a, r) => a + r.suma, 0);
@@ -86,7 +89,7 @@ export function SpravaZvoncek({ strankaId, mobil, toast, onSpat, meno = "", star
     <section style={kartaK}>
       <span style={nadpisK}>Pri každej omši · dnes</span>
       {dnes.length ? dnes.sort((a, b) => a.m - b.m).map((o) => <span key={o.m} style={{ display: "flex", gap: 12, fontSize: 15 }}><b style={{ width: 52, fontVariantNumeric: "tabular-nums" }}>{o.cas}</b><span>{o.nazov}</span></span>)
-        : <span style={textK}>{om.okno ? "Dnes v kalendári omša nie je." : "Najprv nastavte omše v Omšiach a kalendári."}</span>}
+        : <span style={textK}>{om.okno ? `Najbližšia omša: ${najblizsia}` /* OPRAVY 350 */ : "Najprv nastavte omše v Omšiach a kalendári."}</span>}
       {om.okno && <span style={drobneK}>Na stránke teraz: {nadpisOkna(om.okno)} · {dalsia}</span>}
     </section>
     <section style={kartaK}><SumyPriDarcoch stranka={strankaId} kluc="zvoncek" nadpis="Ukázať sumy pri darcoch" /></section>
