@@ -44,7 +44,7 @@ insert into t select 'novi darcovia = 2', (j->>'novi_darcovia')::int = 2 from s;
 insert into t select 'novi darcovia v buducnosti = 0', (public.statistiky_farnosti('t-sf', now() + interval '1 day')->>'novi_darcovia')::int = 0;
 insert into t select 'sledujuci = 1', (j->>'sledujuci')::int = 1 from s;
 insert into t select 'sledujuci noví 30 = 1', (j->>'sledujuci_novi_30')::int = 1 from s;
-insert into t select 'pravidelna = null', j->'pravidelna' = 'null'::jsonb from s;
+insert into t select 'pravidelna = 0 (0109)', (j->>'pravidelna')::int = 0 from s;
 insert into t select 'podiel rodiny = 3 €', (j->'podiel_rodiny'->>'EUR')::numeric = 3 from s;
 reset role;
 

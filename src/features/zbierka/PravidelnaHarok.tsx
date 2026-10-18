@@ -9,6 +9,7 @@ import { useState, type ReactNode } from "react";
 import { zaregistrujKluc, zmenene } from "@/lib/mojeData";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { useRecurringCreate } from "@/data";
+import { pravidelnaZapni } from "@/lib/pravidelnaPodpora";
 import { pridajDar, nacitajPredvolbu, useSektorDarcu, menoBezMena, type VolbaDaru } from "@/lib/darcovia";
 import { KARTA_OD_EUR } from "./nastavenie";
 import { Harok } from "./Zdielat";
@@ -60,6 +61,7 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka =
   const [tip, setTip] = useState(false);
   const [napoveda, setNapoveda] = useState(false);
   const [hlaska, setHlaska] = useState("");
+  const [chybaUlozenia, setChybaUlozenia] = useState(""); // OPRAVY 352: server pravidelnú podporu neuložil
   // neregistrovaný vypĺňa len mandát SEPA (IBAN + meno majiteľa) — bez e-mailu (OPRAVY 142)
   const [karta, setKarta] = useState(""), [exp, setExp] = useState(""), [cvc, setCvc] = useState("");
   const [iban, setIban] = useState(""), [majitel, setMajitel] = useState("");
@@ -102,6 +104,10 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka =
     setKrok("spracovanie");
     const mn = eurc ? "EURC" : "EUR";
     if (ja.ucetId && !ja.demo) {
+      // OPRAVY 352: evidencia na serveri (kto, suma, od kedy) — bez nej sa nepokračuje, chyba ostane pri potvrdení
+      setChybaUlozenia("");
+      const e = registrovany ? await pravidelnaZapni(refId, eur, mn, perioda) : null;
+      if (e) { setChybaUlozenia(e); setKrok("zhrnutie"); return; }
       try { await rec.mutateAsync({ rozsah: "request", suma: eur, mena: mn, perioda, caseId: refId, charitaUcet: null, viazaneNaZbierku: true }); } catch { /* ukážka pokračuje */ }
     }
     const predtym = nacitaj().filter((z) => z.refId === refId).length;
@@ -227,6 +233,7 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka =
             </div>)}
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "12px 0 10px", fontSize: 16, fontWeight: 800 }}><span>Spolu pri každej platbe</span><span style={{ fontVariantNumeric: "tabular-nums" }}>{f(spolu, true)}</span></div>
         </div>
+        {chybaUlozenia && <div role="alert" style={{ padding: "10px 12px", borderRadius: 12, background: "var(--errBg, #F2E3DC)", fontSize: 13.5, fontWeight: 700, color: "#A34A2A" }}>{chybaUlozenia} · skúste potvrdiť znova</div>}
         <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)", padding: "0 4px" }}>{zrusenie}{registrovany ? " Ak platba neprejde, dáme ti vedieť v appke." : ""}</div>
         {napoveda && <div style={{ padding: "10px 12px", borderRadius: 12, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 13, fontWeight: 600, color: "var(--gInk)" }}>Pravidelný dar potvrdíš podržaním tlačidla.</div>}
       </>
