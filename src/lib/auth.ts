@@ -15,33 +15,64 @@ export interface AuthVysledok {
   ok: boolean;
   authId?: string;
   chyba?: string;
+  /** OPRAVY 378: účet vznikol, ale e-mail treba overiť 6 číslicami (Supabase „Confirm email“) — session ešte nie je */
+  overitEmail?: boolean;
 }
 
 // preklad Supabase auth chýb na slovenské hlášky pre používateľa.
 // POZOR: špecifické prípady MUSIA byť pred generickým "email" catchom
 // (napr. "email rate limit exceeded" obsahuje "email" — netreba ho hlásiť ako neplatný).
-function prelozChybu(message?: string): string {
+function prelozChybu(message?: string, inak = "Nepodarilo sa · skúste znova."): string {
   const m = (message || "").toLowerCase();
   if (m.startsWith("priveľa pokusov")) return message as string;   // zámok prihlásenia zo servera (0042)
   if (m.includes("invalid login") || m.includes("invalid credentials")) return "Nesprávny email alebo heslo.";
   if (m.includes("already registered") || m.includes("already been registered") || m.includes("user already")) return "Tento email už je zaregistrovaný — prihlás sa.";
-  if (m.includes("rate limit") || m.includes("over_email_send") || m.includes("too many")) return "Priveľa emailových pokusov — počkaj chvíľu. (Tip: v Supabase vypni Confirm email pre vývoj.)";
-  if (m.includes("not confirmed")) return "Email ešte nie je potvrdený — skontroluj schránku alebo vypni Confirm email v Supabase.";
+  if (m.includes("rate limit") || m.includes("over_email_send") || m.includes("too many")) return "Priveľa pokusov · skúste o chvíľu.";
+  if (m.includes("not confirmed")) return "E-mail ešte nie je potvrdený.";
   if (m.includes("signups not allowed") || m.includes("signup is disabled") || m.includes("signups are disabled") || m.includes("logins are disabled")) return "Registrácia emailom je vypnutá v Supabase.";
-  if (m.includes("password")) return "Heslo musí mať aspoň 6 znakov.";
+  if (m.includes("password")) return "Heslo musí mať aspoň 8 znakov.";
   if (m.includes("is invalid") || (m.includes("email") && m.includes("invalid"))) return "Neplatný email.";
   if (m.includes("email")) return "Problém s emailom. Skús znova o chvíľu.";
-  return "Niečo sa pokazilo. Skús znova.";
+  return inak;
 }
 
 export async function signUp(email: string, heslo: string): Promise<AuthVysledok> {
   if (!supabase) return { ok: false, chyba: "Supabase nie je nakonfigurovaný." };
   const { data, error } = await supabase.auth.signUp({ email: email.trim(), password: heslo });
-  if (error) return { ok: false, chyba: prelozChybu(error.message) };
+  if (error) return { ok: false, chyba: prelozChybu(error.message, "Účet sa nepodarilo založiť · Skúsiť znova.") };
   const authId = data.user?.id;
-  if (!authId) return { ok: false, chyba: "Nepodarilo sa vytvoriť účet." };
+  if (!authId) return { ok: false, chyba: "Účet sa nepodarilo založiť · Skúsiť znova." };
+  // OPRAVY 377/378: bez session (zapnuté potvrdenie e-mailu) sa do ucet nesmie vkladať — najprv overiť e-mail kódom
+  if (!data.session) {
+    if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) return { ok: false, chyba: "Tento e-mail už je zaregistrovaný · prihláste sa." };
+    return { ok: true, authId, overitEmail: true };
+  }
   return { ok: true, authId };
 }
+
+/** OPRAVY 378: 6 číslic z e-mailu (šablóna Confirm signup s {{ .Token }}) → session */
+export async function overEmailKod(email: string, kod: string): Promise<AuthVysledok> {
+  if (!supabase) return { ok: false, chyba: "Nie je spojenie so serverom." };
+  const { data, error } = await supabase.auth.verifyOtp({ email: email.trim(), token: kod.replace(/\D/g, ""), type: "signup" });
+  if (error || !data.session) {
+    const m = (error?.message ?? "").toLowerCase();
+    if (/expired|invalid|otp/.test(m) || !data?.session) return { ok: false, chyba: "kod" };
+    if (/failed to fetch|network/.test(m)) return { ok: false, chyba: "Nie je spojenie so serverom. Skúste znova." };
+    return { ok: false, chyba: "Overenie sa nepodarilo · skúste znova." };
+  }
+  return { ok: true, authId: data.user?.id };
+}
+
+/** OPRAVY 378: pošle nový overovací kód na e-mail */
+export async function posliEmailKod(email: string): Promise<AuthVysledok> {
+  if (!supabase) return { ok: false, chyba: "Nie je spojenie so serverom." };
+  const { error } = await supabase.auth.resend({ type: "signup", email: email.trim() });
+  if (error) return { ok: false, chyba: /rate|too many|seconds/i.test(error.message) ? "Kód sme poslali pred chvíľou · skúste o minútu." : "Kód sa nepodarilo poslať · skúste znova." };
+  return { ok: true };
+}
+
+/** OPRAVY 378: prihlásenie s neovereným e-mailom → rovno obrazovka Overte e-mail */
+export const jeNeoverenyEmail = (chyba?: string) => !!chyba && /nie je potvrdený/.test(chyba);
 
 export async function signIn(email: string, heslo: string): Promise<AuthVysledok> {
   if (!supabase) return { ok: false, chyba: "Supabase nie je nakonfigurovaný." };

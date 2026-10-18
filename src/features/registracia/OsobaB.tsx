@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from "react";
 import { setSession } from "@/lib/session";
 import { signUp } from "@/lib/auth";
+import { useOverenieEmailu, OverteEmailTelo } from "./OverteEmail";
 import * as db from "@/lib/db";
 import { ulozZaujmy as ulozZaujmyLokalne, zaujemZOblasti } from "@/lib/personalizaciaStore";
 import { otvorProfilPoRegistracii, cakajRegistraciuOrg } from "@/lib/mojeStranky";
@@ -12,9 +13,9 @@ import { overIban } from "@/features/rola/segmenty";
 import type { Zaujem } from "@/types";
 import { Obrazovka, Nadpis, Svetlo, Bublina, Pole, KodPolia, Volby, Prepinace, Cipy, KycKarty, PlanKapitol, Odomknute, kapitoly, naServeri, pockaj, vibruj, IK, clenCislo } from "./RegB";
 
-export type KrokOsoby = "plan" | "telefon" | "kod" | "heslo" | "platba" | "udaje" | "overenie" | "zobrazenie" | "zaujmy" | "vyhlasenie" | "hotovo";
-const PORADIE: KrokOsoby[] = ["plan", "telefon", "kod", "heslo", "platba", "udaje", "overenie", "zobrazenie", "zaujmy", "vyhlasenie", "hotovo"];
-const KAP: [string, KrokOsoby[]][] = [["Účet", ["telefon", "kod", "heslo", "platba"]], ["Overenie", ["udaje", "overenie"]], ["Ty", ["zobrazenie", "zaujmy"]]];
+export type KrokOsoby = "plan" | "telefon" | "kod" | "heslo" | "email" | "platba" | "udaje" | "overenie" | "zobrazenie" | "zaujmy" | "vyhlasenie" | "hotovo";
+const PORADIE: KrokOsoby[] = ["plan", "telefon", "kod", "heslo", "email", "platba", "udaje", "overenie", "zobrazenie", "zaujmy", "vyhlasenie", "hotovo"];
+const KAP: [string, KrokOsoby[]][] = [["Účet", ["telefon", "kod", "heslo", "email", "platba"]], ["Overenie", ["udaje", "overenie"]], ["Ty", ["zobrazenie", "zaujmy"]]];
 
 /** priebežné ukladanie: rozrobený krok (len číslo kroku, žiadne osobné údaje) */
 const KLUC_KROK = "deed.reg.krok";
@@ -24,7 +25,7 @@ export function ulozKrok(v: { typ: "osoba" | "org"; krok: string } | null) { try
 /** stav z DB (aj starý tok) → krok 1b. Pred účtom (telefón, kód, heslo) sa obnoviť nedá — začína sa telefónom. */
 export function krokZoStavu(stav?: string | null): KrokOsoby | null {
   const s = stav ?? "";
-  if ((PORADIE as string[]).includes(s) && !["plan", "kod", "heslo", "hotovo"].includes(s)) return s as KrokOsoby;
+  if ((PORADIE as string[]).includes(s) && !["plan", "kod", "heslo", "email", "hotovo"].includes(s)) return s as KrokOsoby;
   if (s === "kyc" || s === "foto") return "overenie";
   if (s === "vyhlasenie") return "vyhlasenie";
   return null;
@@ -69,7 +70,7 @@ export function OsobaB({ start = "plan", onSpat, onHotovo, authId: authIdVst, em
   // existujúci auth user bez dokončenej registrácie (návrat) → účet načítať (idempotentné na auth_id)
   useEffect(() => {
     if (!authIdVst || !naServeri) return;
-    db.vytvorUcetAuth({ authId: authIdVst, typ: "aktivny", email: emailVst ?? null, stav: "telefon" }).then((u) => setUcet(u)).catch((e) => toast("Chyba: " + (e?.message || e)));
+    db.vytvorUcetAuth({ authId: authIdVst, typ: "aktivny", email: emailVst ?? null, stav: "telefon" }).then((u) => setUcet(u)).catch(() => toast("Účet sa nepodarilo načítať · skúste znova."));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -89,8 +90,8 @@ export function OsobaB({ start = "plan", onSpat, onHotovo, authId: authIdVst, em
     if (i <= 0 || (krok === "telefon" && start === "telefon")) { onSpat(); return; }
     // po vzniku účtu sa na telefón/kód/heslo nevraciame
     const pred = PORADIE[i - 1];
-    if (ucet && (pred === "heslo" || pred === "kod")) return;
-    setKrok(pred === "kod" ? "telefon" : pred);
+    if (ucet && (pred === "heslo" || pred === "kod" || pred === "email")) return;
+    setKrok(pred === "kod" ? "telefon" : pred === "email" ? "heslo" : pred);
   };
   const server = async (fn: () => Promise<unknown>) => {
     setBusy(true);
@@ -130,6 +131,15 @@ export function OsobaB({ start = "plan", onSpat, onHotovo, authId: authIdVst, em
   // ---- Heslo: e-mail + heslo (nové zariadenie) a odomykanie tvárou alebo PIN-om (vždy jedno z nich)
   const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim());
   const hesloOk = heslo.length >= 8, pinOk = tvar || /^\d{4}$/.test(pin);
+  // OPRAVY 377/378: signUp → keď Supabase chce overiť e-mail, najprv 6 číslic (krok „email“); do ucet až so session
+  const zalozUcet = async (id: string) => {
+    const u = await db.vytvorUcetAuth({ authId: id, typ: "aktivny", email: email.trim(), stav: "platba" });
+    await db.ulozOverenyTelefon(u.id, "+421" + telCislo);
+    await db.nastavZabezpecenie(u.id, { pin: tvar ? undefined : pin, biometria: tvar });
+    setUcet(u);
+    if (u.poradove_cislo != null) setClen(Number(u.poradove_cislo));
+    ides("platba");
+  };
   const vytvorUcet = async () => {
     setBusy(true); setChyba(null);
     try {
@@ -137,19 +147,16 @@ export function OsobaB({ start = "plan", onSpat, onHotovo, authId: authIdVst, em
         let id = authId;
         if (!id) {
           const r = await signUp(email, heslo);
-          if (!r.ok || !r.authId) { setChyba(r.chyba ?? "Registrácia zlyhala."); return; }
+          if (!r.ok || !r.authId) { setChyba(r.chyba ?? "Účet sa nepodarilo založiť · Skúsiť znova."); return; }
           id = r.authId; setAuthId(id);
+          if (r.overitEmail) { ides("email"); return; }
         }
-        const u = await db.vytvorUcetAuth({ authId: id, typ: "aktivny", email: email.trim(), stav: "platba" });
-        await db.ulozOverenyTelefon(u.id, "+421" + telCislo);
-        await db.nastavZabezpecenie(u.id, { pin: tvar ? undefined : pin, biometria: tvar });
-        setUcet(u);
-        if (u.poradove_cislo != null) setClen(Number(u.poradove_cislo));
-      } else { await pockaj(500); setUcet({ id: "" }); }
-      ides("platba");
-    } catch (e: any) { toast("Chyba: " + (e?.message || e)); }
+        await zalozUcet(id);
+      } else { await pockaj(500); setUcet({ id: "" }); ides("platba"); }
+    } catch { setChyba("Účet sa nepodarilo založiť · Skúsiť znova."); }
     finally { setBusy(false); }
   };
+  const ovE = useOverenieEmailu(email, (id) => zalozUcet(id || authId || ""));
 
   // ---- Platba: karta sa len overí platbou 0 € (platobná brána ešte nie je → simulácia), IBAN na výplaty
   const ibanOk = !!overIban(iban);
@@ -242,10 +249,15 @@ export function OsobaB({ start = "plan", onSpat, onHotovo, authId: authIdVst, em
         <Nadpis kicker="ÚČET" t="Heslo a odomknutie" sub="E-mail a heslo na nové zariadenie. Tu stačí tvár." />
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <Pole label="E-mail" value={email} onChange={(v) => { setChyba(null); setEmail(v); }} ok={emailOk} chyba={chyba} type="email" inputMode="email" autoComplete="email" placeholder="meno@email.sk" />
-          <Pole label="Heslo" value={heslo} onChange={setHeslo} ok={hesloOk} hint="Aspoň 8 znakov." type="password" autoComplete="new-password" />
+          <Pole label="Heslo" value={heslo} onChange={setHeslo} ok={hesloOk} hint="Aspoň 8 znakov." type="password" autoComplete="new-password" oko />
         </div>
         <Prepinace prep={[{ t: "Odomykať tvárou", s: "Face ID na tomto telefóne" }]} stav={[tvar]} onPrepni={() => setTvar((v) => !v)} />
         {!tvar && <Pole label="PIN (4 číslice)" value={pin} onChange={(v) => setPin(v.replace(/\D/g, "").slice(0, 4))} ok={pinOk} hint="Bez tváre sa do appky vrátiš PIN-om." type="password" inputMode="numeric" autoComplete="off" />}
+      </Obrazovka>);
+    case "email": return (
+      <Obrazovka {...zak} cta={ovE.busy ? "Overujem…" : "Overiť"} onCta={() => void ovE.over()} ctaOff={ovE.kod.length !== 6 || ovE.busy}>
+        <Nadpis kicker="ÚČET" t="Overte e-mail" />
+        <OverteEmailTelo email={email.trim()} o={ovE} onZmenit={() => { setAuthId(null); ides("heslo"); }} />
       </Obrazovka>);
     case "platba": return (
       <Obrazovka {...zak} cta="Overiť kartu a pokračovať" onCta={overKartu} ctaOff={!ibanOk}>
