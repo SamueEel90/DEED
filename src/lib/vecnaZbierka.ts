@@ -5,6 +5,7 @@
 // Čo sa počíta (počet darcov, hodnota spolu), číta sa zo servera (vecne_dary), nikdy sa nevymýšľa.
 // Bez DB (mock) dary v localStorage zariadenia.
 // ============================================================
+import { ADRESA } from "@/lib/adresa";
 import { useEffect, useSyncExternalStore } from "react";
 import { nacitajStav, ulozStavIsto, obnovOblast } from "@/features/viera/stav";
 import { supabase } from "./supabase";
@@ -35,7 +36,7 @@ export const vecneZbierky = (stranka: string): VecnaZbierka[] => nacitajStav<Vec
 export const vecnaZbierka = (stranka: string, id: string) => vecneZbierky(stranka).find((z) => z.id === id) ?? null;
 export const fotoVecnej = (z: VecnaZbierka) => z.media.find((m) => m.typ === "foto")?.src;
 /** QR na plagáte: stránka farnosti a hneď okno „Darovali ste?“ */
-export const odkazVecnej = (stranka: string, id: string) => `https://deed.sk/p/${klucNaSlug(stranka)}?vz=${encodeURIComponent(id)}`;
+export const odkazVecnej = (stranka: string, id: string) => `${ADRESA}/p/${klucNaSlug(stranka)}?vz=${encodeURIComponent(id)}`;
 
 /** pri otvorení stránky / Správy stiahni čerstvé vecné zbierky farnosti */
 export function useVecneZbierky(stranka: string): VecnaZbierka[] {

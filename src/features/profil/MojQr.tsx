@@ -1,6 +1,7 @@
 // KARTA 18 · bod 4 — Môj QR: Na akciu · Overiť ma · Pozvánka.
 // Na akciu a Overiť ma: kód sa mení každých 15 s (snímka obrazovky neplatí), token sa tvorí v telefóne,
 // takže funguje aj bez signálu (účasť/overenie sa pripíše po pripojení). Pozvánka: statický odkaz na verejný profil.
+import { ADRESA, DOMENA } from "@/lib/adresa";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { useT } from "@/i18n";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
@@ -30,7 +31,7 @@ export function tokenQr(ucet: string, rezim: string, okno: number): string {
   const surove = `${ucet}|${rezim}|${okno}`;
   let h = 2166136261;
   for (let i = 0; i < surove.length; i++) { h ^= surove.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
-  return `https://deed.sk/q/${rezim}/${encodeURIComponent(ucet)}.${okno}.${h.toString(36)}`;
+  return `${ADRESA}/q/${rezim}/${encodeURIComponent(ucet)}.${okno}.${h.toString(36)}`;
 }
 
 /** zväčšená profilová fotka (300 px, tmavé pozadie, meno) — ťuk kamkoľvek zavrie */
@@ -63,7 +64,7 @@ export function MojQr({ zalozka = "akcia", onClose }: { zalozka?: ZalozkaQr; onC
   const [velky, setVelky] = useState(false); // OPRAVY 27: ťuk na QR → celá obrazovka
   const zamok = useRef<{ release: () => Promise<void> } | null>(null);
   const handle = (ja.nick || `${ja.meno}-${(ja.priezvisko || "")[0] ?? ""}`).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "ja";
-  const odkaz = `deed.sk/p/${handle}`;
+  const odkaz = `${DOMENA}/p/${handle}`;
   const stit = stitUzivatela(!!ja.demo);
   const nazovStitu = tr(`profil.stit.${stit}`);
   const ini = `${(ja.meno || "?")[0]}${(ja.priezvisko || "")[0] ?? ""}`.toUpperCase();

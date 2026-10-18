@@ -1,6 +1,7 @@
 // KARTA 29 · Priatelia — záložky Priatelia | Sledujem | Podporujem, žiadosti, Kam idú tvoji priatelia (+ Pridať sa),
 // moji priatelia so štítom, Pridať priateľa (4 cesty), hárok Čo o mne vidia priatelia. Anonymný profil = len meno.
 // Priateľ = vzájomný súhlas · Sledovanie = jednostranné · Podporujem = pravidelné dary. Údaje sú zatiaľ ukážkové.
+import { DOMENA } from "@/lib/adresa";
 import { sZnackou } from "@/components/DeedZnacka";
 import { useEffect, useRef, useState } from "react";
 import { SpatTlacidlo } from "@/components/cesta";
@@ -303,7 +304,7 @@ function Pozvanka({ onClose }: { onClose: () => void }) {
   const t = useT();
   const [kop, setKop] = useState(false);
   const handle = (ja.nick || `${ja.meno}-${(ja.priezvisko || "")[0] ?? ""}`).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "ja";
-  const odkaz = `deed.sk/p/${handle}`;
+  const odkaz = `${DOMENA}/p/${handle}`;
   const kopiruj = async () => { try { await navigator.clipboard.writeText(`https://${odkaz}`); setKop(true); } catch { toast(tTeraz()("priatelia.odkazChyba")); } };
   const zdielaj = async () => {
     const tn = tTeraz();
@@ -337,7 +338,7 @@ function SkenQr({ onClose }: { onClose: () => void }) {
     // @zxing sa načíta až s kamerou (Zadanie 5 · 5.6 — nie v hlavnom balíku)
     import("@zxing/browser").then(({ BrowserQRCodeReader }) => new BrowserQRCodeReader().decodeFromVideoDevice(undefined, video.current ?? undefined, (r, _e, c) => {
       ctrl = c; if (zrus || !r) return;
-      const m = /deed\.sk\/p\/([a-z0-9-]+)/i.exec(r.getText());
+      const m = new RegExp(`(?:${DOMENA.replace(/\./g, "\\.")}|deed\\.sk)\\/p\\/([a-z0-9-]+)`, "i").exec(r.getText());
       if (!m) { toast(tTeraz()("priatelia.sken.nieQr")); return; }
       c.stop(); setOsoba(m[1].split("-").filter(Boolean).map((x) => x[0].toUpperCase() + x.slice(1)).join(" "));
     })).then((c) => { ctrl = c; if (zrus) c.stop(); else setKamera("ide"); }).catch(() => { if (!zrus) setKamera("nie"); });

@@ -1,12 +1,13 @@
 // KARTA 16 · Hárok „Zdieľať zbierku" — NÁŠ hárok (systémové zdieľanie až po „Poslať priateľom").
 // Bez spodného „Hotovo"; zatvára sa krížikom / ťukom mimo / Esc. QR = náš DEED QR (tvar „D", zelený rám).
+import { ADRESA } from "@/lib/adresa";
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useLayout } from "@/components/context";
 import { DeedQr, stiahniDeedQr } from "@/components/deedqr";
 import { vibruj } from "./animacie";
 
-export const odkazZbierky = (id: string) => `https://deed.sk/z/${encodeURIComponent(id)}`;
+export const odkazZbierky = (id: string) => `${ADRESA}/z/${encodeURIComponent(id)}`;
 
 /** spoločný hárok modulu: mobil zdola, tablet 640 px / PC 560 px na stred, bez blur */
 export function Harok({ onClose, children, hlavicka, podHlavickou, paticka, plnaVyska, zatvorText, z = 150 }: {

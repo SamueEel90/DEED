@@ -7,6 +7,7 @@
 // 3 rozdelenie (podiel overovateľa + zvyšok rozhoduje príjemca: nechať si / podeliť sa) · 4 kód + zapečatiť · 5 hotovo.
 // Nová zbierka začína vždy úplne prázdna. Prototyp „Sprava farnosti - prvy prichod" (pre-kodera-7-10-b).
 // ============================================================
+import { ADRESA } from "@/lib/adresa";
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { CasPole } from "@/components/CasPole";
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
@@ -297,7 +298,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
 
   // ---- KARTA 57 A.1: späť = vždy o krok späť; po zapečatení späť nie je ----
   const [qrVelky, setQrVelky] = useState(false);
-  const qrData = OVP_NAOSTRO ? adresaOverenia(token) : `https://deed.sk/overit/${stranka}/${token}`;
+  const qrData = OVP_NAOSTRO ? adresaOverenia(token) : `${ADRESA}/overit/${stranka}/${token}`;
   const spatT = krok === 2 && rezim ? `Späť na výber ${druh === "pohreb" ? "parte" : "oznámenia"}` : krok > 1 && krok < 5 ? `Späť na krok ${krok - 1}` : "";
   const krokSpat = () => {
     if (edMob) { edSpat(); return; }

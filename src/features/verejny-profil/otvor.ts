@@ -2,6 +2,7 @@
 // Otvára sa z viacerých miest: tlačidlo v Správe stránky, feed, „Stránka organizácie",
 // adresár aj QR. Verejný odkaz na zdieľanie: /p/svetlo · /p/pekaren · /p/martin.
 // Režim modulu (všade / len v detaile) je v DEV paneli v Mojom profile, nie v adrese.
+import { ADRESA } from "@/lib/adresa";
 import { useEffect, useSyncExternalStore } from "react";
 import { slugNaKluc, klucNaSlug } from "@/lib/testProfily";
 import { hlavnaBezi, useZmenyCentralnej } from "@/lib/centralnaZbierka";
@@ -41,7 +42,7 @@ let vecnaZQr: string | null = null;
 /** číta sa bez mazania (StrictMode volá inicializáciu dvakrát), zmaže zrusVecnuZQr */
 export const vecnaZQrCitaj = (): string | null => vecnaZQr;
 export function zrusVecnuZQr() { vecnaZQr = null; }
-export const odkazQrStranky = (stranka: string) => `https://deed.sk/p/${klucNaSlug(stranka)}?qr=1`;
+export const odkazQrStranky = (stranka: string) => `${ADRESA}/p/${klucNaSlug(stranka)}?qr=1`;
 /** profil farnosti otvorený z QR farnosti: keď hlavná zbierka beží, otvor ju (raz) */
 export function useOtvorHlavnuZQr(stranka: string, farnost: boolean, otvor: () => void) {
   useZmenyCentralnej();

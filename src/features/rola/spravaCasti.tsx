@@ -1,5 +1,6 @@
 // KARTA 48 · spoločné diely Správy zbierky a Správy centrálnej a sektorov (1 : 1 podľa prototypov).
 // Hlavička „Ukladá sa samo", pás dorovnania, záložky, Stav, Ako budú ľudia darovať, Zapečatené, QR na plagát, Štatistiky.
+import { ADRESA } from "@/lib/adresa";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { DeedQr } from "@/components/deedqr";
@@ -202,7 +203,7 @@ export function QrKarta({ nazov, slug, cislo, organizacia, toast, odkaz: odkazP,
   /** OPRAVY 162 · QR farnosti: vlastný odkaz (jeden QR z registrácie), nadpis, veta a stav („Teraz vedie na …") */
   odkaz?: string; nadpis?: string; popis?: string; stav?: { t: string; zelena: boolean };
 }) {
-  const odkaz = odkazP ?? `https://deed.sk/z/${slug}`;
+  const odkaz = odkazP ?? `${ADRESA}/z/${slug}`;
   const [pdf, setPdf] = useState(false);
   const [skop, setSkop] = useState(false);
   // KARTA 56D §5: tlačidlá ukážu výsledok na sebe

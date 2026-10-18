@@ -1,6 +1,7 @@
 // KARTA 14 · Reťaz dobra — tvorca nastaví rad zbierok a percentá (5–100 %, po 5), zhrnutie, podrž a zapečať, beží.
 // Beží vždy len jedna zbierka; po zapečatení sa nedá meniť nič. Centrálny QR tvorcu sa nikde neukazuje —
 // len QR bežiacej dvojice tvorca + zbierka.
+import { ADRESA } from "@/lib/adresa";
 import { Component, useEffect, useRef, useState, type CSSProperties, type ErrorInfo, type ReactNode } from "react";
 import { DeedQr } from "@/components/deedqr";
 import { ohlasZbierku, obnovRetaz, nacitajRetaz, pripravRetaz, zapecatRetaz, zrusRetaz, beziaca, verejneBeziace, zbierkaVRetazi, zaokruhliPct, useZmenyRetaze, type Retaz, type Strana, type StavVRetazi, type ZbierkaVRetazi } from "@/lib/retaz";
@@ -282,7 +283,7 @@ function RetazDobraOkno({ zbierka, onClose }: { zbierka: ZbierkaHaroka; onClose:
         <div style={{ ...karta, borderRadius: 20, display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "18px 14px" }}>
           {/* QR reťaze (D++R) — jeden pre celú reťaz, mení sa sám podľa bežiacej zbierky */}
           <span style={{ background: "#fff", padding: 10, borderRadius: 16, lineHeight: 0 }}>
-            <DeedQr data={`https://deed.sk/r/${retaz.id}${b ? `/${b.zbierkaId}` : ""}`} odznak="D++" retaz size={180} />
+            <DeedQr data={`${ADRESA}/r/${retaz.id}${b ? `/${b.zbierkaId}` : ""}`} odznak="D++" retaz size={180} />
           </span>
           <div style={{ padding: "9px 16px", borderRadius: 999, background: "#1D211B", color: "#F1ECE1", fontSize: 14.5, fontWeight: 800, textAlign: "center" }}>{stitokDarcu(b?.pct ?? 100, b?.zbierkaId ?? null)}</div>
           <div style={{ fontSize: 12.5, color: "var(--ink3)", fontVariantNumeric: "tabular-nums" }}>Dostali ste {e2(retaz.dostal)} · ďalej poslané {e2(retaz.poslane)}</div>

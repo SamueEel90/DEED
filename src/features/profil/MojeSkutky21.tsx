@@ -1,5 +1,6 @@
 // KARTA 21 · Moje skutky — zoznam po mesiacoch, filtre 3 × 2, hľadanie, (ročný súhrn na zdieľanie je v Štatistikách, karta 27),
 // prázdny stav = tá istá obrazovka s ukážkami. Pridať skutok = spoločný komponent (otvorPridatSkutok).
+import { ADRESA } from "@/lib/adresa";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { SpatTlacidlo } from "@/components/cesta";
 import { toast } from "@/components/toast";
@@ -235,7 +236,7 @@ export function MojeSkutky21({ onBack, oblastStitu }: { onBack: () => void; /** 
         <div style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>{retazPre.retaz
           ? <>{t("skutky.retazZapecatena")} <b style={{ color: "var(--ink)", whiteSpace: "nowrap" }}>{t("skutky.retazPct", { pct: retazPre.retaz.pct })}</b> {t("skutky.retazIdeNa", { zbierka: retazPre.retaz.zbierka.nazov })}</>
           : t("skutky.retazNema")}</div>
-        <div style={{ display: "flex", justifyContent: "center", padding: "6px 0" }}><DeedQr data={`https://deed.sk/s/${retazPre.id}`} size={200} retaz={!!retazPre.retaz} delenie={retazPre.retaz ? t("skutky.retazDelenie", { pct: retazPre.retaz.pct }) : null} /></div>
+        <div style={{ display: "flex", justifyContent: "center", padding: "6px 0" }}><DeedQr data={`${ADRESA}/s/${retazPre.id}`} size={200} retaz={!!retazPre.retaz} delenie={retazPre.retaz ? t("skutky.retazDelenie", { pct: retazPre.retaz.pct }) : null} /></div>
         <div style={{ fontSize: 13, color: "var(--ink3)", lineHeight: 1.45, textAlign: "center" }}>{t("skutky.retazQrPozn")}</div>
       </Harok>}
     </div>

@@ -1,6 +1,7 @@
 // KARTA 22 · Organizovaná akcia (celá obrazovka sprava): skener účastníkov → Začať akciu (čas + GPS)
 // → Akcia beží (okno pre meškajúcich, odstránenie krížikom) → Ukončiť akciu → Pridať skutok krok 2.
 // Vstupy: Pridať skutok → So skupinou → Akcia práve začína · Môj QR → Organizujem akciu.
+import { ADRESA } from "@/lib/adresa";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -45,7 +46,7 @@ function AkciaObrazovka({ a, onZavrete }: { a: Akcia; onZavrete: () => void }) {
   // koniec ukončí organizátor pre všetkých, odobratie účastníka ide do záznamu zmien. Texty vykaním.
   const org = a.org;
   const { data: token } = useEventToken(org && a.id ? a.id : null, 15, "threshold", org?.nazov);
-  const qrData = token ?? `https://deed.sk/q/akcia/${a.id ?? "charita"}.charita`;
+  const qrData = token ?? `${ADRESA}/q/akcia/${a.id ?? "charita"}.charita`;
   const logo = org ? profilZPamate(org.stranka).ulozeny?.logo ?? null : null;
   const hm = (t?: number) => (t ? new Date(t).toLocaleTimeString("sk-SK", { hour: "numeric", minute: "2-digit" }) : "");
   const el = a.start ? Math.floor((Date.now() - a.start) / 1000) : 0;

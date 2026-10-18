@@ -1,4 +1,5 @@
 // Zdieľanie obrázka z <canvas> (1080 × 1350) — systémové zdieľanie so súborom, inak stiahnutie PNG.
+import { ADRESA } from "@/lib/adresa";
 import QRCode from "qrcode";
 
 export async function zdielajCanvas(c: HTMLCanvasElement, nazovSuboru: string, titul: string): Promise<"zdielane" | "stiahnute" | "zrusene"> {
@@ -29,7 +30,7 @@ export async function ramObrazka(ctx: CanvasRenderingContext2D, W: number, H: nu
   ctx.fillText("Miesto, kde nerozhodujú slová, ale skutky", 72, H - 42);
   try {
     const qr = document.createElement("canvas");
-    await QRCode.toCanvas(qr, "https://deed.sk", { width: 150, margin: 1, color: { dark: "#1D211B", light: "#ffffff" } });
+    await QRCode.toCanvas(qr, ADRESA, { width: 150, margin: 1, color: { dark: "#1D211B", light: "#ffffff" } });
     ctx.fillStyle = "#fff"; ctx.fillRect(W - 72 - 162, H - 72 - 162 + 20, 162, 162);
     ctx.drawImage(qr, W - 72 - 156, H - 72 - 156 + 20, 150, 150);
   } catch { /* bez QR */ }
