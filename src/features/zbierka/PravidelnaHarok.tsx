@@ -25,7 +25,7 @@ type Sposob = "karta" | "sepa";
 const HOST_MAX_EUR = 100;
 
 const KLUC = "deed.pravidelne";
-type Zaznam = { refId: string; suma: number; mena: "EUR" | "EURC"; perioda: Perioda; od: number };
+type Zaznam = { refId: string; suma: number; mena: "EUR" | "EURC"; perioda: Perioda; od: number; /** OPRAVY 352: komu (Profil → Pravidelné dary) */ nazov?: string };
 const nacitaj = (): Zaznam[] => { try { return JSON.parse(localStorage.getItem(KLUC) ?? "[]") as Zaznam[]; } catch { return []; } };
 const uloz = (z: Zaznam) => { try { localStorage.setItem(KLUC, JSON.stringify([z, ...nacitaj()])); } catch { /* LS */ } zmenene(KLUC); };
 // zoznam nastavených pravidelných podpôr → do účtu (moje_data, 0084b); samotné strhávanie rieši platobný modul
@@ -111,7 +111,7 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka =
       try { await rec.mutateAsync({ rozsah: "request", suma: eur, mena: mn, perioda, caseId: refId, charitaUcet: null, viazaneNaZbierku: true }); } catch { /* ukážka pokračuje */ }
     }
     const predtym = nacitaj().filter((z) => z.refId === refId).length;
-    uloz({ refId, suma: eur, mena: mn, perioda, od: Date.now() });
+    uloz({ refId, suma: eur, mena: mn, perioda, od: Date.now(), nazov });
     // prvá platba odchádza hneď — je to dar ako každý iný (firma ho nedorovnáva)
     pridajDar({ refId, suma: eur, kanal: eurc ? "deed" : sp === "sepa" ? "sepa" : "psp", registrovany, volba: registrovany ? volba : undefined });
     const n = predtym + 1;
