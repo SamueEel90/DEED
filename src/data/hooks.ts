@@ -94,22 +94,33 @@ export const useTopRebricky = () => useQuery({ queryKey: qk.top.rebricky, queryF
 export const useTopPrispevky = () => useQuery({ queryKey: qk.top.prispevky, queryFn: () => repo.top.prispevky() });
 
 // ---- Notifikácie ----
-export const useNotifikacie = () => useQuery({ queryKey: qk.notifikacie.list, queryFn: () => repo.notifikacie.list() });
+// OPRAVY 365: zvonček nezávisí len od realtime — pri návrate do appky a každých 30 s sa zoznam načíta zo servera znova
+export const useNotifikacie = () => useQuery({ queryKey: qk.notifikacie.list, queryFn: () => repo.notifikacie.list(),
+  ...(USE_SUPABASE ? { staleTime: 0, refetchInterval: 30_000, refetchOnWindowFocus: true, refetchOnReconnect: true } : {}) });
 
 /** Realtime (Fáza E): jeden kanál na INSERT do `notifikacia` → invaliduje zoznam.
  *  Mountuje sa RAZ (App/Screens). Bez Supabase = no-op (mock/offline). */
 export function useNotifikacieRealtime() {
   const qc = useQueryClient();
+  // OPRAVY 365: po prihlásení / odhlásení nový kanál (inak počúva s tokenom spred prihlásenia) a zoznam nanovo
+  const [prihl, setPrihl] = useState(0);
+  useEffect(() => {
+    if (!supabase) return;
+    const { data } = supabase.auth.onAuthStateChange((e) => {
+      if (e === "SIGNED_IN" || e === "SIGNED_OUT" || e === "USER_UPDATED") { setPrihl((x) => x + 1); qc.invalidateQueries({ queryKey: qk.notifikacie.list }); }
+    });
+    return () => data.subscription.unsubscribe();
+  }, [qc]);
   useEffect(() => {
     if (!supabase) return;
     const kanal = supabase
-      .channel("rt-notifikacia")
+      .channel(`rt-notifikacia-${prihl}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifikacia" }, () => {
         qc.invalidateQueries({ queryKey: qk.notifikacie.list });
       })
       .subscribe();
     return () => { supabase!.removeChannel(kanal); };
-  }, [qc]);
+  }, [qc, prihl]);
 }
 
 // ---- Reťaz dobra ----
