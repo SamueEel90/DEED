@@ -13,6 +13,8 @@ const ZELENA = "#3E7A2E";
 export interface PodkladPlagatu {
   nazov: string; text: string; foto: string | null; logo: string | null; inicialy: string;
   menoFarnosti: string; adresa: string; organizuje: string; odkaz: string;
+  /** OPRAVY 347: jeden plagát pre všetky QR — druh nad názvom a dva riadky pod QR (predvolene vecná zbierka) */
+  druh?: string; vyzva?: [string, string];
 }
 
 function obrazok(src: string): Promise<HTMLImageElement | null> {
@@ -58,13 +60,13 @@ function cover(g: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y:
 function stred(g: CanvasRenderingContext2D, t: string, y: number) { g.textAlign = "center"; g.fillText(t, A4_W / 2, y); }
 
 /** nakreslí plagát; fotkaChyba = fotku sa nepodarilo načítať (plagát je potom bez nej) */
-export async function kresliPlagat(p: PodkladPlagatu): Promise<{ c: HTMLCanvasElement; fotkaChyba: boolean }> {
+export async function kresliPlagat(p: PodkladPlagatu, o?: { bezQr?: boolean }): Promise<{ c: HTMLCanvasElement; fotkaChyba: boolean; qr: { x: number; y: number; s: number } }> {
   try { await document.fonts?.load(`800 40px ${PISMO}`); } catch { /* písmo z prehliadača */ }
   const c = document.createElement("canvas"); c.width = A4_W; c.height = A4_H;
   const g = c.getContext("2d")!;
   g.fillStyle = "#FBF8F2"; g.fillRect(0, 0, A4_W, A4_H);
   const M = 110, W = A4_W - 2 * M;
-  const [foto, logo, qr] = await Promise.all([p.foto ? obrazok(p.foto) : Promise.resolve(null), p.logo ? obrazok(p.logo) : Promise.resolve(null), qrObrazok(p.odkaz, 900)]);
+  const [foto, logo, qr] = await Promise.all([p.foto ? obrazok(p.foto) : Promise.resolve(null), p.logo ? obrazok(p.logo) : Promise.resolve(null), o?.bezQr ? Promise.resolve(null) : qrObrazok(p.odkaz, 900)]);
   const fotkaChyba = !!p.foto && !foto;
   const sFotkou = !!foto;
   // hlavička (zo systému)
@@ -81,7 +83,7 @@ export async function kresliPlagat(p: PodkladPlagatu): Promise<{ c: HTMLCanvasEl
   let y = ciara + 72;
   g.fillStyle = ZELENA; g.font = `800 34px ${PISMO}`;
   if ("letterSpacing" in g) (g as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = "5px";
-  stred(g, "VECNÁ ZBIERKA", y);
+  stred(g, p.druh ?? "VECNÁ ZBIERKA", y);
   if ("letterSpacing" in g) (g as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = "0px";
   y += 34;
   // fotka — vždy rovnako vysoká
@@ -100,10 +102,11 @@ export async function kresliPlagat(p: PodkladPlagatu): Promise<{ c: HTMLCanvasEl
   const Q = Math.max(Math.round(7.6 * PX_NA_CM), Math.min(spodokTextu - y - 40, Math.round(11 * PX_NA_CM)));
   const qy = spodokTextu - Q;
   if (qr) g.drawImage(qr, (A4_W - Q) / 2, qy, Q, Q);
-  g.fillStyle = "#1A1A1A"; g.font = `800 44px ${PISMO}`; stred(g, "Darovali ste? Naskenujte", qy + Q + 58);
-  g.fillStyle = "#555"; g.font = `500 34px ${PISMO}`; stred(g, "a zapíšte sa medzi darcov", qy + Q + 104);
+  const [v1, v2] = p.vyzva ?? ["Darovali ste? Naskenujte", "a zapíšte sa medzi darcov"];
+  g.fillStyle = "#1A1A1A"; g.font = `800 44px ${PISMO}`; stred(g, v1, qy + Q + 58);
+  g.fillStyle = "#555"; g.font = `500 34px ${PISMO}`; stred(g, v2, qy + Q + 104);
   if (p.organizuje.trim()) { g.fillStyle = "#777"; g.font = `500 30px ${PISMO}`; stred(g, zalom(g, `Organizuje ${p.organizuje.trim()}`, W, 1)[0], pata); }
-  return { c, fotkaChyba };
+  return { c, fotkaChyba, qr: { x: (A4_W - Q) / 2, y: qy, s: Q } };
 }
 
 /** obrázok plagátu → PDF A4 (jedna strana, obrázok cez celú stranu) */

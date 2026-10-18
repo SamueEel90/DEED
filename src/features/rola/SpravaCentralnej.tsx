@@ -16,7 +16,7 @@ import { createPortal } from "react-dom";
 import { profilZPamate } from "@/lib/profilStranky";
 import { prazdnaCentralna, prazdnaHlavna, nazovHlavnej, HLAVNA_NAZOV_MAX, centralnaZPamate, nacitajCentralnuZbierku, ulozCentralnuZbierku, zmazCentralnuZbierku, type CentralnaZbierka } from "@/lib/centralnaZbierka";
 import { cistyText } from "@/lib/richtext";
-import { stiahniPlagat } from "@/lib/plagatPdf";
+import { usePolozkyQr, PlagatOkno, QrZalozka } from "./QrNastroje";
 import { KartaModulu } from "@/features/verejny-profil/ModulProfilu";
 import { odkazQrStranky } from "@/features/verejny-profil/otvor";
 import { suhrnHlavnej, datumOmse, textRiadkuOmse } from "@/lib/zvoncekOmse";
@@ -61,12 +61,13 @@ const statTest = (jeS: boolean, nazov: string): DataStatistik => ({
 
 function novyStav(id: string, farnost = false): StavZbierky { return { stav: "aktivna", koniec: new Date(Date.now() + 3650 * 86400000).toISOString(), predlzenia: 0, lehota: "30", text: "", fotky: [], doklady: !farnost && ukazkyTeraz() && id.endsWith("-centralna") ? DOKLADY_TEST : [], spravy: [] }; }
 
-export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, toast, onZbierky, onDorovnanie, onDarcovia, farnost }: {
+export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, toast, onZbierky, onDorovnanie, onDarcovia, farnost, startQr, onTlacQr }: {
   strankaId: string; nazov: string; hlavnyUcet: string; tier: number; mobil: boolean; toast: (m: string) => void;
   onZbierky: () => void; onDorovnanie?: () => void; onDarcovia?: () => void;
   /** KARTA 56B · hlavná zbierka farnosti: beží iná zbierka farnosti (zmazať sa nedá) · po zmazaní späť na Zbierky
    *  KARTA 56D §5: onHotovo = „Hotovo · späť do Správy" po spustení */
   farnost?: { ostatneBezia: boolean; onZmazana: () => void; onHotovo: () => void; /** OPRAVY 340b: Zmeniť účet = Nastavenia → Účet farnosti */ onZmenitUcet?: () => void };
+  /** OPRAVY 347: záložka QR — otvoriť rovno na nej (návrat z QR nástrojov) · Tlačiť › */ startQr?: boolean; onTlacQr?: (id: string) => void;
 }) {
   useZmenySektorov(); useZmenyDarov();
   const sektory0 = useSektory();
@@ -77,7 +78,10 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const h = sek ? String(typ) : "0";
   const kluc = sek ? sek.id : "centralna";
   const idZbierky = `${strankaId}-${kluc}`;
-  const [tab, setTab] = useState(0);
+  const [tab, setTab] = useState(startQr && farnost ? 5 : 0);
+  // OPRAVY 347: plagát hlavnej = jeden plagát pre všetky QR (QR farnosti)
+  const qrFar = usePolozkyQr(strankaId, nazov).find((x) => x.id === "farnost");
+  const [plOkno, setPlOkno] = useState(false);
   const [novySek, setNovySek] = useState(false);
   const prepni = (i: number) => { setTyp(i); nastavVyberCentralnej(i); setNovySek(false); };
 
@@ -219,7 +223,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
     </section>);
   // OPRAVY 162: farnosť — ten istý QR farnosti z registrácie (po spustení vedie rovno na hlavnú zbierku)
   const qr = farnost
-    ? <QrKarta nazov={nazov} slug={strankaId} odkaz={odkazQrStranky(strankaId)} cislo={cisloObjektu("Z", idZbierky)} toast={toast} nadpis="QR farnosti"
+    ? <QrKarta nazov={nazov} slug={strankaId} odkaz={odkazQrStranky(strankaId)} cislo={cisloObjektu("Z", idZbierky)} toast={toast} nadpis="QR farnosti" onPlagat={() => setPlOkno(true)}
         popis="Ten istý QR, ktorý ste dostali pri registrácii. Teraz vedie rovno na hlavnú zbierku. Ak už visí na kostole, netreba ho meniť." />
     : <QrKarta nazov={sek ? `${nazov} · ${sek.nazov}` : nazov} slug={sek ? sek.slug : CENTRALNA_SLUG} cislo={cisloObjektu("Z", idZbierky)} toast={toast} />;
   // farnosť pred spustením: namiesto QR karta „ešte nebeží" + Spustiť (bez Z-čísla a odkazu)
@@ -262,12 +266,6 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
       </> : <span style={{ minHeight: 60, borderRadius: 16, border: "2px dashed var(--cardBd)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: "var(--ink3)", textAlign: "center", padding: "0 12px" }}>Najprv doplňte, čo chýba. Ťuknite na riadok vyššie.</span>}
     </section>);
   // po spustení na tom istom mieste: čo sa stalo a čo ďalej (výsledok na tlačidle)
-  const [plagat, setPlagat] = useState<"" | "busy" | "ok">("");
-  const stiahniHned = async () => {
-    if (plagat === "busy") return; setPlagat("busy");
-    try { await stiahniPlagat({ nazov: nazovPol, odkaz: odkazQrStranky(strankaId), cislo: cisloObjektu("Z", idZbierky), organizacia: nazov }); setPlagat("ok"); window.setTimeout(() => setPlagat(""), 2200); }
-    catch (e) { setPlagat(""); toast((e as Error).message); }
-  };
   const bezi = farnost && (
     <section key="bezi" role="status" style={{ ...kartaK, background: "var(--gSoft)", border: "2px solid var(--green)" }}>
       <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -276,7 +274,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
       </span>
       <span style={{ fontSize: 15, lineHeight: 1.5, color: "var(--ink)" }}>Je hore na vašom profile a ľudia už môžu darovať.</span>
       <span style={{ fontSize: 15, lineHeight: 1.5, color: "var(--ink)" }}><b>Ďalší krok:</b> stiahnite QR plagát, vytlačte ho a dajte do kostola a k pokladničke.</span>
-      <button type="button" aria-busy={plagat === "busy"} onClick={() => void stiahniHned()} style={{ height: 56, border: "none", borderRadius: 15, background: "var(--green)", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "#fff", boxShadow: "none" }}>{plagat === "ok" ? "Plagát sa stiahol ✓" : plagat === "busy" ? "Pripravujem plagát…" : "Stiahnuť QR plagát (PDF)"}</button>
+      <button type="button" onClick={() => setPlOkno(true)} style={{ height: 56, border: "none", borderRadius: 15, background: "var(--green)", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "#fff", boxShadow: "none" }}>QR plagát · upraviť a stiahnuť ›</button>
       <button type="button" onClick={farnost.onHotovo} style={{ height: 52, borderRadius: 15, border: "1.5px solid var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, color: "var(--gInk)", boxShadow: "none" }}>Hotovo · späť do Správy</button>
     </section>);
   // Martin 13:11 · ročné počítanie hlavnej zbierky (prepínač áno/nie, nič sa nemaže)
@@ -370,7 +368,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
       </div>
     </div>}
     {dorPas}
-    <Taby akt={tab} onTab={setTab} odsadenie={16} skryte={farnost ? [1] : []} />
+    <Taby akt={tab} onTab={setTab} odsadenie={16} skryte={farnost ? [1] : []} qr={!!farnost} />
     {pasZav && <div role="status" style={{ borderRadius: 18, background: "#1D211B", color: "#fff", padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
       <span style={{ flex: 1, minWidth: 200, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15.5 }}>{pasZav.t}</b><span style={{ fontSize: 13, opacity: .8 }}>Pravidelným darcom pošleme správu o 15 minút. Dovtedy to môžete vrátiť.</span></span>
       <button type="button" onClick={pasZav.vrat} style={{ height: 46, padding: "0 18px", border: "none", borderRadius: 14, background: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "#1D211B" }}>Vrátiť späť</button>
@@ -380,6 +378,8 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
     {tab === 1 && <DokladyCharity zbierkaId={idZbierky} s={stav} zmen={zmenStav} vyzbierane={spolu} teraz={Date.now()} mobil={mobil} toast={toast} nepovinne />}
     {tab === 2 && <Statistiky d={ukazky ? statTest(!!sek, nazovPol) : { obdobie: "tento mesiac", od: "", dni: farnost ? dniReal : Array.from({ length: 30 }, () => 0), cez: [["Priamo na profile", mesiac, ""]], split: [], darcovia: farnost ? [[String(darcovReal), "darcov"], [String(c.mesacne), "dáva mesačne"]] : [[String(c.mesacne), "dáva mesačne"]], dary: realne }} tier={tier} mobil={mobil} toast={toast} />}
     {tab === 3 && ukoncenie}
+    {tab === 5 && farnost && <QrZalozka strankaId={strankaId} meno={nazov} id="farnost" mobil={mobil} onTlac={onTlacQr} />}
+    {plOkno && qrFar && <PlagatOkno strankaId={strankaId} meno={nazov} p={qrFar} format="a4" mobil={mobil} onZavri={() => setPlOkno(false)} />}
     {harok && <ZavrietHarok mobil={mobil} sektor={sek?.nazov ?? null} farnost={!!farnost} mesacne={c.mesacne} onPotvrd={potvrd} onZavri={() => setHarok(false)} />}
   </>);
 }

@@ -18,19 +18,21 @@ import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { ZvoncekKarta } from "@/features/verejny-profil/NastenkaFarnosti";
 import { TextovePolia, GaleriaEditor } from "./obsahZbierky";
 import { SumyPriDarcoch } from "./SumyPriDarcoch";
+import { QrZalozka } from "./QrNastroje";
 import { kartaK, nadpisK, drobneK, textK, Taby, UkladaSa, AkoDarovat, useUkladanie, UlozenePri, PasUlozene } from "./spravaCasti";
 import { sumaEur } from "@/lib/suma";
 
 const eur = (n: number) => `${sumaEur(n)}`;
 const ludi = (n: number) => `${n} ${n === 1 ? "človek" : n >= 2 && n <= 4 ? "ľudia" : "ľudí"}`;
 
-export function SpravaZvoncek({ strankaId, mobil, toast, onSpat }: { strankaId: string; mobil: boolean; toast: (m: string) => void; onSpat: () => void }) {
+export function SpravaZvoncek({ strankaId, mobil, toast, onSpat, meno = "", startQr, onTlacQr }: { strankaId: string; mobil: boolean; toast: (m: string) => void; onSpat: () => void;
+  /** OPRAVY 347: záložka QR · názov farnosti na plagát */ meno?: string; startQr?: boolean; onTlacQr?: (id: string) => void }) {
   const n = useZvoncek(strankaId);
   const om = useZvoncekOkno(strankaId);
   const slova = useSlovaFarnosti(strankaId);
   const pod = podakovanieZvoncek(n, slova);
   const dnes = omseZvoncek(kostolKal(strankaId), new Date());
-  const [tab, setTab] = useState(0);
+  const [tab, setTab] = useState(startQr ? 5 : 0);
   const [hotovo, setHotovo] = useState<string | null>(null);
   const tm = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(tm.current), []);
@@ -150,7 +152,7 @@ export function SpravaZvoncek({ strankaId, mobil, toast, onSpat }: { strankaId: 
         </span>
         {tab === 0 && <UkladaSa />}
       </div>
-      <Taby akt={tab} onTab={setTab} skryte={[1, 4]} />
+      <Taby akt={tab} onTab={setTab} skryte={[1, 4]} qr />
       {tab === 0 && (mobil
         ? <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{nastavenie}{vpravo}</div>
         : <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.3fr) minmax(0,1fr)", gap: 16, alignItems: "start" }}>
@@ -160,6 +162,7 @@ export function SpravaZvoncek({ strankaId, mobil, toast, onSpat }: { strankaId: 
       {tab === 0 && <PasUlozene u={u} onSpat={onSpat} mobil={mobil} />}
       {tab === 2 && statistiky}
       {tab === 3 && ukoncenie}
+      {tab === 5 && <QrZalozka strankaId={strankaId} meno={meno} id="zvon" mobil={mobil} onTlac={onTlacQr} />}
       {/* DEV panel — len testovacia verzia */}
       {TESTOVACIA && <div style={{ border: "1px dashed rgba(122,78,122,.45)", borderRadius: 14, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <span style={{ flex: 1, minWidth: 160, fontSize: 12, fontWeight: 700, color: "var(--ink3)" }}>DEV · test omše · {ludi(terazLudi)} pri tejto omši</span>

@@ -33,7 +33,7 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { useMojeStranky } from "@/lib/mojeStranky";
 import { CIRKVI, useMojeFarnosti, useSlovaFarnosti, pridajSledovanu, odstranSledovanu, nazovFarnosti, otvorAdresar, sledujemKostol, sledujKostol, prestanKostol, nastavMojKostol, farnostiSuhrn, nastavFarnostiSuhrn, blokyFarnosti, blokyKostola, type SledovanyKostol } from "@/lib/mojeFarnosti";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
-import { otvorVerejnyProfil, odkazQrStranky, vecnaZQrCitaj, zrusVecnuZQr, cielVecnej, zrusDoVecnej } from "./otvor";
+import { otvorVerejnyProfil, odkazQrStranky, vecnaZQrCitaj, zrusVecnuZQr, cielVecnej, zrusDoVecnej, qrCielCitaj, zrusQrCiel } from "./otvor";
 import { nacitajVerejne } from "@/lib/verejneNastavenia";
 import { centralnaChyba, centralnaZPamate, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
 import { naviazObjekt } from "@/lib/darZbierky";
@@ -600,6 +600,16 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
     onDetail({ id, nazov: t, popis: txt, overena: true, organizacia: orgPole, ...sadyZbierky(zvN), media: zvN.media.filter((m) => ziveObr(m.src)).map((m) => (m.typ === "video" ? { typ: "video" as const, src: m.src } : { typ: "foto" as const, src: m.src, popis: m.popis })) },
       { typ: "zv", chip: "ZVONČEKOVÁ ZBIERKA", t, txt: celyText(zvN.popis, zvN.popis2) || ZVONCEK_TEXT, obr: foto });
   };
+  // OPRAVY 347: cieľ z QR — zvonček (zbierka pri aktuálnej omši) alebo konkrétna zbierka; skončená bez poďakovania = „Zbierka skončila · ďakujeme“
+  const [qrC] = useState(qrCielCitaj);
+  const [qrHotovo, setQrHotovo] = useState(false);
+  const [zbSkoncila, setZbSkoncila] = useState(false);
+  useEffect(() => { zrusQrCiel(); }, []);
+  if (qrC && !qrHotovo) {
+    if ("omsa" in qrC) { if (zvOn && zvOkno) { setQrHotovo(true); otvorZvoncek(zvOkno.id); } }
+    else { const z = zbierkyStrankyZPamate(strankaId).find((x) => x.id === qrC.zbierka);
+      if (z) { setQrHotovo(true); if ((z.stav ?? "aktivna") === "aktivna" || dakZb(z)) otvorZbierku(z); else setZbSkoncila(true); } }
+  }
   const otvorPin = (z: ZbierkaNaPripnutie) => onDetail({ id: z.id, nazov: z.nazov, popis: "", overena: true, ciel: z.ciel ?? undefined, media: [], organizacia: { ...orgPole, meno: z.kto, obrazok: undefined } },
     { typ: "pin", chip: chipPripnutej(z), t: z.nazov, txt: "", pin: z, obr: z.foto });
   // OPRAVY 222 (4): čím farnosť prispela na cudzie zbierky
@@ -1781,6 +1791,13 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
       {album && <ProhliadacAlbumu a={album} onZavri={() => setAlbum(null)} />}
       {gal && <CelaGaleria media={gal.m} start={gal.i} nadpis={gal.t} onClose={() => setGal(null)} />}
       {det && <DetailZbierky d={det} strankaId={strankaId} onZavri={() => setDet(null)} />}
+      {zbSkoncila && createPortal(<div role="dialog" aria-modal="true" aria-label="Zbierka skončila" onClick={() => setZbSkoncila(false)} style={{ ...PREMENNE, position: "fixed", inset: 0, zIndex: 1300, background: "rgba(14,12,8,.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+        <div onClick={(e) => e.stopPropagation()} style={{ width: "min(100%, 420px)", borderRadius: 22, background: KARTA, color: INK, padding: "24px 22px", display: "flex", flexDirection: "column", gap: 10, boxSizing: "border-box" }}>
+          <b style={{ fontSize: 22, lineHeight: 1.25 }}>Zbierka skončila · ďakujeme</b>
+          <span style={{ fontSize: 16, lineHeight: 1.5, color: INK2 }}>Ďakujeme všetkým, ktorí prispeli. Na stránke farnosti sú bežiace zbierky.</span>
+          <button type="button" autoFocus onClick={() => setZbSkoncila(false)} style={{ marginTop: 6, minHeight: 52, border: "none", borderRadius: 14, background: ZELENA_TL, color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800 }}>Pozrieť stránku farnosti</button>
+        </div>
+      </div>, document.body)}
       {miesto && <PodstrankaMiesta m={miesto} strankaId={strankaId} menoFarnosti={meno} siroka={siroka} zbierky={zb.filter((z) => druh(z) === "farnost" && z.farnost?.miesto === miesto.id).map((z) => ({ id: z.id, nazov: z.nazov || "Zbierka", onTap: () => { setMiesto(null); otvorZbierku(z); } }))} linia={farbaLinie}
         onKalendar={() => { setMiesto(null); naBlok("kal"); }} onZavri={() => setMiesto(null)} sledovat={sledKostol(miesto)}
         oznamy={(() => { const l = ozAll.filter((o) => o.mi?.includes(miesto.id)); return l.length ? l.map(kartaOznamu) : null; })()} onOznamy={() => { setMiesto(null); naBlok("ozn"); }} />}

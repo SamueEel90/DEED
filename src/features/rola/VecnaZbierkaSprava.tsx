@@ -2,17 +2,15 @@
 // OPRAVY 320 · Vecná zbierka farnosti — Správa: (B) vyplniť · (C) beží: plagát A4 na vytlačenie · Darcovia ·
 // Ukončenie a poďakovanie (ako pri ďalšej zbierke, bod 314). Bez platobného modulu.
 // ============================================================
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { TextovePolia, GaleriaEditor, cistyText } from "./obsahZbierky";
 import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { AnoNie } from "@/components/AnoNie";
-import { profilZPamate } from "@/lib/profilStranky";
 import { relCas } from "@/lib/darcovia";
 import { TlZbalit } from "@/features/verejny-profil/zbalit";
-import { podakujDarcom, ulozVecnu, noveIdVecnej, textPlagatuZPoli, fotoVecnej, odkazVecnej, doKedyText, usePrehladDarov, type VecnaZbierka } from "@/lib/vecnaZbierka";
-import { kresliPlagat, riadkovTextu, stiahniPdf, vytlac } from "./vecnaPlagat";
+import { podakujDarcom, ulozVecnu, noveIdVecnej, textPlagatuZPoli, doKedyText, usePrehladDarov, type VecnaZbierka } from "@/lib/vecnaZbierka";
+import { QrZalozka } from "./QrNastroje";
 
 const karta: CSSProperties = { borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 };
 const pole: CSSProperties = { minHeight: 50, padding: "0 14px", borderRadius: 12, border: "1.5px solid var(--cardBd)", background: "var(--field)", fontFamily: "inherit", fontSize: 15.5, fontWeight: 600, color: "var(--ink)", outline: "none", width: "100%", boxSizing: "border-box" };
@@ -24,12 +22,6 @@ const eur = (n: number) => `${n.toLocaleString("sk-SK", { maximumFractionDigits:
 const nepov = <span style={{ fontWeight: 500, color: "var(--ink3)" }}> · nepovinné</span>;
 
 /** hlavička plagátu z Upraviť profil (nedá sa prepísať) */
-function hlavicka(strankaId: string, meno: string) {
-  const p = profilZPamate(strankaId).ulozeny;
-  const m = (p?.meno || meno).trim();
-  const ini = p?.inicialy || m.split(/\s+/).filter((w) => w.length > 1 && w !== "Farnosť").slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "F";
-  return { logo: p && !p.bezLoga ? p.logo : null, inicialy: ini, menoFarnosti: m, adresa: (p?.kontakt?.adresaVerejna || p?.kontakt?.sidlo || "").trim() };
-}
 
 // ---------- (B) Vyplniť ----------
 export function VecnaNova({ strankaId, mobil, onZavri, onHotovo }: { strankaId: string; mobil: boolean; onZavri: () => void; onHotovo: (z: VecnaZbierka) => void }) {
@@ -85,62 +77,8 @@ export function VecnaNova({ strankaId, mobil, onZavri, onHotovo }: { strankaId: 
   </section>;
 }
 
-// ---------- plagát: náhľad a voľby (C) ----------
-function PlagatVecnej({ strankaId, meno, z, onZmena, mobil }: { strankaId: string; meno: string; z: VecnaZbierka; onZmena: (p: Partial<VecnaZbierka>) => void; mobil: boolean }) {
-  const [obr, setObr] = useState<{ src: string; c: HTMLCanvasElement } | null>(null);
-  const [chyba, setChyba] = useState("");
-  const [cela, setCela] = useState(false);
-  const [akcia, setAkcia] = useState<"" | "tlac" | "pdf">("");
-  const foto = fotoVecnej(z) ?? null, h = useMemo(() => hlavicka(strankaId, meno), [strankaId, meno]);
-  const podklad = { nazov: z.nazov, text: z.plagatText, foto: z.plagatFoto ? foto : null, ...h, organizuje: z.organizuje, odkaz: odkazVecnej(strankaId, z.id) };
-  const kluc = JSON.stringify(podklad);
-  useEffect(() => {
-    let ziva = true;
-    const t = window.setTimeout(() => {
-      void kresliPlagat(podklad).then(({ c, fotkaChyba }) => {
-        if (!ziva) return;
-        try { setObr({ src: c.toDataURL("image/jpeg", 0.85), c }); setChyba(fotkaChyba ? "Fotku sa nepodarilo načítať, plagát je zatiaľ bez nej. Skúste to o chvíľu znova." : ""); }
-        catch { setChyba("Plagát s touto fotkou sa nedá pripraviť. Zvoľte Bez fotky."); }
-      }, () => { if (ziva) setChyba("Plagát sa nepodarilo pripraviť. Skúste to znova."); });
-    }, 150);
-    return () => { ziva = false; window.clearTimeout(t); };
-  }, [kluc]); // eslint-disable-line react-hooks/exhaustive-deps
-  const zmenText = (t: string) => { const v = t.replace(/\n/g, " "); if (riadkovTextu(v, z.plagatFoto && !!foto) <= 3) onZmena({ plagatText: v }); };
-  const urob = async (co: "tlac" | "pdf") => {
-    if (!obr || akcia) return; setAkcia(co); setChyba("");
-    try { if (co === "pdf") stiahniPdf(obr.c, z.nazov); else await vytlac(obr.c); }
-    catch { setChyba(co === "pdf" ? "PDF sa nepodarilo pripraviť. Skúste to znova." : "Tlač sa nepodarilo otvoriť. Stiahnite PDF a vytlačte ho."); }
-    setAkcia("");
-  };
-  return <>
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <span style={nad}>Fotka na plagáte</span>
-      <AnoNie value={z.plagatFoto && !!foto} onChange={(v) => onZmena({ plagatFoto: v })} label="Fotka na plagáte" ano="S fotkou" nie="Bez fotky" siroke />
-      <span style={pozn}>{foto ? "Berie sa hlavná fotka zbierky (HLAVNÁ vo Fotkách). Bez fotky je väčší text a QR." : "Zbierka nemá fotku. Plagát je bez fotky, väčší text a QR."}</span>
-    </div>
-    <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <span style={nad}>Text na plagáte <span style={{ fontWeight: 500, color: "var(--ink3)" }}>· najviac 3 riadky</span></span>
-      <textarea value={z.plagatText} onChange={(e) => zmenText(e.target.value)} rows={3} style={{ ...pole, minHeight: 84, padding: "10px 14px", lineHeight: 1.45, resize: "none" }} />
-      <span style={pozn}>Vyplnili sme ho z polí Čo · Kde · Do kedy. Prepíšte ho, ak chcete, plagát sa hneď zmení. Dlhší ako 3 riadky sa napísať nedá.</span>
-    </label>
-    <span style={pozn}>Hlavička s logom, názvom a adresou sa doplní sama z Upraviť profil. Plagát má pevné rozloženie, QR je vždy aspoň 5 × 5 cm.</span>
-    <button type="button" onClick={() => obr && setCela(true)} aria-label="Plagát na celú obrazovku" style={{ alignSelf: "center", width: mobil ? "min(100%, 300px)" : 320, aspectRatio: "210 / 297", padding: 0, border: "1px solid var(--cardBd)", borderRadius: 6, overflow: "hidden", background: "#FBF8F2", cursor: obr ? "zoom-in" : "default", boxShadow: "0 6px 20px rgba(0,0,0,.18)" }}>
-      {obr ? <img src={obr.src} alt={`Plagát · ${z.nazov}`} style={{ display: "block", width: "100%", height: "100%" }} /> : <span style={{ fontSize: 14, color: "#555" }}>Pripravujem plagát…</span>}
-    </button>
-    {chyba && <span role="alert" style={{ padding: "10px 14px", borderRadius: 12, background: "#F6E3DC", border: "1.5px solid #A34A2A", color: "#7A2E16", fontSize: 14, fontWeight: 800, lineHeight: 1.45 }}>{chyba}</span>}
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-      <button type="button" disabled={!obr || !!akcia} onClick={() => void urob("tlac")} style={{ ...tlPlne, opacity: obr ? 1 : 0.5 }}>{akcia === "tlac" ? "Otváram tlač…" : "Vytlačiť A4"}</button>
-      <button type="button" disabled={!obr || !!akcia} onClick={() => void urob("pdf")} style={{ ...tlObr, opacity: obr ? 1 : 0.5 }}>{akcia === "pdf" ? "Pripravujem…" : "Stiahnuť PDF"}</button>
-    </div>
-    {cela && obr && createPortal(<div role="dialog" aria-modal="true" aria-label="Plagát" onClick={() => setCela(false)} style={{ position: "fixed", inset: 0, zIndex: 1200, background: "#0E0C08", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "calc(12px + env(safe-area-inset-top, 0px)) 12px 12px" }}>
-      <button type="button" autoFocus onClick={() => setCela(false)} style={{ alignSelf: "flex-end", minHeight: 52, padding: "0 20px", border: "none", borderRadius: 14, background: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 17, fontWeight: 800, color: "#1A1A1A" }}>Zavrieť ×</button>
-      <img src={obr.src} alt={`Plagát · ${z.nazov}`} style={{ flex: 1, minHeight: 0, maxWidth: "100%", objectFit: "contain" }} />
-    </div>, document.body)}
-  </>;
-}
-
 // ---------- (C) Beží · Správa vecnej zbierky ----------
-export function VecnaSprava({ strankaId, meno, z: z0, nova, mobil, onSpat }: { strankaId: string; meno: string; z: VecnaZbierka; /** hneď po spustení: zelená karta a Hotovo */ nova?: boolean; mobil: boolean; onSpat: () => void }) {
+export function VecnaSprava({ strankaId, meno, z: z0, nova, mobil, onSpat, onTlacQr }: { strankaId: string; meno: string; z: VecnaZbierka; /** hneď po spustení: zelená karta a Hotovo */ nova?: boolean; mobil: boolean; onSpat: () => void; /** OPRAVY 347 */ onTlacQr?: (id: string) => void }) {
   const [z, setZ] = useState(z0);
   const [ulozene, setUlozene] = useState<"" | "uklada" | "ok" | "chyba">("");
   const [chybaT, setChybaT] = useState("");
@@ -155,7 +93,6 @@ export function VecnaSprava({ strankaId, meno, z: z0, nova, mobil, onSpat }: { s
     tm.current = window.setTimeout(() => { setUlozene("uklada"); void ulozVecnu(strankaId, z).then((e) => { setUlozene(e ? "chyba" : "ok"); setChybaT(e ?? ""); }); }, 700);
     return () => window.clearTimeout(tm.current);
   }, [z.plagatFoto, z.plagatText, z.podakovanie, z.stav]); // eslint-disable-line react-hooks/exhaustive-deps
-  const zmen = (p: Partial<VecnaZbierka>) => setZ((x) => ({ ...x, ...p }));
   const pr = usePrehladDarov(strankaId, z);
   const [vsetci, setVsetci] = useState(false);
   const aktivna = z.stav === "aktivna";
@@ -209,7 +146,8 @@ export function VecnaSprava({ strankaId, meno, z: z0, nova, mobil, onSpat }: { s
     {nova && aktivna && <div role="status" style={{ padding: "14px 16px", borderRadius: 14, background: "var(--gSoft)", border: "2px solid var(--green)", display: "flex", flexDirection: "column", gap: 4 }}>
       <b style={{ fontSize: 16.5, color: "var(--gInk)" }}>Vecná zbierka beží ✓</b><span style={{ fontSize: 14.5, color: "var(--ink2)" }}>Ďalší krok: vytlačte plagát a zaveste ho ku krabici.</span></div>}
     {ulozene && <span role={ulozene === "chyba" ? "alert" : "status"} style={{ fontSize: 14, fontWeight: 800, color: ulozene === "chyba" ? "#A34A2A" : ulozene === "ok" ? "var(--gInk)" : "var(--ink3)" }}>{ulozene === "uklada" ? "Ukladá sa…" : ulozene === "ok" ? "Uložené ✓" : `Neuložilo sa. ${chybaT}`}</span>}
-    {aktivna && <section style={karta}><b style={{ fontSize: 18 }}>Plagát na vytlačenie</b><PlagatVecnej strankaId={strankaId} meno={meno} z={z} mobil={mobil} onZmena={zmen} />
+    {/* OPRAVY 347: QR a jeden plagát pre všetky QR (náhľad, text, fotka, PDF) */}
+    {aktivna && <section style={karta}><b style={{ fontSize: 18 }}>QR a plagát</b><QrZalozka strankaId={strankaId} meno={meno} id={z.id} mobil={mobil} onTlac={onTlacQr} />
       {nova && <button type="button" onClick={onSpat} style={{ ...tlObr, borderColor: "var(--gBd)", color: "var(--gInk)" }}>Hotovo · späť do Správy</button>}</section>}
     <section style={karta}>
       <b style={{ fontSize: 18 }}>Darcovia{pr.pocet ? ` · ${pr.ludi}` : ""}</b>

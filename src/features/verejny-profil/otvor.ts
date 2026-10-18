@@ -7,6 +7,7 @@ import { useEffect, useSyncExternalStore } from "react";
 import { slugNaKluc, klucNaSlug } from "@/lib/testProfily";
 import { hlavnaBezi, useZmenyCentralnej } from "@/lib/centralnaZbierka";
 import { STREAMY } from "@/lib/testTvorca";
+import { strankaZbierky } from "@/lib/novaZbierka";
 
 let otvorene = false;
 let kluc: string | null = null;
@@ -43,6 +44,14 @@ let vecnaZQr: string | null = null;
 export const vecnaZQrCitaj = (): string | null => vecnaZQr;
 export function zrusVecnuZQr() { vecnaZQr = null; }
 export const odkazQrStranky = (stranka: string) => `${ADRESA}/p/${klucNaSlug(stranka)}?qr=1`;
+// OPRAVY 347: QR zvončeka (trvalý) → zbierka pri aktuálnej omši · QR zbierky (na dobu zbierky) → priamo zbierka, po skončení „Zbierka skončila“
+export const odkazQrZvonceka = (stranka: string) => `${ADRESA}/p/${klucNaSlug(stranka)}/omsa`;
+export const odkazQrZbierky = (id: string) => `${ADRESA}/z/${encodeURIComponent(id)}`;
+export type QrCiel = { omsa: true } | { zbierka: string };
+let qrCiel: QrCiel | null = null;
+/** cieľ z QR (číta sa bez mazania — StrictMode), zmaže zrusQrCiel */
+export const qrCielCitaj = (): QrCiel | null => qrCiel;
+export function zrusQrCiel() { qrCiel = null; }
 /** profil farnosti otvorený z QR farnosti: keď hlavná zbierka beží, otvor ju (raz) */
 export function useOtvorHlavnuZQr(stranka: string, farnost: boolean, otvor: () => void) {
   useZmenyCentralnej();
@@ -55,7 +64,8 @@ if (typeof window !== "undefined") {
   const m = window.location.pathname.match(/^\/p\/([^/?#]+)/);
   if (m) {
     const k = slugNaKluc(decodeURIComponent(m[1]));
-    if (k) { otvorene = true; kluc = k; qrHlavna = new URLSearchParams(window.location.search).has("qr"); vecnaZQr = new URLSearchParams(window.location.search).get("vz"); }
+    const omsa = /^\/p\/[^/?#]+\/omsa\/?$/.test(window.location.pathname);
+    if (k) { otvorene = true; kluc = k; qrHlavna = !omsa && new URLSearchParams(window.location.search).has("qr"); vecnaZQr = new URLSearchParams(window.location.search).get("vz"); if (omsa) qrCiel = { omsa: true }; }
     try { window.history.replaceState(null, "", window.location.origin + "/"); } catch { /* sandbox */ }
   }
 }
@@ -66,6 +76,11 @@ if (typeof window !== "undefined") {
   if (m && s && STREAMY[s] && STREAMY[s].zbierka === decodeURIComponent(m[1])) {
     otvorene = true; kluc = `stream:${s}`;
     try { window.history.replaceState(null, "", window.location.origin + "/"); } catch { /* sandbox */ }
+  } else if (m) {
+    // OPRAVY 347: /z/{id} — QR zbierky farnosti, vecnej aj rodiny: stránka, ktorej zbierka patrí, a hneď zbierka
+    const id = decodeURIComponent(m[1]);
+    try { window.history.replaceState(null, "", window.location.origin + "/"); } catch { /* sandbox */ }
+    void strankaZbierky(id).then((st) => { if (st) { qrCiel = { zbierka: id }; otvorVerejnyProfil(st); } });
   }
 }
 

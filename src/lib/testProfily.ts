@@ -639,7 +639,8 @@ export const TEST_PROFILY: TestProfil[] = [CHARITA, FIRMA, TVORCA, FARNOST];
 export const najdiTestProfil = (k: string): TestProfil | undefined => TEST_PROFILY.find((p) => p.k === k);
 /** verejný odkaz na zdieľanie: /p/svetlo · /p/pekaren · /p/martin → kľúč profilu */
 const SLUG_KLUC: Record<string, string> = { svetlo: "svetlo", pekaren: "pekaren", martin: "tvorca", farnost: "farnost" };
-export const slugNaKluc = (slug: string): string | undefined => SLUG_KLUC[slug];
+// OPRAVY 347: ostatné stránky (skutočné farnosti) majú v odkaze priamo svoj kľúč (klucNaSlug ho nemení)
+export const slugNaKluc = (slug: string): string | undefined => SLUG_KLUC[slug] ?? (slug.trim() || undefined);
 export const klucNaSlug = (k: string): string => (k === "tvorca" ? "martin" : k);
 /** stránka/organizácia (feed, adresár, „Stránka organizácie") podľa mena → testovací profil.
  *  Voľnejšie párovanie: bez právnych prípon (o.z. · s.r.o. · n.o. · o.p.s.), zhoda aj keď jedno obsahuje druhé. */

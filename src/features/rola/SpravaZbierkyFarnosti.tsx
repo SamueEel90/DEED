@@ -6,6 +6,7 @@
 // (poďakovanie v tom istom TextovePolia + fotky ako to dopadlo, Poslať darcom Áno · Nie, Uložiť poďakovanie / Podržte a ukončite s poďakovaním).
 // Prototyp „Sprava farnosti - prvy prichod" → Zbierky → ťuk na zbierku.
 // ============================================================
+import { QrZalozka } from "./QrNastroje";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { SADY, SADY_EURC, upravZbierku, ukonciZbierku, cielCislo, type SpustenaZbierka } from "@/lib/novaZbierka";
 import { darcoviaPre, identitaDarcu, relCas, useZmenyDarov } from "@/lib/darcovia";
@@ -44,12 +45,13 @@ export function rozdelenieZbierkyF(z: SpustenaZbierka): string {
 }
 export const fotoZbierky = (z: SpustenaZbierka) => z.media.find((m) => m.typ === "foto")?.src;
 
-export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat, menoStranky }: {
+export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat, menoStranky, startQr, onTlacQr }: {
   stranka: string; z: SpustenaZbierka; mobil: boolean; toast: (m: string) => void; onSpat: () => void; /** názov farnosti (Potvrdené · … od Farnosti …) */ menoStranky?: string;
+  /** OPRAVY 347: záložka QR */ startQr?: boolean; onTlacQr?: (id: string) => void;
 }) {
   useZmenyDarov();
   const ja = usePouzivatel();
-  const [tab, setTab] = useState(0);
+  const [tab, setTab] = useState(startQr ? 5 : 0);
   // OPRAVY 314: Upraviť zbierku — text, fotky a rýchle sumy sa ukladajú samy, pri poli „Uložené ✓“
   const u = useUkladanie();
   const [ob, setOb] = useState({ popis: z.popis, popis2: z.popis2, media: z.media, eurc: z.eurc, sada: z.sada, sadaE: z.sadaE });
@@ -146,7 +148,7 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat, menoSt
     </section>
     <div role="tablist" aria-label="Správa zbierky" style={{ flex: "none", display: "flex", gap: 4, borderBottom: "1px solid var(--cardBd)", overflowX: "auto" }}>
       {/* OPRAVY 332: Ako to pokračuje — len zbierka farnosti (rodiny nie, Hlavná má vlastnú Správu) */}
-      {([[0, "Štatistiky"], [1, "Upraviť zbierku"], ...(zbFarnosti ? [[3, "Ako to pokračuje"]] : []), [2, "Ukončenie a poďakovanie"]] as [number, string][]).map(([i, t]) => <button key={t} type="button" role="tab" aria-selected={tab === i} onClick={() => setTab(i)} style={tabSt(tab === i)}>{t}</button>)}
+      {([[0, "Štatistiky"], [1, "Upraviť zbierku"], ...(zbFarnosti ? [[3, "Ako to pokračuje"]] : []), [2, "Ukončenie a poďakovanie"], ...(aktivna ? [[5, "QR"]] : [])] as [number, string][]).map(([i, t]) => <button key={t} type="button" role="tab" aria-selected={tab === i} onClick={() => setTab(i)} style={tabSt(tab === i)}>{t}</button>)}
     </div>
 
     {tab === 0 && <>
@@ -199,6 +201,7 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat, menoSt
     </>}
 
     {tab === 3 && zbFarnosti && <PostupZbierky z={z} aktivna={aktivna} mobil={mobil} />}
+    {tab === 5 && <QrZalozka strankaId={stranka} meno={menoStranky ?? ""} id={z.id} mobil={mobil} onTlac={onTlacQr} />}
 
     {/* OPRAVY 314 (B): Ukončenie a poďakovanie */}
     {tab === 2 && (hotovo ? (

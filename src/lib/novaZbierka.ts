@@ -147,6 +147,14 @@ export async function ulozKonceptZbierky(stranka: string, d: NovaZbierkaData | n
   if (supabase) await supabase.from("profil_stranky").upsert({ stranka, koncept_zbierky: await bezDataUrl(d, "zbierky"), koncept_zbierky_cas: d ? new Date().toISOString() : null }, { onConflict: "stranka" });
 }
 
+/** OPRAVY 347: komu patrí zbierka (QR /z/{id}) — verejný pohľad zbierka_verejna (0069b); bez DB len z pamäte */
+export async function strankaZbierky(id: string): Promise<string | null> {
+  for (const [st, l] of spustene) if (l.some((z) => z.id === id)) return st;
+  if (!supabase) return null;
+  const { data, error } = await supabase.from("zbierka_verejna").select("stranka").eq("id", id).maybeSingle();
+  return !error && data ? (data as { stranka: string }).stranka : null;
+}
+
 export async function nacitajZbierkyStranky(stranka: string): Promise<SpustenaZbierka[]> {
   if (supabase) {
     const dotaz = (stlpce: string) => supabase!.from("zbierka").select(stlpce).eq("stranka", stranka).order("vytvorene", { ascending: false });
