@@ -3,7 +3,9 @@
 // Hore zbalený riadok duchovného (slovo podľa cirkvi), pod ním „Kto spravuje stránku …“ a pridávanie ľudí v 2 krokoch.
 // Duchovný nemusí mať účet v DEED („Vypĺňam za …“ → v zozname „bez účtu v DEED“, ten kto vypĺňa = Správca stránky · vy).
 // Úložisko ako Správcovia charity (karta 35): nastavenia_stranky (0050), kľúče „duch“ a „ludia“ — ukladá sa samo.
-// PLACEBO — karta 61 §1: pozvánky (e-mail, QR odkaz 48 h, Prijať / Potvrdiť) sú zatiaľ len v zozname, práva rolí server ešte nevynucuje.
+// PLACEBO — karta 61 §1: pozvánky (e-mail, QR odkaz 48 h, Prijať / Potvrdiť) sú zatiaľ len v zozname.
+// OPRAVY 380 (0120): človek pozvaný e-mailom s rolou, ktorá smie spravovať (všetky okrem kostolníka, koordinátora detí a účtovníka),
+// je na serveri správca stránky, kým je v zozname — odobratím práva stráca.
 // ============================================================
 import { DOMENA_MAILU } from "@/lib/kontakty";
 import { ADRESA } from "@/lib/adresa";
