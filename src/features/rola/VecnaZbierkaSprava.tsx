@@ -93,6 +93,18 @@ export function VecnaSprava({ strankaId, meno, z: z0, nova, mobil, onSpat, onTla
     tm.current = window.setTimeout(() => { setUlozene("uklada"); void ulozVecnu(strankaId, z).then((e) => { setUlozene(e ? "chyba" : "ok"); setChybaT(e ?? ""); }); }, 700);
     return () => window.clearTimeout(tm.current);
   }, [z.plagatFoto, z.plagatText, z.podakovanie, z.stav]); // eslint-disable-line react-hooks/exhaustive-deps
+  // OPRAVY 363: Nastavenie aj po spustení — ukazovať hodnotu darov a cieľ v €; uloží sa na server, odozva v karte
+  const [cielT, setCielT] = useState(z.ciel ? String(z.ciel) : "");
+  const [nastUl, setNastUl] = useState<{ s: "uklada" | "ok" | "chyba"; t?: string } | null>(null);
+  const tmN = useRef<number | undefined>(undefined);
+  const ulozNast = (zmena: Partial<VecnaZbierka>, hned: boolean) => {
+    const n = { ...z, ...zmena };
+    setZ(n);
+    window.clearTimeout(tmN.current);
+    const uloz = () => { setNastUl({ s: "uklada" }); void ulozVecnu(strankaId, n).then((e) => setNastUl(e ? { s: "chyba", t: e } : { s: "ok" })); };
+    if (hned) uloz(); else tmN.current = window.setTimeout(uloz, 700);
+  };
+  useEffect(() => () => window.clearTimeout(tmN.current), []);
   const pr = usePrehladDarov(strankaId, z);
   const [vsetci, setVsetci] = useState(false);
   const aktivna = z.stav === "aktivna";
@@ -149,6 +161,19 @@ export function VecnaSprava({ strankaId, meno, z: z0, nova, mobil, onSpat, onTla
     {/* OPRAVY 347: QR a jeden plagát pre všetky QR (náhľad, text, fotka, PDF) */}
     {aktivna && <section style={karta}><b style={{ fontSize: 18 }}>QR a plagát</b><QrZalozka strankaId={strankaId} meno={meno} id={z.id} mobil={mobil} onTlac={onTlacQr} />
       {nova && <button type="button" onClick={onSpat} style={{ ...tlObr, borderColor: "var(--gBd)", color: "var(--gInk)" }}>Hotovo · späť do Správy</button>}</section>}
+    {aktivna && <section style={karta}>
+      <b style={{ fontSize: 18 }}>Nastavenie</b>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <span style={nad}>Ukazovať hodnotu darov na stránke?</span>
+        <AnoNie value={z.ukazHodnotu} onChange={(v) => ulozNast({ ukazHodnotu: v }, true)} label="Ukazovať hodnotu darov na stránke" siroke />
+      </div>
+      <span style={pozn}>{z.ukazHodnotu ? "Áno: darca môže napísať približnú hodnotu, pri ňom „10 €“, hore spolu." : "Nie: darca sa na hodnotu ani nepýta, na stránke sú len mená."}</span>
+      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={nad}>Cieľ v hodnote €{nepov}</span><input inputMode="numeric" value={cielT} maxLength={7} onChange={(e) => {
+        const t = e.target.value.replace(/[^\d\s]/g, ""); setCielT(t);
+        const c = Number(t.replace(/\s/g, "")); ulozNast({ ciel: c > 0 ? Math.round(c) : null }, false);
+      }} placeholder="napr. 1 000" style={pole} /></label>
+      {nastUl && <span role={nastUl.s === "chyba" ? "alert" : "status"} style={{ fontSize: 14, fontWeight: 800, color: nastUl.s === "chyba" ? "#A34A2A" : nastUl.s === "ok" ? "var(--gInk)" : "var(--ink3)" }}>{nastUl.s === "uklada" ? "Ukladá sa…" : nastUl.s === "ok" ? "Uložené ✓" : `Neuložilo sa. ${nastUl.t ?? ""}`}</span>}
+    </section>}
     <section style={karta}>
       <b style={{ fontSize: 18 }}>Darcovia{pr.pocet ? ` · ${pr.ludi}` : ""}</b>
       {pr.pocet === 0 ? <span style={pozn}>Zatiaľ sa nikto nezapísal. Darca vec vhodí do krabice a naskenuje QR na plagáte.</span> : <>

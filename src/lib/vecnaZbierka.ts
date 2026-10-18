@@ -32,7 +32,11 @@ const posl = new Set<() => void>();
 const zmena = () => { verzia++; posl.forEach((f) => f()); };
 export function useZmenyVecnych(): number { return useSyncExternalStore((f) => { posl.add(f); return () => { posl.delete(f); }; }, () => verzia); }
 
-export const vecneZbierky = (stranka: string): VecnaZbierka[] => nacitajStav<VecnaZbierka[]>("vecne", stranka, []);
+/** OPRAVY 363: staršie vecné zbierky bez voľby „Ukazovať hodnotu“ = Áno (ako na serveri, 0112) */
+export const vecneZbierky = (stranka: string): VecnaZbierka[] => {
+  const l = nacitajStav<VecnaZbierka[]>("vecne", stranka, []);
+  return l.some((z) => z.ukazHodnotu == null) ? l.map((z) => (z.ukazHodnotu == null ? { ...z, ukazHodnotu: true } : z)) : l;
+};
 export const vecnaZbierka = (stranka: string, id: string) => vecneZbierky(stranka).find((z) => z.id === id) ?? null;
 export const fotoVecnej = (z: VecnaZbierka) => z.media.find((m) => m.typ === "foto")?.src;
 /** QR na plagáte: stránka farnosti a hneď okno „Darovali ste?“ */
