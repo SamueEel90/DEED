@@ -679,7 +679,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     { k: "brigady", t: "Brigády a služby", s: "blok Pomôž na stránke · brigáda, služba pri omši", d: IC.brigada, el: () => <BrigadyFarnosti strankaId={strankaId} mobil={mobil} /> },
     { k: "deti", t: "Deti a mládež", s: "stretnutia · blok Deti a mládež na stránke", d: IC.dieta, el: () => <DetiMladezFarnosti strankaId={strankaId} mobil={mobil} /> },
     { k: "darcovia", t: "Darcovia", s: "mená bez súm · bez mena = Bohu známy veriaci", d: IC.zbierky, el: darcoviaEl },
-    { k: "sledujuci", t: "Sledujúci", s: "koľko ľudí sleduje farnosť a jednotlivé kostoly", d: IC.verejny, el: () => <SledujuciFarnosti kostoly={kostoly} pocty={sledM} mobil={mobil} /> },
+    { k: "sledujuci", t: "Sledujúci", s: "koľko ľudí sleduje farnosť a jednotlivé kostoly", d: IC.verejny, el: () => <SledujuciFarnosti strankaId={strankaId} kostoly={kostoly} pocty={sledM} mobil={mobil} /> },
   ];
   const ludia = dlazdice("ludia", "Správcovia farnosti, dobrovoľníci a darcovia", lLud);
   // KARTA 57 B.1: Nástroje a štatistiky — sledujúci, darcovia, QR do kostola

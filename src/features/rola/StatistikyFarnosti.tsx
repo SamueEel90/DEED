@@ -1,7 +1,8 @@
 // ============================================================
 // OPRAVY 345 — Správa farnosti → Nástroje a štatistiky → Štatistiky (podľa Štatistík charity, bez štítu, sektorov,
 // dokladov načas a Dorovnané partnermi). Obdobie Dnes · 7 dní · 30 dní · Rok, „Dary cez DEED+.“
-// 8 rámcov, PODĽA ZBIEROK, PODĽA MESIACOV. Len skutočné čísla — čo appka ešte nevie spočítať, má „—“ a vetu.
+// 8 rámcov, PODĽA ZBIEROK, PODĽA MESIACOV. Len skutočné čísla — počty darcov, sledujúcich a podiel zo zbierok rodiny
+// dáva server (0107); kým ich nedá, je pod nadpisom „—“ bez vety (odpovede 18. 10.).
 // Zdroje: Hlavná (dary bez riadkov omší), Zvončeková (uzavreté omše + bežiaca), ďalšie zbierky farnosti, príspevky veriacich.
 // ============================================================
 import { useState, type CSSProperties } from "react";
@@ -12,6 +13,7 @@ import { odFarnikov, useOdFarnikov } from "@/lib/odFarnikov";
 import { sumaEur } from "@/lib/suma";
 import { NADPIS_SEKCIE } from "./KartaNastavenia";
 import { textovePdf, stiahniBlob, type RiadokPdf } from "@/lib/textovePdf";
+import { useStatistikyFarnosti, statistikyFarnosti } from "@/lib/statistikyFarnosti";
 
 const OBD = ["Dnes", "7 dní", "30 dní", "Rok"];
 const OBD_T = ["za dnes", "za 7 dní", "za 30 dní", "od januára"];
@@ -49,19 +51,16 @@ export function StatistikyFarnosti({ strankaId, mobil }: { strankaId: string; mo
   const vsetko = useDaryFarnosti(strankaId);
   const v = vsetko.filter((x) => x.cas >= od);
   const suma = v.reduce((a, x) => a + x.suma, 0), pocet = v.reduce((a, x) => a + x.darov, 0);
-  // darcovia: registrovaní podľa mena, ostatní každý dar zvlášť (zvončeková omša má len súčet)
-  const prvy = new Map<string, number>();
-  vsetko.forEach((x) => { if (x.kto) prvy.set(x.kto, Math.min(prvy.get(x.kto) ?? Infinity, x.cas)); });
-  const noviN = [...prvy.values()].filter((c) => c >= od).length;
+  const srv = useStatistikyFarnosti(strankaId, od);
   const prispevky = odFarnikov(strankaId).filter((x) => x.k !== "umysel" && !x.stav && x.cas >= od).length;
   const ramce: [string, string, string][] = [
     ["Vyzbierané", eur(suma), OBD_T[ob]],
     ["Počet darov", String(pocet), OBD_T[ob]],
     ["Priemerný dar", pocet ? eur(suma / pocet) : "—", pocet ? OBD_T[ob] : "zatiaľ žiadne dary"],
-    ["Noví darcovia", String(noviN), OBD_T[ob]],
-    ["Pravidelná podpora", "—", "zapnutá na hlavnej zbierke · počet pripravujeme"],
-    ["Darcovia spolu", String(prvy.size), "od začiatku"],
-    ["Sledujúci", "—", "počet pripravujeme"],
+    ["Noví darcovia", srv ? String(srv.noviDarcovia) : "—", srv ? OBD_T[ob] : ""],
+    ["Pravidelná podpora", srv?.pravidelna != null ? String(srv.pravidelna) : "—", srv?.pravidelna != null ? "zapnutá na hlavnej zbierke" : ""],
+    ["Darcovia spolu", srv ? String(srv.darciaSpolu) : "—", srv ? "od začiatku" : ""],
+    ["Sledujúci", srv ? String(srv.sledujuci) : "—", srv ? `+${srv.sledujuciNovi30} za 30 dní` : ""],
     ["Príspevky od veriacich", String(prispevky), `${OBD_T[ob]} · na stránke`],
   ];
   const zSumy = (z: Polozka["zdroj"]) => v.filter((x) => x.zdroj === z).reduce((a, x) => a + x.suma, 0);
@@ -70,7 +69,7 @@ export function StatistikyFarnosti({ strankaId, mobil }: { strankaId: string; mo
     ["Hlavná zbierka", `stála, aj mesačne · ${darov(zPocet("hlavna"))}`, eur(zSumy("hlavna"))],
     ["Zvončeková zbierka", `pri omšiach · ${darov(zPocet("zvoncek"))}`, eur(zSumy("zvoncek"))],
     ["Ďalšie zbierky farnosti", `oprava, misie, lavice · ${darov(zPocet("dalsie"))}`, eur(zSumy("dalsie"))],
-    ["Podiel farnosti zo zbierok rodiny", "pohreb, svadba · len podiel, nie sumy rodiny · pripravujeme", "—"],
+    ["Podiel farnosti zo zbierok rodiny", "pohreb, svadba · len podiel, nie sumy rodiny", srv ? eur(srv.podielRodiny) : "—"],
   ];
   // graf: tento rok po mesiacoch
   const rok = new Date().getFullYear(), odRoka = new Date(rok, 0, 1).getTime();
@@ -123,7 +122,9 @@ export function StatistikyFarnosti({ strankaId, mobil }: { strankaId: string; mo
 // ============================================================
 // OPRAVY 346 · Ľudia → Sledujúci: len počty, nikdy mená (farár nesmie nikoho naháňať)
 // ============================================================
-export function SledujuciFarnosti({ kostoly, pocty, mobil }: { kostoly: { id: string; nazov: string }[]; pocty: Record<string, number> | null; mobil: boolean }) {
+export function SledujuciFarnosti({ strankaId, kostoly, pocty, mobil }: { strankaId: string; kostoly: { id: string; nazov: string }[]; pocty: Record<string, number> | null; mobil: boolean }) {
+  const [od] = useState(() => Date.now() - 30 * 864e5);
+  const srv = useStatistikyFarnosti(strankaId, od);
   const ramec = (k: string, h: string, d: string) => (
     <div key={k} style={{ minWidth: 0, padding: "12px 14px", borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", display: "flex", flexDirection: "column", gap: 2 }}>
       <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink3)" }}>{k}</span>
@@ -132,8 +133,8 @@ export function SledujuciFarnosti({ kostoly, pocty, mobil }: { kostoly: { id: st
     </div>);
   return <>
     <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>
-      {ramec("Sledujú farnosť", "—", "počet pripravujeme")}
-      {ramec("Noví za 30 dní", "—", "počet pripravujeme")}
+      {ramec("Sledujú farnosť", srv ? String(srv.sledujuci) : "—", "")}
+      {ramec("Noví za 30 dní", srv ? String(srv.sledujuciNovi30) : "—", "")}
     </div>
     <span style={kicker}>PODĽA KOSTOLOV</span>
     <section style={{ borderRadius: mobil ? 18 : 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: mobil ? "4px 14px" : "6px 20px" }}>
@@ -164,6 +165,7 @@ export function RocnyVypis({ strankaId, meno, mobil, prispela }: { strankaId: st
       const v = vsetko.filter((x) => new Date(x.cas).getFullYear() === r), pr = prispela.filter((x) => new Date(x.cas).getFullYear() === r);
       const spolu = v.reduce((a, x) => a + x.suma, 0), pocet = v.reduce((a, x) => a + x.darov, 0);
       const darcovia = new Set(v.filter((x) => x.kto).map((x) => x.kto)).size;
+      const srv = await statistikyFarnosti(strankaId, new Date(r, 0, 1).getTime(), new Date(r + 1, 0, 1).getTime()); // podiel zo zbierok rodiny za rok (0107)
       const sum = (f: (x: Polozka) => boolean) => eur(v.filter(f).reduce((a, x) => a + x.suma, 0));
       const dalsie = [...new Set(v.filter((x) => x.zdroj === "dalsie").map((x) => x.zbierka ?? ""))];
       const riadky: RiadokPdf[] = [
@@ -180,8 +182,8 @@ export function RocnyVypis({ strankaId, meno, mobil, prispela }: { strankaId: st
         { t: "POČET DAROV A DARCOV", tucne: true, medzera: 14 },
         { t: "Počet darov", v: String(pocet) },
         { t: "Darcovia (registrovaní podľa mena, ostatní podľa darov)", v: String(darcovia + v.filter((x) => !x.kto).length) },
-        { t: "PODIEL FARNOSTI ZO ZBIEROK RODINY", tucne: true, medzera: 14 },
-        { t: "Údaj pripravujeme." },
+        // riadok bez údaja sa nevypíše (odpovede 18. 10.)
+        ...(srv ? [{ t: "PODIEL FARNOSTI ZO ZBIEROK RODINY", tucne: true, medzera: 14 }, { t: "Pohreb, svadba · len podiel farnosti", v: eur(srv.podielRodiny) }] : []),
         { t: "DARY FARNOSTI INÝM", tucne: true, medzera: 14 },
         ...(pr.length ? pr.map((x) => ({ t: `${new Date(x.cas).toLocaleDateString("sk-SK")} · ${x.nazov} · ${x.kto}${x.vs ? ` · doklad č. ${x.vs}` : ""}`, v: eur(x.suma) })) : [{ t: "Žiadne." }]),
       ];
