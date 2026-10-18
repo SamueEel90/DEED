@@ -8,6 +8,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { nacitajStav, ulozStav, ulozStavLokalne, obnovOblast } from "@/features/viera/stav";
 import { supabase } from "./supabase";
+import { ukazChybuPriTuku } from "./chybaPriTuku";
 
 export type PoleReakcieF = "ucast" | "sustrast" | "blaho" | "spomin";
 export interface ReakcieF { ucast?: string[]; sustrast?: string[]; blaho?: string[]; /** Spomínam (pohrebná zbierka) */ spomin?: string[]; /** kľúč účtu → meno (Kto sa prihlásil) */ mena?: Record<string, string> }
@@ -35,8 +36,12 @@ export function prepniReakciuF(id: string, ref: string, pole: PoleReakcieF, kto:
   };
   if (supabase) { // OPRAVY 372: na serveri len cez reakcia_f (kľúč účtu dosadí server)
     ulozStavLokalne("reakcie", id, f(mapa(id))); zmena();
+    const znova = () => { if ((reakcieF(id, ref)[pole] ?? []).includes(kto) !== chce) prepniReakciuF(id, ref, pole, kto, meno); };
     void Promise.resolve(supabase.rpc("reakcia_f", { p_stranka: id, p_ref: ref, p_pole: pole, p_chce: chce, p_meno: meno ?? null }))
-      .then(() => obnovOblast("reakcie", id), () => obnovOblast("reakcie", id)).then(() => zmena(), () => zmena());
+      .then((r) => r.error, () => true).then(async (chyba) => {
+        await obnovOblast("reakcie", id).catch(() => false); zmena();
+        if (chyba) ukazChybuPriTuku(znova); // OPRAVY 382
+      });
     return;
   }
   ulozStav("reakcie", id, f(mapa(id))); zmena();

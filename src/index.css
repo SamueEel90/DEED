@@ -272,3 +272,9 @@ input, textarea, select, [contenteditable], [contenteditable] *, .ftext, .ftext 
 html.dark .zmazane-miesto { background: #1E2B17; border-color: #6FA052; color: #BFE0A8; box-shadow: 0 6px 20px rgba(0,0,0,.45); }
 @keyframes zmazane-in { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .zmazane-miesto { animation: none; } }
+
+/* OPRAVY 382 · reakcia / nahlásenie sa neuložili — hláška pri tlačidle (lib/chybaPriTuku.ts) */
+.chyba-pri-tuku { position: fixed; z-index: 10001; box-sizing: border-box; min-height: 48px; padding: 10px 14px; border-radius: 12px; border: 2px solid #A34A2A;
+  background: #F6E3DC; color: #7A2E17; font-family: inherit; font-weight: 800; font-size: 15px; line-height: 1.3; text-align: center; cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0,0,0,.14); }
+html.dark .chyba-pri-tuku { background: #3A1E16; border-color: #C9694A; color: #F2C3B1; box-shadow: 0 6px 20px rgba(0,0,0,.45); }

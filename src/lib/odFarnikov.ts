@@ -7,6 +7,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { nacitajStav, ulozStav, ulozStavIsto, ulozStavLokalne, obnovOblast } from "@/features/viera/stav";
 import { zaregistrujKluc, zmenene } from "./mojeData";
+import { ukazChybuPriTuku } from "./chybaPriTuku";
 import { supabase } from "./supabase";
 
 export type DruhFarnika = "parte" | "svadba" | "ine" | "oznam" | "udalost" | "umysel" | "fotky" | "modlitba";
@@ -98,7 +99,8 @@ export function prepniVPolozke(id: string, pid: string, pole: PoleReakcie, kto: 
   // OPRAVY 372: na serveri len cez odf_reaguj / odf_nahlas (kľúč účtu dosadí server)
   const naServer = pole === "nahlasili" ? (supabase ? () => supabase!.rpc("odf_nahlas", { p_stranka: id, p_id: pid }) : null)
     : supabase ? () => supabase!.rpc("odf_reaguj", { p_stranka: id, p_id: pid, p_pole: pole, p_chce: chce, p_meno: meno ?? null }) : null;
-  (naServer ? (f: (l: PolozkaFarnika[]) => PolozkaFarnika[]) => cezServer(id, f, naServer) : (f: (l: PolozkaFarnika[]) => PolozkaFarnika[]) => zmenZoznam(id, f))((l) => l.map((y) => {
+  // OPRAVY 382: keď server odmietne, pri tlačidle „Nepodarilo sa · Skúsiť znova“
+  (naServer ? (f: (l: PolozkaFarnika[]) => PolozkaFarnika[]) => { void cezServer(id, f, naServer).then((e) => { if (e) ukazChybuPriTuku(() => prepniVPolozke(id, pid, pole, kto, len, meno)); }); } : (f: (l: PolozkaFarnika[]) => PolozkaFarnika[]) => zmenZoznam(id, f))((l) => l.map((y) => {
     if (y.id !== pid) return y;
     const z = (y[pole] ?? []).filter((k) => k !== kto);
     return { ...y, [pole]: chce ? [...z, kto] : z, ...(meno && chce ? { mena: { ...y.mena, [kto]: meno } } : {}) };
@@ -112,7 +114,7 @@ export function nahlasOdFarnika(id: string, pid: string, kto: string, dovod?: st
     const d = dovod?.trim().slice(0, 200);
     return { ...y, nahlasili: [...(y.nahlasili ?? []), kto], nahlInfo: [...(y.nahlInfo ?? []), { cas: Date.now(), ...(d ? { dovod: d } : {}) }] };
   });
-  if (supabase) { cezServer(id, f, () => supabase!.rpc("odf_nahlas", { p_stranka: id, p_id: pid, p_dovod: dovod?.trim().slice(0, 200) || null })); return; }
+  if (supabase) { void cezServer(id, f, () => supabase!.rpc("odf_nahlas", { p_stranka: id, p_id: pid, p_dovod: dovod?.trim().slice(0, 200) || null })).then((e) => { if (e) ukazChybuPriTuku(() => nahlasOdFarnika(id, pid, kto, dovod)); }); return; }
   zmenZoznam(id, f);
 }
 /** OPRAVY 339: farár — V poriadku · ponechať: štítok NAHLÁSENÉ zmizne, nahlasovatelia dostanú správu (0105) */
