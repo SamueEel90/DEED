@@ -3,12 +3,14 @@
 // akcie priamo v ozname · agregácia malých darov do súhrnu (povinná).
 // Nastavenia: hlavný vypínač · každá položka V APPKE a NA DISPLEJ · zbalené kategórie · strop 3 denne ·
 // večerný súhrn · tichý čas. Tá istá obrazovka je aj v Nastavenia → Oznámenia (jeden komponent, dva vstupy).
+import { TlZbalit } from "@/features/verejny-profil/zbalit";
 import { sZnackou } from "@/components/DeedZnacka";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { zaregistrujKluc, zmenene } from "@/lib/mojeData";
 import { createPortal } from "react-dom";
 import type { Notifikacia, NotifAkciaKod, NotifIkona, NotifTon } from "@/types";
 import { useNotifikacie } from "@/data";
+import { otvorOverenie } from "@/lib/overeniePrijemcu";
 import { useVrstva } from "@/lib/urlnav";
 import { SpatTlacidlo } from "@/components/cesta";
 import { useNastaveniaAppky, zmenNastavenia, nacitajNastavenia } from "@/lib/nastaveniaAppky";
@@ -26,6 +28,8 @@ import "@/styles/platba.css";
 import { MojeFarnostiUpozornenia } from "./MojeFarnostiUpozornenia";
 import { mojeCakajuce, obnovMojeCakajuce, odFarnikov, useOdFarnikov } from "@/lib/odFarnikov";
 import { nazovFarnosti } from "@/lib/mojeFarnosti";
+import { otvorSpravuNa } from "@/lib/mojeStranky";
+import { otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
 
 export { NOTIFY } from "./mock";
 
@@ -54,20 +58,28 @@ function oznamyNaRiadky(oz: OznamDarcovi[]): Notifikacia[] {
     const d = new Date(o.datum), dni = Math.round((new Date(new Date().toDateString()).getTime() - new Date(d.toDateString()).getTime()) / 86400000);
     const den = dni <= 0 ? "Dnes" : dni === 1 ? "Včera" : `${d.getDate()}. ${d.getMonth() + 1}.`;
     return o.typ === "dolozene"
-      ? { id: -(i + 1), kat: "zbierky", ikona: "dok", ton: "g", den, titul: `${org} doložila tvoj dar`, text: `${z?.nazov ?? "Zbierka"} · pozri, na čo išli peniaze`, cas: relCas(Date.parse(o.datum)), nove: !o.precitane }
+      ? { id: -(i + 1), kluc: `oz:${o.id}`, kat: "zbierky", ikona: "dok", ton: "g", den, titul: `${org} doložila tvoj dar`, text: `${z?.nazov ?? "Zbierka"} · pozri, na čo išli peniaze`, cas: relCas(Date.parse(o.datum)), nove: !o.precitane }
       : o.typ === "vysledok"
-      ? { id: -(i + 1), kat: "zbierky", ikona: "dok", ton: "g", den, titul: `Výsledok zbierky ${z?.nazov ?? ""}`.trim(), text: o.text ?? "", cas: relCas(Date.parse(o.datum)), nove: !o.precitane }
-      : { id: -(i + 1), kat: "zbierky", ikona: "deed", ton: "b", den, titul: `Novinka: ${z?.nazov ?? "zbierka"}`, text: o.text ?? "", cas: relCas(Date.parse(o.datum)), nove: !o.precitane };
+      ? { id: -(i + 1), kluc: `oz:${o.id}`, kat: "zbierky", ikona: "dok", ton: "g", den, titul: `Výsledok zbierky ${z?.nazov ?? ""}`.trim(), text: o.text ?? "", cas: relCas(Date.parse(o.datum)), nove: !o.precitane }
+      : { id: -(i + 1), kluc: `oz:${o.id}`, kat: "zbierky", ikona: "deed", ton: "b", den, titul: `Novinka: ${z?.nazov ?? "zbierka"}`, text: o.text ?? "", cas: relCas(Date.parse(o.datum)), nove: !o.precitane };
   });
 }
 
-// prečítané / vybavené oznamy (lokálne, kým nie je Supabase)
-const KLUC_PREC = "deed.oznamy.precitane";
-const nacitajPrec = (): number[] => { try { return JSON.parse(localStorage.getItem(KLUC_PREC) || "[]"); } catch { return []; } };
-const ulozPrec = (x: number[]) => { try { localStorage.setItem(KLUC_PREC, JSON.stringify(x)); } catch { /* LS */ } zmenene(KLUC_PREC); };
-// prečítané = osobné → do účtu (moje_data, 0084b); po stiahnutí z účtu sa zvonček prepočíta
+// OPRAVY 342: prečítané a odstránené podľa stabilného kľúča (nie podľa poradia) — osobné → do účtu (moje_data, 0084b)
+const KLUC_PREC = "deed.oznamy.precitane2", KLUC_ODSTR = "deed.oznamy.odstranene";
+const KLUC_PREC_STARY = "deed.oznamy.precitane"; // pôvodné číselné id (db) → „db:{id}“
+const nacitajZoznam = (k: string): string[] => { try { const v = JSON.parse(localStorage.getItem(k) || "[]"); return Array.isArray(v) ? v.map(String) : []; } catch { return []; } };
+const nacitajPrec = (): string[] => {
+  const n = nacitajZoznam(KLUC_PREC);
+  const st = nacitajZoznam(KLUC_PREC_STARY).filter((x) => /^\d+$/.test(x) && Number(x) < 800000).map((x) => `db:${x}`);
+  return st.length ? [...new Set([...n, ...st])] : n;
+};
+const ulozZoznam = (k: string, x: string[]) => { try { localStorage.setItem(k, JSON.stringify(x.slice(-2000))); } catch { /* LS */ } zmenene(k); };
+export const klucOznamu = (n: Notifikacia) => n.kluc ?? `db:${n.id}`;
 const UDALOST_PREC = "deed:oznamy-precitane";
-zaregistrujKluc(KLUC_PREC, () => { try { window.dispatchEvent(new Event(UDALOST_PREC)); } catch { /* SSR */ } });
+const ohlasPrec = () => { try { window.dispatchEvent(new Event(UDALOST_PREC)); } catch { /* SSR */ } };
+zaregistrujKluc(KLUC_PREC, ohlasPrec);
+zaregistrujKluc(KLUC_ODSTR, ohlasPrec);
 
 // ============================================================
 // ZVONČEK — tlačidlo so zeleným počtom + celá obrazovka Oznámenia
@@ -76,8 +88,9 @@ export function Zvoncek({ color = "var(--c-textSec)", toast }: { color?: string;
   const { data: zakladne = [] } = useNotifikacie();
   const oznamy = useOznamyDarcom();
   const [otvor, setOtvor] = useState(false);
-  const [prec, setPrec] = useState<number[]>(nacitajPrec);
-  useEffect(() => { const f = () => setPrec(nacitajPrec()); window.addEventListener(UDALOST_PREC, f); return () => window.removeEventListener(UDALOST_PREC, f); }, []);
+  const [prec, setPrec] = useState<string[]>(nacitajPrec);
+  const [odstr, setOdstr] = useState<string[]>(() => nacitajZoznam(KLUC_ODSTR));
+  useEffect(() => { const f = () => { setPrec(nacitajPrec()); setOdstr(nacitajZoznam(KLUC_ODSTR)); }; window.addEventListener(UDALOST_PREC, f); return () => window.removeEventListener(UDALOST_PREC, f); }, []);
   const [detail, setDetail] = useState<OznamDarcovi | null>(null);
   const tlacidlo = useRef<HTMLButtonElement>(null);
   // karta 24 · 2i: oznámenia od firmy chodia aj sem (filter Zamestnávateľ) — len keď je user prepojený
@@ -85,7 +98,7 @@ export function Zvoncek({ color = "var(--c-textSec)", toast }: { color?: string;
   const firmy = useVazbyOsoby(ja.cisloUctu).filter((v) => v.stav === "potvrdeny");
   const mf = useMojaFirma();
   const odFirmy: Notifikacia[] = firmy.flatMap((v, fi) => dataFirmy(v.firmaUcet).oznamy.filter((o) => !mf.vybavene.includes(o.id)).map((o, i) => ({
-    id: 900000 + fi * 50 + i, kat: "firma" as const, den: "Dnes", cas: v.firma, ikona: o.typ === "kontrola" ? "otaz" as const : o.typ === "akcia" ? "kal" as const : "srd" as const,
+    id: 900000 + fi * 50 + i, kluc: `fi:${v.firmaUcet}:${o.id}`, kat: "firma" as const, den: "Dnes", cas: v.firma, ikona: o.typ === "kontrola" ? "otaz" as const : o.typ === "akcia" ? "kal" as const : "srd" as const,
     ton: o.typ === "kontrola" ? "gold" as const : "g" as const, titul: o.t, text: `${v.firma} · ${o.s}`, nove: o.typ === "kontrola" })));
   // OPRAVY 310: príspevok, ktorý čakal na schválenie — „Farár zverejnil váš príspevok“ / „Farár príspevok nezverejnil.“
   useOdFarnikov();
@@ -95,14 +108,32 @@ export function Zvoncek({ color = "var(--c-textSec)", toast }: { color?: string;
     if (!x || x.stav === "caka" || !x.rozhodnute) return [];
     const d = new Date(x.rozhodnute), dni = Math.round((new Date(new Date().toDateString()).getTime() - new Date(d.toDateString()).getTime()) / 86400000);
     const zver = !x.stav;
-    return [{ id: 800000 + i, kat: "ludia" as const, ikona: zver ? "ok" as const : "namiet" as const, ton: zver ? "g" as const : "gold" as const,
+    return [{ id: 800000 + i, kluc: `ofs:${c.stranka}:${c.id}:${x.rozhodnute}`, kat: "ludia" as const, ikona: zver ? "ok" as const : "namiet" as const, ton: zver ? "g" as const : "gold" as const,
       den: dni <= 0 ? "Dnes" : dni === 1 ? "Včera" : `${d.getDate()}. ${d.getMonth() + 1}.`, cas: relCas(x.rozhodnute),
-      titul: zver ? "Farár zverejnil váš príspevok ›" : "Farár príspevok nezverejnil.", text: `${c.t} · ${nazovFarnosti(c.stranka) || "farnosť"}`, nove: true }];
+      titul: zver ? "Farár zverejnil váš príspevok ›" : "Farár príspevok nezverejnil.", text: `${c.t} · ${nazovFarnosti(c.stranka) || "farnosť"}`, nove: true,
+      odkaz: `${zver ? "prisp" : "nezv"}:${c.stranka}:${c.id}` }];
   });
-  const vsetky = [...odFarara, ...oznamyNaRiadky(oznamy), ...odFirmy, ...zakladne];
-  const nove = vsetky.filter((n) => n.nove && !prec.includes(n.id)).length;
-  const oznac = (id: number) => setPrec((p) => { const n = p.includes(id) ? p : [...p, id]; ulozPrec(n); return n; });
+  const plne = [...odFarara, ...oznamyNaRiadky(oznamy), ...odFirmy, ...zakladne];
+  const vsetky = plne.filter((n) => !odstr.includes(klucOznamu(n)));
+  const nove = vsetky.filter((n) => n.nove && !prec.includes(klucOznamu(n))).length;
+  const oznac = (n: Notifikacia) => { const k = klucOznamu(n); setPrec((p) => { if (p.includes(k)) return p; const x = [...p, k]; ulozZoznam(KLUC_PREC, x); return x; }); };
+  const odstran = (kl: string[]) => setOdstr((p) => { const x = [...new Set([...p, ...kl])]; ulozZoznam(KLUC_ODSTR, x); return x; });
+  const vrat = (kl: string[]) => setOdstr((p) => { const x = p.filter((k) => !kl.includes(k)); ulozZoznam(KLUC_ODSTR, x); return x; });
   const zavri = () => { setOtvor(false); requestAnimationFrame(() => tlacidlo.current?.focus()); };
+  // OPRAVY 315: ťuk na upozornenie vždy niekam vedie — veriaci na svoj príspevok (alebo vysvetlenie), farár do Správy → Od veriacich
+  const [nezv, setNezv] = useState<{ stranka: string; t: string } | null>(null);
+  const naOdkaz = (n: Notifikacia) => {
+    const m = /^(odv|prisp|nezv|vz|ovp|str):([^:]+):(.+)$/.exec(n.odkaz ?? "");
+    oznac(n); setOtvor(false);
+    if (!m) return;
+    const [, druh, stranka, pid] = m;
+    if (druh === "odv") otvorSpravuNa({ stranka, sub: "veriaci", zvyrazni: pid });
+    else if (druh === "prisp") otvorVerejnyProfil(stranka, { doOznamu: pid });
+    else if (druh === "ovp") otvorOverenie(pid); // OPRAVY 338: kód od farára → overenie príjemcu (napíše kód, potvrdí rozdelenie)
+    else if (druh === "vz") otvorVerejnyProfil(stranka, { doVecnej: pid }); // OPRAVY 320: poďakovanie darcom vecnej zbierky → detail zbierky
+    else if (druh === "str") otvorVerejnyProfil(stranka); // OPRAVY 349: poďakovanie od farnosti → stránka farnosti
+    else setNezv({ stranka, t: mojeCakajuce().find((c) => c.id === pid)?.t ?? n.text });
+  };
   useVrstva(otvor, () => setOtvor(false));
   return (
     <>
@@ -111,27 +142,56 @@ export function Zvoncek({ color = "var(--c-textSec)", toast }: { color?: string;
         <Ik d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0" s={20} />
         {nove > 0 && <span aria-hidden="true" style={{ position: "absolute", top: 5, right: 4, minWidth: 16, height: 16, padding: "0 4px", borderRadius: 8, background: "var(--a-green)", color: "#fff", fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 0 2px var(--c-bg)" }}>{nove}</span>}
       </button>
-      {otvor && <OznameniaObrazovka zoznam={vsetky} prec={prec} onOznac={oznac}
-        onPrecitaj={() => { const n = vsetky.map((x) => x.id); setPrec(n); ulozPrec(n); oznacVsetkyPrecitane(); }}
-        onOznamDarcovi={(id) => { const o = oznamy[-id - 1]; if (!o) return; oznacPrecitany(o.id); zavri(); setDetail(o); }}
+      {otvor && <OznameniaObrazovka zoznam={vsetky} plne={plne} prec={prec} onOznac={oznac} onOdstran={odstran} onVrat={vrat}
+        onOdkaz={naOdkaz}
+        onPrecitaj={() => { const x = [...new Set([...prec, ...vsetky.map(klucOznamu)])]; setPrec(x); ulozZoznam(KLUC_PREC, x); oznacVsetkyPrecitane(); }}
+        onOznamDarcovi={(n) => { oznac(n); const o = oznamy[-n.id - 1]; if (!o) return; oznacPrecitany(o.id); zavri(); setDetail(o); }}
         onClose={zavri} toast={toast} />}
+      {nezv && createPortal(<div className="deed-platba" role="dialog" aria-modal="true" aria-label="Farár príspevok nezverejnil" style={{ position: "fixed", inset: 0, zIndex: 1200, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+        <div onClick={() => setNezv(null)} style={{ position: "absolute", inset: 0, background: "rgba(10,9,6,.55)" }} />
+        <div style={{ position: "relative", width: "min(560px, 100%)", boxSizing: "border-box", padding: "20px 18px max(20px, env(safe-area-inset-bottom))", borderRadius: "24px 24px 0 0", background: "var(--bg)", display: "flex", flexDirection: "column", gap: 12, color: "var(--ink)" }}>
+          <b style={{ fontSize: 20 }}>Farár príspevok nezverejnil</b>
+          <span style={{ fontSize: 15.5, fontWeight: 700 }}>{nezv.t}</span>
+          <span style={{ fontSize: 15, lineHeight: 1.5, color: "var(--ink2)" }}>Na stránke farnosti {nazovFarnosti(nezv.stranka).replace(/^Farnosť\s+/, "")} sa neukáže. O tom, čo sa na stránke zverejní, rozhoduje farár. Ak chcete vedieť prečo, obráťte sa na farský úrad.</span>
+          <button type="button" onClick={() => { const st = nezv.stranka; setNezv(null); otvorVerejnyProfil(st); }} style={{ minHeight: 52, borderRadius: 14, border: "1px solid var(--cardBd)", background: "var(--btn)", color: "var(--ink)", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" }}>Otvoriť stránku farnosti ›</button>
+          <button type="button" onClick={() => setNezv(null)} style={{ minHeight: 52, borderRadius: 14, border: "none", background: "var(--green)", color: "#fff", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" }}>Rozumiem</button>
+        </div>
+      </div>, document.body)}
       {detail && <OznamDarcoviSheet zbierkaId={detail.zbierkaId} typ={detail.typ} text={detail.text} onClose={() => setDetail(null)} />}
     </>
   );
 }
 
-function OznameniaObrazovka({ zoznam, prec, onOznac, onPrecitaj, onOznamDarcovi, onClose, toast }: {
-  zoznam: Notifikacia[]; prec: number[]; onOznac: (id: number) => void; onPrecitaj: () => void; onOznamDarcovi: (id: number) => void; onClose: () => void; toast?: (m: string) => void;
+function OznameniaObrazovka({ zoznam, plne, prec, onOznac, onOdstran, onVrat, onOdkaz, onPrecitaj, onOznamDarcovi, onClose, toast }: {
+  zoznam: Notifikacia[]; /** aj odstránené — práve odstránené ostáva na svojom mieste */ plne: Notifikacia[]; prec: string[]; onOznac: (n: Notifikacia) => void; onOdkaz: (n: Notifikacia) => void; onPrecitaj: () => void; onOznamDarcovi: (n: Notifikacia) => void; onClose: () => void; toast?: (m: string) => void;
+  /** OPRAVY 342: odstrániť / vrátiť (kľúče) */ onOdstran: (k: string[]) => void; onVrat: (k: string[]) => void;
 }) {
   const [f, setF] = useState<Notifikacia["kat"] | "vsetko">("vsetko");
   const [nast, setNast] = useState(false);
   const panel = useRef<HTMLDivElement>(null);
   useEffect(() => { panel.current?.focus(); }, []);
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key !== "Escape") return; if (nast) setNast(false); else onClose(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); });
-  const jeNovy = (n: Notifikacia) => !!n.nove && !prec.includes(n.id);
-  const L = zoznam.filter((n) => f === "vsetko" || n.kat === f);
+  const jeNovy = (n: Notifikacia) => !!n.nove && !prec.includes(klucOznamu(n));
+  // OPRAVY 342: × odstráni, 5 s na mieste „Oznámenie je odstránené · Vrátiť“; hromadne „Odstrániť prečítané · N“ s Vrátiť
+  const [zmazane, setZmazane] = useState<Notifikacia[]>([]);
+  const [hromadne, setHromadne] = useState<string[] | null>(null);
+  const [vsetkoOk, setVsetkoOk] = useState(false);
+  const tmZ = useRef(new Map<string, number>());
+  useEffect(() => () => { tmZ.current.forEach((t) => window.clearTimeout(t)); }, []);
+  const zmaz = (n: Notifikacia) => {
+    const k = klucOznamu(n); onOdstran([k]); setZmazane((l) => [...l.filter((x) => klucOznamu(x) !== k), n]);
+    tmZ.current.set(k, window.setTimeout(() => { setZmazane((l) => l.filter((x) => klucOznamu(x) !== k)); tmZ.current.delete(k); }, 5000));
+  };
+  const vratJeden = (n: Notifikacia) => { const k = klucOznamu(n); window.clearTimeout(tmZ.current.get(k)); tmZ.current.delete(k); onVrat([k]); setZmazane((l) => l.filter((x) => klucOznamu(x) !== k)); };
+  // zobrazený zoznam: aktuálne + práve odstránené (na svojom mieste, kým beží 5 s)
+  const jeZmazany = (n: Notifikacia) => zmazane.some((z) => klucOznamu(z) === klucOznamu(n));
+  const vZozname = new Set(zoznam.map(klucOznamu));
+  const zobraz = plne.filter((n) => vZozname.has(klucOznamu(n)) || jeZmazany(n));
+  const L = zobraz.filter((n) => f === "vsetko" || n.kat === f);
+  const precitane = zoznam.filter((n) => (f === "vsetko" || n.kat === f) && !jeNovy(n));
+  const noveN = zoznam.filter(jeNovy).length;
   const akcia = (n: Notifikacia, a: NotifAkciaKod) => {
-    onOznac(n.id);
+    onOznac(n);
     if (a === "odpovedat" && n.skutok) { onClose(); otvorPridatSkutok({ otazky: n.skutok.otazky, skutok: { nazov: n.skutok.nazov, popis: n.skutok.popis } }); }
     else if (a === "bol") toast?.("Potvrdené. Skutok sa ti pripíše do Moje skutky.");
     else if (a === "nebol") toast?.("Dobre, do skutku ťa nepridáme.");
@@ -145,9 +205,14 @@ function OznameniaObrazovka({ zoznam, prec, onOznac, onPrecitaj, onOznamDarcovi,
         <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 10, padding: "max(6px, env(safe-area-inset-top)) 16px 0", minHeight: 60 }}>
           <SpatTlacidlo onClick={onClose} />
           <h1 style={{ margin: 0, fontSize: 19, fontWeight: 800 }}>Oznámenia</h1>
-          {zoznam.some(jeNovy) && <button type="button" onClick={onPrecitaj} style={{ border: "none", background: "transparent", fontSize: 14, fontWeight: 700, color: "var(--green)", cursor: "pointer", padding: "12px 4px", whiteSpace: "nowrap", fontFamily: "inherit" }}>Prečítané</button>}
           <button type="button" onClick={() => setNast(true)} aria-label="Nastavenia oznámení" style={{ marginLeft: "auto", width: 44, height: 44, border: "none", borderRadius: 14, background: "var(--btn)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--ink2)", flex: "none" }}>
             <Ik d="M4 7h10M18 7h2M4 17h4M12 17h8M16 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM10 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4" s={20} /></button>
+        </div>
+        {/* OPRAVY 342: počet nových a Označiť všetko ako prečítané (odozva na tom istom mieste) */}
+        <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 10, padding: "4px 16px 8px", flexWrap: "wrap" }}>
+          <span role="status" style={{ flex: 1, fontSize: 13.5, color: "var(--ink3)" }}>{noveN ? `${noveN} ${noveN === 1 ? "nové" : noveN < 5 ? "nové" : "nových"}` : "nič nové"}</span>
+          {noveN > 0 ? <button type="button" onClick={() => { onPrecitaj(); setVsetkoOk(true); }} style={{ flex: "none", minHeight: 44, padding: "0 14px", borderRadius: 12, border: "1.5px solid var(--gBd)", background: "transparent", fontSize: 14, fontWeight: 800, color: "var(--gInk)", cursor: "pointer", fontFamily: "inherit" }}>Označiť všetko ako prečítané</button>
+            : vsetkoOk ? <span role="status" style={{ flex: "none", minHeight: 44, display: "flex", alignItems: "center", fontSize: 14, fontWeight: 800, color: "var(--gInk)" }}>Všetko prečítané ✓</span> : null}
         </div>
         <div role="group" aria-label="Filter oznámení" style={{ flex: "none", display: "flex", gap: 6, padding: "4px 16px 10px", overflowX: "auto", scrollbarWidth: "none" }}>
           {FILTRE.filter(([k]) => k !== "firma" || zoznam.some((x) => x.kat === "firma")).map(([k, t]) => { const on = f === k, n = zoznam.filter((x) => (k === "vsetko" || x.kat === k) && jeNovy(x)).length; return (
@@ -157,7 +222,15 @@ function OznameniaObrazovka({ zoznam, prec, onOznac, onPrecitaj, onOznamDarcovi,
         </div>
         <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}><div aria-live="polite" style={{ padding: "0 16px max(30px, env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 6 }}>
           {L.map((n, i) => {
-            const nv = jeNovy(n), [ibg, ic] = TON[n.ton], vybav = n.akcie && !prec.includes(n.id);
+            const nv = jeNovy(n), [ibg, ic] = TON[n.ton], vybav = n.akcie && !prec.includes(klucOznamu(n));
+            const den = (i === 0 || L[i - 1].den !== n.den) && <h2 style={{ margin: 0, fontSize: 12.5, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)", padding: "12px 2px 4px" }}>{n.den}</h2>;
+            if (jeZmazany(n)) return (
+              <div key={klucOznamu(n)}>{den}
+                <div role="status" style={{ minHeight: 56, padding: "8px 8px 8px 14px", borderRadius: 16, border: "1px dashed var(--cardBd)", display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ flex: 1, fontSize: 14, color: "var(--ink2)" }}>Oznámenie je odstránené</span>
+                  <button type="button" onClick={() => vratJeden(n)} style={{ flex: "none", minHeight: 44, padding: "0 14px", borderRadius: 12, border: "none", background: "var(--btn)", fontSize: 14, fontWeight: 800, color: "var(--ink)", cursor: "pointer", fontFamily: "inherit" }}>Vrátiť</button>
+                </div>
+              </div>);
             const obsah: ReactNode = <>
               <span aria-hidden="true" style={{ position: "relative", width: 40, height: 40, borderRadius: 12, background: ibg, color: ic, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Ik d={IKONA[n.ikona]} />
                 {nv && <span style={{ position: "absolute", top: -3, right: -3, width: 11, height: 11, borderRadius: "50%", background: "var(--green)", border: "2px solid var(--bg)" }} />}</span>
@@ -165,21 +238,26 @@ function OznameniaObrazovka({ zoznam, prec, onOznac, onPrecitaj, onOznamDarcovi,
                 <span style={{ display: "flex", alignItems: "baseline", gap: 6 }}><span style={{ fontSize: 15, fontWeight: nv ? 800 : 600, lineHeight: 1.3, flex: 1, minWidth: 0 }}>{nv && <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Nové: </span>}{n.titul}</span><span style={{ flex: "none", fontSize: 12.5, color: "var(--ink4)", whiteSpace: "nowrap" }}>{n.cas}</span></span>
                 <span style={{ display: "block", fontSize: 13.5, lineHeight: 1.45, color: "var(--ink2)", marginTop: 2 }}>{n.text}</span>
               </span></>;
-            const riadokSt = { display: "flex", gap: 12, alignItems: "flex-start", padding: 12, borderRadius: 16, background: nv ? "var(--card)" : "transparent", border: `1px solid ${nv ? "var(--gBd)" : "transparent"}`, color: "var(--ink)", textAlign: "left" as const, fontFamily: "inherit", width: "100%" };
+            const riadokSt = { flex: 1, minWidth: 0, display: "flex", gap: 12, alignItems: "flex-start", padding: "12px 0 12px 12px", border: "none", background: "transparent", color: "var(--ink)", textAlign: "left" as const, fontFamily: "inherit" };
             return (
-              <div key={n.id}>
-                {(i === 0 || L[i - 1].den !== n.den) && <h2 style={{ margin: 0, fontSize: 12.5, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)", padding: "12px 2px 4px" }}>{n.den}</h2>}
-                {vybav ? (
-                  <div style={riadokSt}>{obsah}</div>
-                ) : (
-                  <button type="button" onClick={() => (n.id < 0 ? onOznamDarcovi(n.id) : onOznac(n.id))} style={{ ...riadokSt, cursor: "pointer" }}>{obsah}</button>
-                )}
-                {vybav && <div style={{ display: "flex", gap: 6, flexWrap: "wrap", padding: "0 12px 10px 64px", marginTop: -4 }}>
+              <div key={klucOznamu(n)}>
+                {den}
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 4, paddingRight: 4, borderRadius: 16, background: nv ? "var(--card)" : "transparent", border: `1px solid ${nv ? "var(--gBd)" : "transparent"}` }}>
+                  {vybav ? <div style={riadokSt}>{obsah}</div>
+                    : <button type="button" onClick={() => (n.odkaz ? onOdkaz(n) : n.id < 0 ? onOznamDarcovi(n) : onOznac(n))} style={{ ...riadokSt, cursor: "pointer" }}>{obsah}</button>}
+                  <button type="button" onClick={() => zmaz(n)} aria-label="Odstrániť oznámenie" style={{ flex: "none", width: 44, height: 44, marginTop: 8, border: "none", borderRadius: 12, background: "transparent", color: "var(--ink3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><Ik d="M6 6l12 12M18 6L6 18" s={18} w={2.2} /></button>
+                </div>
+                {vybav && <div style={{ display: "flex", gap: 6, flexWrap: "wrap", padding: "0 12px 10px 64px", marginTop: 4 }}>
                   {n.akcie!.map((a) => { const [t, hl] = AKCIA[a]; return (
                     <button type="button" key={a} onClick={() => akcia(n, a)} style={{ minHeight: 44, padding: "0 16px", borderRadius: 12, fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", border: hl ? "none" : "1px solid var(--cardBd)", background: hl ? "var(--green)" : "var(--btn)", color: hl ? "#fff" : "var(--ink)" }}>{t}</button>); })}
                 </div>}
               </div>);
           })}
+          {hromadne && <div role="status" style={{ minHeight: 56, marginTop: 8, padding: "8px 8px 8px 14px", borderRadius: 16, background: "var(--gSoft)", border: "1.5px solid var(--gBd)", display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: "var(--gInk)" }}>Odstránené: {hromadne.length} ✓</span>
+            <button type="button" onClick={() => { onVrat(hromadne); setHromadne(null); }} style={{ flex: "none", minHeight: 44, padding: "0 14px", borderRadius: 12, border: "none", background: "var(--card)", fontSize: 14, fontWeight: 800, color: "var(--ink)", cursor: "pointer", fontFamily: "inherit" }}>Vrátiť</button>
+          </div>}
+          {precitane.length > 0 && <button type="button" onClick={() => { const k = precitane.map(klucOznamu); onOdstran(k); setHromadne(k); }} style={{ alignSelf: "center", marginTop: 12, minHeight: 48, padding: "0 18px", borderRadius: 14, border: "1px solid var(--cardBd)", background: "var(--card)", fontSize: 14.5, fontWeight: 800, color: "var(--ink)", cursor: "pointer", fontFamily: "inherit" }}>Odstrániť prečítané · {precitane.length}</button>}
           {!L.length && <div style={{ padding: "30px 10px", textAlign: "center", fontSize: 14.5, color: "var(--ink3)" }}>Tu zatiaľ nič nie je.</div>}
           <div style={{ textAlign: "center", fontSize: 13, color: "var(--ink4)", padding: "16px 0 4px" }}>To je všetko. Staršie oznámenia sa po 90 dňoch archivujú.</div>
         </div></div>
@@ -263,6 +341,7 @@ export function NastaveniaOznameni({ onBack }: { onBack: () => void }) {
                         <button type="button" role="switch" aria-checked={a} aria-label={`${t} v appke`} aria-disabled={!oz.master} onClick={() => prepni(t, "a")} style={{ justifySelf: "center", border: "none", boxShadow: "none", background: "transparent", padding: 9, margin: -9, cursor: oz.master ? "pointer" : "default" }}><Prep on={a} male /></button>
                         <button type="button" role="switch" aria-checked={pu} aria-label={`${t} na displej`} aria-disabled={!oz.master} onClick={() => prepni(t, "p")} style={{ justifySelf: "center", border: "none", boxShadow: "none", background: "transparent", padding: 9, margin: -9, cursor: oz.master ? "pointer" : "default" }}><Prep on={pu} male /></button>
                       </div>); })}
+                    <TlZbalit onZbal={() => setOtv((x) => x.filter((y) => y !== k.hl))} />{/* OPRAVY 321 */}
                   </div>}
                 </div>);
             })}
