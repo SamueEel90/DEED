@@ -66,7 +66,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   onZbierky: () => void; onDorovnanie?: () => void; onDarcovia?: () => void;
   /** KARTA 56B · hlavná zbierka farnosti: beží iná zbierka farnosti (zmazať sa nedá) · po zmazaní späť na Zbierky
    *  KARTA 56D §5: onHotovo = „Hotovo · späť do Správy" po spustení */
-  farnost?: { ostatneBezia: boolean; onZmazana: () => void; onHotovo: () => void };
+  farnost?: { ostatneBezia: boolean; onZmazana: () => void; onHotovo: () => void; /** OPRAVY 340b: Zmeniť účet = Nastavenia → Účet farnosti */ onZmenitUcet?: () => void };
 }) {
   useZmenySektorov(); useZmenyDarov();
   const sektory0 = useSektory();
@@ -161,8 +161,9 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
     <section style={kartaK}>
       <span style={nadpisK}>Účet</span>
       <div style={{ height: 48, padding: "0 14px", borderRadius: 12, border: "1.5px solid var(--cardBd)", background: "var(--field)", display: "flex", alignItems: "center", gap: 10, fontSize: 15, fontWeight: 700, color: "var(--ink2)" }}>{ZAMOK}<span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.ucet ?? hlavnyUcet}</span></div>
-      <span style={textK}>{farnost ? "Účet farnosti z registrácie." : "Hlavný účet organizácie z registrácie."}</span>
-      {ziadost ? <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--gInk)" }}>Žiadosť o zmenu účtu sme prijali {dnes(ziadost.podana)}. Posúdime ju do 2 pracovných dní.</span>
+      <span style={textK}>{farnost?.onZmenitUcet ? "Účet farnosti z Nastavení. Ten istý účet dostáva aj podiel zo zbierok s overovateľom." : farnost ? "Účet farnosti z registrácie." : "Hlavný účet organizácie z registrácie."}</span>
+      {farnost?.onZmenitUcet ? <button type="button" onClick={farnost.onZmenitUcet} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--green)", boxShadow: "none" }}>Zmeniť účet ›</button>
+      : ziadost ? <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--gInk)" }}>Žiadosť o zmenu účtu sme prijali {dnes(ziadost.podana)}. Posúdime ju do 2 pracovných dní.</span>
         : !ucOtv ? <button type="button" onClick={() => setUcOtv(true)} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--green)", boxShadow: "none" }}>Požiadať o zmenu účtu ›</button>
         : <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: 14, borderRadius: 14, background: "var(--panel)", border: "1px solid var(--cardBd)" }}>
           <b style={{ fontSize: 15 }}>Žiadosť o zmenu účtu</b>

@@ -2,7 +2,7 @@
 // KARTA 56D: Správa od prvého príchodu — všetky funkcie, žiadne ukážkové dáta (prototyp „Sprava farnosti - prvy prichod").
 // Profil, logo a percento = profil_stranky (ako charita), pripnuté = sprava_piny, hlavná zbierka = profil_stranky.centralna.
 // Omše, oznamy a nastavenia farnosti z modulu Viera (stav.ts — localStorage + zrkadlo naboz_stav) pod kľúčom stránky.
-import { UcetFarnostiKarta, useUcetFarnosti } from "./UcetFarnosti";
+import { UcetFarnostiKarta, UcetFarnostiNastavenia, useUcetFarnosti } from "./UcetFarnosti";
 import { VecnaNova, VecnaSprava } from "./VecnaZbierkaSprava";
 import { useVecneZbierky, fotoVecnej, doKedyText, type VecnaZbierka } from "@/lib/vecnaZbierka";
 import { NADPIS_SEKCIE } from "./KartaNastavenia";
@@ -194,6 +194,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   // OPRAVY 340: jeden účet farnosti (zadaný v Prehľade) pre Hlavnú zbierku aj podiel v zbierke s overovateľom
   const ucetF = useUcetFarnosti(strankaId);
   const hlavnyUcet = ucetF.iban || najdiTestProfil(strankaId)?.ucet || "hlavný účet farnosti z registrácie";
+  const otvorUcty = () => { setNId("ucty"); go("n"); };
   const ukazUcet = () => { go("prehlad"); window.setTimeout(() => document.querySelector("[data-ucet-farnosti]")?.scrollIntoView({ block: "start", behavior: "smooth" }), 80); };
   useZmenyZbierok();
   useEffect(() => { void nacitajZbierkyStranky(strankaId); }, [strankaId]);
@@ -375,7 +376,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
         {uplnost.pct < 100 && <span style={{ display: "block", height: 6, marginTop: 4, borderRadius: 3, background: "rgba(168,116,80,.25)", overflow: "hidden" }}><span style={{ display: "block", width: "100%", height: "100%", borderRadius: 3, background: "var(--green)", transformOrigin: "0 50%", transform: `scaleX(${uplnost.pct / 100})` }} /></span>}
       </span>
     </button>
-    <UcetFarnostiKarta strankaId={strankaId} mobil={mobil} />
+    <UcetFarnostiKarta strankaId={strankaId} mobil={mobil} onNastavenia={otvorUcty} />
     <div style={{ flex: "none", display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 10 }}>
       {DLAZDICE9.map(([k, t]) => { const v = k === "verejny"; return (
         <button key={k} type="button" onClick={() => (v ? verejny() : go(k))} style={{ position: "relative", minHeight: 96, padding: "8px 4px", borderRadius: 18, border: `1px solid ${v ? "var(--tBd)" : "var(--cardBd)"}`, background: v ? "var(--tBg)" : "var(--card)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, fontFamily: "inherit", boxShadow: "none" }}>
@@ -387,7 +388,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     {pripnute}
     {pinObsah}
     {cisla}
-  </> : <><UcetFarnostiKarta strankaId={strankaId} mobil={mobil} />{predPas}{pripnute}{pinObsah}{cisla}</>;
+  </> : <><UcetFarnostiKarta strankaId={strankaId} mobil={mobil} onNastavenia={otvorUcty} />{predPas}{pripnute}{pinObsah}{cisla}</>;
 
   // KARTA 56D §6 · OPRAVY 161: ďalšie zbierky stránky (zbierka farnosti / pre veriacich) — z účtu (tabuľka zbierka)
   const sprava = (m: string) => { setZbVyber(false); setZbBlok(false); setNoveOk(null); setZmazana(false); return m; };
@@ -640,12 +641,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     {nId === "predplatne" ? <PredplatneFarnosti strankaId={strankaId} meno={meno} mobil={mobil} onUdaje={() => setNId("udaje")} onMiesta={() => go("filialky")} />
       : nId === "notif" ? <ObrOznamenia mobil={!desktop} farnost />
       : nId === "udaje" ? <ObrUdaje mobil={!desktop} farnost={{ nazov: meno, cirkev: <CirkevFarnosti strankaId={strankaId} mobil={mobil} toast={toast} /> }} />
-      : nId === "ucty" ? <section style={{ ...karta, borderRadius: mobil ? 18 : 22, padding: mobil ? "14px 14px" : "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink3)" }}>overený pri registrácii</span>
-          <b style={{ fontSize: 18, letterSpacing: ".02em", overflowWrap: "anywhere" }}>{hlavnyUcet}</b>
-          <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>Na tento účet idú dary hlavnej zbierky, omšových zbierok aj ďalších zbierok farnosti. Účet sa nedá zmeniť v appke, na zmenu ho musíme znova overiť.</span>
-          <button type="button" onClick={() => setNId("podpora")} style={{ alignSelf: "flex-start", minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1.5px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>Zmeniť cez podporu</button>
-        </section>
+      : nId === "ucty" ? <UcetFarnostiNastavenia strankaId={strankaId} mobil={mobil} /> /* OPRAVY 340b: jediné miesto na zmenu účtu */
       : nId === "zariadenia" ? <ObrZariadenia mobil={!desktop} />
       : nId === "suhlasy" ? <ObrSuhlasy mobil={!desktop} otvor={(x) => setNId(x.replace(/^n:/, ""))} />
       : nId === "faq" ? <ObrFaq faq={faqFarnosti(SLF.titul)} otvor={(x) => setNId(x.replace(/^n:/, ""))} />
@@ -672,7 +668,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const novaEl = <NovaZbierka strankaId={strankaId} pozicia="charita" tier={4} nazov={meno} inicialy={meno.split(/\s+/).map((w) => w[0] ?? "").join("").slice(0, 2).toUpperCase()} mobil={mobil} tablet={tablet} stit="silver"
     onMojeZbierky={() => go("zbierky")} farnost={{ ucet: hlavnyUcet, onSpustena: (z) => { go("zbierky"); setNoveOk(`Zbierka „${z.nazov}“ beží. Nájdete ju nižšie v Ďalších zbierkach.`); } }} />;
   const hlavnaSprava = <SpravaCentralnej strankaId={strankaId} nazov={meno} hlavnyUcet={hlavnyUcet} tier={4} mobil={mobil} toast={toast}
-    onZbierky={() => setSub("zbierky")} farnost={{ ostatneBezia, onZmazana: () => { const n = [{ nazov: nazovHlavnej(hlavna), koniec: new Date().toISOString(), suma: hlavnySuhrn.suma }, ...archivH]; setArchivH(n); ulozStav("hlavnaArchiv", strankaId, n); setZmazana(true); go("zbierky"); }, onHotovo: () => go("prehlad") }} />;
+    onZbierky={() => setSub("zbierky")} farnost={{ ostatneBezia, onZmazana: () => { const n = [{ nazov: nazovHlavnej(hlavna), koniec: new Date().toISOString(), suma: hlavnySuhrn.suma }, ...archivH]; setArchivH(n); ulozStav("hlavnaArchiv", strankaId, n); setZmazana(true); go("zbierky"); }, onHotovo: () => go("prehlad"), onZmenitUcet: otvorUcty }} />;
   const obsah: Record<Sub, ReactNode> = { prehlad, zbierky, omse, oznamy, veriaci, ludia, filialky, penazenka, nastroje, profil, nahlad, hlavna: hlavnaSprava, zbierka: zbierkaEl, nova: novaEl, nast: nastavenia, n: nObr,
     zvoncek: <SpravaZvoncek strankaId={strankaId} mobil={mobil} toast={toast} onSpat={() => go("zbierky")} /> };
 

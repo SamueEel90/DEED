@@ -1400,7 +1400,7 @@ export function ObrNastavenia({ tier, otvor, mobil, farnost }: { tier: Tier; otv
     ["STRÁNKA", [{ t: "Zrušiť stránku charity", red: true, tap: nn("zrusit") }]],
   ];
   if (farnost) sekcie.splice(1, sekcie.length - 1,
-    ["PRÍJEM DAROV", [{ t: "Sumy pri daroch", s: "eurá a EURC · nastavujú sa pri hlavnej zbierke", tap: farnost.hlavna }, { t: "Účet farnosti", s: "hlavný účet z registrácie", tap: nn("ucty") }]],
+    ["PRÍJEM DAROV", [{ t: "Sumy pri daroch", s: "eurá a EURC · nastavujú sa pri hlavnej zbierke", tap: farnost.hlavna }, { t: "Účet farnosti", s: "IBAN, overenie a zmena účtu", tap: nn("ucty") }]],
     ["ĽUDIA", [{ t: "Ľudia farnosti", s: "kto spravuje stránku, pozvať ďalšieho", tap: farnost.ludia }]],
     ["FARNOSŤ", [{ t: "Údaje farnosti", s: "cirkev, patrí pod, kontakt a fakturačné údaje", tap: nn("udaje") }, { t: "Program a platba", s: "predplatné farnosti, filiálky, faktúry", tap: farnost.predplatne }]],
     ["BEZPEČNOSŤ A ÚDAJE", [{ t: "Prihlásené zariadenia", v: String(pocetZariadeni()), tap: nn("zariadenia") }, { t: "Súhlasy", s: "čo farnosť odsúhlasila", tap: nn("suhlasy") }]],
