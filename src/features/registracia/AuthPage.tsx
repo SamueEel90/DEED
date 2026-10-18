@@ -16,7 +16,7 @@ import { toast, Znacka, IkonaObalka, IkonaZamok, IkonaOko, IkonaOkoOff, IkonaSip
 import { signIn, signUp, resolveSession, resetHeslo, zmenHeslo } from "@/lib/auth";
 import type { TypUctu } from "@/types";
 import { PotvrdNoveZariadenie, LimitZariadeni } from "@/features/profil/Bezpecnost24";
-import { zariadenia, odKedy, MAX_ZARIADENI } from "@/lib/zariadenia";
+import { zariadenia, odKedy, MAX_ZARIADENI, OVERENIE_ZARIADENIA } from "@/lib/zariadenia";
 
 // 5 zlých pokusov o prihlásenie → 15 minút čakanie. Zadanie 3 · 3.5: počíta to LEN server
 // (Auth hook, migrácia 0042) — appka zobrazí jeho hlášku, sama nič nepočíta.
@@ -76,7 +76,7 @@ export function AuthPage({ onAuthed, onGuest, onPasivny, onRegistrovat, uvodnyRe
           if (res.kind === "resume") { onAuthed(res.authId, email.trim(), res.typ); return; }
           setChyba("Účet sa nepodarilo načítať. Skús znova.");
         };
-        if (jeNoveZariadenie()) { setBrana({ krok: "nove", dokonci }); return; }
+        if (jeNoveZariadenie()) { if (OVERENIE_ZARIADENIA) { setBrana({ krok: "nove", dokonci }); return; } odKedy(); }
         if (zariadenia().length > MAX_ZARIADENI) { setBrana({ krok: "limit", dokonci }); return; }
         await dokonci();
       } else {
