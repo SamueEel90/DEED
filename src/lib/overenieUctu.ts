@@ -47,8 +47,21 @@ export async function poziadajOverenie(stranka: string, iban: string): Promise<O
   return o;
 }
 
-/** DEV — simulácia prijatej overovacej platby (v produkcii to robí server) */
-export function simulujOverenie(stranka: string, iban: string) {
-  const o = overenieZPamate(stranka, iban); if (!o) return;
+/** DEV — simulácia prijatej overovacej platby (v produkcii to robí server).
+ *  OPRAVY 354: s DB zapíše overenie na server (dev_over_ucet, 0108 — len testovacia verzia), inak by ho kontrola
+ *  každých 5 s prepísala späť na „čaká“. Vráti chybu (text) alebo null. */
+export async function simulujOverenie(stranka: string, iban: string): Promise<string | null> {
+  const o = overenieZPamate(stranka, iban); if (!o) return "Žiadosť o overenie sa nenašla";
+  if (supabase) {
+    const { error } = await supabase.rpc("dev_over_ucet", { p_stranka: stranka, p_iban: cisty(iban) });
+    if (error) {
+      const m = error.message ?? "";
+      return error.code === "PGRST202" || error.code === "42883" || /could not find the function|does not exist/i.test(m) ? "Simulácia ešte nie je zapnutá na serveri"
+        : /len_testovacia/.test(m) ? "Simulácia ide len v testovacej verzii" : /nie_spravca/.test(m) ? "Overenie simuluje len správca stránky" : m || "Overenie sa nepodarilo";
+    }
+    const n = await nacitajOverenie(stranka, iban);
+    if (n?.stav === "overeny") return null;
+  }
   pamat.set(kluc(stranka, iban), { ...o, stav: "overeny", overene: new Date().toISOString() }); zmena();
+  return null;
 }
