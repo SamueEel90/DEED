@@ -90,7 +90,7 @@ export const TVORCA_DATA: TvorcaData = {
   odkazZbierky: "Husle pre Emku",
 };
 
-// ---------------- stránka streamu: deed.sk/z/{zbierka}?s={stream} ----------------
+// ---------------- stránka streamu: deedgood.eu/z/{zbierka}?s={stream} ----------------
 export interface StreamZbierkaData {
   id: string;
   nazov: string;
@@ -109,7 +109,7 @@ export interface StreamZbierkaData {
 }
 export interface StreamData {
   id: string;
-  /** kľúč zbierky (deed.sk/z/{zbierka}) */
+  /** kľúč zbierky (deedgood.eu/z/{zbierka}) */
   zbierka: string;
   tvorca: string;
   tvorcaKratko: string;

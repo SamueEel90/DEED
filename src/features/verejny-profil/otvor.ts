@@ -52,6 +52,9 @@ let qrCiel: QrCiel | null = null;
 /** cieľ z QR (číta sa bez mazania — StrictMode), zmaže zrusQrCiel */
 export const qrCielCitaj = (): QrCiel | null => qrCiel;
 export function zrusQrCiel() { qrCiel = null; }
+/** OPRAVY 356: QR farnosti (?qr=1) pre Nástenku farnosti — číta sa bez mazania (StrictMode), zmaže zrusQrHlavna */
+export const qrHlavnaCitaj = (): boolean => qrHlavna;
+export function zrusQrHlavna() { qrHlavna = false; }
 /** profil farnosti otvorený z QR farnosti: keď hlavná zbierka beží, otvor ju (raz) */
 export function useOtvorHlavnuZQr(stranka: string, farnost: boolean, otvor: () => void) {
   useZmenyCentralnej();

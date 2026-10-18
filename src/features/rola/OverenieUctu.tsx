@@ -18,6 +18,7 @@ export function useOverenieUctu(stranka: string, iban: string) {
 export function OverenieUctu({ stranka, iban, ph }: { stranka: string; iban: string; ph?: boolean }) {
   const o = useOverenieUctu(stranka, iban);
   const [skop, setSkop] = useState(false);
+  const [sim, setSim] = useState<{ busy?: boolean; e?: string } | null>(null);
   if (!o) return null;
   if (o.stav === "overeny") return (
     <div role="status" style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: 14, background: "var(--gSoft)", border: "1px solid var(--gBd)" }}>
@@ -34,6 +35,6 @@ export function OverenieUctu({ stranka, iban, ph }: { stranka: string; iban: str
         <button type="button" onClick={kopiruj} style={{ minHeight: 44, padding: "0 14px", borderRadius: 12, border: "1.5px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--green)" }}>{skop ? "Skopírované" : "Kopírovať kód"}</button>
       </div>
       <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink3)" }}>Overíme, že účet patrí vašej organizácii (názov alebo IČO). Keď platba príde, stav sa zmení sám. Kým účet nie je overený, zbierka sa nedá spustiť.</span>
-      {FLAGS.dev_tier_switcher && <button type="button" onClick={() => simulujOverenie(stranka, iban)} style={{ alignSelf: "flex-start", minHeight: 36, padding: "0 12px", borderRadius: 10, border: "1px dashed var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, color: "var(--ink3)" }}>Simulovať prijatú platbu (DEV)</button>}
+      {FLAGS.dev_tier_switcher && <button type="button" aria-busy={!!sim?.busy} onClick={async () => { if (sim?.busy) return; setSim({ busy: true }); const e = await simulujOverenie(stranka, iban); setSim(e ? { e } : null); }} style={{ alignSelf: "flex-start", minHeight: 36, padding: "0 12px", borderRadius: 10, border: "1px dashed var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, color: sim?.e ? "var(--cRed)" : "var(--ink3)" }}>{sim?.busy ? "Overujem …" : sim?.e ? `${sim.e} · Skúsiť znova` : "Simulovať prijatú platbu (DEV)"}</button>}
     </div>);
 }

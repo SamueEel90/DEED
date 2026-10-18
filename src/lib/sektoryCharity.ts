@@ -14,7 +14,7 @@ export interface SektorCharity {
   /** činnosť zo stanov, z ktorej sektor vznikol */
   stanovy: string;
   foto: string;
-  /** odkaz na plagát deed.sk/z/{slug} */
+  /** odkaz na plagát deedgood.eu/z/{slug} */
   slug: string;
 }
 /** testovacie čísla položky: tento mesiac, ľudí dáva mesačne, od začiatku */

@@ -23,7 +23,7 @@ import { createPortal } from "react-dom";
 import { useLayout } from "@/components/context";
 import { toast } from "@/components/toast";
 import { nacitajStav, ulozStav } from "@/features/viera/stav";
-import { koniecZbierky, dniDoKonca, datumKonca, predlzZbierku, qrVytlacene } from "@/lib/koniecZbierky";
+import { koniecZbierky, dniDoKonca, datumKonca, predlzZbierku } from "@/lib/koniecZbierky";
 import { odFarnikov, pocetyOdVeriacich, useOdFarnikov, useCerstveOdFarnikov } from "@/lib/odFarnikov";
 import { OdVeriacich, type CastOdVeriacich } from "./OdVeriacich";
 import { OmseKalendar, TyzdenVPrehlade } from "./OmseKalendar";
@@ -269,7 +269,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const segment = <T extends string | number | boolean,>(vol: [T, string][], cur: T, set: (v: T) => void) => <Volby value={cur} onChange={set} moznosti={vol} label={vol.map(([, t]) => t).join(" · ")} />;
   const nadpis = (t: string, s: string) => !mobil && <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 12 }}><span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 22, fontWeight: 800 }}>{t}</span><span style={{ display: "block", fontSize: 13.5, color: "var(--ink3)" }}>{s}</span></span></div>;
 
-  // OPRAVY 348 (1): Prvé kroky 1–5 v pevnom poradí — hotový krok ostáva na mieste (zelený ✓, tlmený); pri 5 z 5 bežné Treba vybaviť
+  // OPRAVY 348 (1) · 355: Prvé kroky 1–4 v pevnom poradí (QR nie je povinný krok) — hotový krok ostáva na mieste (zelený ✓, tlmený); pri 4 z 4 bežné Treba vybaviť
   const kalK = kostolKal(strankaId);
   const maOmse = Array.from({ length: 7 }, (_, i) => new Date(teraz0 + i * 86400000)).some((d) => omseZvoncek(kalK, d).length > 0);
   const kroky: { t: string; s: string; hot: boolean; tap: () => void }[] = [
@@ -277,7 +277,6 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     { t: "Overiť účet farnosti", s: "IBAN a platba 0,01 € s kódom", hot: ucetF.overeny, tap: () => { setNId("ucty"); go("n"); } },
     { t: "Spustiť hlavnú zbierku", s: "stála zbierka farnosti, aj mesačne", hot: bezi, tap: () => go("zbierky") },
     { t: "Zadať omše", s: "časy omší a týždenný rozvrh", hot: maOmse, tap: () => go("omse") },
-    { t: "Vytlačiť QR na dvere kostola", s: "nálepka alebo plagát", hot: qrVytlacene(strankaId), tap: () => { go("nastroje"); setDetY(0); setDet("qr"); window.scrollTo(0, 0); } },
   ];
   const hotKroky = kroky.filter((k) => k.hot).length, prveKroky = hotKroky < kroky.length;
   // KARTA 56D §3: Treba vybaviť — len to, čo naozaj čaká (profil a hlavná zbierka; počas Prvých krokov sú v krokoch)
@@ -291,7 +290,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   ];
   // OPRAVY 348 (2): zbierka farnosti 3 dni pred koncom — Predĺžiť o 14 dní (výsledok na mieste) · Ukončiť › (záložka Ukončenie)
   const konciace = dalsie.filter((z) => (z.farnost?.druh ?? "farnost") === "farnost" && (z.stav ?? "aktivna") === "aktivna")
-    .map((z) => ({ z, k: koniecZbierky(strankaId, z) })).filter(({ z, k }) => { const d = dniDoKonca(k, teraz0); return (d >= 0 && d <= 3) || !!predlzene[z.id]; }); // predĺžená ostáva na mieste s „predĺžená do … ✓“
+    .map((z) => ({ z, k: koniecZbierky(strankaId, z) })).filter(({ z, k }) => { const d = dniDoKonca(k, teraz0); return d <= 3 || !!predlzene[z.id]; }); // predĺžená ostáva na mieste s „predĺžená do … ✓“ · po termíne ostáva, kým ju farár nevybaví (odpovede 18. 10.)
   const pocetUloh = (prveKroky ? kroky.length - hotKroky : 0) + ulohy.length + konciace.filter(({ z }) => !predlzene[z.id]?.ok).length;
   const dniT = (d: number) => (d <= 0 ? "dnes" : d === 1 ? "zajtra" : `o ${d} ${d < 5 ? "dni" : "dní"}`);
   const predlz = async (z: SpustenaZbierka) => {
@@ -316,7 +315,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
         </button>))}
       {konciace.map(({ z, k }) => { const st = predlzene[z.id]; const suma = darcoviaPre(z.id).reduce((a, r) => a + r.suma, 0);
         return uloha(`k${z.id}`, <>
-          {textU(st?.ok ? z.nazov || "Zbierka" : `${z.nazov || "Zbierka"} končí ${dniT(dniDoKonca(k, teraz0))}`, st?.ok ? eur(suma) : `${datumKonca(k)} · ${eur(suma)}`)}
+          {textU(st?.ok ? z.nazov || "Zbierka" : dniDoKonca(k, teraz0) < 0 ? `${z.nazov || "Zbierka"} · termín bol ${datumKonca(k)}` : `${z.nazov || "Zbierka"} končí ${dniT(dniDoKonca(k, teraz0))}`, st?.ok ? eur(suma) : dniDoKonca(k, teraz0) < 0 ? eur(suma) : `${datumKonca(k)} · ${eur(suma)}`)}
           {st?.ok ? <span role="status" style={{ flex: mobil ? "1 1 100%" : undefined, fontSize: 14, fontWeight: 800, color: "var(--gInk)" }}>predĺžená do {st.ok} ✓</span> : <span style={{ flex: mobil ? "1 1 100%" : undefined, display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button type="button" aria-busy={!!st?.busy} onClick={() => void predlz(z)} style={{ minHeight: 44, padding: "0 14px", borderRadius: 12, border: st?.chyba ? "1.5px solid var(--rBd)" : "none", background: st?.chyba ? "var(--rBg)" : "#4B7A35", color: st?.chyba ? "var(--cRed)" : "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, boxShadow: "none" }}>{st?.busy ? "Predlžujem …" : st?.chyba ? "Nepodarilo sa · Skúsiť znova" : "Predĺžiť o 14 dní"}</button>
             <button type="button" onClick={() => ukoncit(z)} style={{ minHeight: 44, padding: "0 14px", borderRadius: 12, border: "1.5px solid var(--cardBd)", background: "var(--btn)", color: "var(--ink)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, boxShadow: "none" }}>Ukončiť ›</button>
@@ -679,7 +678,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     { k: "brigady", t: "Brigády a služby", s: "blok Pomôž na stránke · brigáda, služba pri omši", d: IC.brigada, el: () => <BrigadyFarnosti strankaId={strankaId} mobil={mobil} /> },
     { k: "deti", t: "Deti a mládež", s: "stretnutia · blok Deti a mládež na stránke", d: IC.dieta, el: () => <DetiMladezFarnosti strankaId={strankaId} mobil={mobil} /> },
     { k: "darcovia", t: "Darcovia", s: "mená bez súm · bez mena = Bohu známy veriaci", d: IC.zbierky, el: darcoviaEl },
-    { k: "sledujuci", t: "Sledujúci", s: "koľko ľudí sleduje farnosť a jednotlivé kostoly", d: IC.verejny, el: () => <SledujuciFarnosti kostoly={kostoly} pocty={sledM} mobil={mobil} /> },
+    { k: "sledujuci", t: "Sledujúci", s: "koľko ľudí sleduje farnosť a jednotlivé kostoly", d: IC.verejny, el: () => <SledujuciFarnosti strankaId={strankaId} kostoly={kostoly} pocty={sledM} mobil={mobil} /> },
   ];
   const ludia = dlazdice("ludia", "Správcovia farnosti, dobrovoľníci a darcovia", lLud);
   // KARTA 57 B.1: Nástroje a štatistiky — sledujúci, darcovia, QR do kostola

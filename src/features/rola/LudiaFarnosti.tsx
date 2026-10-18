@@ -5,6 +5,7 @@
 // Úložisko ako Správcovia charity (karta 35): nastavenia_stranky (0050), kľúče „duch“ a „ludia“ — ukladá sa samo.
 // PLACEBO — karta 61 §1: pozvánky (e-mail, QR odkaz 48 h, Prijať / Potvrdiť) sú zatiaľ len v zozname, práva rolí server ešte nevynucuje.
 // ============================================================
+import { DOMENA_MAILU } from "@/lib/kontakty";
 import { ADRESA } from "@/lib/adresa";
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { kartaVolby, FajkaVolby } from "@/components/Volby";
@@ -238,7 +239,7 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children }
             </div>
             {!vlastny && !hv.zap && <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {x.caka === "potvrdit" && <button type="button" onClick={() => { ulozL(L.map((y) => (y.id === x.id ? { ...y, caka: false } : y))); hlas(String(x.id), `Potvrdené ✓ ${x.n} môže začať.`); }} style={{ ...plne(true), minHeight: 44 }}>Potvrdiť</button>}
-              {x.caka === "odkaz" && TESTOVACIA && <button type="button" onClick={() => ulozL(L.map((y) => (y.id === x.id ? { ...y, caka: "potvrdit", n: "Testovací pozvaný", k: "test@deed.sk" } : y)))} style={{ ...obrys, borderStyle: "dashed" }}>Ukážka: vyplnil pozvánku ›</button>}
+              {x.caka === "odkaz" && TESTOVACIA && <button type="button" onClick={() => ulozL(L.map((y) => (y.id === x.id ? { ...y, caka: "potvrdit", n: "Testovací pozvaný", k: `test@${DOMENA_MAILU}` } : y)))} style={{ ...obrys, borderStyle: "dashed" }}>Ukážka: vyplnil pozvánku ›</button>}
               {posledny ? <span style={{ fontSize: 13, color: "var(--ink3)" }}>{SL.dozorca ? `${T} alebo dozorca musí ostať aspoň jeden.` : `${T} musí ostať aspoň jeden.`}</span>
                 : <DrzTlacidlo ms={1200} styl={{ minHeight: 44, padding: "0 14px", borderRadius: 12, border: `1.5px solid ${CERV}`, background: "transparent", color: CERV, fontSize: 14, fontWeight: 800 }}
                   onHotovo={() => { ulozL(L.filter((y) => y.id !== x.id)); hlas("zoz", `${x.caka ? "Pozvánka zrušená ✓" : "Odobratý ✓"} ${x.n || x.k}`); }}>{x.caka === "potvrdit" ? "Podržte · odmietnuť" : x.caka ? "Podržte · zrušiť" : "Podržte · odobrať"}</DrzTlacidlo>}

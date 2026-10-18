@@ -1,6 +1,6 @@
 // ============================================================
 // DEED · Značka (logo) — hlavná podoba = „D⁺ QR vlajka" (DEED_QR_Web_Dplus):
-//   · D s QR vnútri + D+ pilulka (biele pozadie) = /brand/deed-qr-dplus.png
+//   · D s QR vnútri + D+ pilulka (biele pozadie) = DeedQr s adresou appky (OPRAVY 347, lib/adresa)
 //   · App ikona (zelený D⁺ odznak — launcher)    = /brand/deed-appicon.svg
 //
 // Rozhodnutie vlastníka (2026-07-15): D⁺ QR vlajka VŠADE — desktop,
@@ -14,14 +14,12 @@ import { createPortal } from "react-dom";
 import { RADIUS, SPACE } from "@/theme";
 import { pressable } from "@/components/pressable";
 import { IkonaKriz } from "@/components/icons";
+import { DeedQr } from "@/components/deedqr";
+import { ADRESA, DOMENA } from "@/lib/adresa";
 
-const QR_SRC = "/brand/deed-qr-dplus.png";
 const APP_SRC = "/brand/deed-appicon.svg";
-// cieľ v QR (viď brand kit README) — len informatívny podtitul pod QR
-const QR_CIEL = "deed-help.vercel.app";
-
-/** OPRAVY 91: nové QR logo (bočný panel) — svetlý / tmavý variant */
-const LOGO_QR = "/brand/deed-logo-qr-biele.png"; // OPRAVY 101: biela výplň len vnútri D, mimo D priehľadné
+// OPRAVY 347: QR loga sa kreslí z DeedQr s adresou appky (predtým obrázok s vercel.app) — podtitul = tá istá adresa
+const QR_CIEL = DOMENA;
 
 export function Znacka({ size = 40, force, style, text, logoQr }: {
   /** OPRAVY 91: nové QR logo deed-logo-qr (tmavý režim = inverzné), object-fit contain */
@@ -35,7 +33,6 @@ export function Znacka({ size = 40, force, style, text, logoQr }: {
 }) {
   const [full, setFull] = useState(false);
   const mode = force ?? "qr"; // vlastník: QR vlajka všade (desktop aj mobil)
-  const src = mode === "qr" ? QR_SRC : APP_SRC;
 
   return (
     <>
@@ -43,12 +40,12 @@ export function Znacka({ size = 40, force, style, text, logoQr }: {
         style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flex: "0 0 auto", ...style }}>
         {logoQr ? (
           // OPRAVY 101/105: bez dlaždice a rámika, v oboch režimoch to isté PNG, dvojvrstvová žiara vo farbe štítu
-          <img src={LOGO_QR} alt="DEED+ · môj QR" draggable={false} style={{ width: size, height: size, display: "block", objectFit: "contain", filter: "drop-shadow(0 0 4px var(--acc)) drop-shadow(0 0 14px var(--accLine))" }} />
+          <span data-logo-qr="" aria-label="DEED+ · môj QR" style={{ display: "block", width: size, height: size, filter: "drop-shadow(0 0 4px var(--acc)) drop-shadow(0 0 14px var(--accLine))" }}><DeedQr data={ADRESA} priehladne size={size} /></span>
         )
         : text ? <span style={{ fontSize: Math.round(size * 0.62), fontWeight: 800, letterSpacing: "-.01em", color: "var(--a-green)", lineHeight: 1 }}><DeedZnacka /></span> : <>
         {/* D⁺ QR vlajka = biely štvorec → jemne zaoblené rohy */}
-        <img src={src} alt="DEED+" draggable={false}
-          style={{ width: size, height: size, display: "block", borderRadius: mode === "qr" ? Math.round(size * 0.16) : undefined }} /></>}
+        {mode === "qr" ? <span aria-label="DEED+" style={{ display: "block", width: size, height: size, borderRadius: Math.round(size * 0.16), overflow: "hidden" }}><DeedQr data={ADRESA} size={size} /></span>
+          : <img src={APP_SRC} alt="DEED+" draggable={false} style={{ width: size, height: size, display: "block" }} />}</>}
       </span>
       {/* portál do document.body — inak `position:fixed` uviazne v glass predku
           (backdrop-filter v bočnej lište / hlavičke = containing block) a overlay
@@ -71,8 +68,7 @@ function ZnackaFull({ onClose }: { onClose: () => void }) {
       {/* biela karta → QR ostáva skenovateľný (zelené moduly na bielej) */}
       <div onClick={(e) => e.stopPropagation()}
         style={{ background: "#fff", borderRadius: RADIUS.xl, padding: SPACE.lg, boxShadow: "0 24px 70px rgba(0,0,0,.55)" }}>
-        <img src={QR_SRC} alt="DEED+ — naskenuj QR kód" draggable={false}
-          style={{ width: "min(72vw, 360px)", height: "auto", display: "block" }} />
+        <span aria-label="DEED+ — naskenuj QR kód" style={{ display: "block" }}><DeedQr data={ADRESA} size={Math.min(360, Math.round(window.innerWidth * 0.72))} /></span>
       </div>
       <div style={{ color: "#fff", textAlign: "center", lineHeight: 1.5 }}>
         <div style={{ fontSize: 15, fontWeight: 700 }}>Naskenuj a otvor <DeedZnacka /></div>
@@ -83,5 +79,4 @@ function ZnackaFull({ onClose }: { onClose: () => void }) {
 }
 
 // nemenný fallback použitý ešte pred načítaním layoutu (aby TS videl export aj bez JSX importu inde)
-export const ZNACKA_QR_SRC = QR_SRC;
 export const ZNACKA_APP_SRC = APP_SRC;

@@ -238,6 +238,8 @@ export function ProfilHlavny18(a: ProfilAkcie) {
     { id: "zaujmy", t: t("dlazdice.zaujmy"), s: t("profil.zaujmy.pocet", { a: zaujmyN, n: ZAUJMY_KATALOG.length }), ikona: <Ik d={IK.osoba} />, bg: "var(--gSoft)", c: "var(--green)", onClick: () => a.naSub("Moje záujmy") },
     // OPRAVY 164
     { id: "sukromne", t: t("dlazdice.sukromne"), s: t("dlazdice.sukromne.s"), ikona: <Ik d={IK.srdce} />, bg: "var(--gSoft)", c: "var(--green)", onClick: () => a.naSub("Súkromné zbierky") },
+    // OPRAVY 352: zoznam pravidelných darov a zrušenie
+    { id: "pravidelne", t: t("dlazdice.pravidelne"), s: t("dlazdice.pravidelne.s"), ikona: <Ik d={IK.wallet} />, bg: "var(--gSoft)", c: "var(--green)", onClick: () => a.naSub("Pravidelné dary") },
   ];
   const sekcie = { zaujmy: <MojeZaujmy />, stat: <StatVSkratke onOtvor={() => a.naSub("Štatistiky")} />, wallet: <PoslednePohyby onOtvor={a.naWallet} /> };
   const pocty: [number, string][] = [[sledovani.length, "sledujem"], [podpory.length, "podporujem"], [MOJE_SKUTKY_POCET, "skutkov"]];

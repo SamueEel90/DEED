@@ -159,6 +159,8 @@ input, textarea, button {
   outline: 2px solid var(--a-green);
   outline-offset: 2px;
 }
+/* OPRAVY 351: po ťuku prstom alebo myšou tlačidlo obrys nemá (aj keď prehliadač dá :focus-visible) — klávesnica áno */
+html[data-ovladanie="mys"] :is(button, [role="button"], a):focus-visible { outline: none; }
 
 /* OPRAVY Iskry bod 1: v prehrávači Isker žiadny zelený rámik po ťuku (dotykový povrch; klávesnica má šípky/F/Esc) */
 .isk-dialog :focus-visible { outline: none; }

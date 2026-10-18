@@ -9,6 +9,7 @@
 // ============================================================
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import webpush from "web-push";
+import { EMAIL_PODPORA } from "../src/lib/kontakty.js";
 import { dbSluzba } from "./_lib/server.js";
 
 const DAVKA = 300;
@@ -23,7 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") { res.status(405).json({ chyba: "zla_metoda" }); return; }
   const db = dbSluzba();
   if (!pub || !priv || !db) { res.status(503).json({ chyba: "push_vypnuty", sprava: "Chýba VAPID alebo service role kľúč." }); return; }
-  webpush.setVapidDetails(process.env.VAPID_SUBJECT || "mailto:podpora@deed.sk", pub, priv);
+  webpush.setVapidDetails(process.env.VAPID_SUBJECT || `mailto:${EMAIL_PODPORA}`, pub, priv);
 
   const odDna = new Date(Date.now() - 864e5).toISOString();
   const { data: cakaju, error } = await db.from("notifikacia").select("id")

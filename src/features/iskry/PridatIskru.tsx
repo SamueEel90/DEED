@@ -445,7 +445,7 @@ function ZbierkaRiadok({ z, on, onClick }: { z: ZbierkaVRetazi; on: boolean; onC
     </button>);
 }
 
-/** QR zbierky (deed.sk/z/{id}) — kamera; bez kamery hláška. Nájdená zbierka sa hneď vyberie. */
+/** QR zbierky (deedgood.eu/z/{id}) — kamera; bez kamery hláška. Nájdená zbierka sa hneď vyberie. */
 function SkenZbierky({ onClose, onZbierka, onHladat }: { onClose: () => void; onZbierka: (z: ZbierkaVRetazi) => void; onHladat: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   /** null = kamera beží · "nie" = nie je dostupná · "zamietnuta" = človek ju nepovolil */

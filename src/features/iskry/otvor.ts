@@ -11,7 +11,7 @@ export function otvorIskry(id?: string) { otvorene = true; startId = id ?? null;
 /** Iskra, na ktorej má prúd začať (číta sa bez mazania — StrictMode volá inicializáciu dvakrát) */
 export const startIskry = (): string | null => startId;
 export function zabudniStartIskry() { startId = null; }
-// odkaz /i/{id} (QR Iskry, deed.sk/i/…) aj /iskra/{id} (zdieľanie, QR) → appka sa otvorí rovno v prúde na tomto videu
+// odkaz /i/{id} (QR Iskry, deedgood.eu/i/…) aj /iskra/{id} (zdieľanie, QR) → appka sa otvorí rovno v prúde na tomto videu
 if (typeof window !== "undefined") {
   const m = window.location.pathname.match(/^\/(?:i|iskra)\/([^/?#]+)/);
   if (m) {

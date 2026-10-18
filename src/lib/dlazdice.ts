@@ -3,8 +3,8 @@
 import { useSyncExternalStore } from "react";
 import { zaregistrujKluc, zmenene } from "./mojeData";
 
-export type DlazdicaId = "wallet" | "nastavenia" | "skutky" | "priatelia" | "karma" | "stat" | "firma" | "zaujmy" | "sukromne";
-export const POVODNE: DlazdicaId[] = ["wallet", "nastavenia", "skutky", "priatelia", "karma", "stat", "firma", "zaujmy", "sukromne"];
+export type DlazdicaId = "wallet" | "nastavenia" | "skutky" | "priatelia" | "karma" | "stat" | "firma" | "zaujmy" | "sukromne" | "pravidelne";
+export const POVODNE: DlazdicaId[] = ["wallet", "nastavenia", "skutky", "priatelia", "karma", "stat", "firma", "zaujmy", "sukromne", "pravidelne"];
 /** dlaždice, ktoré majú sekciu na rozbalenie pod mriežkou (hodnota = kľúč prekladu) */
 export const MA_ROZBALENIE: Partial<Record<DlazdicaId, string>> = {
   zaujmy: "dlazdice.rozb.zaujmy", stat: "dlazdice.rozb.stat", wallet: "dlazdice.rozb.wallet",

@@ -33,7 +33,7 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { useMojeStranky } from "@/lib/mojeStranky";
 import { CIRKVI, useMojeFarnosti, useSlovaFarnosti, pridajSledovanu, odstranSledovanu, nazovFarnosti, otvorAdresar, sledujemKostol, sledujKostol, prestanKostol, nastavMojKostol, farnostiSuhrn, nastavFarnostiSuhrn, blokyFarnosti, blokyKostola, type SledovanyKostol } from "@/lib/mojeFarnosti";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
-import { otvorVerejnyProfil, odkazQrStranky, vecnaZQrCitaj, zrusVecnuZQr, cielVecnej, zrusDoVecnej, qrCielCitaj, zrusQrCiel } from "./otvor";
+import { otvorVerejnyProfil, odkazQrStranky, vecnaZQrCitaj, zrusVecnuZQr, cielVecnej, zrusDoVecnej, qrCielCitaj, zrusQrCiel, qrHlavnaCitaj, zrusQrHlavna } from "./otvor";
 import { nacitajVerejne } from "@/lib/verejneNastavenia";
 import { centralnaChyba, centralnaZPamate, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
 import { naviazObjekt } from "@/lib/darZbierky";
@@ -605,6 +605,9 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   const [qrHotovo, setQrHotovo] = useState(false);
   const [zbSkoncila, setZbSkoncila] = useState(false);
   useEffect(() => { zrusQrCiel(); }, []);
+  // OPRAVY 356: QR farnosti (?qr=1) — keď hlavná zbierka beží, otvorí sa rovno jej detail (Nástenka to doteraz nerobila)
+  const [qrH] = useState(qrHlavnaCitaj);
+  if (qrH && !qrHotovo && hlOn) { setQrHotovo(true); zrusQrHlavna(); otvorHlavnu(); }
   if (qrC && !qrHotovo) {
     if ("omsa" in qrC) { if (zvOn && zvOkno) { setQrHotovo(true); otvorZvoncek(zvOkno.id); } }
     else { const z = zbierkyStrankyZPamate(strankaId).find((x) => x.id === qrC.zbierka);
