@@ -16,7 +16,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSPro
 import { createPortal } from "react-dom";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { nacitajSelfAdd } from "@/features/viera/UserOznamy";
-import { DRUHY_FARNIKA, CEZ_EDITOR, BLOK_DRUHU, nacitajSmie, smie, stupen, naStranke as jeNaStranke, pridajMojeCakajuce, odFarnikov, zapisOdFarnikaIsto, zmazOdFarnika, prepniVPolozke, pocetSus, useOdFarnikov, useCerstveOdFarnikov, PLATI_VERIACI, vyprsal, type DruhFarnika, type PolozkaFarnika, type FormularVeriaceho } from "@/lib/odFarnikov";
+import { DRUHY_FARNIKA, CEZ_EDITOR, BLOK_DRUHU, nacitajSmie, smie, stupen, naStranke as jeNaStranke, pridajMojeCakajuce, odFarnikov, zapisOdFarnikaIsto, zmazOdFarnika, prepniVPolozke, nahlasOdFarnika, pocetSus, useOdFarnikov, useCerstveOdFarnikov, PLATI_VERIACI, vyprsal, type DruhFarnika, type PolozkaFarnika, type FormularVeriaceho } from "@/lib/odFarnikov";
 import { dokonciCas, CAS_OK, pekny } from "@/lib/kalendarFarnosti";
 import { bezDataUrl } from "@/lib/uploadFoto";
 import type { MediumZbierky } from "@/lib/novaZbierka";
@@ -106,6 +106,7 @@ function Pozvanie({ x, strankaId, kto, reg }: { x: PolozkaFarnika; strankaId: st
 export function MenuPrispevku({ x, strankaId, kto, moje, vMenu, bezZmazania, onZmazane }: { x: PolozkaFarnika; strankaId: string; kto: string; moje: boolean; /** OPRAVY 228: Upraviť a Zmazať autora až v „…“ */ vMenu?: boolean;
   /** OPRAVY 305: parte so zapečatenou pohrebnou zbierkou — len Upraviť (zbierku ukončí Moja zbierka rodiny) */ bezZmazania?: boolean; onZmazane?: () => void }) {
   const [menu, setMenu] = useState(false), [potvrd, setPotvrd] = useState(false), [ok, setOk] = useState(false);
+  const [dovod, setDovod] = useState(""); // OPRAVY 339
   const tm = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(tm.current), []);
   // OPRAVY 190: svadbu a jubileum (cez editor) si autor upraví sám a zmaže podržaním
@@ -115,8 +116,10 @@ export function MenuPrispevku({ x, strankaId, kto, moje, vMenu, bezZmazania, onZ
     {potvrd && <div data-caka-ok="" style={{ padding: "12px 14px", borderRadius: 14, background: "var(--goldBg)", border: `1.5px solid ${ZLATA}`, display: "flex", flexDirection: "column", gap: 8 }}>
       <b style={{ fontSize: 15.5 }}>Nahlásiť farárovi?</b>
       <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>Farár príspevok pozrie. Kto nahlásil, sa nedozvie autor.</span>
+      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ fontSize: 13.5, fontWeight: 800, color: "var(--ink2)" }}>Prečo (nepovinné)</span>
+        <input value={dovod} onChange={(e) => setDovod(e.target.value.slice(0, 200))} placeholder="napr. reklama, nepravda" style={{ minHeight: 46, padding: "0 12px", borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--card)", fontFamily: "inherit", fontSize: 15, color: "var(--ink)", outline: "none", width: "100%", boxSizing: "border-box" }} /></label>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <button type="button" onClick={() => { prepniVPolozke(strankaId, x.id, "nahlasili", kto, "pridat"); setPotvrd(false); setOk(true); window.clearTimeout(tm.current); tm.current = window.setTimeout(() => setOk(false), 2500); }} style={{ minHeight: 46, padding: "0 16px", border: "none", borderRadius: 12, background: "#A34A2A", color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800 }}>Áno, nahlásiť</button>
+        <button type="button" onClick={() => { nahlasOdFarnika(strankaId, x.id, kto, dovod); setDovod(""); setPotvrd(false); setOk(true); window.clearTimeout(tm.current); tm.current = window.setTimeout(() => setOk(false), 2500); }} style={{ minHeight: 46, padding: "0 16px", border: "none", borderRadius: 12, background: "#A34A2A", color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800 }}>Áno, nahlásiť</button>
         <button type="button" onClick={() => setPotvrd(false)} style={{ minHeight: 46, padding: "0 16px", borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--ink)" }}>Zrušiť</button>
       </div>
     </div>}

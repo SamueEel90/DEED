@@ -6,10 +6,10 @@
 // ============================================================
 import { KartaNastavenia, NADPIS_SEKCIE, farbaStitku } from "./KartaNastavenia";
 import { TlZbalit } from "@/features/verejny-profil/zbalit";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { nacitajSelfAdd, ulozSelfAddIsto } from "@/features/viera/UserOznamy";
 import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
-import { DRUHY_FARNIKA, CEZ_EDITOR, KAM_DRUHU, nacitajSmie, ulozSmieIsto, stupen, rozhodniOdFarnikov, type Stupen, type SmieFarnika, odFarnikov, upravOdFarnika, zmazOdFarnika, zmazOdFarnikov, nastavenieOdVeriacich, ulozNastavenieOdVeriacich, ulozNastavenieOdVeriacichIsto, useOdFarnikov, useCerstveOdFarnikov, pocetNahl, pocetSus, vyprsal, type DruhFarnika, type PolozkaFarnika } from "@/lib/odFarnikov";
+import { DRUHY_FARNIKA, CEZ_EDITOR, KAM_DRUHU, nacitajSmie, ulozSmieIsto, stupen, rozhodniOdFarnikov, type Stupen, type SmieFarnika, odFarnikov, upravOdFarnika, ponechajOdFarnika, zmazOdFarnika, zmazOdFarnikov, nastavenieOdVeriacich, ulozNastavenieOdVeriacich, ulozNastavenieOdVeriacichIsto, useOdFarnikov, useCerstveOdFarnikov, pocetNahl, pocetSus, vyprsal, type DruhFarnika, type PolozkaFarnika } from "@/lib/odFarnikov";
 import { TextOznamu } from "./OznamyFarnosti";
 import { PodrzZmaz, useHromadnyVyber, TlacidloVyberu, ListaVyberu, OznacitSkupinu, PolickoVyberu, PasVyberu } from "@/components/HromadnyVyber";
 import { cistyText } from "./obsahZbierky";
@@ -91,6 +91,25 @@ const terazMs = () => Date.now();
 const druhT = (k: DruhFarnika) => (DRUHY_FARNIKA.find((d) => d.k === k)?.t ?? "").toLocaleUpperCase("sk-SK");
 const kedy = (cas: number) => { const d = new Date(cas); return `${d.getDate()}. ${d.getMonth() + 1}.`; };
 const prispevkov = (n: number) => `${n} ${n === 1 ? "príspevok" : n >= 2 && n <= 4 ? "príspevky" : "príspevkov"}`;
+/** OPRAVY 339: príspevok má čo ukázať okrem nadpisu (text, fotky, kedy, kde) */
+const maNavyse = (x: PolozkaFarnika) => !!(x.s?.trim() || x.text?.trim() || x.obr || x.fotky?.length || x.f?.datum || x.f?.kde?.trim());
+const kedyKde = (x: PolozkaFarnika) => {
+  const d = x.f?.datum && /^\d{4}-\d{2}-\d{2}/.test(x.f.datum) ? new Date(`${x.f.datum.slice(0, 10)}T12:00:00`) : null;
+  return [d ? `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}` : "", x.f?.cas?.trim() ?? "", x.f?.kde?.trim() ?? ""].filter(Boolean).join(" · ");
+};
+/** OPRAVY 339: celý príspevok tak, ako bude na stránke (kategória, autor, nadpis, kedy a kde, text, fotky) */
+function CelyPrispevok({ x }: { x: PolozkaFarnika }) {
+  const kk = kedyKde(x), text = x.s?.trim() || x.text?.trim() || "";
+  return <div style={{ padding: "14px 16px", borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", display: "flex", flexDirection: "column", gap: 8 }}>
+    <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>{druhT(x.k)} · {x.anon ? "bez mena" : x.kto}</span>
+    {x.t && <b style={{ fontSize: 18, lineHeight: 1.3, overflowWrap: "anywhere" }}>{x.t}</b>}
+    {kk && <span style={{ fontSize: 14.5, fontWeight: 700, color: "var(--ink2)" }}>{kk}</span>}
+    {text && <span style={{ fontSize: 15, lineHeight: 1.55, color: "var(--ink)", whiteSpace: "pre-line", overflowWrap: "anywhere" }}>{text}</span>}
+    {x.obr && <img src={x.obr} alt="" style={{ width: "100%", maxWidth: 420, borderRadius: 10, display: "block" }} />}
+    {x.fotky?.length && !x.obr ? <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(120px,1fr))", gap: 6 }}>{x.fotky.slice(0, 12).map((f, j) => <img key={j} src={f} alt="" style={{ width: "100%", aspectRatio: "4 / 3", objectFit: "cover", borderRadius: 10, display: "block" }} />)}</div> : null}
+  </div>;
+}
+const casNahl = (ms: number) => { const d = new Date(ms); return `${d.getDate()}. ${d.getMonth() + 1}. o ${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`; };
 const naHtml = (t: string) => t ? t.split("\n").map((r) => `<p>${r.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</p>`).join("") : "";
 
 function Prepinac({ on, onClick, label }: { on: boolean; onClick: () => void; label: string }) {
@@ -103,7 +122,7 @@ function Prepinac({ on, onClick, label }: { on: boolean; onClick: () => void; la
 }
 
 /** oprava príspevku farárom: nadpis + text */
-function Oprava({ x, strankaId }: { x: PolozkaFarnika; strankaId: string }) {
+function Oprava({ x, strankaId, pred }: { x: PolozkaFarnika; strankaId: string; /** OPRAVY 339: V poriadku · ponechať pred Uložiť opravu */ pred?: ReactNode }) {
   const [t, setT] = useState(x.t);
   const [h, setH] = useState(() => naHtml(x.s));
   const [ok, setOk] = useState(false);
@@ -120,7 +139,11 @@ function Oprava({ x, strankaId }: { x: PolozkaFarnika; strankaId: string }) {
       <input value={t} onChange={(e) => setT(e.target.value.slice(0, 80))} style={{ height: 48, padding: "0 14px", borderRadius: 12, background: "var(--field)", border: "1px solid var(--cardBd)", fontFamily: "inherit", fontSize: 15, fontWeight: 600, color: "var(--ink)", outline: "none", width: "100%", boxSizing: "border-box" }} /></label>
     <TextOznamu value={h} onChange={setH} label="Text" popis="Opravte preklep alebo údaj." />
     <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-      <button type="button" onClick={uloz} aria-disabled={!zmena} style={{ minHeight: 46, padding: "0 18px", border: "none", borderRadius: 12, background: ok ? "var(--gSoft)" : zmena ? "#4B7A35" : "#CFC9BC", color: ok ? "var(--gInk)" : zmena ? "#fff" : "#6B6C62", cursor: zmena ? "pointer" : "default", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, boxShadow: "none" }}>{ok ? "Opravené ✓" : "Uložiť opravu"}</button>
+      {pred}
+      {/* OPRAVY 339: Uložiť opravu až po zmene textu — dovtedy veta, nie sivé tlačidlo */}
+      {ok ? <span role="status" style={{ minHeight: 46, padding: "0 18px", borderRadius: 12, background: "var(--gSoft)", color: "var(--gInk)", fontSize: 14.5, fontWeight: 800, display: "flex", alignItems: "center" }}>Opravené ✓</span>
+        : zmena ? <button type="button" onClick={uloz} style={{ minHeight: 46, padding: "0 18px", border: "none", borderRadius: 12, background: "#4B7A35", color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, boxShadow: "none" }}>Uložiť opravu</button>
+        : <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink3)" }}>Najprv upravte text, potom ho uložíte.</span>}
       <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Veriaci dostane správu, že ste jeho príspevok upravili.</span>
     </div>
   </>;
@@ -152,6 +175,8 @@ export function OdVeriacich({ strankaId, meno, mobil, toast }: { strankaId: stri
   // OPRAVY 324: pri každom príspevku — vypnúť takéto príspevky priamo v nastavení tej kategórie
   const nechcem = (k: DruhFarnika) => <button type="button" onClick={() => setNastOtv(k)} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--gInk)", boxShadow: "none", textAlign: "left" }}>Nechcem takéto príspevky › Nastaviť</button>;
   const tlC: CSSProperties = { minHeight: 44, padding: "0 14px", borderRadius: 12, fontFamily: "inherit", fontSize: 14, fontWeight: 800, cursor: "pointer", boxShadow: "none" };
+  // OPRAVY 339: po Zbaliť ostane príspevok na obrazovke (nič neodskočí preč)
+  const drzNaMieste = (id: string) => requestAnimationFrame(() => document.querySelector(`[data-oz="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" }));
   const riadokC = (x: PolozkaFarnika, i: number) => { const v = vybC?.has(x.id) ?? false, o = pozriC === x.id; return (
     <div key={x.id} data-oz={x.id} style={{ display: "flex", flexDirection: "column", gap: 8, padding: "12px 0", borderTop: i ? "1px solid var(--goldBd)" : "none" }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
@@ -162,12 +187,11 @@ export function OdVeriacich({ strankaId, meno, mobil, toast }: { strankaId: stri
         </span>
       </div>
       {o && <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {x.obr ? <img src={x.obr} alt="" style={{ width: "100%", maxWidth: 280, borderRadius: 8, display: "block" }} /> : x.s ? <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)", whiteSpace: "pre-line" }}>{x.s}</span> : null}
+        <CelyPrispevok x={x} />
         {nechcem(x.k)}
-        {x.fotky?.length && !x.obr ? <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(110px,1fr))", gap: 6 }}>{x.fotky.slice(0, 8).map((f, j) => <img key={j} src={f} alt="" style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", borderRadius: 10, display: "block" }} />)}</div> : null}
       </div>}
       {!vybC && <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <button type="button" onClick={() => setPozriC(o ? null : x.id)} aria-expanded={o} style={{ ...tlC, border: "1px solid var(--cardBd)", background: "var(--card)", color: "var(--ink)" }}>{o ? "Zbaliť ⌃" : "Pozrieť"}</button>
+        {maNavyse(x) && <button type="button" onClick={() => { if (o) { setPozriC(null); drzNaMieste(x.id); } else setPozriC(x.id); }} aria-expanded={o} style={{ ...tlC, border: "1px solid var(--cardBd)", background: "var(--card)", color: "var(--ink)" }}>{o ? "Zbaliť ⌃" : "Pozrieť"}</button>}
         <button type="button" onClick={() => rozhodni([x.id], false)} style={{ ...tlC, border: "1.5px solid #A34A2A", background: "transparent", color: "#A34A2A" }}>Zamietnuť</button>
         <button type="button" onClick={() => rozhodni([x.id], true)} style={{ ...tlC, border: "none", background: "#4B7A35", color: "#fff" }}>Zverejniť</button>
       </div>}
@@ -175,7 +199,10 @@ export function OdVeriacich({ strankaId, meno, mobil, toast }: { strankaId: stri
 
 
   const riadok = (x: PolozkaFarnika, i: number) => {
-    const o = otv === x.id && !selM, on = vyb.has(x.id), ed = CEZ_EDITOR.includes(x.k);
+    const o = otv === x.id && !selM, on = vyb.has(x.id), ed = CEZ_EDITOR.includes(x.k), nahl = pocetNahl(x) > 0;
+    // OPRAVY 339: V poriadku · ponechať — štítok zmizne, kto nahlásil, dostane správu (0105)
+    const ponechat = <button type="button" onClick={() => { ponechajOdFarnika(strankaId, x.id); toast("Ponechané ✓ Kto príspevok nahlásil, dostane správu."); }}
+      style={{ minHeight: 46, padding: "0 18px", border: "none", borderRadius: 12, background: "#4B7A35", color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, boxShadow: "none" }}>V poriadku · ponechať</button>;
     return (
       <div key={x.id} data-oz={x.id} style={{ borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
         <button type="button" onClick={() => (selM ? prepniVyb(x.id) : setOtv(o ? null : x.id))} aria-expanded={selM ? undefined : o} aria-pressed={selM ? on : undefined}
@@ -191,8 +218,16 @@ export function OdVeriacich({ strankaId, meno, mobil, toast }: { strankaId: stri
           {!selM && <span aria-hidden="true" style={{ flex: "none", fontSize: 18, color: "var(--ink3)" }}>{o ? "⌃" : "⌄"}</span>}
         </button>
         {o && <div style={{ padding: "0 0 14px", display: "flex", flexDirection: "column", gap: 10 }}>
-          {ed ? <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>Oznámenie z editora (parte, svadba, jubileum) upravuje ten, kto ho pridal. Vy ho môžete zmazať.</span>
-            : <Oprava key={x.id} x={x} strankaId={strankaId} />}
+          {nahl && <div role="note" style={{ padding: "12px 14px", borderRadius: 14, background: "var(--errBg)", border: "1.5px solid var(--cRed)", display: "flex", flexDirection: "column", gap: 4 }}>
+            <b style={{ fontSize: 14.5, color: "var(--cRed)" }}>Nahlásené {pocetNahl(x)}×{x.nahlInfo?.length ? ` · naposledy ${casNahl(Math.max(...x.nahlInfo.map((n) => n.cas)))}` : ""}</b>
+            {(x.nahlInfo ?? []).filter((n) => n.dovod).map((n, j) => <span key={j} style={{ fontSize: 14, lineHeight: 1.45, color: "var(--ink)" }}>Prečo: {n.dovod} <span style={{ color: "var(--ink3)" }}>· {casNahl(n.cas)}</span></span>)}
+            {!(x.nahlInfo ?? []).some((n) => n.dovod) && <span style={{ fontSize: 13.5, color: "var(--ink2)" }}>Dôvod nenapísali. Kto nahlásil, nevidíte.</span>}
+          </div>}
+          {ed ? <>
+              <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>Oznámenie z editora (parte, svadba, jubileum) upravuje ten, kto ho pridal. Vy ho môžete zmazať.</span>
+              {nahl && <div>{ponechat}</div>}
+            </>
+            : <Oprava key={x.id} x={x} strankaId={strankaId} pred={nahl ? ponechat : undefined} />}
           {x.fotky?.length ? <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(110px,1fr))", gap: 6 }}>{x.fotky.slice(0, 8).map((f, j) => <img key={j} src={f} alt="" style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", borderRadius: 10, display: "block" }} />)}</div> : null}
           <div><PodrzZmaz onZmaz={() => { zmazOdFarnika(strankaId, x.id); setOtv(null); toast("Zmazané."); }} /></div>
           {nechcem(x.k)}

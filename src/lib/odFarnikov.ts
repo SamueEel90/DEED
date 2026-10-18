@@ -62,6 +62,8 @@ export interface PolozkaFarnika {
   /** Pozvať ľudí: 1 = Zúčastním sa, 2 = Prihlásiť sa (záväzne, limit) */ pozv?: 0 | 1 | 2; limit?: number;
   /** kto sa zúčastní / prihlásil, kto sa modlí, kto prejavil sústrasť, kto nahlásil (kľúče účtov) */
   ucast?: string[]; modl?: string[]; sustrast?: string[]; nahlasili?: string[];
+  /** OPRAVY 339: kedy a prečo nahlásili (bez mena — farár nevidí, kto) · farár ponechal (0105 pošle nahlasovateľom správu) */
+  nahlInfo?: { cas: number; dovod?: string }[]; ponechane?: { cas: number; nahlasili: string[] };
   /** KARTA 57C §1: Blahoželám (svadba, jubileum) · mená prihlásených pre „Kto sa prihlásil“ (kľúč účtu → meno) */
   blaho?: string[]; mena?: Record<string, string>;
   /** fotky z akcie: popisy fotiek, pár slov o akcii, kedy je ďalšia */ popisy?: string[]; text?: string; dalsia?: string;
@@ -98,6 +100,19 @@ export function prepniVPolozke(id: string, pid: string, pole: PoleReakcie, kto: 
     const z = (y[pole] ?? []).filter((k) => k !== kto);
     return { ...y, [pole]: chce ? [...z, kto] : z, ...(meno && chce ? { mena: { ...y.mena, [kto]: meno } } : {}) };
   }));
+}
+
+/** OPRAVY 339: nahlásiť príspevok (raz za účet), dôvod je nepovinný */
+export function nahlasOdFarnika(id: string, pid: string, kto: string, dovod?: string) {
+  zmenZoznam(id, (l) => l.map((y) => {
+    if (y.id !== pid || (y.nahlasili ?? []).includes(kto)) return y;
+    const d = dovod?.trim().slice(0, 200);
+    return { ...y, nahlasili: [...(y.nahlasili ?? []), kto], nahlInfo: [...(y.nahlInfo ?? []), { cas: Date.now(), ...(d ? { dovod: d } : {}) }] };
+  }));
+}
+/** OPRAVY 339: farár — V poriadku · ponechať: štítok NAHLÁSENÉ zmizne, nahlasovatelia dostanú správu (0105) */
+export function ponechajOdFarnika(id: string, pid: string) {
+  zmenZoznam(id, (l) => l.map((y) => (y.id !== pid ? y : { ...y, nahlasili: [], nahlInfo: [], nahl: 0, ponechane: { cas: Date.now(), nahlasili: y.nahlasili ?? [] } })));
 }
 
 let verzia = 0;
