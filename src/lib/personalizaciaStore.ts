@@ -250,7 +250,9 @@ export async function nacitajZbierkyDB(): Promise<MojaZbierka[]> {
   const { data, error } = await supabase.from("zbierka_moja").select("*").order("vytvorene", { ascending: false });
   if (error) throw error;
   // OPRAVY 338 · 0104: aj zbierky, kde som príjemca (pohreb, svadba — zbierku založil a overil farár)
-  const p = await supabase.rpc("moje_zbierky_prijemcu");
+  // funkcia je len pre prihlásených (anon má revoke) → bez session nevolať, inak 401 v konzole
+  const { data: s } = await supabase.auth.getSession();
+  const p = s.session ? await supabase.rpc("moje_zbierky_prijemcu") : { data: [], error: null };
   const moje = (data || []) as Parameters<typeof riadokNaZbierka>[0][];
   const prijate = ((p.error ? [] : p.data) || []) as Parameters<typeof riadokNaZbierka>[0][];
   const ids = new Set(moje.map((r) => r.id));
