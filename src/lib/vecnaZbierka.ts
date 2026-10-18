@@ -72,8 +72,11 @@ export async function nacitajDary(stranka: string, z: VecnaZbierka): Promise<Pre
     const d = data as { pocet: number; ludi: number; spolu: number | null; darcovia: { meno: string; hodnota: number | null; cas: string }[] };
     p = { pocet: d.pocet, ludi: d.ludi, spolu: d.spolu, darcovia: (d.darcovia ?? []).map((r) => ({ meno: r.meno, hodnota: r.hodnota, cas: Date.parse(r.cas) })) };
   } else {
-    const l = lokDary(stranka, z.id);
-    p = { pocet: l.length, ludi: l.length, spolu: z.ukazHodnotu ? l.reduce((a, r) => a + (r.hodnota ?? 0), 0) : null, darcovia: z.ukazHodnotu ? l : l.map((r) => ({ ...r, hodnota: null })) };
+    const vsetky = lokDary(stranka, z.id);
+    // OPRAVY 362: moje zápisy = jeden riadok (posledné meno, súčet hodnôt), ako na serveri (0111)
+    const moje = vsetky.filter((r) => r.moj);
+    const l = moje.length ? [{ ...moje[0], hodnota: moje.some((r) => r.hodnota != null) ? moje.reduce((a, r) => a + (r.hodnota ?? 0), 0) : null }, ...vsetky.filter((r) => !r.moj)].sort((x, y) => y.cas - x.cas) : vsetky;
+    p = { pocet: vsetky.length, ludi: l.length, spolu: z.ukazHodnotu ? l.reduce((a, r) => a + (r.hodnota ?? 0), 0) : null, darcovia: z.ukazHodnotu ? l : l.map((r) => ({ ...r, hodnota: null })) };
   }
   prehlady.set(`${stranka}|${z.id}`, p); zmena();
   return p;
