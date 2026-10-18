@@ -1,6 +1,6 @@
 // ============================================================
 // OPRAVY 348 · koniec zbierky farnosti — zbierka farnosti je krátkodobá (30 dní od spustenia, NovaZbierka),
-// farár ju môže predĺžiť o 14 dní. Predĺžený koniec sa ukladá pri stránke (naboz_stav „koniecZbierok“).
+// farár ju môže predĺžiť o 14 dní. Sama neskončí — ukončuje ju farár (po termíne ostáva úloha v Treba vybaviť). Predĺžený koniec sa ukladá pri stránke (naboz_stav „koniecZbierok“).
 // ============================================================
 import { nacitajStav, ulozStavIsto } from "@/features/viera/stav";
 import type { SpustenaZbierka } from "./novaZbierka";
@@ -18,9 +18,9 @@ export function koniecZbierky(stranka: string, z: Pick<SpustenaZbierka, "id" | "
 export const dniDoKonca = (koniec: Date, teraz = Date.now()) => Math.ceil((koniec.getTime() - teraz) / DEN);
 export const datumKonca = (d: Date) => `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`;
 
-/** predĺži o 14 dní; vráti nový koniec alebo chybu (text) */
+/** predĺži o 14 dní (od termínu, a keď už prešiel, od dnes); vráti nový koniec alebo chybu (text) */
 export async function predlzZbierku(stranka: string, z: Pick<SpustenaZbierka, "id" | "spustena">): Promise<{ koniec: Date } | { e: string }> {
-  const n = new Date(koniecZbierky(stranka, z).getTime() + PREDLZENIE_DNI * DEN);
+  const n = new Date(Math.max(koniecZbierky(stranka, z).getTime(), Date.now()) + PREDLZENIE_DNI * DEN);
   const e = await ulozStavIsto("koniecZbierok", stranka, { ...konce(stranka), [z.id]: n.toISOString() });
   return e ? { e } : { koniec: n };
 }

@@ -291,7 +291,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   ];
   // OPRAVY 348 (2): zbierka farnosti 3 dni pred koncom — Predĺžiť o 14 dní (výsledok na mieste) · Ukončiť › (záložka Ukončenie)
   const konciace = dalsie.filter((z) => (z.farnost?.druh ?? "farnost") === "farnost" && (z.stav ?? "aktivna") === "aktivna")
-    .map((z) => ({ z, k: koniecZbierky(strankaId, z) })).filter(({ z, k }) => { const d = dniDoKonca(k, teraz0); return (d >= 0 && d <= 3) || !!predlzene[z.id]; }); // predĺžená ostáva na mieste s „predĺžená do … ✓“
+    .map((z) => ({ z, k: koniecZbierky(strankaId, z) })).filter(({ z, k }) => { const d = dniDoKonca(k, teraz0); return d <= 3 || !!predlzene[z.id]; }); // predĺžená ostáva na mieste s „predĺžená do … ✓“ · po termíne ostáva, kým ju farár nevybaví (odpovede 18. 10.)
   const pocetUloh = (prveKroky ? kroky.length - hotKroky : 0) + ulohy.length + konciace.filter(({ z }) => !predlzene[z.id]?.ok).length;
   const dniT = (d: number) => (d <= 0 ? "dnes" : d === 1 ? "zajtra" : `o ${d} ${d < 5 ? "dni" : "dní"}`);
   const predlz = async (z: SpustenaZbierka) => {
@@ -316,7 +316,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
         </button>))}
       {konciace.map(({ z, k }) => { const st = predlzene[z.id]; const suma = darcoviaPre(z.id).reduce((a, r) => a + r.suma, 0);
         return uloha(`k${z.id}`, <>
-          {textU(st?.ok ? z.nazov || "Zbierka" : `${z.nazov || "Zbierka"} končí ${dniT(dniDoKonca(k, teraz0))}`, st?.ok ? eur(suma) : `${datumKonca(k)} · ${eur(suma)}`)}
+          {textU(st?.ok ? z.nazov || "Zbierka" : dniDoKonca(k, teraz0) < 0 ? `${z.nazov || "Zbierka"} · termín bol ${datumKonca(k)}` : `${z.nazov || "Zbierka"} končí ${dniT(dniDoKonca(k, teraz0))}`, st?.ok ? eur(suma) : dniDoKonca(k, teraz0) < 0 ? eur(suma) : `${datumKonca(k)} · ${eur(suma)}`)}
           {st?.ok ? <span role="status" style={{ flex: mobil ? "1 1 100%" : undefined, fontSize: 14, fontWeight: 800, color: "var(--gInk)" }}>predĺžená do {st.ok} ✓</span> : <span style={{ flex: mobil ? "1 1 100%" : undefined, display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button type="button" aria-busy={!!st?.busy} onClick={() => void predlz(z)} style={{ minHeight: 44, padding: "0 14px", borderRadius: 12, border: st?.chyba ? "1.5px solid var(--rBd)" : "none", background: st?.chyba ? "var(--rBg)" : "#4B7A35", color: st?.chyba ? "var(--cRed)" : "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, boxShadow: "none" }}>{st?.busy ? "Predlžujem …" : st?.chyba ? "Nepodarilo sa · Skúsiť znova" : "Predĺžiť o 14 dní"}</button>
             <button type="button" onClick={() => ukoncit(z)} style={{ minHeight: 44, padding: "0 14px", borderRadius: 12, border: "1.5px solid var(--cardBd)", background: "var(--btn)", color: "var(--ink)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, boxShadow: "none" }}>Ukončiť ›</button>
