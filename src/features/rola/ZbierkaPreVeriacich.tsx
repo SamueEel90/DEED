@@ -110,11 +110,11 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
   const [ovpChyba, setOvpChyba] = useState<string | null>(null);
   const [ovpZnova, setOvpZnova] = useState(0);
   useEffect(() => { // overenie pre zvolený druh (pri zmene druhu nové)
-    if (!OVP_NAOSTRO || krok !== 1 || prijemca) return;
+    if (!OVP_NAOSTRO || krok !== 1 || prijemca || !ucetOk) return; // OPRAVY 340: bez overeného účtu farnosti sken nezačína
     let ziva = true;
     void ovpZaloz(stranka, druh).then((id) => { if (ziva) { setOvpId(id); setOvpChyba(null); } }, (e: unknown) => { if (ziva) setOvpChyba(textChyby(e)); });
     return () => { ziva = false; };
-  }, [druh, krok, stranka, prijemca, ovpZnova]);
+  }, [druh, krok, stranka, prijemca, ovpZnova, ucetOk]);
   useEffect(() => { // nový token do QR každých 15 s
     if (!OVP_NAOSTRO || krok !== 1 || !ovpId || prijemca) return;
     let ziva = true;
@@ -349,7 +349,14 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
           <button key={k} type="button" role="radio" aria-checked={on} onClick={() => zmenDruh(k)} style={{ height: 44, padding: "0 18px", borderRadius: 22, border: `${on ? 2 : 1}px solid ${on ? "var(--green)" : "var(--cardBd)"}`, background: on ? "var(--green)" : "var(--field)", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: on ? "#fff" : "var(--ink)", boxShadow: "none" }}>{PZT[k].t}</button>); })}
       </div>}
 
-      {krok === 1 && <div style={{ display: "flex", gap: 18, alignItems: "center", flexWrap: "wrap" }}>
+      {/* OPRAVY 340: podmienka už na kroku 1 — farár nezačne s rodinou, keď zbierku nedokončí */}
+      {krok === 1 && !ucetOk && <div role="alert" style={{ borderRadius: 16, background: "var(--goldBg)", border: "2px solid #C9A24A", padding: "14px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
+        <b style={{ fontSize: 17 }}>Najprv overte účet farnosti</b>
+        <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Na tento účet príde podiel farnosti. Bez overeného účtu sa zbierka nedá zapečatiť, preto sken {T.komu} zatiaľ nezačínajte. Overenie: zadajte IBAN v Prehľade a pošlite 0,01 € s kódom.</span>
+        {onOverit ? <button type="button" onClick={onOverit} style={{ ...tlZ, alignSelf: "flex-start" }}>Overiť ›</button>
+          : <span style={{ fontSize: 14, fontWeight: 700 }}>Účet overíte v Prehľade Správy farnosti.</span>}
+      </div>}
+      {krok === 1 && ucetOk && <div style={{ display: "flex", gap: 18, alignItems: "center", flexWrap: "wrap" }}>
         <span style={{ flex: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
           <button type="button" onClick={() => setQrVelky(true)} aria-label="Zväčšiť QR na celú obrazovku" style={{ width: 168, height: 168, borderRadius: 18, border: "none", background: "#fff", padding: 8, boxSizing: "border-box", display: "flex", cursor: "zoom-in", boxShadow: "none" }}>{token ? <DeedQr key={token} data={qrData} size={152} variant="svetly" /> : <span style={{ margin: "auto", fontSize: 13, color: "#5B5D53", textAlign: "center" }}>Pripravujem QR…</span>}</button>
           <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Ťuknite na QR a zväčší sa</span>

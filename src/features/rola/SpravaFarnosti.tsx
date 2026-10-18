@@ -2,6 +2,7 @@
 // KARTA 56D: Správa od prvého príchodu — všetky funkcie, žiadne ukážkové dáta (prototyp „Sprava farnosti - prvy prichod").
 // Profil, logo a percento = profil_stranky (ako charita), pripnuté = sprava_piny, hlavná zbierka = profil_stranky.centralna.
 // Omše, oznamy a nastavenia farnosti z modulu Viera (stav.ts — localStorage + zrkadlo naboz_stav) pod kľúčom stránky.
+import { UcetFarnostiKarta, useUcetFarnosti } from "./UcetFarnosti";
 import { VecnaNova, VecnaSprava } from "./VecnaZbierkaSprava";
 import { useVecneZbierky, fotoVecnej, doKedyText, type VecnaZbierka } from "@/lib/vecnaZbierka";
 import { NADPIS_SEKCIE } from "./KartaNastavenia";
@@ -190,7 +191,10 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const om = useZvoncekOkno(strankaId); // OPRAVY 289: zbierka pri každej omši z kalendára hlavného kostola
   const zvN = useZvoncek(strankaId);
   const hlavnySuhrn = suhrnHlavnej(strankaId, hlavnaRef);
-  const hlavnyUcet = najdiTestProfil(strankaId)?.ucet || "hlavný účet farnosti z registrácie";
+  // OPRAVY 340: jeden účet farnosti (zadaný v Prehľade) pre Hlavnú zbierku aj podiel v zbierke s overovateľom
+  const ucetF = useUcetFarnosti(strankaId);
+  const hlavnyUcet = ucetF.iban || najdiTestProfil(strankaId)?.ucet || "hlavný účet farnosti z registrácie";
+  const ukazUcet = () => { go("prehlad"); window.setTimeout(() => document.querySelector("[data-ucet-farnosti]")?.scrollIntoView({ block: "start", behavior: "smooth" }), 80); };
   useZmenyZbierok();
   useEffect(() => { void nacitajZbierkyStranky(strankaId); }, [strankaId]);
   const dalsie = zbierkyStrankyZPamate(strankaId);
@@ -371,6 +375,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
         {uplnost.pct < 100 && <span style={{ display: "block", height: 6, marginTop: 4, borderRadius: 3, background: "rgba(168,116,80,.25)", overflow: "hidden" }}><span style={{ display: "block", width: "100%", height: "100%", borderRadius: 3, background: "var(--green)", transformOrigin: "0 50%", transform: `scaleX(${uplnost.pct / 100})` }} /></span>}
       </span>
     </button>
+    <UcetFarnostiKarta strankaId={strankaId} mobil={mobil} />
     <div style={{ flex: "none", display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 10 }}>
       {DLAZDICE9.map(([k, t]) => { const v = k === "verejny"; return (
         <button key={k} type="button" onClick={() => (v ? verejny() : go(k))} style={{ position: "relative", minHeight: 96, padding: "8px 4px", borderRadius: 18, border: `1px solid ${v ? "var(--tBd)" : "var(--cardBd)"}`, background: v ? "var(--tBg)" : "var(--card)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, fontFamily: "inherit", boxShadow: "none" }}>
@@ -382,7 +387,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     {pripnute}
     {pinObsah}
     {cisla}
-  </> : <>{predPas}{pripnute}{pinObsah}{cisla}</>;
+  </> : <><UcetFarnostiKarta strankaId={strankaId} mobil={mobil} />{predPas}{pripnute}{pinObsah}{cisla}</>;
 
   // KARTA 56D §6 · OPRAVY 161: ďalšie zbierky stránky (zbierka farnosti / pre veriacich) — z účtu (tabuľka zbierka)
   const sprava = (m: string) => { setZbVyber(false); setZbBlok(false); setNoveOk(null); setZmazana(false); return m; };
@@ -490,7 +495,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     </section>}
     {pinVyber && <PripnutieVyber strankaId={strankaId} mobil={mobil} onSpat={() => { setPinVyber(false); setZbVyber(true); }}
       onHotovo={(t) => { setPinVyber(false); setNoveOk(t); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
-    {pz && <ZbierkaSOverovatelom stranka={strankaId} menoFarnosti={meno} ucetFarnosti={hlavnyUcet} mobil={mobil} pc={desktop} toast={toast} onZavri={() => setPz(false)} spatRef={pzSpat} onSpatText={setPzT}
+    {pz && <ZbierkaSOverovatelom stranka={strankaId} menoFarnosti={meno} ucetFarnosti={hlavnyUcet} mobil={mobil} pc={desktop} toast={toast} onZavri={() => setPz(false)} onOverit={() => { setPz(false); ukazUcet(); }} spatRef={pzSpat} onSpatText={setPzT}
       onHotovo={(_z, t) => { setPz(false); setNoveOk(t); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
     {vecnaNova && <VecnaNova strankaId={strankaId} mobil={mobil} onZavri={() => { setVecnaNova(false); setZbVyber(true); }}
       onHotovo={(z) => { setVecnaNova(false); setVecnaOtv({ z, nova: true }); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
