@@ -22,10 +22,29 @@ export type SposobEur = "karta" | "sepa";
 export type VysledokPlatby = { kanal: KanalPlatby; sposob?: SposobEur; suma: number; eur: number; darDeed: number; volba?: VolbaDaru; meno?: string };
 
 /** voľby mena v platbe — všade rovnaké (ako v profile), líši sa len text bez mena (Viera „Bohu známy veriaci / darca“) */
-function volbyMena(ja: JaIdentita & { nick?: string | null }, bezMena: string): [VerziaIdentity, string][] {
+export function volbyMena(ja: JaIdentita & { nick?: string | null }, bezMena: string): [VerziaIdentity, string][] {
   const meno = ja.meno || "Darca", priezv = ja.priezvisko || "", cele = `${meno} ${priezv}`.trim();
   return [[2, `${meno}${priezv ? ` ${priezv[0]}.` : ""}`], [1, cele], ...(ja.mesto ? [[5, `${cele}, ${ja.mesto}`] as [VerziaIdentity, string]] : []),
     ...(ja.nick ? [[3, ja.nick] as [VerziaIdentity, string]] : []), [4, bezMena]];
+}
+
+// ---- OPRAVY 304: rýchle sumy = podržať a zaplatené, naposledy použitým spôsobom ----
+const KLUC_SPOSOB = "deed.platba.sposob";
+/** spôsob pre rýchly dar: pod 5 € vždy SEPA, inak naposledy použitý (pri prvom dare SEPA) */
+export function sposobRychly(suma: number): SposobEur {
+  if (suma < KARTA_OD_EUR) return "sepa";
+  try { return localStorage.getItem(KLUC_SPOSOB) === "karta" ? "karta" : "sepa"; } catch { return "sepa"; }
+}
+const ulozSposob = (s?: SposobEur) => { if (s) try { localStorage.setItem(KLUC_SPOSOB, s); } catch { /* LS */ } };
+/** meno do zoznamu darcov podľa predvoľby (Darujete ako) */
+export function useMenoPredvolby(): (volba: VolbaDaru) => string | undefined {
+  const ja = usePouzivatel(); const sektor = useSektorDarcu();
+  return (volba) => (volba.verzia !== 4 ? volbyMena(ja, volbaBezMena(sektor)).find(([v]) => v === volba.verzia)?.[1] : undefined);
+}
+/** rýchly dar registrovaného: bez okna, meno z „Darujete ako“, spôsob naposledy použitý */
+export function useRychlyDar(): (suma: number) => VysledokPlatby {
+  const menoZ = useMenoPredvolby();
+  return (suma) => { const volba = nacitajPredvolbu(), sposob = sposobRychly(suma); ulozSposob(sposob); return { kanal: "eur", sposob, suma, eur: suma, darDeed: 0, volba, meno: menoZ(volba) }; };
 }
 
 const DAR_PRE_NAS = 3; // € — dobrovoľný dar platforme (prototyp)
@@ -93,8 +112,9 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
   const eur = kanal === "eur";
   const [text, setText] = useState(sumaStart ? String(sumaStart).replace(".", ",") : "");
   const suma = Number(text.replace(",", ".")) || 0;
-  const [krok, setKrok] = useState<Krok>(sumaStart ? (eur ? "sposob" : "zhrnutie") : "suma");
-  const [sposob, setSposob] = useState<SposobEur | undefined>(undefined);
+  // OPRAVY 304: pod 5 € sa krok Spôsob preskočí (len SEPA)
+  const [krok, setKrok] = useState<Krok>(sumaStart ? (eur && sumaStart >= KARTA_OD_EUR ? "sposob" : "zhrnutie") : "suma");
+  const [sposob, setSposob] = useState<SposobEur | undefined>(eur && sumaStart && sumaStart < KARTA_OD_EUR ? "sepa" : undefined);
   const [darDeed, setDarDeed] = useState(false);
   const [nap, setNap] = useState(false); // nápoveda „Podrž tlačidlo…"
   const [volba, setVolba] = useState<VolbaDaru>(nacitajPredvolbu);
@@ -107,7 +127,7 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
   const [cas] = useState(() => new Date());
   useEffect(() => { const r = requestAnimationFrame(() => setOtvorene(true)); return () => cancelAnimationFrame(r); }, []);
 
-  const kroky: Krok[] = eur ? ["suma", "sposob", "zhrnutie"] : ["suma", "zhrnutie"];
+  const kroky: Krok[] = eur && !(suma > 0 && suma < KARTA_OD_EUR) ? ["suma", "sposob", "zhrnutie"] : ["suma", "zhrnutie"];
   const pod1 = eur && suma > 0 && suma < MIN_DAR_EUR;
   const mozeDalej = suma > 0 && !pod1;
   const eurHodnota = eur ? suma : kanal === "deed" ? suma / 100 : suma;
@@ -129,11 +149,11 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
   const zatvor = () => { if (krok !== "spracovanie") { setOtvorene(false); setTimeout(onClose, 250); } };
   const dalej = () => {
     if (!mozeDalej) return;
-    if (krok === "suma") setKrok(eur ? "sposob" : "zhrnutie");
+    if (krok === "suma") { if (eur && suma < KARTA_OD_EUR) { setSposob("sepa"); setKrok("zhrnutie"); } else setKrok(eur ? "sposob" : "zhrnutie"); }
   };
   const spat = () => { const i = kroky.indexOf(krok as Krok); if (i > 0) setKrok(kroky[i - 1]); else zatvor(); };
   const zaplat = () => {
-    if (registrovany) ulozPredvolbu(volba);
+    if (registrovany) { ulozPredvolbu(volba); ulozSposob(sposob); }
     const meno = registrovany && volba.verzia !== 4 ? volbyMena(ja, volbaBezMena(sektor)).find(([v]) => v === volba.verzia)?.[1] : undefined;
     setKrok("spracovanie");
     setTimeout(() => { onHotovo({ kanal, sposob, suma, eur: eurHodnota, darDeed: dar, volba: registrovany ? volba : undefined, meno }); setKrok("hotovo"); }, 1800);
@@ -229,7 +249,7 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
         <div style={{ fontSize: 14, color: "var(--ink2)" }}>Vyber spôsob platby pre <b style={{ fontVariantNumeric: "tabular-nums" }}>{eK(suma)}</b></div>
         <MoznostSposobu disabled={kartaNie} onClick={() => { setSposob("karta"); setKrok("zhrnutie"); }} ikona={IKONA_KARTA}
           nadpis="Platobná karta" popis="Visa · Mastercard · okamžite · 3-D Secure · poplatok 1,4 % + 0,15 €" />
-        {kartaNie && <div style={{ marginTop: -6, fontSize: 12.5, lineHeight: 1.4, color: "var(--ink3)", padding: "0 4px" }}>Kartou sa dá platiť od 3 €.</div>}
+        {kartaNie && <div style={{ marginTop: -6, fontSize: 12.5, lineHeight: 1.4, color: "var(--ink3)", padding: "0 4px" }}>Kartou sa dá platiť od {KARTA_OD_EUR} €.</div>}
         <MoznostSposobu onClick={() => { setSposob("sepa"); setKrok("zhrnutie"); }} ikona={IKONA_BANKA}
           nadpis="Bankový prevod (SEPA)" popis="pripísanie do 1 prac. dňa · bez poplatku" />
       </>
@@ -417,6 +437,38 @@ function RiadokPlatby({ kanal, sposob, registrovany }: { kanal: KanalPlatby; spo
     </div>
   );
 }
+/** OPRAVY 304: „Darujete ako: Martin Konaľ ⌄“ vedľa Zdieľať · QR — ťuk = tie isté čipy ako v Zhrnutí, voľba sa pamätá pre ďalšie dary.
+ *  Vracia tlačidlo (polovica radu) a pod ním panel s čipmi na celú šírku radu. */
+export function DarujeteAko({ styl }: { styl: CSSProperties }) {
+  const ja = usePouzivatel();
+  const sektor = useSektorDarcu();
+  const bezMena = volbaBezMena(sektor);
+  const moznosti = useMemo(() => volbyMena(ja, bezMena), [ja, bezMena]);
+  const [volba, setVolba] = useState<VolbaDaru>(nacitajPredvolbu);
+  const [otv, setOtv] = useState(false);
+  const [ok, setOk] = useState(false);
+  const meno = volba.verzia === 4 ? menoBezMena(sektor) : moznosti.find(([v]) => v === volba.verzia)?.[1] ?? bezMena;
+  const vyber = (v: VerziaIdentity) => { const n = { ...volba, verzia: v }; setVolba(n); ulozPredvolbu(n); setOtv(false); setOk(true); window.setTimeout(() => setOk(false), 1800); };
+  return (<>
+    <button type="button" className="zb-karta" onClick={() => setOtv((x) => !x)} aria-expanded={otv} style={{ ...styl, gap: 6, padding: "0 10px" }}>
+      {ok ? <span role="status" style={{ minWidth: 0, color: "var(--gInk)" }}>Uložené ✓</span>
+        : <span style={{ minWidth: 0, display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.2, textAlign: "left" }}>
+          <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--ink3)" }}>Darujete ako</span>
+          <span style={{ maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 14.5 }}>{meno}</span></span>}
+      <span aria-hidden="true" style={{ flex: "none", transform: otv ? "rotate(180deg)" : "none", transition: "transform .2s" }}>⌄</span>
+    </button>
+    {otv && <div style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: 8, padding: "12px 12px 10px", borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)" }}>
+      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".05em", color: "var(--ink3)" }}>V ZOZNAME DARCOV SA UKÁŽETE AKO</div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {moznosti.map(([v, l]) => { const on = v === volba.verzia; return (
+          <button key={v} type="button" onClick={() => vyber(v)} aria-pressed={on}
+            style={{ minHeight: 40, padding: "8px 14px", borderRadius: 99, border: `1.5px solid ${on ? "var(--gBd)" : "var(--pillBd)"}`, background: on ? "var(--gSoft)" : "transparent", color: on ? "var(--gInk)" : "var(--ink2)", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>{l}</button>); })}
+      </div>
+      <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Platí pre ďalšie dary, kým to nezmeníte.</span>
+    </div>}
+  </>);
+}
+
 /** „V ZOZNAME DARCOV SA UKÁŽEŠ AKO" + „Zobraziť sumu" (do 2 € sa suma nezobrazí nikdy) */
 export function Identita({ volba, setVolba, eur }: { volba: VolbaDaru; setVolba: (v: VolbaDaru) => void; eur: number }) {
   const ja = usePouzivatel();

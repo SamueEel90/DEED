@@ -5,6 +5,8 @@ import { useStitAppky } from "@/lib/stitAppky";
 import "@/styles/sprava.css";
 import { LazyMotion, domAnimation, MotionConfig } from "motion/react";
 import { C } from "@/theme";
+import { OverenieHost, OverenieVrstva } from "@/features/overenie/OverenieHost";
+import { useOverenieStav } from "@/lib/overeniePrijemcu";
 import { aplikujNastavenia } from "@/lib/nastaveniaAppky";
 import type { Tema } from "@/components/context";
 import { GaleriaContext, ScrollContext, ScrollElContext, ViacContext, StrankaAkcieContext, UpgradeContext, UpgradePanel, Lightbox, DychajucePozadie, MotivContext, PortalContext, LayoutContext, DeedToaster, FeedSkeleton, PullToRefresh, StitRevealHost } from "@/shared";
@@ -214,7 +216,12 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   const [walletReq, setWalletReq] = useState(0); // ☰ → Peňaženka: otvor peňaženku v Profile
   const [akcie, setAkcie] = useState<StrankaAkcie>({}); // kontextové akcie aktuálneho modulu (Pridať / Ukáž talent / Nástenka)
   const [upgradeOpen, setUpgradeOpen] = useState(false); // pasívny → „Staň sa aktívnym" panel
-  const [aktivacia, setAktivacia] = useState(false); // overlay aktívnej registrácie (upgrade)
+  // overlay aktívnej registrácie (upgrade) · OPRAVY 320: alebo prihlásenie „Už mám účet“ — po ňom človek ostane tam, odkiaľ prišiel
+  const [aktivacia, setAktivacia] = useState<false | "aktivny" | "login">(false);
+  // OPRAVY 338: QR farnosti (/overenie/…) otvorený bez prihlásenia → Prihlásiť / Zaregistrovať a potom späť na overenie
+  const ovp = useOverenieStav();
+  const [ovpReg, setOvpReg] = useState<false | "aktivny" | "login">(false);
+  if (aktivacia === "login" && session && !("demo" in session && session.demo) && session.typ !== "pasivny") setAktivacia(false); // prihlásený → vrstva preč, appka ostala tam, kde bola
   const [intro, setIntro] = useState(false); // prvé spustenie — 3-kartový sprievodca
   const [akoFunguje, setAkoFunguje] = useState(false); // „Ako DEED funguje" z menu Viac
   // KARTA 57 F: tím DEED (deed_admin, 0070) — Viac → TÍM DEED → Štatistika editora oznámení
@@ -250,7 +257,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   useVrstva(viac, () => setViac(false));
   useVrstva(!!galeria, () => setGaleria(null));
   useVrstva(upgradeOpen, () => setUpgradeOpen(false));
-  useVrstva(aktivacia, () => setAktivacia(false));
+  useVrstva(!!aktivacia, () => setAktivacia(false));
   useVrstva(orgReg, () => { setOrgReg(false); cakajRegistraciuOrg(false); });
   useVrstva(!!badgeSheet, () => setBadgeSheet(null));
   useVrstva(!!splitSheet, () => setSplitSheet(null));
@@ -335,6 +342,8 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   // §1 — bez prihlásenia zobraz registráciu (príp. resume rozrobeného onboardingu);
   // po dokončení flow zavolá setSession → useSession re-renderuje → appka.
   if (!session) {
+    if (ovp && !ovpReg && !resumeInfo) return <OverenieHost prihlaseny={false} onPrihlasit={() => setOvpReg("login")} onRegistrovat={() => setOvpReg("aktivny")} />;
+    if (ovp && ovpReg) return <Registracia start={ovpReg} onHotovo={() => {}} />;
     if (!uvodVideny && !resumeInfo) {
       return (
         <div style={{ height: "100%", position: "relative" }}>
@@ -443,7 +452,8 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
         {upgradeOpen && (
           <UpgradePanel
             onClose={() => setUpgradeOpen(false)}
-            onAktivovat={() => { setUpgradeOpen(false); setAktivacia(true); }}
+            onAktivovat={() => { setUpgradeOpen(false); setAktivacia("aktivny"); }}
+            onPrihlasit={() => { setUpgradeOpen(false); setAktivacia("login"); }}
           />
         )}
 
@@ -457,10 +467,12 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
           </div>
         )}
 
+        {/* OPRAVY 338: overenie príjemcu zbierky (sken QR farnosti / upozornenie s kódom) */}
+        <OverenieVrstva onPrihlasit={() => setAktivacia("login")} onRegistrovat={() => setAktivacia("aktivny")} />
         {/* overlay aktívnej registrácie (po kliku „Stať sa aktívnym") */}
         {aktivacia && (
           <div style={{ position: "absolute", inset: 0, zIndex: 80, background: C.bg }}>
-            <Registracia start="aktivny" onHotovo={() => setAktivacia(false)} />
+            <Registracia start={aktivacia} onHotovo={() => setAktivacia(false)} />
           </div>
         )}
       </div>

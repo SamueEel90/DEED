@@ -12,6 +12,7 @@ import { RichTextInput } from "@/components/richtext";
 import { sanitizujHtml } from "@/lib/richtext";
 import { OrezFotky } from "@/components/orezfotky";
 import { spracujFotku } from "@/lib/obrazok";
+import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { potvrditTuknutim } from "@/features/zbierka/Platba";
 import { FLAGS } from "./stav";
@@ -210,8 +211,16 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
     limit: f.pozvanie === "zavazne" && parseInt(f.limit, 10) > 0 ? parseInt(f.limit, 10) : undefined,
     zbierka: undefined,
   });
+  // OPRAVY 335: chyba zverejnenia priamo nad tlačidlom; rozpísané ostáva
+  const [chybaZv, setChybaZv] = useState<string | null>(null);
+  const [zverejnuje, setZverejnuje] = useState(false);
   const zverejni = async () => {
-    if (chyba) return;
+    if (chyba || zverejnuje) return;
+    setChybaZv(null); setZverejnuje(true);
+    try { await zverejniVnutri(); } catch (e) { setChybaZv(e instanceof Error ? e.message : "Oznam sa nepodarilo zverejniť. Skúste znova."); }
+    finally { setZverejnuje(false); }
+  };
+  const zverejniVnutri = async () => {
     if (uprava) { const n = await upravOznamCharity(uprava, zData()); setUprava(null); setF(prazdny(zadarmo)); toast(n.zmenaPrihlasenym && n.zmenaPrihlasenym !== uprava.zmenaPrihlasenym ? "Uložené. Prihláseným pošleme správu o zmene." : "Uložené."); setPohlad("sprava"); return; }
     const n = await zverejniOznam({ ...zData(), nadLimit: nadLimit || undefined });
     setHotovo(n); setF(prazdny(zadarmo));
@@ -334,12 +343,13 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
       <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: "var(--ink3)" }}>KAM PÔJDE</span><b style={{ fontSize: 16 }}>{kam[0]}</b><span style={{ fontSize: 13.5, lineHeight: 1.45, color: "var(--ink2)" }}>{kam[1]}</span>
     </section>
     {nadLimit && <section style={{ borderRadius: 18, background: C.goldBg, border: `1px solid ${C.goldBd}`, padding: "12px 16px", fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>Máte {verejnych} bežiace verejné oznamy, v cene sú {OZNAMY_CFG.verejneNaraz}. Ďalší stojí <b style={{ color: "var(--ink)" }}>{OZNAMY_CFG.cenaNadLimit} €</b>. Výzva na súrnu pomoc sa nepočíta.</section>}
-    {hotovo ? <Hotovo o={hotovo} onUpravit={() => upravit(hotovo)} onZrusit={async () => { await zrusOznamCharity(hotovo); setHotovo(null); toast("Oznam je zrušený. Nikomu nič neprišlo."); }} onNovy={() => setHotovo(null)} />
+    {hotovo ? <Hotovo o={hotovo} onUpravit={() => upravit(hotovo)} onZrusit={async () => { const e = await zrusOznamCharity(hotovo); if (e) { toast(e); return; } setHotovo(null); toast("Oznam je zrušený. Nikomu nič neprišlo."); }} onNovy={() => setHotovo(null)} />
     : <>
       {chyba && <span role="status" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 13.5, fontWeight: 700, color: C.gold, textAlign: "center" }}><span style={{ width: 8, height: 8, flex: "none", borderRadius: "50%", background: C.gold }} />{chyba}</span>}
       {tuk
         ? <button type="button" onDoubleClick={() => void zverejni()} aria-disabled={!!chyba} style={{ width: "100%", minHeight: 54, border: "none", borderRadius: 16, background: "#4B7A35", opacity: chyba ? 0.5 : 1, cursor: chyba ? "default" : "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "#fff" }}>{uprava ? "Dvakrát kliknite a uložte" : "Dvakrát kliknite a zverejnite"}</button>
-        : <div style={{ ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo label={lblDrz} disabled={!!chyba} onConfirm={() => void zverejni()} /></div>}
+        : <><ChybaPriTlacidle text={chybaZv} uklada={zverejnuje} onZnova={() => void zverejni()} nadpis="Nezverejnilo sa" dovetok="Rozpísané ostáva." />
+          <div style={{ ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo label={zverejnuje ? "Ukladá sa…" : lblDrz} disabled={!!chyba} onConfirm={() => void zverejni()} /></div></>}
       {poznDrz && <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink3)", textAlign: "center" }}>{poznDrz}</span>}
       {uprava && <button type="button" onClick={() => { setUprava(null); setF(prazdny(zadarmo)); setPohlad("sprava"); }} style={{ ...odkaz, alignSelf: "center", minHeight: 44, color: "var(--ink3)" }}>Zrušiť úpravu</button>}
     </>}
@@ -409,7 +419,7 @@ function Spravovat({ strankaId, ph, dva, onUpravit, toast }: { strankaId: string
           {zrId === o.id && <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "12px 14px", borderRadius: 14, background: C.rSoft, border: `1px solid ${C.rBd}` }}>
             <span style={{ fontSize: 14, fontWeight: 700 }}>{o.druh === "vyzva" ? "Zrušiť výzvu? Pri nej sa ukáže „Zrušené“." : `Zrušiť akciu? Pri ozname sa ukáže „Zrušené“${pocet ? ` a ${pocet} ${pocet === 1 ? "prihlásenému" : "prihláseným"} príde správa` : ""}.`}</span>
             <div style={{ display: "flex", gap: 10 }}><button type="button" onClick={() => setZrId(null)} style={tlO}>Späť</button>
-              <button type="button" onClick={async () => { await zrusOznamCharity(o); setZrId(null); toast(pocet ? "Zrušené. Prihláseným posielame správu." : "Zrušené."); }} style={{ ...tlO, border: "none", background: C.red, color: "#fff" }}>Áno, zrušiť</button></div>
+              <button type="button" onClick={async () => { const e = await zrusOznamCharity(o); if (e) { toast(e); return; } setZrId(null); toast(pocet ? "Zrušené. Prihláseným posielame správu." : "Zrušené."); }} style={{ ...tlO, border: "none", background: C.red, color: "#fff" }}>Áno, zrušiť</button></div>
           </div>}
           {o.upravene && !o.zrusene && akcia && <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink3)" }}>Pri úprave dátumu alebo miesta pošleme prihláseným správu. Pri ozname sa ukáže „upravené“.</span>}
         </section>);

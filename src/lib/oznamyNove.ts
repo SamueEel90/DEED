@@ -76,11 +76,17 @@ export async function nacitajOznamyStranky(stranka: string): Promise<OznamCharit
   }
   return oznamyStranky(stranka);
 }
+/** OPRAVY 335: pri chybe servera vyhodí Error so slovenskou vetou (zverejnenie ju ukáže nad tlačidlom); do pamäte až po uložení */
 async function zapis(o: OznamCharity) {
+  if (supabase) {
+    let data: OznamCharity;
+    try { data = await bezDataUrl(o, "oznamy"); } catch (e) { throw new Error(e instanceof Error ? e.message : "Fotky sa nepodarilo nahrať. Skúste znova.", { cause: e }); }
+    const { error } = await supabase.from("oznam_charity").upsert({ id: o.id, stranka: o.stranka, druh: o.druh, data, zverejnene: o.zverejnene, zrusene: o.zrusene ?? null }, { onConflict: "id" });
+    if (error) throw new Error("Nepodarilo sa uložiť na server. Skontrolujte pripojenie a skúste znova.");
+  }
   const l = pamat.get(o.stranka) ?? [];
   pamat.set(o.stranka, l.some((x) => x.id === o.id) ? l.map((x) => (x.id === o.id ? o : x)) : [o, ...l]);
   zmena();
-  if (supabase) await supabase.from("oznam_charity").upsert({ id: o.id, stranka: o.stranka, druh: o.druh, data: await bezDataUrl(o, "oznamy"), zverejnene: o.zverejnene, zrusene: o.zrusene ?? null }, { onConflict: "id" });
 }
 
 // ---- pravidlá ----
@@ -110,13 +116,16 @@ export async function upravOznamCharity(stary: OznamCharity, z: Partial<OznamCha
   return n;
 }
 /** zrušiť akciu → „Zrušené" + správa všetkým prihláseným; oznam v 5-min lehote zmizne úplne */
-export async function zrusOznamCharity(o: OznamCharity) {
-  if (vLehote(o)) { pamat.set(o.stranka, (pamat.get(o.stranka) ?? []).filter((x) => x.id !== o.id)); zmena(); if (supabase) await supabase.from("oznam_charity").delete().eq("id", o.id); return; }
-  await zapis({ ...o, zrusene: new Date().toISOString() });
+export async function zrusOznamCharity(o: OznamCharity): Promise<string | null> {
+  if (vLehote(o)) {
+    if (supabase) { const { error } = await supabase.from("oznam_charity").delete().eq("id", o.id); if (error) return "Nepodarilo sa zrušiť. Skontrolujte pripojenie a skúste znova."; }
+    pamat.set(o.stranka, (pamat.get(o.stranka) ?? []).filter((x) => x.id !== o.id)); zmena(); return null;
+  }
+  try { await zapis({ ...o, zrusene: new Date().toISOString() }); return null; } catch (e) { return e instanceof Error ? e.message : "Nepodarilo sa zrušiť. Skúste znova."; }
 }
 /** DEV — prihlásenie / účasť na skúšku (v produkcii klik človeka pri ozname) */
 export async function simulujUcast(o: OznamCharity) {
   const MENA = ["Jana K.", "Peter M.", "Lucia B.", "Martin Š.", "Eva H.", "Tomáš R."];
-  if (o.pozvanie === "zavazne") { if (o.limit && o.prihlaseni.length >= o.limit) return; await zapis({ ...o, prihlaseni: [...o.prihlaseni, { meno: MENA[o.prihlaseni.length % MENA.length], cas: new Date().toISOString() }] }); }
-  else if (o.pozvanie === "nezavazne") await zapis({ ...o, zucastniSa: o.zucastniSa + 1 });
+  try { if (o.pozvanie === "zavazne") { if (o.limit && o.prihlaseni.length >= o.limit) return; await zapis({ ...o, prihlaseni: [...o.prihlaseni, { meno: MENA[o.prihlaseni.length % MENA.length], cas: new Date().toISOString() }] }); }
+  else if (o.pozvanie === "nezavazne") await zapis({ ...o, zucastniSa: o.zucastniSa + 1 }); } catch { /* DEV simulácia */ }
 }

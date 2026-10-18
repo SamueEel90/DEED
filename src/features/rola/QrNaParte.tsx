@@ -4,6 +4,7 @@
 // pri páse pod parte sa parte zmenší · upozornenie pri rohu · „Nemáte miesto? Bez QR alebo Vytvoriť nové zo šablóny ›".
 // Pred zapečatením sa s QR netlačí (miesto sa uloží). OPRAVY 204: QR = odkaz zbierky (data URL z lib/qrObrazok).
 // ============================================================
+import { DOMENA } from "@/lib/adresa";
 import { useState, type CSSProperties } from "react";
 import { Volby } from "@/components/Volby";
 
@@ -27,7 +28,7 @@ function harokHtml(src: string, n: QrParte, kratky: string, qrObr: string): stri
     ${n.qr && n.kde === "pod" ? `<div style="flex:none;display:flex;align-items:center;gap:4mm;border-top:0.3mm solid #ddd;padding-top:3mm;width:100%"><img src="${qrObr}" style="width:30mm;height:30mm"><span><b style="font-size:11pt">Prispieť rodine</b><br><span style="font-size:9pt;color:#444">${kratky}</span></span></div>` : ""}
   </div>`;
 }
-export function tlacParte(src: string, n: QrParte, kratky = "deed.sk/z/…", qrSrc = "") {
+export function tlacParte(src: string, n: QrParte, kratky = `${DOMENA}/z/…`, qrSrc = "") {
   const f = document.createElement("iframe"); f.style.cssText = "position:fixed;width:0;height:0;border:0;right:0;bottom:0"; document.body.appendChild(f);
   const d = f.contentDocument; if (!d) return;
   const qr = qrSrc;
@@ -36,7 +37,7 @@ export function tlacParte(src: string, n: QrParte, kratky = "deed.sk/z/…", qrS
   window.setTimeout(() => { f.contentWindow?.focus(); f.contentWindow?.print(); window.setTimeout(() => f.remove(), 1500); }, 600);
 }
 
-export function QrNaParte({ src, zapecatene = false, onSablona, onZmena, onIne, kratky = "deed.sk/z/…", qrSrc = "" }: {
+export function QrNaParte({ src, zapecatene = false, onSablona, onZmena, onIne, kratky = `${DOMENA}/z/…`, qrSrc = "" }: {
   src: string; zapecatene?: boolean; onSablona?: () => void; onZmena?: (n: QrParte) => void; onIne?: () => void; kratky?: string; qrSrc?: string;
 }) {
   const [n, setN] = useState<QrParte>({ qr: true, kde: "pod", papier: "A5" });

@@ -4,7 +4,8 @@
 // Pred „Podržte a uložte“ vždy riadok s novou cenou (skúšobná doba: budúca cena; mesačne: od ďalšej platby;
 // ročne: pomerná časť do konca roka). Odobratie = miesto zamrzne (nezmaže sa), dá sa obnoviť.
 // ============================================================
-import { useState, type CSSProperties } from "react";
+import { useRef, useState, type CSSProperties } from "react";
+import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import { GaleriaEditor, TextovePolia } from "./obsahZbierky";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
@@ -54,20 +55,37 @@ export function KostolyMiesta({ strankaId, mobil, onOmse }: { strankaId: string;
   const zahod = () => { zmazKoncept(KON); setF(null); setPotvrd(false); };
   const zamrz = !!f && vsetky.find((m) => m.id === f.id)?.zamrznute;
 
-  const uloz = async () => {
-    if (!f || !f.nazov.trim()) return;
+  // OPRAVY 335: chyba uloženia nad tlačidlom Podržte…; rozpísané ostáva
+  const [chybaU, setChybaU] = useState<string | null>(null);
+  const [chybaKde, setChybaKde] = useState<"dole" | "odobrat">("dole");
+  const [uklada, setUklada] = useState(false);
+  const opakuj = useRef<(() => void) | null>(null);
+  const skus = async (akcia: () => Promise<string | null>, poOk: () => void, kde: "dole" | "odobrat" = "dole") => {
+    if (uklada) return;
+    setUklada(true); setChybaU(null); setChybaKde(kde);
+    const e = await akcia();
+    setUklada(false);
+    if (e) { opakuj.current = () => { void skus(akcia, poOk, kde); }; setChybaU(e); return; }
+    poOk();
+  };
+  const uloz = async (): Promise<string | null> => {
+    if (!f || !f.nazov.trim()) return null;
     const ziadost = novy && platca;
+    const e = await ulozMiesto(strankaId, { ...f, nazov: f.nazov.trim(), adresa: f.adresa.trim(), popis: f.popis.trim(), ...(ziadost ? { platca: { od: new Date().toISOString(), stav: "caka" as const } } : {}) });
+    if (e) return e;
     if (novy) zmazKoncept(KON);
-    await ulozMiesto(strankaId, { ...f, nazov: f.nazov.trim(), adresa: f.adresa.trim(), popis: f.popis.trim(), ...(ziadost ? { platca: { od: new Date().toISOString(), stav: "caka" as const } } : {}) });
     const n = aktivne.length + (novy ? 1 : 0);
     setHlaska(ziadost ? `${f.nazov.trim()} čaká na potvrdenie platiteľa (${platca}) · na stránke bude po potvrdení` : `${f.nazov.trim()} je na stránke · cena teraz ${cenaMiest(n)} € mesačne`);
     setF(null);
+    return null;
   };
   const odober = async () => {
-    if (!f) return;
-    await zamrazMiesto(strankaId, f.id, true);
+    if (!f) return null;
+    const e = await zamrazMiesto(strankaId, f.id, true);
+    if (e) return e;
     setHlaska(`${f.nazov} je odobraté · stránka miesta zamrzla, dá sa obnoviť · cena ${cenaMiest(aktivne.length - 1)} € mesačne od ďalšej platby`);
     setF(null); setPotvrd(false);
+    return null;
   };
 
   if (f) {
@@ -108,13 +126,15 @@ export function KostolyMiesta({ strankaId, mobil, onOmse }: { strankaId: string;
           ? <div role="alert" style={{ padding: "12px 14px", borderRadius: 12, border: "1.5px solid #A34A2A", display: "flex", flexDirection: "column", gap: 10 }}>
               <b style={{ fontSize: 15 }}>{omse ? `V tomto kostole je ${omsiT(omse)}. Odobrať ho aj tak?` : "Odobrať toto miesto?"}</b>
               <span style={{ fontSize: 13.5, color: "var(--ink2)", lineHeight: 1.45 }}>Stránka miesta zamrzne, nič sa nezmaže a dá sa obnoviť. {riadokCeny(aktivne.length - 1, aktivne.length, skusobne)}</span>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><DrzTlacidlo ms={1200} styl={{ minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1.5px solid #A34A2A", background: "transparent", color: "#A34A2A", fontSize: 14.5, fontWeight: 800 }} onHotovo={() => { void odober(); }}>Podržte · odobrať</DrzTlacidlo><button type="button" onClick={() => setPotvrd(false)} style={tl(false)}>Nechať</button></div>
+              <ChybaPriTlacidle text={chybaKde === "odobrat" ? chybaU : null} uklada={uklada} onZnova={() => opakuj.current?.()} nadpis="Neodobralo sa" />
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><DrzTlacidlo ms={1200} styl={{ minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1.5px solid #A34A2A", background: "transparent", color: "#A34A2A", fontSize: 14.5, fontWeight: 800 }} onHotovo={() => { void skus(odober, () => undefined, "odobrat"); }}>Podržte · odobrať</DrzTlacidlo><button type="button" onClick={() => setPotvrd(false)} style={tl(false)}>Nechať</button></div>
             </div>
           : <button type="button" onClick={() => setPotvrd(true)} style={{ ...tl(false), alignSelf: "flex-start", color: "#A34A2A", borderColor: "#A34A2A" }}>Odobrať miesto</button>)}
     </>;
     const dole = <>
         {f.nazov.trim()
-          ? <PodrzTlacidlo label={zamrz ? "Podržte a obnovte" : "Podržte a uložte"} trvanie={1200} onConfirm={() => { void (zamrz ? zamrazMiesto(strankaId, f.id, false).then(() => { setHlaska(`${f.nazov} je znova na stránke · cena teraz ${cenaMiest(n)} € mesačne`); setF(null); }) : uloz()); }} />
+          ? <><ChybaPriTlacidle text={chybaKde === "dole" ? chybaU : null} uklada={uklada} onZnova={() => opakuj.current?.()} dovetok="Rozpísané ostáva." />
+            <PodrzTlacidlo label={uklada ? "Ukladá sa…" : zamrz ? "Podržte a obnovte" : "Podržte a uložte"} trvanie={1200} onConfirm={() => { void skus(zamrz ? async () => { const e = await zamrazMiesto(strankaId, f.id, false); if (!e) { setHlaska(`${f.nazov} je znova na stránke · cena teraz ${cenaMiest(n)} € mesačne`); setF(null); } return e; } : uloz, () => undefined); }} /></>
           : <span role="status" style={{ padding: "12px 14px", borderRadius: 12, background: "var(--goldBg)", fontSize: 14.5, fontWeight: 800 }}>Ešte chýba: názov</span>}
     </>;
     if (ram) return <RamFormulara nazov={novy ? "Nové miesto" : f.nazov || "Miesto"} onSpat={() => { setF(null); setPotvrd(false); }} dole={dole}>{telo}{odobrat}</RamFormulara>;

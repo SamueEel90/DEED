@@ -16,15 +16,18 @@ type Mapa = Record<string, string>;
 const KLUC = (stranka: string) => `deed.videne.${stranka.replace(/[^a-zA-Z0-9_.-]/g, "_").slice(0, 68)}`; // kľúč moje_data (0084b)
 const MAX = 600;
 
+// OPRAVY 333: keď sa do localStorage zapísať nedá (plné úložisko, súkromné okno), videné drží pamäť appky —
+// opakovaná návšteva bez znovunačítania sa zbalí aj tak; do účtu sa vtedy nič neposiela (prázdne by účet zmazalo)
+const pamat = new Map<string, Mapa>();
 function citaj(stranka: string): Mapa {
-  try { const m = JSON.parse(localStorage.getItem(KLUC(stranka)) || "{}"); return m && typeof m === "object" ? m as Mapa : {}; } catch { return {}; }
+  const z = pamat.get(KLUC(stranka));
+  try { const m = JSON.parse(localStorage.getItem(KLUC(stranka)) || "{}"); return m && typeof m === "object" ? { ...z, ...m as Mapa } : { ...z }; } catch { return { ...z }; }
 }
 function zapis(stranka: string, m: Mapa) {
-  try {
-    const k = Object.keys(m);
-    if (k.length > MAX) k.slice(0, k.length - MAX).forEach((x) => { if (x !== "__n") delete m[x]; }); // najstaršie preč
-    localStorage.setItem(KLUC(stranka), JSON.stringify(m));
-  } catch { /* LS */ }
+  const k = Object.keys(m);
+  if (k.length > MAX) k.slice(0, k.length - MAX).forEach((x) => { if (x !== "__n") delete m[x]; }); // najstaršie preč
+  pamat.set(KLUC(stranka), m);
+  try { localStorage.setItem(KLUC(stranka), JSON.stringify(m)); } catch { return; }
   zmenene(KLUC(stranka)); // prihlásený → do účtu
 }
 /** zlúčenie zariadenia s účtom: všetko videné z oboch; pri inom podpise platí zariadenie */
@@ -39,7 +42,7 @@ function doUctu(stranka: string) {
   const k = KLUC(stranka);
   if (registrovane.has(k)) return;
   registrovane.add(k);
-  zaregistrujKluc(k, () => {}, zluc); // snímka stránky sa nemení (zbalí sa až pri ďalšej návšteve)
+  zaregistrujKluc(k, () => {}, zluc, true); // snímka stránky sa nemení (zbalí sa až pri ďalšej návšteve)
 }
 
 /** krátky podpis obsahu — zmena textu, času, miesta alebo fotky = iný podpis (ZMENENÉ) */
@@ -53,18 +56,22 @@ export function podpis(...casti: unknown[]): string {
 export interface Videnia { stav: (id: string, p: string) => StavVidene; oznac: (id: string, p: string) => void }
 export const VideneKontext = createContext<Videnia | null>(null);
 
-/** snímka pri otvorení stránky; „nové“ len ak tu človek už bol (prvá návšteva = všetko celé bez štítkov) */
-export function useVidenePocas(stranka: string): Videnia {
-  const [v] = useState<Videnia>(() => {
-    doUctu(stranka); // už synchronizovaný účet sa zlúči hneď (pred snímkou)
-    const snimka = citaj(stranka), bol = snimka.__n === "1";
-    zapis(stranka, { ...snimka, __n: "1" });
-    return {
-      stav: (id, p) => (!(id in snimka) ? (bol ? "nove" : "plne") : snimka[id] !== p ? "zmenene" : "videne"),
-      oznac: (id, p) => { const m = citaj(stranka); if (m[id] !== p) { m[id] = p; zapis(stranka, m); } },
-    };
-  });
-  return v;
+/** snímka pri otvorení stránky; „nové“ len ak tu človek už bol (prvá návšteva = všetko celé bez štítkov)
+ *  OPRAVY 333: `vypnute` (náhľad zo Správy) — nič nečíta ani nezapisuje, všetko celé ako u nového veriaceho;
+ *  iná stránka v tom istom komponente = nová snímka (predtým ostávala snímka a zápis prvej stránky) */
+export function useVidenePocas(stranka: string, vypnute = false): Videnia | null {
+  const [v, setV] = useState<{ k: string; v: Videnia | null }>(() => ({ k: `${vypnute}|${stranka}`, v: vypnute ? null : snimka(stranka) }));
+  if (v.k !== `${vypnute}|${stranka}`) { const n = { k: `${vypnute}|${stranka}`, v: vypnute ? null : snimka(stranka) }; setV(n); return n.v; }
+  return v.v;
+}
+function snimka(stranka: string): Videnia {
+  doUctu(stranka); // už synchronizovaný účet sa zlúči hneď (pred snímkou)
+  const s = citaj(stranka), bol = s.__n === "1";
+  zapis(stranka, { ...s, __n: "1" });
+  return {
+    stav: (id, p) => (!(id in s) ? (bol ? "nove" : "plne") : s[id] !== p ? "zmenene" : "videne"),
+    oznac: (id, p) => { const m = citaj(stranka); if (m[id] !== p) { m[id] = p; zapis(stranka, m); } },
+  };
 }
 /** zoradí: neprečítané (celé) hore, videné (zbalené) pod nimi; inak poradie ostáva */
 export function zoradVidene<T>(v: Videnia | null, l: T[], kluc: (x: T) => [string, string]): T[] {

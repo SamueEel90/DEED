@@ -6,6 +6,8 @@
 // Len rozloženie, farby podľa štítu a témy, Späť všade, povolenia z jedného miesta (stav.ts).
 // Funkcie za tlačidlami NIE SÚ — každé tlačidlo otvorí obrazovku „Pripravujeme".
 // ============================================================
+import { UKAZKOVE_STRANKY } from "@/lib/mojeStranky";
+import { TlZbalit } from "@/features/verejny-profil/zbalit";
 import { pripojTestovaciuStranku } from "@/lib/stranka";
 import { nacitajNastavenia } from "@/lib/nastaveniaStranky";
 import { otvorPridatSkutok } from "@/features/skutok/otvor";
@@ -258,16 +260,14 @@ const POZICIA_TYPU = (t: TypStranky): Pozicia => (t === "firma" ? "b2b" : t === 
 export function SpravaStranky(props: SpravaStrankyProps) {
   const [typ, setTyp] = useState<TypStranky>(props.typ ?? "charita"); // DEV lišta ho vie prepnúť
   const { desktop } = useLayout();
-  const ts = useTestStav();
   // KARTA 50 · §2: farnosť má vlastnú Správu (rovnaká kostra, položky farnosti) — bez štítu, programov, dokladov a dorovnania
-  if (typ === "farnost") return <SpravaFarnosti onBack={props.onBack} strankaId={props.strankaId ?? "farnost"} nazov={props.nazov}
+  // OPRAVY 326: stránka farnosti je vždy Správa farnosti — žiadny prepínač ju neotvorí pod inou rolou (charita by čítala a zapisovala jej zbierky)
+  const farnostStranka = props.typ === "farnost" || UKAZKOVE_STRANKY.some((x) => x.k === props.strankaId && x.typ === "farnost");
+  if (typ === "farnost" || farnostStranka) return <SpravaFarnosti onBack={props.onBack} strankaId={props.strankaId ?? "farnost"} nazov={props.nazov}
     test={TESTOVACIA && FLAGS.dev_tier_switcher ? (onPozriet: () => void) => (
       <PrepinacPodania pas={!desktop} sektor="farnost" style={desktop ? { padding: "2px 2px 4px" } : { marginTop: 14 }}
         vzhlad={{ stranka: props.strankaId ?? "farnost", onPozriet, bezVolby: true }} /* OPRAVY 202: farnosť len Nástenka */
-        dalsie={<>
-          <TestVolba pas={!desktop} nazov="Typ" volby={TYPY_STRANOK.filter((t) => !TYP_SKRYTY[t]).map((t) => [t, TYP_NAZOV[t]] as [TypStranky, string])} hodnota={typ} onVolba={setTyp} />
-          <TestVolba pas={!desktop} nazov="Rola" volby={[["hlavny", "Hlavný správca"], ["spravca", "Správca"], ["pomocnik", "Pomocník"], ["organizator", "Organizátor"]] as [RolaStranky, string][]} hodnota={ts.rola} onVolba={(r) => zmenTestStav({ rola: r })} />
-        </>} />) : undefined} />;
+        /> /* OPRAVY 326: „Ďalšie testovacie ›“ (Typ, Rola) zo Správy farnosti preč — farnosť sa nedá otvoriť ako charita */) : undefined} />;
   return <SpravaStrankyTypu {...props} typ={typ} onTyp={setTyp} />;
 }
 
@@ -321,7 +321,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "svetlo", n
   const vlastne = zbierkyStrankyZPamate(strankaId);
   const rozpisana = konceptZbierkyZPamate(strankaId);
   useEffect(() => { void nacitajZbierkyStranky(strankaId); void nacitajKonceptZbierky(strankaId); }, [strankaId]);
-  const beziacich = vlastne.length + (bezUkazok ? 0 : PH_ZBIERKY.filter((z) => !/^Centrálna zbierka/.test(z.t)).length); // limit je mimo centrálnej
+  const beziacich = vlastne.filter(bezi).length + (bezUkazok ? 0 : PH_ZBIERKY.filter((z) => !/^Centrálna zbierka/.test(z.t)).length); // limit je mimo centrálnej
   const [limitOkno, setLimitOkno] = useState(false);
   const [spravZb, setSpravZb] = useState<ZbierkaNaSpravu | null>(null); // KARTA 38: ktorú zbierku spravujem
   const [verejny, setVerejny] = useState(false); // OPRAVY 107: tlačidlo Verejný profil = skutočný verejný profil
@@ -779,18 +779,22 @@ function Sekcia({ id, nazov, suhrn, akcia, zbal, prepni, children }: { id: strin
       <button onClick={() => prepni(id)} tabIndex={-1} aria-hidden="true" style={{ flex: "none", width: 26, minHeight: 44, padding: 0, border: "none", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>{sipka}</button>
     </div>
     {children}
+    <TlZbalit onZbal={() => prepni(id)} />{/* OPRAVY 321 */}
   </>);
   return (<>
     <button onClick={() => prepni(id)} aria-expanded style={{ minHeight: 44, padding: "0 4px", border: "none", background: "transparent", display: "flex", alignItems: "center", gap: 8, cursor: "pointer", textAlign: "left", width: "100%", marginBottom: -6 }}>
       <span style={{ ...nadpisSekcie, padding: 0, flex: 1 }}>{nazov.toUpperCase()}</span>{sipka}
     </button>
     {children}
+    <TlZbalit onZbal={() => prepni(id)} />{/* OPRAVY 321 */}
   </>);
 }
 
 // ============================================================
 // PREHĽAD
 // ============================================================
+/** OPRAVY 326: Bežiace = len aktívne; ukončené (aj „zmazané“, bod 264) medzi bežiacimi nikdy */
+const bezi = (z: SpustenaZbierka) => (z.stav ?? "aktivna") === "aktivna";
 type Spolocne = { strankaId: string; entita: string; spravuj: (z: ZbierkaNaSpravu) => void; vlastne: SpustenaZbierka[]; rozpisana: NovaZbierkaData | null; uvod: boolean; krok1: boolean; pozvana: boolean; tier: Tier; piny: PolozkaSpravy[]; prepniPin: (id: PolozkaSpravy) => void; otvorPolozku: (id: PolozkaSpravy) => void; otvor: (s: Sub) => void; nova: boolean; stit: StitCharity; sada: StitSada; menu: Menu; mobil: boolean; tablet: boolean; zbal: Zbalenie; prepniZbal: (id: string, otv?: boolean) => void };
 
 function KartaStitu({ stit, sada = "care", onZoom, mobil, vyska }: { stit: StitCharity; sada?: StitSada; onZoom: () => void; mobil?: boolean; vyska?: number }) {
@@ -827,7 +831,7 @@ function StitZoom({ stit, sada, onClose }: { stit: StitCharity; sada: StitSada; 
 }
 
 function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit, sada, menu, mobil, tablet, zbal, prepniZbal, onZoom, uvod, krok1, pozvana, vlastne, hornaCast }: Spolocne & { onZoom: () => void; hornaCast?: React.ReactNode }) {
-  const PHZ: PhZbierka[] = [...vlastne.map(naPh), ...(nova ? [] : PH_ZBIERKY)]; // OPRAVY 114: spustené zbierky navrchu
+  const PHZ: PhZbierka[] = [...vlastne.filter(bezi).map(naPh), ...(nova ? [] : PH_ZBIERKY)]; // OPRAVY 114: spustené zbierky navrchu
   const VSE = menu.vse; // KARTA 36: na pripnutie len položky, ktoré typ má
   const ph = mobil && !tablet; // telefón (OPRAVY 96: tablet má časti ako PC)
   const [obd, setObd] = useState(0);
@@ -1322,6 +1326,7 @@ function ObrZbierky(s: Spolocne) {
           pod={centralnaVidno ? cisla(cC)[0] : "Doplňte text a fotku, potom ju uvidia darcovia"} cislo={cisloObjektu("Z", `${strankaId}-centralna`)} suma={cisla(cC)[1]} onClick={() => otvorCen(0)} />
         {sek.map((x, i) => { const c = nova ? NULA : cislaSektora(x.id); return (
           <RiadokZb key={x.id} id={`cen-${x.id}`} hier={i + 1} foto={x.foto ? `url('${x.foto}') center/cover no-repeat #3a3530` : ""} stit={`SEKTOR ${i + 1}`} nazov={x.nazov} pod={cisla(c)[0]} cislo={cisloObjektu("Z", `${strankaId}-${x.id}`)} suma={cisla(c)[1]} onClick={() => otvorCen(i + 1)} />); })}
+        <TlZbalit onZbal={() => prepniZbal("cen-sektory", false)} />{/* OPRAVY 321 */}
         </>}
       </>}
       {(list.length > 0 || rozpisana) && <span style={{ ...nadpisZb, paddingTop: centralna ? 8 : 0 }}>ZBIERKY</span>}
@@ -1395,7 +1400,7 @@ export function ObrNastavenia({ tier, otvor, mobil, farnost }: { tier: Tier; otv
     ["STRÁNKA", [{ t: "Zrušiť stránku charity", red: true, tap: nn("zrusit") }]],
   ];
   if (farnost) sekcie.splice(1, sekcie.length - 1,
-    ["PRÍJEM DAROV", [{ t: "Sumy pri daroch", s: "eurá a EURC · nastavujú sa pri hlavnej zbierke", tap: farnost.hlavna }, { t: "Účet farnosti", s: "hlavný účet z registrácie", tap: nn("ucty") }]],
+    ["PRÍJEM DAROV", [{ t: "Sumy pri daroch", s: "eurá a EURC · nastavujú sa pri hlavnej zbierke", tap: farnost.hlavna }, { t: "Účet farnosti", s: "IBAN, overenie a zmena účtu", tap: nn("ucty") }]],
     ["ĽUDIA", [{ t: "Ľudia farnosti", s: "kto spravuje stránku, pozvať ďalšieho", tap: farnost.ludia }]],
     ["FARNOSŤ", [{ t: "Údaje farnosti", s: "cirkev, patrí pod, kontakt a fakturačné údaje", tap: nn("udaje") }, { t: "Program a platba", s: "predplatné farnosti, filiálky, faktúry", tap: farnost.predplatne }]],
     ["BEZPEČNOSŤ A ÚDAJE", [{ t: "Prihlásené zariadenia", v: String(pocetZariadeni()), tap: nn("zariadenia") }, { t: "Súhlasy", s: "čo farnosť odsúhlasila", tap: nn("suhlasy") }]],

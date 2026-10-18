@@ -13,30 +13,49 @@ import { useSlovaFarnosti } from "@/lib/mojeFarnosti";
 import { useZvoncek, ulozZvoncek, nastavenieZvoncek, nazovZvoncek, podakovanieZvoncek, ZVONCEK_NAZOV, type NastavenieZvoncek } from "@/lib/zvoncekZbierka";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { HLAVNA_NAZOV_MAX } from "@/lib/centralnaZbierka";
+import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { ZvoncekKarta } from "@/features/verejny-profil/NastenkaFarnosti";
 import { TextovePolia, GaleriaEditor } from "./obsahZbierky";
 import { SumyPriDarcoch } from "./SumyPriDarcoch";
+import { QrZalozka } from "./QrNastroje";
 import { kartaK, nadpisK, drobneK, textK, Taby, UkladaSa, AkoDarovat, useUkladanie, UlozenePri, PasUlozene } from "./spravaCasti";
 import { sumaEur } from "@/lib/suma";
 
 const eur = (n: number) => `${sumaEur(n)}`;
 const ludi = (n: number) => `${n} ${n === 1 ? "človek" : n >= 2 && n <= 4 ? "ľudia" : "ľudí"}`;
 
-export function SpravaZvoncek({ strankaId, mobil, toast, onSpat }: { strankaId: string; mobil: boolean; toast: (m: string) => void; onSpat: () => void }) {
+export function SpravaZvoncek({ strankaId, mobil, toast, onSpat, meno = "", startQr, onTlacQr }: { strankaId: string; mobil: boolean; toast: (m: string) => void; onSpat: () => void;
+  /** OPRAVY 347: záložka QR · názov farnosti na plagát */ meno?: string; startQr?: boolean; onTlacQr?: (id: string) => void }) {
   const n = useZvoncek(strankaId);
   const om = useZvoncekOkno(strankaId);
   const slova = useSlovaFarnosti(strankaId);
   const pod = podakovanieZvoncek(n, slova);
   const dnes = omseZvoncek(kostolKal(strankaId), new Date());
-  const [tab, setTab] = useState(0);
+  const [tab, setTab] = useState(startQr ? 5 : 0);
   const [hotovo, setHotovo] = useState<string | null>(null);
   const tm = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(tm.current), []);
   // OPRAVY 313: po každej zmene pri poli „Uložené ✓“ (alebo „Neuložilo sa · Skúsiť znova“), dole pás Všetko je uložené
   const u = useUkladanie();
+  const [chybaUk, setChybaUk] = useState<string | null>(null);
+  const [ukl, setUkl] = useState(false);
+  const ukonci = async () => {
+    if (ukl) return;
+    const kon = !n.ukoncena;
+    setUkl(true); setChybaUk(null);
+    let e: string | null;
+    try { e = await ulozZvoncek(strankaId, { ...n, ukoncena: kon }); } catch (x) { e = x instanceof Error ? x.message : "Neuložilo sa. Skúste znova."; }
+    setUkl(false);
+    if (e) { setChybaUk(e); return; }
+    setHotovo(kon ? `${nazovZvoncek(n)} je ukončená ✓` : `${nazovZvoncek(n)} beží ✓`);
+    tm.current = window.setTimeout(onSpat, 1800);
+  };
   const zmen = (p: Partial<NastavenieZvoncek>, pole: string) => u.sleduj([pole], ulozZvoncek(strankaId, { ...n, ...p }), () => ulozZvoncek(strankaId, nastavenieZvoncek(strankaId)));
+  const [teraz0] = useState(() => Date.now());
   const dalsia = dalsiaOmsa(om.okno, strankaId);
+  // OPRAVY 350: dnes bez omše → najbližšia omša z kalendára (okno v budúcnosti je ona, inak ďalšia po okne)
+  const najblizsia = !om.okno ? "" : om.okno.zac > teraz0 ? nadpisOmse(om.okno) : dalsia.startsWith("ďalšia omša ") && !dalsia.includes("zatiaľ") ? dalsia.slice(12) : "zatiaľ nie je v kalendári";
 
   // ---- čísla (prázdne = 0) ----
   const teraz = om.dary.reduce((a, r) => a + r.suma, 0);
@@ -70,7 +89,7 @@ export function SpravaZvoncek({ strankaId, mobil, toast, onSpat }: { strankaId: 
     <section style={kartaK}>
       <span style={nadpisK}>Pri každej omši · dnes</span>
       {dnes.length ? dnes.sort((a, b) => a.m - b.m).map((o) => <span key={o.m} style={{ display: "flex", gap: 12, fontSize: 15 }}><b style={{ width: 52, fontVariantNumeric: "tabular-nums" }}>{o.cas}</b><span>{o.nazov}</span></span>)
-        : <span style={textK}>{om.okno ? "Dnes v kalendári omša nie je." : "Najprv nastavte omše v Omšiach a kalendári."}</span>}
+        : <span style={textK}>{om.okno ? `Najbližšia omša: ${najblizsia}` /* OPRAVY 350 */ : "Najprv nastavte omše v Omšiach a kalendári."}</span>}
       {om.okno && <span style={drobneK}>Na stránke teraz: {nadpisOkna(om.okno)} · {dalsia}</span>}
     </section>
     <section style={kartaK}><SumyPriDarcoch stranka={strankaId} kluc="zvoncek" nadpis="Ukázať sumy pri darcoch" /></section>
@@ -118,13 +137,10 @@ export function SpravaZvoncek({ strankaId, mobil, toast, onSpat }: { strankaId: 
           ? "Na stránke farnosti sa neukazuje. Keď ju spustíte znova, ukáže sa s tým istým názvom, textom a fotkami."
           : `Na stránke farnosti sa prestane ukazovať. Čo sa vyzbieralo (${eur(spolu)}), ostáva v Hlavnej zbierke, nič sa nevracia.`}</span>
         <div style={{ ["--gGrad" as string]: n.ukoncena ? "linear-gradient(90deg,#4B7A35,#8DB866)" : undefined }}>
-          <PodrzTlacidlo label={n.ukoncena ? "Podržte a spustite znova" : "Podržte a ukončite"} trvanie={1500}
-            onConfirm={() => {
-              const kon = !n.ukoncena;
-              zmen({ ukoncena: kon }, "ukoncenie");
-              setHotovo(kon ? `${nazovZvoncek(n)} je ukončená ✓` : `${nazovZvoncek(n)} beží ✓`);
-              tm.current = window.setTimeout(onSpat, 1800);
-            }} />
+          {/* OPRAVY 335: hotovo až po uložení; chyba priamo nad tlačidlom */}
+          <ChybaPriTlacidle text={chybaUk} uklada={ukl} onZnova={() => { void ukonci(); }} />
+          <PodrzTlacidlo label={ukl ? "Ukladá sa…" : n.ukoncena ? "Podržte a spustite znova" : "Podržte a ukončite"} trvanie={1500}
+            onConfirm={() => { void ukonci(); }} />
         </div>
         <span style={drobneK}>Držte prst na tlačidle, kým sa nenaplní.</span>
       </section>;
@@ -139,7 +155,7 @@ export function SpravaZvoncek({ strankaId, mobil, toast, onSpat }: { strankaId: 
         </span>
         {tab === 0 && <UkladaSa />}
       </div>
-      <Taby akt={tab} onTab={setTab} skryte={[1, 4]} />
+      <Taby akt={tab} onTab={setTab} skryte={[1, 4]} qr />
       {tab === 0 && (mobil
         ? <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{nastavenie}{vpravo}</div>
         : <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.3fr) minmax(0,1fr)", gap: 16, alignItems: "start" }}>
@@ -149,6 +165,7 @@ export function SpravaZvoncek({ strankaId, mobil, toast, onSpat }: { strankaId: 
       {tab === 0 && <PasUlozene u={u} onSpat={onSpat} mobil={mobil} />}
       {tab === 2 && statistiky}
       {tab === 3 && ukoncenie}
+      {tab === 5 && <QrZalozka strankaId={strankaId} meno={meno} id="zvon" mobil={mobil} onTlac={onTlacQr} />}
       {/* DEV panel — len testovacia verzia */}
       {TESTOVACIA && <div style={{ border: "1px dashed rgba(122,78,122,.45)", borderRadius: 14, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <span style={{ flex: 1, minWidth: 160, fontSize: 12, fontWeight: 700, color: "var(--ink3)" }}>DEV · test omše · {ludi(terazLudi)} pri tejto omši</span>

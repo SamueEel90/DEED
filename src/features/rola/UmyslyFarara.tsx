@@ -6,13 +6,15 @@
 // Zapísaný: Poslať správu · Odslúžené ✓ (zbalený riadok Odslúžené · N) · Presunúť na inú omšu.
 // Hore + Zapísať úmysel (osobne alebo telefonicky): text, kto, omša.
 // ============================================================
+import { NADPIS_SEKCIE } from "./KartaNastavenia";
+import { TlZbalit } from "@/features/verejny-profil/zbalit";
 import { useState, type CSSProperties } from "react";
 import { odFarnikov, pridajOdFarnika, upravOdFarnika, zmazOdFarnika, type PolozkaFarnika } from "@/lib/odFarnikov";
 import { useKalendar, kostolKal, omseDna, dniTyzdna, rozsahTyzdna, iso, dvt, DNI_K, minuty } from "@/lib/kalendarFarnosti";
 import { PodrzZmaz } from "./OznamyFarnosti";
 
 const karta: CSSProperties = { borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)" };
-const kicker: CSSProperties = { fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: "var(--acc)", padding: "4px 2px 0" };
+const kicker: CSSProperties = { ...NADPIS_SEKCIE, paddingTop: 0 }; // OPRAVY 325 (medzera nad riadkom)
 const pole: CSSProperties = { height: 48, padding: "0 14px", borderRadius: 12, background: "var(--field)", border: "1px solid var(--cardBd)", fontFamily: "inherit", fontSize: 15, fontWeight: 600, color: "var(--ink)", outline: "none", width: "100%", boxSizing: "border-box" };
 const MAX_TYZDNOV = 12;
 const terazMs = () => Date.now();
@@ -135,12 +137,13 @@ export function UmyslyFarara({ strankaId, meno, mobil, toast }: { strankaId: str
             <button type="button" onClick={() => { setPresun(u.id); setSpravaPre(null); }} style={tlB()}>Presunúť na inú omšu</button>
           </div>}
           <div><PodrzZmaz onZmaz={() => { zmazOdFarnika(strankaId, u.id); setOtv(null); toast("Zmazané."); }} /></div>
+          <TlZbalit onZbal={() => { setOtv(null); setPresun(null); setSpravaPre(null); }} />{/* OPRAVY 321 */}
         </div>}
       </div>);
   };
 
   return <>
-    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", paddingTop: 16 }}>
       <span style={{ ...kicker, flex: 1 }}>ÚMYSLY NA OMŠU · LEN PRE VÁS</span>
       <button type="button" onClick={() => setNovy((n) => !n)} aria-expanded={novy} style={{ ...tlB(true), minHeight: 40 }}>+ Zapísať úmysel</button>
     </div>
@@ -169,6 +172,7 @@ export function UmyslyFarara({ strankaId, meno, mobil, toast }: { strankaId: str
             <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 14 }}>{u.t}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{[u.zapis ? omsaText(u.zapis) : null, u.kto, `odslúžené ${kedy(u.odsluzene!)}`].filter(Boolean).join(" · ")}</span></span>
             <button type="button" onClick={() => upravOdFarnika(strankaId, u.id, { odsluzene: undefined })} style={{ ...tlB(), minHeight: 40 }}>Vrátiť</button>
           </div>))}
+        <TlZbalit onZbal={() => setOdsOtv(false)} />{/* OPRAVY 321 */}
       </section>}
     </>}
   </>;

@@ -22,7 +22,7 @@ import { Input, Switch, RichTextInput, FotoVyber, Foto } from "@/shared";
 import { cistyText } from "@/lib/richtext";
 import { pressable } from "@/components/pressable";
 import { N, SheetPanel } from "./ui";
-import { nacitajStav, ulozStav } from "./stav";
+import { nacitajStav, ulozStav, ulozStavIsto } from "./stav";
 import type { Farnost, VieraFeedItem, ReakciaTyp } from "./mock";
 
 export type UserOznamTyp = "jubilejny" | "podakovanie" | "modlitba" | "spomienkovy";
@@ -32,6 +32,8 @@ export interface SelfAddNastavenie { on: boolean; poplatok: number; }
 export const nacitajSelfAdd = (fid: string): SelfAddNastavenie =>
   nacitajStav<SelfAddNastavenie>("selfadd", fid, { on: true, poplatok: 0 });
 export const ulozSelfAdd = (fid: string, v: SelfAddNastavenie) => ulozStav("selfadd", fid, v);
+/** OPRAVY 335: zápis, na ktorý sa čaká */
+export const ulozSelfAddIsto = (fid: string, v: SelfAddNastavenie) => ulozStavIsto("selfadd", fid, v);
 
 // ---- prednastavené obrázky (§5) — Unsplash mock; Foto má emoji fallback ----
 type Preset = { id: string; label: string; url: string; emoji: string };

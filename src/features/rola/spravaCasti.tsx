@@ -1,5 +1,6 @@
 // KARTA 48 · spoločné diely Správy zbierky a Správy centrálnej a sektorov (1 : 1 podľa prototypov).
 // Hlavička „Ukladá sa samo", pás dorovnania, záložky, Stav, Ako budú ľudia darovať, Zapečatené, QR na plagát, Štatistiky.
+import { ADRESA } from "@/lib/adresa";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { DeedQr } from "@/components/deedqr";
@@ -89,12 +90,12 @@ export function DorovnaniePas({ ini, firma, pomer, pod, onClick }: { ini: string
 }
 
 // KARTA 55 · E: záložka Príbeh (index 4) sa ukazuje hneď za Nastavením; indexy ostatných ostávajú
-export const TABY = ["Nastavenie", "Doklady", "Štatistiky", "Ukončenie", "Príbeh"] as const;
-const PORADIE_TABOV = [0, 4, 1, 2, 3];
-export function Taby({ akt, onTab, odsadenie = 12, skryte = [], pribeh = false }: { akt: number; onTab: (i: number) => void; odsadenie?: number; /** KARTA 50: farnosť bez záložky Doklady */ skryte?: number[]; /** KARTA 55: záložka Príbeh */ pribeh?: boolean }) {
+export const TABY = ["Nastavenie", "Doklady", "Štatistiky", "Ukončenie", "Príbeh", "QR"] as const;
+const PORADIE_TABOV = [0, 4, 1, 2, 3, 5]; // OPRAVY 347: QR len pri zbierkach farnosti
+export function Taby({ akt, onTab, odsadenie = 12, skryte = [], pribeh = false, qr = false }: { akt: number; onTab: (i: number) => void; odsadenie?: number; /** OPRAVY 347: záložka QR (farnosť) */ qr?: boolean; /** KARTA 50: farnosť bez záložky Doklady */ skryte?: number[]; /** KARTA 55: záložka Príbeh */ pribeh?: boolean }) {
   return (
     <div role="tablist" style={{ display: "flex", gap: 2, borderBottom: "1px solid var(--cardBd)", overflowX: "auto" }}>
-      {PORADIE_TABOV.map((i) => { const t = TABY[i]; if (skryte.includes(i) || (i === 4 && !pribeh)) return null; const on = akt === i; return (
+      {PORADIE_TABOV.map((i) => { const t = TABY[i]; if (skryte.includes(i) || (i === 4 && !pribeh) || (i === 5 && !qr)) return null; const on = akt === i; return (
         <button key={t} type="button" role="tab" aria-selected={on} onClick={() => onTab(i)} style={{ flex: "none", height: 48, padding: `0 ${odsadenie}px`, border: "none", borderBottom: `3px solid ${on ? "var(--green)" : "transparent"}`, background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, whiteSpace: "nowrap", color: on ? "var(--ink)" : "var(--ink3)", boxShadow: "none" }}>{t}</button>); })}
     </div>);
 }
@@ -197,12 +198,13 @@ export function Zapecatene({ riadky }: { riadky: [string, string][] }) {
 }
 
 /** QR na plagát a pokladničku + verejné číslo zbierky (ťuk = skopírovať) */
-export function QrKarta({ nazov, slug, cislo, organizacia, toast, odkaz: odkazP, nadpis = "QR na plagát a pokladničku", popis = "Na profile je QR v module pri Zdieľať · QR. Tu je verzia na tlač.", stav }: {
+export function QrKarta({ nazov, slug, cislo, organizacia, toast, odkaz: odkazP, nadpis = "QR na plagát a pokladničku", popis = "Na profile je QR v module pri Zdieľať · QR. Tu je verzia na tlač.", stav, onPlagat }: {
   nazov: string; slug: string; cislo?: string; organizacia?: string; toast: (m: string) => void;
   /** OPRAVY 162 · QR farnosti: vlastný odkaz (jeden QR z registrácie), nadpis, veta a stav („Teraz vedie na …") */
   odkaz?: string; nadpis?: string; popis?: string; stav?: { t: string; zelena: boolean };
+  /** OPRAVY 347: farnosť — plagát v jednom okne pre všetky QR (namiesto starého PDF) */ onPlagat?: () => void;
 }) {
-  const odkaz = odkazP ?? `https://deed.sk/z/${slug}`;
+  const odkaz = odkazP ?? `${ADRESA}/z/${slug}`;
   const [pdf, setPdf] = useState(false);
   const [skop, setSkop] = useState(false);
   // KARTA 56D §5: tlačidlá ukážu výsledok na sebe
@@ -223,7 +225,7 @@ export function QrKarta({ nazov, slug, cislo, organizacia, toast, odkaz: odkazP,
           </span>}
           <span style={{ fontSize: 13.5, color: "var(--ink3)", overflowWrap: "anywhere" }}>{odkaz.replace(/^https:\/\//, "").replace(/\?qr=1$/, "")}</span>
           <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" aria-busy={pdf} onClick={async () => { if (pdf) return; setPdf(true); try { await stiahniPlagat({ nazov, odkaz, cislo, organizacia }); ukaz("pdf"); } catch (e) { toast((e as Error).message); } finally { setPdf(false); } }} style={{ ...obrysK, ...(hotovo === "pdf" ? { borderColor: "var(--green)", color: "var(--gInk)" } : {}) }}>{hotovo === "pdf" ? "Stiahnuté ✓" : "Stiahnuť plagát (PDF)"}</button>
+            {onPlagat ? <button type="button" onClick={onPlagat} style={obrysK}>Plagát A4 ›</button> : <button type="button" aria-busy={pdf} onClick={async () => { if (pdf) return; setPdf(true); try { await stiahniPlagat({ nazov, odkaz, cislo, organizacia }); ukaz("pdf"); } catch (e) { toast((e as Error).message); } finally { setPdf(false); } }} style={{ ...obrysK, ...(hotovo === "pdf" ? { borderColor: "var(--green)", color: "var(--gInk)" } : {}) }}>{hotovo === "pdf" ? "Stiahnuté ✓" : "Stiahnuť plagát (PDF)"}</button>}
             <button type="button" onClick={async () => { const ok = await kopiruj(odkaz); if (ok) ukaz("odkaz"); else toast("Odkaz sa nepodarilo skopírovať"); }} style={{ ...obrysK, ...(hotovo === "odkaz" ? { borderColor: "var(--green)", color: "var(--gInk)" } : {}) }}>{hotovo === "odkaz" ? "Odkaz skopírovaný ✓" : "Kopírovať odkaz"}</button>
           </span>
         </span>
@@ -312,7 +314,14 @@ export function Statistiky({ d, tier, mobil, toast }: { d: DataStatistik; tier: 
 
 const NAST_D = "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1";
 /** OPRAVY 157: Nastavenia · aplikácie a účtu — v každej Správe hneď pod Verejný profil (nad Prehľadom) */
-export function TlacidloNastavenia({ on, onClick }: { on: boolean; onClick: () => void }) {
+export function TlacidloNastavenia({ on, onClick, modre = false }: { on: boolean; onClick: () => void; modre?: boolean }) {
+  // OPRAVY 347: farnosť — modré Nastavenia, rovnako vysoké ako Verejný profil (56 px), aktívne = rám 2 px
+  if (modre) return (
+    <button type="button" onClick={onClick} aria-current={on ? "page" : undefined} style={{ flex: "none", width: "100%", height: 56, padding: "0 14px", border: `${on ? 2 : 1}px solid var(--bBd)`, borderRadius: 18, cursor: "pointer", display: "flex", alignItems: "center", gap: 11, textAlign: "left", fontFamily: "inherit", boxShadow: "none", background: "var(--bSoft)", color: "var(--bInk)" }}>
+      <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="var(--bInk)" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "none" }}><path d={NAST_D} /></svg>
+      <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 15, fontWeight: 800, color: "var(--bInk)" }}>Nastavenia</span><span style={{ fontSize: 12, color: "var(--bInk2)" }}>účet, predplatné, vzhľad</span></span>
+      <span aria-hidden="true" style={{ fontSize: 18, color: "var(--bInk)" }}>›</span>
+    </button>);
   return (
     <button type="button" onClick={onClick} className={on ? undefined : "sc-hov"} style={{ flex: "none", width: "100%", minHeight: 56, padding: "6px 14px", border: `1px solid ${on ? "var(--cuBd)" : "var(--cardBd)"}`, borderRadius: 16, cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", boxShadow: "none", background: on ? "var(--accSoft)" : "var(--card)", color: on ? "var(--acc)" : "var(--ink)" }}>
       <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="var(--acc)" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "none" }}><path d={NAST_D} /></svg>

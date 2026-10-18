@@ -29,6 +29,7 @@ import { pripojTestovaciuStranku } from "@/lib/stranka";
 import { ISKRA_MAX_MB, nacitajKvotuIskier, zverejniIskruNaServeri, type KvotaIskier } from "@/lib/iskryServer";
 import { Harok } from "@/features/zbierka/Zdielat";
 import { PercentaRetaze } from "@/features/zbierka/RetazDobra";
+import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { potvrditTuknutim } from "@/features/zbierka/Platba";
 import { otvorPridatSkutok } from "@/features/skutok/otvor";
@@ -162,8 +163,11 @@ function PridatIskru() {
     velke_video: `Video je väčšie ako ${ISKRA_MAX_MB} MB.`, zly_typ: "Tento formát videa nevieme uložiť. Použite MP4 alebo MOV.",
     nie_spravca: "Za túto stránku zverejňuje Iskry iný účet.", upload: "Video sa nepodarilo nahrať. Skúste to znova.",
   };
+  // OPRAVY 335: chyba zverejnenia priamo nad tlačidlom (na mobile aj okno); video ostáva
+  const [chybaZv, setChybaZv] = useState<string | null>(null);
   const zverejni = async () => {
     if (chyba || !video || druh == null || odosiela) return;
+    setChybaZv(null);
     // druh Zbierky (6): na server od 0071b (stĺpec zb); bez DB/session len v relácii
     if (druh === DZ) {
       if (!vedie || !vlastnaZb) return;
@@ -184,7 +188,7 @@ function PridatIskru() {
         if (org && ok2 && kvota > 0) minKvotu(stranka!.k);
         setHotovo(pridajIskru({ ...zbD, org: orgZb, src: video.url, bg: "#1D211B" }));
       } catch (e) {
-        toast(CHYBY_SERVERA[(e as Error).message] ?? "Iskru sa nepodarilo zverejniť. Skúste to znova.");
+        setChybaZv(CHYBY_SERVERA[(e as Error).message] ?? "Iskru sa nepodarilo zverejniť. Skúste to znova.");
       } finally { setOdosiela(false); }
       return;
     }
@@ -208,7 +212,7 @@ function PridatIskru() {
       if (org && ok2 && kvota <= 0) toast(`Video nad rámec programu · ${KVOTA_ISKIER.cenaNad} €`);
       setHotovo(pridajIskru({ ...spolocne, org, src: video.url, bg: "#1D211B" }));
     } catch (e) {
-      toast(CHYBY_SERVERA[(e as Error).message] ?? "Iskru sa nepodarilo zverejniť. Skúste to znova.");
+      setChybaZv(CHYBY_SERVERA[(e as Error).message] ?? "Iskru sa nepodarilo zverejniť. Skúste to znova.");
     } finally { setOdosiela(false); }
   };
 
@@ -349,6 +353,7 @@ function PridatIskru() {
       {chyba && <span role="status" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 13.5, fontWeight: 700, color: "var(--gold)" }}><span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--gold)" }} />{chyba}</span>}
       {k < 4 ? <button type="button" aria-disabled={!!chyba} onClick={() => { if (!chyba) setK(k + 1); }} style={tlHl(!!chyba)}>Pokračovať</button>
         : <>
+          <ChybaPriTlacidle text={chybaZv} uklada={odosiela} onZnova={() => void zverejni()} nadpis="Nezverejnilo sa" />
           {tuk ? <button type="button" onDoubleClick={() => void zverejni()} aria-disabled={!!chyba || odosiela} style={tlHl(!!chyba || odosiela)}>{odosiela ? "Nahrávam video…" : o("Dvakrát klikni a zverejni", "Dvakrát kliknite a zverejnite")}</button>
             : <div style={{ ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo label={odosiela ? "Nahrávam video…" : o("Podrž a zverejni", "Podržte a zverejnite")} disabled={!!chyba || odosiela} onConfirm={() => void zverejni()} /></div>}
           <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink3)", textAlign: "center" }}>{o("Po zverejnení ju hneď uvidia ľudia v Iskrách. Pred zverejnením si ju poriadne pozri.", "Po zverejnení ju hneď uvidia ľudia v Iskrách. Pred zverejnením si ju poriadne pozrite.")}</span>

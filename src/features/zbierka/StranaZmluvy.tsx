@@ -15,6 +15,8 @@ import { inicialy, type Strana } from "@/lib/retaz";
 /** hlavný štít strany podľa toho, čo je zač */
 export function StitStrany({ s, h = 40 }: { s: Strana; h?: number }) {
   const w = Math.round(h * 0.82);
+  // OPRAVY 319: organizátor bez známeho štítu (napr. Hlavná zbierka farnosti) — bez štítu, nikdy pád okna
+  if (!s.stit && (s.druh === "charita" || s.druh === "firma")) return null;
   if (s.druh === "charita") return <StitCare stit={s.stit} w={w} h={h} tien="none" />;
   if (s.druh === "firma") return <StitCare stit={s.stit} w={w} h={h} tien="none" firma />;
   return <StitObr level={naStitLevel(s.stit)} h={h} />;

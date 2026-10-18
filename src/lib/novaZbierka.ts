@@ -47,6 +47,8 @@ export interface NovaZbierkaData {
   /** KARTA 56E · migrácia 0065: split zbierky s overovateľom — server ho pri zapečatení zapíše do zbierka_podiel
    *  a každý dar (zbierka_dar) z neho vytvorí podiely v ledgeri. Podiely sú zlomky, súčet 1. */
   rozdelenie?: PodielZbierky[];
+  /** OPRAVY 338 · migrácia 0104: id osobného overenia príjemcu (sken QR + kód) — server podľa neho pustí registrovaný účet */
+  overenie_prijemcu?: string;
 }
 export type PodielZbierky =
   | { druh: "prijemca"; ucet: string; text: string; podiel: number }
@@ -143,6 +145,14 @@ export async function nacitajKonceptZbierky(stranka: string): Promise<NovaZbierk
 export async function ulozKonceptZbierky(stranka: string, d: NovaZbierkaData | null): Promise<void> {
   koncepty.set(stranka, d); zmena();
   if (supabase) await supabase.from("profil_stranky").upsert({ stranka, koncept_zbierky: await bezDataUrl(d, "zbierky"), koncept_zbierky_cas: d ? new Date().toISOString() : null }, { onConflict: "stranka" });
+}
+
+/** OPRAVY 347: komu patrí zbierka (QR /z/{id}) — verejný pohľad zbierka_verejna (0069b); bez DB len z pamäte */
+export async function strankaZbierky(id: string): Promise<string | null> {
+  for (const [st, l] of spustene) if (l.some((z) => z.id === id)) return st;
+  if (!supabase) return null;
+  const { data, error } = await supabase.from("zbierka_verejna").select("stranka").eq("id", id).maybeSingle();
+  return !error && data ? (data as { stranka: string }).stranka : null;
 }
 
 export async function nacitajZbierkyStranky(stranka: string): Promise<SpustenaZbierka[]> {

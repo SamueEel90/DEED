@@ -15,7 +15,7 @@ import type { TestProfil, TestSektor } from "@/lib/testProfily";
 import { KartaStavu } from "@/features/zbierka/KartaStavu";
 import { Galeria } from "@/features/zbierka/Vrch";
 import { RychleSumyEur, VlastnaSuma, DaryVKrypte, type OtvorPlatbu, type KanalPlatby } from "@/features/zbierka/Sumy";
-import { PlatobneOkno } from "@/features/zbierka/Platba";
+import { PlatobneOkno, useRychlyDar, potvrditTuknutim, type VysledokPlatby } from "@/features/zbierka/Platba";
 import { ZdielatRiadok, PravidelnaRiadok, Oblubene, RetazRiadok, KartaDorovnava, Darcovia } from "@/features/zbierka/Riadky";
 import { ZdielatHarok } from "@/features/zbierka/Zdielat";
 import { PravidelnaHarok } from "@/features/zbierka/PravidelnaHarok";
@@ -133,6 +133,9 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, 
   const otvor: OtvorPlatbu = (p) => { ohlas(); setPred(stav()); setPlatba(p); };
   const setHarok = (h: typeof harok) => { if (h) ohlas(); setHarok0(h); };
   const k20 = dorovnanie ? dorovnanieKDaru(dorovnanie, 20) : 0;
+  // OPRAVY 304: dar z okna aj rýchly dar (podržať a zaplatené) sa zapíše rovnako
+  const zapisDar = (v: VysledokPlatby) => pridajDar({ refId, suma: v.eur, kanal: v.kanal === "eur" ? (v.sposob === "sepa" ? "sepa" : "psp") : "deed", registrovany, volba: v.volba, menoDarcu: v.meno, objekt });
+  const rychlyDar = useRychlyDar();
   // bod 151 · veta „Kam treba najviac. Minulý mesiac…" sa v module neukazuje (ostáva len pri odkaze firmy „Pozrieť v zbierke")
   const veta = sektor.kam?.replace("{m}", mestoV);
 
@@ -144,8 +147,9 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, 
         {k20 > 0 && <div style={{ margin: "-4px 0 0", textAlign: "center", fontSize: 13.5, fontWeight: 700, color: "var(--gold)", fontVariantNumeric: "tabular-nums" }}>daruješ 20 € → do {kam} ide {eurT(20 + k20)}</div>}
       </div>}
       {/* OPRAVY 209 (prototyp Platobny modul charita a viera): bez Drobnej podpory; zvončeková aj bez Páči sa mi a Obľúbené */}
-      <div style={{ marginTop: 12 }}><ZdielatRiadok onZdielat={() => setHarok("zdielat")} sam={bezObjektu} /></div>
-      <RychleSumyEur sumy={sumy} doplnok={`sumy si volí ${ktoVoli}`} kDaru={dorovnanie ? (s) => dorovnanieKDaru(dorovnanie, s) : undefined} otvor={otvor} />
+      <div style={{ marginTop: 12 }}><ZdielatRiadok onZdielat={() => setHarok("zdielat")} sam={bezObjektu} darujete={registrovany} /></div>
+      <RychleSumyEur sumy={sumy} doplnok={`sumy si volí ${ktoVoli}`} kDaru={dorovnanie ? (s) => dorovnanieKDaru(dorovnanie, s) : undefined} otvor={otvor}
+        drzat={registrovany ? (s) => { ohlas(); zapisDar(rychlyDar(s)); } : undefined} tukom={potvrditTuknutim()} />
       {/* OPRAVY 222 (prototyp Spolufinancovanie A): farár prispeje ako farnosť, nie na vlastnú zbierku */}
       <PrispietZaFarnost refId={refId} nazov={sektor.nazov} vlastnik={profil.meno} />
       <VlastnaSuma eur deed={false} otvor={otvor} onPodporit={() => setHarok("podporit")} firma={dorovnanie ? `${dorovnanie.firma} ${dorovnanie.pomer === 1 ? "zdvojnásobí" : "dorovná"}` : undefined} />
@@ -164,7 +168,7 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, 
       {platba && <PlatobneOkno kanal={platba.kanal} suma={platba.suma} nazov={nazov} registrovany={registrovany} pred={pred}
         bonus={dorovnanie ? (s) => dorovnanieKDaru(dorovnanie, s) : undefined} firma={dorovnanie?.firma}
         onClose={() => setPlatba(null)}
-        onHotovo={(v) => pridajDar({ refId, suma: v.eur, kanal: v.kanal === "eur" ? (v.sposob === "sepa" ? "sepa" : "psp") : "deed", registrovany, volba: v.volba, menoDarcu: v.meno, objekt })} />}
+        onHotovo={zapisDar} />}
       {harok === "pravidelna" && <PravidelnaHarok refId={refId} nazov={nazov} registrovany={registrovany} zbierka={false} onClose={() => setHarok(null)} />}
       {harok === "zdielat" && <ZdielatHarok id={refId} nazov={nazov} organizacia={profil.meno} obrazok={sektor.foto} onClose={() => setHarok(null)} />}
       {harok === "podporit" && <PodporitDeedHarok registrovany={registrovany} onClose={() => setHarok(null)} />}

@@ -2,6 +2,7 @@
 // KARTA 57 C.7 — Príhovor farára · Iskra (OPRAVY 269: video alebo len zvuk, viac príhovorov, odkazy na videá) a C.8 · OPRAVY 177 Online omše — obe v Oznamoch hore (Online pod Príhovorom).
 // Obe karty sa dajú zbaliť ⌃ ⌄, po načítaní sú zbalené (jeden riadok so zhrnutím). Na mobile popis pod nadpisom na celú šírku.
 // ============================================================
+import { TlZbalit } from "@/features/verejny-profil/zbalit";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { PRIHOVOR_MAX_S, nahrajPrihovor, prihovory, odkazyVidei, zmazPrihovor, zmazPrihovory, pridajOdkazVidea, zmazOdkazyVidei, sluzbaOdkazu, useZmenyPrihovoru, onlineOmse, ulozOnline, odkazOk, omseNaDen, pravidloPlati, textPravidla, type PravidloOnline } from "@/lib/prihovor";
 import { useKalendar, dniTyzdna, dvt, iso, DNI_K } from "@/lib/kalendarFarnosti";
@@ -24,6 +25,7 @@ function Zbalitelna({ label, ikona, nadpis, popis, zhrnutie, mobil, children }: 
         {mobil && otv && <span style={{ flex: "1 1 100%", fontSize: 13, lineHeight: 1.45, color: "var(--ink3)" }}>{popis}</span>}
       </button>
       {otv && children}
+      {otv && <TlZbalit onZbal={() => setOtv(false)} />}{/* OPRAVY 321 */}
     </section>);
 }
 

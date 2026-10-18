@@ -10,7 +10,7 @@ import { createPortal } from "react-dom";
 import { RamPisania, useRamPisania } from "@/components/RamPisania";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 
-export type TypEditora = "parte" | "svadba" | "jubileum" | "blahozelanie";
+export type TypEditora = "parte" | "svadba" | "jubileum" | "blahozelanie" | /** OPRAVY 334: Ďakovný list, Ocenenie za službu, Poďakovanie dobrovoľníkom, Pozvánka, Vlastné */ "ine";
 export interface PayloadEditora {
   verzia?: number; stav: "koncept" | "hotovo" | "doplnene"; typ: TypEditora; sablona?: string; rezim?: string;
   pohlavie?: string | null; foto?: string | null; bezTerminu?: boolean; rozlucka?: string | null;
@@ -22,7 +22,7 @@ export interface PayloadEditora {
 export interface CfgEditora {
   typ: TypEditora; /** BLOK C: viera = Parte, Svadba, Blahoželanie · podnik = Pozvánka na oslavu, Svadba, Blahoželanie */ sektor?: "viera" | "podnik"; rezim?: "plny" | "rychly"; bezTlace?: boolean; qrObrazok?: string; miesta?: string[];
   navrh?: PayloadEditora | null; kontext?: Record<string, unknown>;
-  /** BLOK C 235: predvolený podpis blahoželania (Správa farnosti „Blahoželá farnosť“) */ podpis?: string;
+  /** BLOK C 235: predvolený podpis blahoželania (Správa farnosti „Blahoželá farnosť“) · OPRAVY 334: pri Iné podpis „Farnosť …“ */ podpis?: string;
 }
 export interface EditorApi {
   /** krok späť v editore; false = už je na prvom kroku */
@@ -149,7 +149,7 @@ export const EditorOznameni = forwardRef<EditorApi, { cfg: CfgEditora; onSend: (
     const diely = k?.strana && k.strany ? { i: k.strana - 1, n: k.strany } : undefined;
     const POD: Record<string, string> = { ozdoby: "mení sa hneď", osoba: "mení sa, ako píšete", udaje: "mení sa, ako píšete", udaje2: "skontrolujte pred uložením" };
     // OPRAVY 318: od 3. strany a na Kontrole skutočná miniatúra parte, „meno · vzhľad“
-    const pas = k?.p318 ? (["ozdoby", "osoba", "udaje2", "kontrola"].includes(k.kluc ?? "") ? (
+    const pas = k?.p318 ? (["ozdoby", "osoba", "udaje2", "udaje", "kontrola"].includes(k.kluc ?? "") /* OPRAVY 331: aj strana Text (svadba, blahoželanie) */ ? (
       <div style={{ height: 64, boxSizing: "border-box", padding: "0 16px", display: "flex", alignItems: "center", gap: 12 }}>
         {k.mini?.img ? <img src={k.mini.img} alt="" style={{ width: 32, height: 48, flex: "none", objectFit: "cover", borderRadius: 3, border: "1px solid var(--cardBd)", background: "#fff" }} />
           : <span aria-hidden="true" style={{ width: 32, height: 48, flex: "none", borderRadius: 3, background: k.mini?.bg || "#fff", border: "1px solid var(--cardBd)" }} />}

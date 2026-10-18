@@ -9,16 +9,20 @@
 // (ťuk na riadok: text, Upraviť, Ako to vidia ľudia, Podržte a zmažte). Upraviť naplní formulár z `oz`.
 // Pozvať ľudí aj pri krátkom ozname (+ limit pri záväznom), Oznámenie: Parte · Svadba · Jubileum · Iné.
 // ============================================================
+import { BLOKY_STRANKY, PREMENOVAT, nadpisBloku, useUsporiadanie, type BlokStranky } from "@/lib/usporiadanieStranky";
+import { NADPIS_SEKCIE, farbaStitku } from "./KartaNastavenia";
+import { TlZbalit } from "@/features/verejny-profil/zbalit";
 import { CasPole } from "@/components/CasPole";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { RichTextInput } from "@/components/richtext";
 import { spracujFotku } from "@/lib/obrazok";
 import { useVzhlad } from "@/lib/vzhladStranky";
 import type { MediumZbierky } from "@/lib/novaZbierka";
+import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { GaleriaEditor, cistyText, NASTROJE } from "./obsahZbierky";
 import { vlastnePrispevky, zmazPrispevok, type VieraFeedItem } from "@/features/viera/mock";
-import { zapisPrispevokIsto } from "@/features/viera/prispevkyDB";
+import { zapisPrispevokIsto, usePrispevkySync } from "@/features/viera/prispevkyDB";
 import { Plagat, prazdneUdaje, prvaVolba, chybaOznamu, popisOznamu, type DruhOznamu, type UdajeOznamu, type VolbaSablony } from "@/features/viera/Sablony";
 import { zmenKostol, CAS_OK, pekny, type KalKostol } from "@/lib/kalendarFarnosti";
 import { stitokOznamu } from "./OmseKalendar";
@@ -158,10 +162,12 @@ function navrhZoStarych(x: VieraFeedItem): PayloadEditora | undefined {
   return undefined;
 }
 
-export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, toast, hore }: { strankaId: string; meno: string; /** uložený profil (Farský úrad, logo) — náhľad verejnej stránky */ profil: ProfilStranky | null; mobil: boolean;
+export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, toast, hore, onUsporiadat }: { strankaId: string; meno: string; /** uložený profil (Farský úrad, logo) — náhľad verejnej stránky */ profil: ProfilStranky | null; mobil: boolean;
   /** KARTA 57 C.6: telefón — po výbere druhu ponuka zmizne, náhľad prilepený hore */ tel?: boolean; toast: (m: string) => void;
-  /** + Pridať oznam (hlavička PC, zelené + na mobile) — otvorí formulár */ hore?: number }) {
+  /** + Pridať oznam (hlavička PC, zelené + na mobile) — otvorí formulár */ hore?: number;
+  /** OPRAVY 341: Premenovať › / Ukázať na stránke › — Nástroje → Usporiadať stránku */ onUsporiadat?: () => void }) {
   const vz = useVzhlad(strankaId, false);
+  const uspS = useUsporiadanie(strankaId); // OPRAVY 341: bloky stránky (poradie, skryté, nadpisy)
   // OPRAVY 204: parte zo šablóny má QR; v náhľade QR stránky farnosti (zbierka rodiny ho na Nástenke prepne na seba)
   const qrFar = useQrObrazok(odkazQrStranky(strankaId));
   const autorJa = useAutorZaMna(strankaId);
@@ -288,6 +294,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       : (dr !== 0 || !!obrazok) && (obrazok && jePlagat ? <ObrazokPlagatu src={obrazok} /> : <ObrazokOznamu src={obrazok} inic={iniciy(meno)} />) });
 
   // ---- zverejniť / uložiť zmeny ----
+  usePrispevkySync(strankaId); // OPRAVY 336: Správa oznamov vždy so serverom (oznam z telefónu sa na PC ukáže do 5 s, staré nezmiznú)
   const zoznam = vlastnePrispevky(strankaId);
   const odruh = ODRUHY[odr]?.[1];
   const blokUpoz = dr === 0 ? "oz" as const : dr === 1 ? "pr" as const : odruh === "parte" ? "sp" as const : "te" as const;
@@ -296,7 +303,8 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   const KON = `oznam.${strankaId}`;
   type KonOz = { dr: Druh; n: string; txt: string; plati: number; usp: 0 | 1; dat: string; cas: string; miesto: string; media: MediumZbierky[]; plagat?: string; pozv: number; limit: string; odr: number; osp: 0 | 1; u: UdajeOznamu; volba: VolbaSablony; kde: string[] | null; ozIne?: boolean; kdeU: string };
   const [konRozh, setKonRozh] = useState(false); // „Máte rozpísané“ už rozhodnuté (Pokračovať / Zahodiť)
-  const kon = formOn && !edit && !hotovo && !konRozh ? nacitajKoncept<KonOz>(KON) : null;
+  // OPRAVY 335: „Máte rozpísané“ len pred výberom druhu — počas písania (koncept sa ukladá priebežne) nie, inak by Pokračovať vrátil koncept bez fotiek
+  const kon = formOn && !edit && !hotovo && !konRozh && !vyb ? nacitajKoncept<KonOz>(KON) : null;
   const maObsah = !!(n.trim() || cistyText(txt).trim() || media.length || dat || cas || miesto.trim() || plagat || u.meno.trim());
   useUkladajKoncept<KonOz>(KON, { dr, n, txt, plati, usp, dat, cas, miesto, media, plagat, pozv, limit, odr, osp, u, volba, kde, kdeU, ozIne }, formOn && !edit && !hotovo && !kon && maObsah && !jub);
   const pokracuj = (k: KonOz) => {
@@ -383,6 +391,10 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     } else if (p.typ === "svadba") {
       const m = [str("sNev"), str("sZen")].filter(Boolean).join(" a ");
       it = { ...zaklad, tag: "Oznam", nazov: `Svadba · ${m || "snúbenci"}`, popis: [m, [str("sD"), str("sC"), str("sM")].filter(Boolean).join(" · ")].filter(Boolean).join(" · "), datum: str("sD") || undefined, ukat: "svadba", reakciaTyp: "blahozelanie" };
+    } else if (p.typ === "ine") {
+      // OPRAVY 334: Ďakovný list, Ocenenie, Poďakovanie dobrovoľníkom, Pozvánka, Vlastné — na stránke v Teš sa s nami
+      const druhN = String(p.druhNazov ?? "Oznámenie"), nad = str("iNad");
+      it = { ...zaklad, tag: "Oznámenie", nazov: nad || druhN, popis: str("iText"), reakciaTyp: "blahozelanie" };
     } else {
       const menoB = str("bMeno") || str("jMeno");
       it = { ...zaklad, tag: odr === INE ? "Oznámenie" : "Jubileum", nazov: `Blahoželanie · ${menoB || "jubilant"}`, popis: menoB, reakciaTyp: "blahozelanie" };
@@ -419,9 +431,11 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   const upravovany = edit ? zoznam.find((x) => x.id === edit) : undefined;
   const upravovanyEd = upravovany?.oz?.ed ?? (upravovany?.oz ? upravovany.smutocny?.editor : undefined) // OPRAVY 273: parte má návrh v smutocny.editor
     ?? (upravovany && !upravovany.plagat ? navrhZoStarych(upravovany) : undefined); // OPRAVY 284 (4): starý formulár → údaje do Editora
-  const ED_TYP: TypEditora[] = ["parte", "svadba", "blahozelanie", "blahozelanie"];
-  const edTyp = ED_TYP[odr] ?? "blahozelanie";
-  const jubCfg = { typ: edTyp, sektor: "viera" as const, rezim: "plny" as const, podpis: edTyp === "blahozelanie" ? "Blahoželá farnosť" : undefined,
+  // OPRAVY 334: Iné = vlastný typ editora (druh s predpísanými textami); staršie Iné uložené ako blahoželanie sa upravujú ako blahoželanie
+  const ED_TYP: TypEditora[] = ["parte", "svadba", "blahozelanie", "ine"];
+  const edTyp: TypEditora = (edit && upravovanyEd?.typ) || (ED_TYP[odr] ?? "blahozelanie");
+  const podpisFar = /^farnos/i.test(meno.trim()) ? meno.trim() : `Farnosť ${meno.trim()}`;
+  const jubCfg = { typ: edTyp, sektor: "viera" as const, rezim: "plny" as const, podpis: edTyp === "blahozelanie" ? "Blahoželá farnosť" : edTyp === "ine" ? podpisFar : undefined,
     qrObrazok: edTyp === "parte" ? qrFar : undefined, miesta: edTyp === "parte" ? ["v Dome smútku", "vo farskom kostole", "na miestnom cintoríne"] : undefined,
     kontext: { stranka: strankaId, farnost: true }, navrh: (edit ? upravovanyEd : jubKon?.typ === edTyp ? jubKon : null) ?? null };
   // OPRAVY 258 · 271: všetko, čo sa v Správe oznamov píše na telefóne (krátky oznam, udalosť, oznámenie) = rám na celú obrazovku, náhľad na ťuk
@@ -454,13 +468,9 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   const potvrdenie = jub ? null : ch.length || chybaSab
       ? <div role="status" style={{ padding: "12px 14px", borderRadius: 12, background: "var(--goldBg)", border: `1.5px solid ${ZLATA}`, fontSize: 14.5, fontWeight: 800 }}>{ch.length ? `Ešte chýba: ${ch.join(", ")}` : chybaSab}</div>
       : <div style={{ ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo key={edit ?? "novy"} label={edit ? "Podržte a uložte zmeny" : "Podržte a zverejnite"} trvanie={1500} onConfirm={zverejni} /></div>;
-  const chybaEl = chybaUl && (
-    <div role="alert" style={{ padding: "12px 14px", borderRadius: 14, background: "var(--errBg, #F2E3DC)", border: "2px solid var(--cRed, #A34A2A)", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-      <span style={{ flex: "1 1 200px", display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15.5, color: "var(--cRed, #A34A2A)" }}>Neuložilo sa</b><span style={{ fontSize: 14, color: "var(--ink2)" }}>{chybaUl} Rozpísané ostáva.</span></span>
-      <button type="button" disabled={uklada} onClick={() => opakuj.current?.()} style={{ minHeight: 48, padding: "0 18px", borderRadius: 12, border: "none", background: "var(--cRed, #A34A2A)", color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800 }}>{uklada ? "Ukladá sa…" : "Skúsiť znova"}</button>
-    </div>);
+  // OPRAVY 335: chyba pri ukladaní priamo nad tlačidlom Podržte… (na mobile aj okno uprostred), nikdy len hore vo formulári
+  const chybaEl = <ChybaPriTlacidle text={chybaUl} uklada={uklada} onZnova={() => opakuj.current?.()} dovetok="Rozpísané ostáva." />;
   const polia = <>
-    {chybaEl}
     {dr === 1 && <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={lbl}>Ako ho chcete ukázať</span><Segment label="Ako ho chcete ukázať" vol={[[0, "Text a fotky"], [1, "Vlastný plagát"]]} cur={usp} set={(v) => setUsp(v as 0 | 1)} />
       <span style={{ fontSize: 13, color: "var(--ink3)" }}>{usp === 1 ? "Plagát sa ukáže celý, nič sa neoreže. Hodí sa na pozvánku, oznámenie alebo plagát." : "Fotky sa ukážu na šírku (16 : 9). Pozvánku alebo plagát dajte radšej ako Vlastný plagát."}</span></div>}
     {dr === 2 && <>
@@ -508,6 +518,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     {/* KARTA 63: aj pri oznámení z Editora (parte, svadba, jubileum) */}
     {<UpozornitSledujucich strankaId={strankaId} blok={blokUpoz} miesta={dr === 0 && viacMiest && !ozIne && kde && kde.length < miestaF.length ? kde : dr === 1 && viacMiest && kdeK ? [kdeK] : undefined} value={upoz} onChange={setUpozV} />}
     {!edit && (jub ? !!jubKon : maObsah) && <ZahoditRozpisane onZahodit={zahod} />}
+    {!ramSprava && chybaEl}
     {!ramSprava && potvrdenie}
   </>;
   const lavy = (
@@ -543,11 +554,10 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
         : f && x.plagat ? <ObrazokPlagatu src={f} />
         : f || (st !== "OZNAM" && st !== "ZMENA OMŠE") ? <ObrazokOznamu src={f} inic={iniciy(meno)} /> : null });
   };
-  const SKUPINY: [string, (x: VieraFeedItem) => boolean][] = [
-    ["KRÁTKE OZNAMY", (x) => ["OZNAM", "ZMENA OMŠE"].includes(stitokOznamu(x))],
-    ["UDALOSTI", (x) => stitokOznamu(x) === "UDALOSŤ"],
-    ["OZNÁMENIA", (x) => !["OZNAM", "ZMENA OMŠE", "UDALOSŤ"].includes(stitokOznamu(x))],
-  ];
+  // OPRAVY 341: „Na stránke“ — skupiny podľa bloku verejnej stránky, v poradí z Usporiadať stránku, s nadpisom ako ho farár premenoval
+  const blokOznamu = (x: VieraFeedItem): BlokStranky => { const st = stitokOznamu(x);
+    return st === "OZNAM" || st === "ZMENA OMŠE" ? "ozn" : st === "UDALOSŤ" ? "prid" : st === "PARTE" ? "spom" : "tes"; };
+  const SKUPINY = uspS.poradie.filter((id) => ["ozn", "pom", "prid", "tes", "spom"].includes(id)).map((id) => BLOKY_STRANKY.find((b) => b.id === id)!);
   // OPRAVY 263: zmazanie jedného aj hromadne (kalendár udalosti sa vyčistí)
   const zmazOznam = (x: VieraFeedItem) => {
     zmazPrispevok(strankaId, x.id);
@@ -562,7 +572,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       <div key={x.id} style={{ borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
         <button type="button" onClick={() => { if (hv.zap) { hv.prepni(x.id); return; } setOtv(o ? null : x.id); setPozri(null); }} aria-expanded={hv.zap ? undefined : o} aria-pressed={hv.zap ? on : undefined} style={{ width: "100%", minHeight: 60, padding: "8px 0", border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" }}>
           {hv.zap && <PolickoVyberu on={on} />}
-          <span style={{ flex: "none", padding: "3px 9px", borderRadius: 8, background: zm ? "var(--goldBg)" : "var(--gSoft)", border: `1px solid ${zm ? ZLATA : "var(--gBd)"}`, fontSize: 11.5, fontWeight: 800, color: zm ? "var(--ink)" : "var(--gInk)", whiteSpace: "nowrap" }}>{st}</span>
+          <span style={{ flex: "none", padding: "3px 9px", borderRadius: 8, ...farbaStitku(st === "PARTE" ? "parte" : zm || st === "SVADBA" || st === "JUBILEUM" ? "zlata" : "zelena"), fontSize: 11.5, fontWeight: 800, whiteSpace: "nowrap" }}>{st}</span>
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 14.5 }}>{x.nazov}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{meta(x)}</span></span>
           {!hv.zap && <span aria-hidden="true" style={{ flex: "none", fontSize: 18, color: "var(--ink3)" }}>{o ? "⌃" : "⌄"}</span>}
         </button>
@@ -575,16 +585,30 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
             <PodrzZmaz onZmaz={() => { zmazOznam(x); setOtv(null); setPozri(null); obnov((y) => y + 1); toast(`„${x.nazov ?? ""}“ je zmazané.`); }} />
           </div>
           {pozri === x.id && <div style={{ maxWidth: 460 }}>{nahladZverejneneho(x)}</div>}
+          <TlZbalit onZbal={() => { setOtv(null); setPozri(null); }} />{/* OPRAVY 321 */}
         </div>}
       </div>);
   };
   const sprava = (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}><b style={{ fontSize: 18 }}>Správa oznamov a udalostí</b>{zoznam.length > 0 && <span style={{ flex: 1, fontSize: 13, color: "var(--ink3)" }}>{zoznam.length} zverejnené · ťuknite na riadok</span>}{zoznam.length > 1 && <TlacidloVyberu v={hv} />}</div>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}><b style={{ fontSize: 18 }}>Na stránke</b>{zoznam.length > 0 && <span style={{ flex: 1, fontSize: 13, color: "var(--ink3)" }}>{zoznam.length} zverejnené · podľa blokov, ako ich vidia ľudia</span>}{zoznam.length > 1 && <TlacidloVyberu v={hv} />}</div>
       <ListaVyberu v={hv} polozky={zoznam.map((x) => ({ id: x.id, cas: x.vytvorene ?? 0 }))} />
-      {zoznam.length ? SKUPINY.map(([nad, fn]) => { const l = zoznam.filter(fn); return l.length > 0 && (
-        <div key={nad} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span style={{ flex: 1, fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)", padding: "4px 2px 0" }}>{nad} · {l.length}</span><OznacitSkupinu v={hv} ids={l.map((x) => x.id)} /></div>
+      {zoznam.length ? SKUPINY.map((b) => { const l = zoznam.filter((x) => blokOznamu(x) === b.id); if (!l.length) return null;
+        const nm = nadpisBloku(uspS, b.id, b.t), prem = nm !== b.t, skryty = uspS.skryte.includes(b.id);
+        return (
+        <div key={b.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, paddingTop: 16, flexWrap: "wrap" }}>
+            <span aria-hidden="true" style={{ width: 6, height: 22, flex: "none", borderRadius: 3, background: b.farba }} />
+            <span style={{ ...NADPIS_SEKCIE, paddingTop: 0, textTransform: "uppercase" }}>{nm} · {l.length}</span>
+            {prem && <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>pôvodne {b.t}</span>}
+            <span style={{ flex: 1 }} />
+            {onUsporiadat && PREMENOVAT[b.id] && <button type="button" onClick={onUsporiadat} style={{ minHeight: 44, padding: "0 4px", border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--green)", boxShadow: "none" }}>Premenovať ›</button>}
+            <OznacitSkupinu v={hv} ids={l.map((x) => x.id)} />
+          </div>
+          {skryty && <div role="note" style={{ borderRadius: 14, background: "var(--goldBg)", border: "1.5px solid #C9A24A", padding: "10px 14px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <span style={{ flex: "1 1 200px", fontSize: 14, lineHeight: 1.45, color: "var(--ink)" }}>Tento blok je na stránke skrytý. Ľudia tieto oznamy nevidia.</span>
+            {onUsporiadat && <button type="button" onClick={onUsporiadat} style={{ minHeight: 44, padding: "0 14px", borderRadius: 12, border: "1px solid var(--goldBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)", boxShadow: "none" }}>Ukázať na stránke ›</button>}
+          </div>}
           <section style={{ ...karta, padding: mobil ? "4px 14px" : "6px 20px" }}>{l.map(riadok)}</section>
         </div>); })
         : <section style={{ ...karta, padding: "14px 20px", fontSize: 14.5, color: "var(--ink3)" }}>Zatiaľ nič. Ťuknite na + Pridať oznam.</section>}
@@ -610,11 +634,12 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
         <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>{lavy}</div>
         <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 10, position: "sticky", top: 12 }}>{pravy}</div>
       </div>)) : pridatTl}
+    {/* OPRAVY 341: Upozornenia sledujúcim hore, hneď pod výberom druhu oznamu (zbalená zlatá karta) */}
+    <NastavenieUpozorneni strankaId={strankaId} mobil={mobil} />
     {sprava}
-    <NastavenieUpozorneni strankaId={strankaId} />
     {ramSprava && <RamPisania nazov={`${edit ? "Úprava · " : ""}${dr === 2 ? ODRUHY[odr][0] : dr === 1 ? "Udalosť" : "Krátky oznam"}`} teloRef={ramTelo} onSpat={() => { if (edit) vycisti(); setVyb(false); }}
       onNahlad={jub ? undefined : () => setNahlOtv(true)} nahlad={nahlOtv && !jub} onZavriNahlad={() => setNahlOtv(false)} nahladObsah={nahladPisania}
-      dole={jub ? <button type="button" onClick={() => setJubOtv(true)} style={{ minHeight: 54, border: "none", borderRadius: 14, background: "#4B7A35", cursor: "pointer", fontFamily: "inherit", fontSize: 16.5, fontWeight: 800, color: "#fff", boxShadow: "none" }}>{jubKon?.typ === edTyp || edit ? "Pokračovať v Editore oznámení ›" : "Otvoriť Editor oznámení ›"}</button> : potvrdenie}>
+      dole={jub ? <button type="button" onClick={() => setJubOtv(true)} style={{ minHeight: 54, border: "none", borderRadius: 14, background: "#4B7A35", cursor: "pointer", fontFamily: "inherit", fontSize: 16.5, fontWeight: 800, color: "#fff", boxShadow: "none" }}>{jubKon?.typ === edTyp || edit ? "Pokračovať v Editore oznámení ›" : "Otvoriť Editor oznámení ›"}</button> : <>{chybaEl}{potvrdenie}</>}>
       <div style={{ padding: "18px 16px 28px", display: "flex", flexDirection: "column", gap: 14 }}>{editEl}{polia}</div>
     </RamPisania>}
     {jub && jubOtv && <EditorOznameni key={`${edit ?? "novy"}-${edTyp}`} ref={edRef} title={ODRUHY[odr][0]} onSend={(p) => { void naEditor(p); }} onUdalost={(e) => zapisEditora({ udalost: e.akcia, typ: edTyp, papier: e.papier ?? null, kto: "farar", stranka_typ: "farnost", stranka: strankaId, pri_zbierke: false })}

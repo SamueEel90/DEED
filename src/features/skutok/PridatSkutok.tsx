@@ -2,6 +2,7 @@
 // Aktivity, Charita, Môj QR, detail zbierky, oznam „AI sa pýta"). Otvára sa cez otvorPridatSkutok().
 // 6 krokov: Sám / So skupinou (→ bežný / skutok ako dar) · Opíš · AI kontroluje · Ešte pár otázok · Náhľad · Hotovo.
 // AI = existujúce ohodnot() (POST /api/score, verdikt ok / doplnit / zamietnut) — backend sa nemení.
+import { ADRESA } from "@/lib/adresa";
 import { zapisCin } from "@/lib/vyzvy";
 import { kartaVolby, FajkaVolby, cipFiltra } from "@/components/Volby";
 import { TESTOVACIA } from "@/lib/testovacia";
@@ -321,7 +322,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
     setDok((d) => [...d, { nazov: f.name.replace(/\.[^.]+$/, ""), subor: f.name }]);
   };
   const poziadajPotvrdenie = async () => {
-    const url = `https://deed.sk/potvrd/${id}`;
+    const url = `${ADRESA}/potvrd/${id}`;
     if (typeof navigator.share === "function") { try { await navigator.share({ title: "Potvrď, že som ti pomohol", url }); } catch { /* zrušené */ } }
     else { try { await navigator.clipboard.writeText(url); toast("Odkaz na potvrdenie skopírovaný"); } catch { /* bez schránky */ } }
     setPotv("caka");
@@ -330,14 +331,14 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   // ---- skupina B ----
   const ucN = uc.length ? `${uc.length + 1} spolu s ${org ? "vami" : "tebou"}` : "";
   const pozvi = async () => {
-    const url = `https://deed.sk/skutok/${id}/pridaj-sa`;
+    const url = `${ADRESA}/skutok/${id}/pridaj-sa`;
     if (typeof navigator.share === "function") { try { await navigator.share({ title: "Bol si pri tom? Potvrď v DEED+", url }); } catch { return; } }
     else { try { await navigator.clipboard.writeText(url); toast("Pozvánka skopírovaná"); } catch { /* bez schránky */ } }
     setUc((u) => [...u, { meno: `Pozvánka ${u.filter((x) => !x.overeny).length + 1}`, overeny: false }]);
   };
   // pozvánka kolegom vyzerá rovnako ako každá iná (aj od šéfa) — žiadne „povinné"
   const pozviKolegov = async () => {
-    const url = `https://deed.sk/skutok/${id}/pridaj-sa`;
+    const url = `${ADRESA}/skutok/${id}/pridaj-sa`;
     if (typeof navigator.share === "function") { try { await navigator.share({ title: "Bol si pri tom? Potvrď v DEED+", url }); } catch { return; } }
     else { try { await navigator.clipboard.writeText(url); toast("Pozvánka pre kolegov skopírovaná"); } catch { /* bez schránky */ } }
     setUc((u) => [...u, { meno: `Kolega ${u.filter((x) => !x.overeny).length + 1}`, overeny: false }]);
@@ -900,7 +901,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       <Svetlusik size={84} />
       <div style={{ fontSize: 24, fontWeight: 800 }}>Skutok je zverejnený</div>
       <div style={{ fontSize: 15.5, lineHeight: 1.55, color: "var(--ink2)" }}>Skutok „{nz}“ teraz uvidia ľudia vo vašej lokalite aj na vašom profile.</div>
-      {(() => { const z = kam === "centralna" ? pr.centralna : kam === "ina" ? inaZ : null; const url = `https://deed.sk/s/${id}`; return <>
+      {(() => { const z = kam === "centralna" ? pr.centralna : kam === "ina" ? inaZ : null; const url = `${ADRESA}/s/${id}`; return <>
         {z && <div style={{ alignSelf: "stretch", textAlign: "left", borderRadius: 18, background: "var(--goldBg)", border: "1px solid var(--goldBd)", padding: 14, fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}><b style={{ color: "var(--ink)" }}>{(kam === "centralna" ? `100 % príspevkov ide na centrálnu zbierku ${pr.autor ?? ""}`.trimEnd() : `100 % príspevkov ide na zbierku „${z.nazov}“`).replace(/\.?$/, ".")}</b> Zapečatené, nedá sa zmeniť.</div>}
         <div style={{ alignSelf: "stretch", textAlign: "left", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", padding: 14, display: "flex", gap: 14, alignItems: "center" }}>
           <span style={{ flex: "none" }}><DeedQr data={url} size={132} /></span>
@@ -966,7 +967,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
     const rzTxt = !rz.z ? "Vyber zbierku." : sk
       ? (rz.v === 100 ? `Celá odmena ide na ${rz.z.nazov}.` : `Z každej odmeny 10\u00a0€ pôjde ${f(rz.v / 10)}\u00a0€ na ${rz.z.nazov}, zvyšok ${f((100 - rz.v) / 10)}\u00a0€ sa rozdelí rovnako medzi ${n} účastníkov (${f((100 - rz.v) / 10 / n)}\u00a0€ každému).`)
       : (rz.v === 100 ? `Celú odmenu posúvaš na ${rz.z.nazov}, tebe neostane nič.` : `Z každej odmeny 10\u00a0€ pôjde ${f(rz.v / 10)}\u00a0€ na ${rz.z.nazov} a ${f((100 - rz.v) / 10)}\u00a0€ ostane tebe.`);
-    const url = `https://deed.sk/s/${ohl?.id ?? id}`;
+    const url = `${ADRESA}/s/${ohl?.id ?? id}`;
     const zapec = rz.hot && rz.z ? { pct: rz.v } : ohl?.retaz ? { pct: ohl.retaz.pct } : null;
     const delenie = zapec ? `${zapec.pct} % na zbierku` : null;
     const qrText = dar && darZ.length ? "Kto ho naskenuje, pošle príspevok rovno na zbierku." : zapec ? "Kto ho naskenuje, pošle odmenu. Rozdelí sa podľa zapečatenej reťaze." : "Kto ho naskenuje, otvorí tvoj skutok a môže ti poslať odmenu.";

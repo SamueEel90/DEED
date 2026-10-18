@@ -46,7 +46,7 @@ export function NahladNastenky({ strankaId, meno, profil, mobil, onSpat, doOznam
         {/* KARTA 57C §1: tá istá živá stránka ako pre veriacich; tu len na pozretie (ťuk nič nezmení) */}
         <div onClickCapture={(e) => { if ((e.target as HTMLElement).closest("button,a")) { e.preventDefault(); e.stopPropagation(); toast("Toto je náhľad. Ťuknúť sa dá na verejnej stránke."); } }}
           style={{ maxWidth: 1440, margin: "0 auto", borderRadius: mobil ? 0 : 16, overflow: "hidden" }}>
-          <NastenkaFarnosti strankaId={strankaId} meno={meno} profil={profil} stit="Silver" doOznamu={doOznamu} />
+          <NastenkaFarnosti strankaId={strankaId} meno={meno} profil={profil} stit="Silver" doOznamu={doOznamu} bezVidenych />
         </div>
       </div>
     </div>,

@@ -6,28 +6,34 @@ import { DeedZnacka } from "@/components/DeedZnacka";
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { usePersonalizacia } from "@/lib/personalizacia";
 import { usePouzivatel } from "@/lib/pouzivatel";
-import { useDarcovia, identitaDarcu, relCas, DARCOVIA_CFG, useSektorDarcu, useUkazSumy, type DarRiadok } from "@/lib/darcovia";
+import { useDarcovia, identitaDarcu, relCas, DARCOVIA_CFG, useSektorDarcu, useUkazSumy, jeViera, type DarRiadok } from "@/lib/darcovia";
 import { vycerpane, zostatok, type Dorovnanie } from "@/lib/dorovnanie";
 import type { Oblubeny } from "@/types";
 import { sumaEur } from "@/lib/suma";
 import { useZvoncek, podakovanieZvoncek } from "@/lib/zvoncekZbierka";
+import { textRiadkuOmse } from "@/lib/zvoncekOmse";
 import { useSlovaFarnosti } from "@/lib/mojeFarnosti";
+import { DarujeteAko } from "./Platba";
 
 const eK = (n: number) => `${sumaEur(n)}`;
 const riadkove: CSSProperties = { whiteSpace: "nowrap", minWidth: 0, height: 50, borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: "clamp(14px,4vw,15.5px)", fontWeight: 700, color: "var(--ink)", cursor: "pointer", fontFamily: "inherit" };
 const male: CSSProperties = { height: 44, borderRadius: 14, background: "transparent", border: "1px solid var(--cardBd)", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontSize: 14, fontWeight: 700, color: "var(--ink2)", cursor: "pointer", fontFamily: "inherit" };
 
 // ---------------- Zdieľať · QR + Páči sa mi ----------------
-export function ZdielatRiadok({ onZdielat, paciSa = 0, onPodporitDeed, sam }: { onZdielat: () => void; paciSa?: number; /** KARTA 57C §4: na mieste Páči sa mi je Podporiť DEED */ onPodporitDeed?: () => void;
-  /** OPRAVY 209: pohrebná zbierka — len Zdieľať · QR na celú šírku */ sam?: boolean }) {
+export function ZdielatRiadok({ onZdielat, paciSa = 0, onPodporitDeed, sam, darujete }: { onZdielat: () => void; paciSa?: number; /** KARTA 57C §4: na mieste Páči sa mi je Podporiť DEED */ onPodporitDeed?: () => void;
+  /** OPRAVY 209: pohrebná zbierka — len Zdieľať · QR na celú šírku */ sam?: boolean;
+  /** OPRAVY 304: registrovaný — vedľa Zdieľať · QR „Darujete ako: … ⌄“ (každé polovica šírky) */ darujete?: boolean }) {
   const [paci, setPaci] = useState(false);
   const pocet = paciSa + (paci ? 1 : 0);
+  // Martin 16. 10.: vo Viere nie je Páči sa mi vôbec (neregistrovaný má Zdieľať · QR na celú šírku)
+  const viera = jeViera(useSektorDarcu());
+  if (viera && !darujete && !onPodporitDeed) sam = true;
   return (
-    <div style={{ display: "grid", gridTemplateColumns: sam ? "1fr" : "1fr 1fr", gap: 10, marginTop: 2 }}>
+    <div style={{ display: "grid", gridTemplateColumns: sam && !darujete ? "1fr" : "minmax(0,1fr) minmax(0,1fr)", gap: 10, marginTop: 2 }}>
       <button type="button" className="zb-karta" onClick={onZdielat} style={riadkove}>
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" /></svg>Zdieľať · QR
       </button>
-      {sam ? null : onPodporitDeed ? <button type="button" className="zb-karta" onClick={onPodporitDeed} style={{ ...riadkove, color: "var(--green)" }}>
+      {darujete ? <DarujeteAko styl={riadkove} /> : sam ? null : onPodporitDeed ? <button type="button" className="zb-karta" onClick={onPodporitDeed} style={{ ...riadkove, color: "var(--green)" }}>
         <span style={{ width: 18, height: 18, borderRadius: 5, background: "var(--green)", color: "#fff", fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>D</span>
         <span>Podporiť <DeedZnacka /></span>
       </button> : <>
@@ -163,9 +169,10 @@ function spojPary(r: DarRiadok[]): Par[] {
 }
 const sumaVZozname = (r: DarRiadok) => r.omsa ? eK(r.suma) : (r.firma || (r.registrovany && r.zobrazSumu)) && r.suma > DARCOVIA_CFG.prahSumy ? eK(r.suma) : null;
 /** OPRAVY 294: „Ranná omša 6:00 · Pán Boh zaplať“ — poďakovanie podľa farnosti (zvončeková / cirkev) */
-function TextOmse({ omsa }: { omsa: NonNullable<DarRiadok["omsa"]> }) {
-  const pod = podakovanieZvoncek(useZvoncek(omsa.stranka), useSlovaFarnosti(omsa.stranka));
-  return <>{omsa.nazov}{pod ? ` · ${pod}` : ""}</>;
+export function TextOmse({ r }: { r: DarRiadok }) {
+  const st = r.omsa?.stranka ?? "";
+  const pod = podakovanieZvoncek(useZvoncek(st), useSlovaFarnosti(st));
+  return <>{textRiadkuOmse(r, pod)}</>;
 }
 
 export function Darcovia({ refId, nadpis = "DARCOVIA", cezTvorcu, bezDorovnania, skoncena }: { refId: string; nadpis?: string; cezTvorcu?: string; /** KARTA 46 · modul bez dorovnania firmy: bez zlatých riadkov firmy */ bezDorovnania?: boolean; /** ukončená zbierka: bez „rastie naživo" */ skoncena?: boolean }) {
@@ -191,7 +198,7 @@ export function Darcovia({ refId, nadpis = "DARCOVIA", cezTvorcu, bezDorovnania,
       {zobraz.map(({ darca, firma }, i) => (
         <div key={darca.id} className={i === 0 ? "zb-novy-riadok" : undefined} style={{ borderTop: "1px solid var(--cardBd)", padding: "10px 0" }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-            <span style={{ flex: 1, minWidth: 0, fontSize: 14.5, fontWeight: 700, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{darca.omsa ? <TextOmse omsa={darca.omsa} /> : identitaDarcu(darca, ja, sektor)}</span>
+            <span style={{ flex: 1, minWidth: 0, fontSize: 14.5, fontWeight: 700, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{darca.omsa ? <TextOmse r={darca} /> : identitaDarcu(darca, ja, sektor)}</span>
             {(ukazSumy || darca.omsa) && sumaVZozname(darca) && <span style={{ fontSize: 14.5, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{sumaVZozname(darca)}</span>}
             <span style={{ width: 70, textAlign: "right", fontSize: 12, color: "var(--ink4)", flex: "none" }}>{relCas(darca.cas)}</span>
           </div>

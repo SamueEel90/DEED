@@ -11,19 +11,22 @@ import { supabase } from "./supabase";
 const obnovy = new Map<string, () => void>();
 type Zluc = (lokal: unknown, ucet: unknown) => unknown;
 const zlucenia = new Map<string, Zluc>();
+const zariadenia = new Set<string>();
 const VLASTNIK = "deed.mojeData.vlastnik";
 let vUcte: string | null = null;
 
 /** modul: „tento kľúč patrí do účtu", obnov = znova načítaj z localStorage + ohlás zmenu */
 /** `zluc` (voliteľné): pri prihlásení sa obsah zariadenia zlúči s účtom (namiesto „účet má prednosť") */
-export function zaregistrujKluc(kluc: string, obnov: () => void, zluc?: Zluc) {
+export function zaregistrujKluc(kluc: string, obnov: () => void, zluc?: Zluc, /** OPRAVY 333: údaj zariadenia (videné) — ani pri inom účte sa z prehliadača nemaže, len zlúči */ zariadenie = false) {
   obnovy.set(kluc, obnov);
   if (zluc) zlucenia.set(kluc, zluc);
+  if (zariadenie) zariadenia.add(kluc);
   if (vUcte && zUctu) zladKluc(kluc, obnov, cudziPrehliadac); // modul sa načítal až po synchronizácii (lazy obrazovka)
 }
 let zUctu: Map<string, unknown> | null = null;
 let cudziPrehliadac = false; // tento prehliadač predtým používal iný účet
-function zladKluc(kluc: string, obnov: () => void, cudzi: boolean) {
+function zladKluc(kluc: string, obnov: () => void, cudziUcet: boolean) {
+  const cudzi = cudziUcet && !zariadenia.has(kluc);
   const zluc = zlucenia.get(kluc);
   if (zUctu?.has(kluc) && zluc && !cudzi) {
     const ucet = zUctu.get(kluc), spolu = zluc(citaj(kluc), ucet);

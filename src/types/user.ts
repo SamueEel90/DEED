@@ -408,6 +408,8 @@ export type NotifTon = "g" | "b" | "gold";
 export type NotifAkciaKod = "odpovedat" | "bol" | "nebol" | "prijat" | "neskor" | "otvorit";
 export interface Notifikacia {
   id: number;
+  /** OPRAVY 342: stabilný kľúč (prečítané a odstránené sa ukladajú podľa neho, nie podľa poradia) — chýba = „db:{id}“ */
+  kluc?: string;
   kat: NotifKat;
   ikona: NotifIkona;
   ton: NotifTon;

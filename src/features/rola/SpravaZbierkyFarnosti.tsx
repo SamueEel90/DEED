@@ -6,6 +6,7 @@
 // (poďakovanie v tom istom TextovePolia + fotky ako to dopadlo, Poslať darcom Áno · Nie, Uložiť poďakovanie / Podržte a ukončite s poďakovaním).
 // Prototyp „Sprava farnosti - prvy prichod" → Zbierky → ťuk na zbierku.
 // ============================================================
+import { QrZalozka } from "./QrNastroje";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { SADY, SADY_EURC, upravZbierku, ukonciZbierku, cielCislo, type SpustenaZbierka } from "@/lib/novaZbierka";
 import { darcoviaPre, identitaDarcu, relCas, useZmenyDarov } from "@/lib/darcovia";
@@ -13,6 +14,7 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { kartaK, nadpisK, textK, useZmenaSum, useUkladanie, UlozenePri, PasUlozene } from "./spravaCasti";
 import { TextovePolia, GaleriaEditor, cistyText } from "./obsahZbierky";
 import { AnoNie } from "@/components/AnoNie";
+import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { nacitajStav, ulozStavIsto, useZmenySpravy, type StavZbierky, type PodakovanieZbierky } from "@/lib/zbierkaSprava";
 import { pridajOznamDarcom } from "@/lib/oznamyDarcom";
@@ -20,6 +22,7 @@ import { PodrzZmaz } from "@/components/HromadnyVyber";
 import { VlastnePeniaze } from "./VlastnePeniaze";
 import { SumyPriDarcoch } from "./SumyPriDarcoch";
 import { sumaEur } from "@/lib/suma";
+import { PostupZbierky } from "./PostupZbierky";
 
 const eur = (n: number) => `${sumaEur(n)}`;
 const cis = (n: number) => n.toLocaleString("sk-SK");
@@ -42,12 +45,13 @@ export function rozdelenieZbierkyF(z: SpustenaZbierka): string {
 }
 export const fotoZbierky = (z: SpustenaZbierka) => z.media.find((m) => m.typ === "foto")?.src;
 
-export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat, menoStranky }: {
+export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat, menoStranky, startQr, onTlacQr, startTab }: {
   stranka: string; z: SpustenaZbierka; mobil: boolean; toast: (m: string) => void; onSpat: () => void; /** názov farnosti (Potvrdené · … od Farnosti …) */ menoStranky?: string;
+  /** OPRAVY 347: záložka QR */ startQr?: boolean; onTlacQr?: (id: string) => void; /** OPRAVY 348: Ukončiť › z Prehľadu */ startTab?: number;
 }) {
   useZmenyDarov();
   const ja = usePouzivatel();
-  const [tab, setTab] = useState(0);
+  const [tab, setTab] = useState(startQr ? 5 : startTab ?? 0);
   // OPRAVY 314: Upraviť zbierku — text, fotky a rýchle sumy sa ukladajú samy, pri poli „Uložené ✓“
   const u = useUkladanie();
   const [ob, setOb] = useState({ popis: z.popis, popis2: z.popis2, media: z.media, eurc: z.eurc, sada: z.sada, sadaE: z.sadaE });
@@ -72,6 +76,7 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat, menoSt
   const podiel = rozdelenieZbierkyF(z);
   const foto = fotoZbierky(z);
   const aktivna = z.stav !== "ukoncena" && z.stav !== "vyuctovana";
+  const zbFarnosti = (z.farnost?.druh ?? "farnost") === "farnost";
 
   // ---- OPRAVY 314: Ukončenie a poďakovanie — poďakovanie je v správe zbierky (zbierka_sprava, 0083b), na stránke pri ukončenej zbierke ----
   useZmenySpravy();
@@ -91,9 +96,12 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat, menoSt
     const e = await ulozStavIsto(z.id, { ...st, podakovanie: { ...st.podakovanie, zmazane: new Date().toISOString() } });
     setDakSprava(e ? { ok: false, t: `Neuložilo sa. ${e}` } : { ok: true, t: "Zbierka už nie je na stránke farnosti ✓ V Archíve ostáva aj s poďakovaním." });
   };
+  const opakDak = useRef<(() => void) | null>(null);
+  const [dakZnova, setDakZnova] = useState(true);
   const ulozDak = async (ukoncit: boolean) => {
     if (dakUklada) return;
-    if (!plneDak && !ukoncit) { setDakSprava({ ok: false, t: "Napíšte poďakovanie alebo pridajte fotky." }); return; }
+    opakDak.current = () => { void ulozDak(ukoncit); }; setDakZnova(true);
+    if (!plneDak && !ukoncit) { opakDak.current = null; setDakZnova(false); setDakSprava({ ok: false, t: "Poďakovanie je prázdne. Napíšte poďakovanie alebo pridajte fotky." }); return; }
     setDakUklada(true); setDakSprava(null);
     const st = stav0(), teraz = new Date().toISOString();
     const posli = plneDak && poslat && !st.podakovanie?.poslane;
@@ -139,7 +147,8 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat, menoSt
       </span>
     </section>
     <div role="tablist" aria-label="Správa zbierky" style={{ flex: "none", display: "flex", gap: 4, borderBottom: "1px solid var(--cardBd)", overflowX: "auto" }}>
-      {["Štatistiky", "Upraviť zbierku", "Ukončenie a poďakovanie"].map((t, i) => <button key={t} type="button" role="tab" aria-selected={tab === i} onClick={() => setTab(i)} style={tabSt(tab === i)}>{t}</button>)}
+      {/* OPRAVY 332: Ako to pokračuje — len zbierka farnosti (rodiny nie, Hlavná má vlastnú Správu) */}
+      {([[0, "Štatistiky"], [1, "Upraviť zbierku"], ...(zbFarnosti ? [[3, "Ako to pokračuje"]] : []), [2, "Ukončenie a poďakovanie"], ...(aktivna ? [[5, "QR"]] : [])] as [number, string][]).map(([i, t]) => <button key={t} type="button" role="tab" aria-selected={tab === i} onClick={() => setTab(i)} style={tabSt(tab === i)}>{t}</button>)}
     </div>
 
     {tab === 0 && <>
@@ -191,6 +200,9 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat, menoSt
       <PasUlozene u={u} onSpat={onSpat} mobil={mobil} />
     </>}
 
+    {tab === 3 && zbFarnosti && <PostupZbierky z={z} aktivna={aktivna} mobil={mobil} />}
+    {tab === 5 && <QrZalozka strankaId={stranka} meno={menoStranky ?? ""} id={z.id} mobil={mobil} onTlac={onTlacQr} />}
+
     {/* OPRAVY 314 (B): Ukončenie a poďakovanie */}
     {tab === 2 && (hotovo ? (
       // key: po podržaní sa karta vymení za novú, aby pustenie prsta nestlačilo „Hotovo" na tom istom mieste
@@ -219,7 +231,9 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat, menoSt
             <span style={{ display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15 }}>Poslať poďakovanie darcom</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>každý darca dostane upozornenie</span></span>
             <AnoNie value={poslat} onChange={setPoslat} label="Poslať poďakovanie darcom" />
           </div>}
-        {dakSprava && <span role={dakSprava.ok ? "status" : "alert"} style={{ padding: "12px 14px", borderRadius: 14, fontSize: 14.5, fontWeight: 800, lineHeight: 1.45, ...(dakSprava.ok ? { background: "var(--gSoft)", border: "1.5px solid var(--gBd)", color: "var(--gInk)" } : { background: "#F6E3DC", border: "1.5px solid #A34A2A", color: "#A34A2A" }) }}>{dakSprava.t}</span>}
+        {dakSprava?.ok && <span role="status" style={{ padding: "12px 14px", borderRadius: 14, fontSize: 14.5, fontWeight: 800, lineHeight: 1.45, background: "var(--gSoft)", border: "1.5px solid var(--gBd)", color: "var(--gInk)" }}>{dakSprava.t}</span>}
+        {/* OPRAVY 335: chyba priamo nad tlačidlami (na mobile aj okno) */}
+        <ChybaPriTlacidle text={dakSprava && !dakSprava.ok ? dakSprava.t.replace(/^Neuložilo sa\.\s*/, "") : null} uklada={dakUklada} onZnova={dakZnova ? () => opakDak.current?.() : undefined} />
         {aktivna ? <div style={{ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : "1fr 1fr", gap: 10, alignItems: "stretch" }}>
           <button type="button" disabled={dakUklada} onClick={() => void ulozDak(false)} style={{ minHeight: 60, padding: "6px 14px", borderRadius: 16, border: "1.5px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", color: "var(--ink)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1, boxShadow: "none" }}>
             <b style={{ fontSize: 15 }}>Uložiť poďakovanie</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>zbierka beží ďalej</span></button>

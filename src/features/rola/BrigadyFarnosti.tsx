@@ -1,7 +1,7 @@
 // ============================================================
 // KARTA 61 §2 — Dobrovoľníctvo a organizovanie brigád (Správa → Ľudia, pod zoznamom), prototyp Brigady farnosti.dc.html.
 // + Vytvoriť brigádu → formulár na mieste (hore „‹ Späť na zoznam brigád“), vedľa živý náhľad karty bloku Pomôž.
-// Zoznam: koľko príde, mená, Upraviť, Podržte · zmazať. Po termíne „SKONČILA · na stránke už nie je“.
+// Zoznam: koľko príde, mená, Upraviť, Podržte · zmazať. Po termíne „SKONČILA · v archíve“ (OPRAVY 350).
 // ============================================================
 import { useMiesta } from "@/lib/miestaFarnosti";
 import { kartaVolby, FajkaVolby } from "@/components/Volby";
@@ -40,7 +40,7 @@ function Riadok({ b, strankaId, prvy, onUpr, hlas }: { b: Brigada; strankaId: st
   return (
     <div style={{ padding: "14px 0", borderTop: prvy ? "none" : "1px solid var(--cardBd)", display: "flex", flexDirection: "column", gap: 6 }}>
       <b style={{ fontSize: 15.5 }}>{b.t}</b>
-      <span style={{ fontSize: 13, color: po ? CERV : "var(--ink3)", fontWeight: po ? 700 : 500 }}>{[po ? "SKONČILA · na stránke už nie je" : "", b.druh, kedyBrigady(b.dat, b.cas), b.kde].filter(Boolean).join(" · ")}</span>
+      <span style={{ fontSize: 13, color: po ? CERV : "var(--ink3)", fontWeight: po ? 700 : 500 }}>{[po ? "SKONČILA · v archíve" : "", b.druh, kedyBrigady(b.dat, b.cas), b.kde].filter(Boolean).join(" · ")}</span>
       {b.pz > 0 && <span style={{ fontSize: 14, fontWeight: 700 }}>{l.length ? `${l.length} príde${b.limit ? ` z ${b.limit}` : ""}` : "zatiaľ nikto"}</span>}
       {b.pz === 2 && mena && <span style={{ fontSize: 13.5, color: "var(--ink2)" }}>Príde: {mena}</span>}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

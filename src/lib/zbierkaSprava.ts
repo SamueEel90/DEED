@@ -118,7 +118,13 @@ export interface StavZbierky {
   odoslaneNaOverenie?: string;
   /** OPRAVY 314: poďakovanie darcom (zbierka farnosti) — na čo sme peniaze použili, fotky ako to dopadlo; na stránke pri ukončenej zbierke */
   podakovanie?: PodakovanieZbierky;
+  /** OPRAVY 332: priebežné správy o postupe (zbierky farnosti okrem Hlavnej) — na stránke zbierky „Ako to pokračuje“, zbierka beží ďalej */
+  postup?: SpravaPostupu[];
 }
+export interface SpravaPostupu { id: string; /** YYYY-MM-DD */ datum: string; popis: string; popis2: string; media: import("./novaZbierka").MediumZbierky[]; /** ISO */ ulozene: string }
+export const datumPostupu = (iso: string) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso); return m ? `${+m[3]}. ${+m[2]}. ${m[1]}` : ""; };
+/** najnovšia hore (dátum, potom čas uloženia) */
+export const zoradPostup = (l: SpravaPostupu[]) => [...l].sort((a, b) => b.datum.localeCompare(a.datum) || b.ulozene.localeCompare(a.ulozene));
 export interface PodakovanieZbierky { popis: string; popis2: string; media: import("./novaZbierka").MediumZbierky[];
   /** kedy sa uložilo (ISO) — bez neho sa na stránke neukáže */ ulozene?: string; /** kedy dostali darcovia upozornenie (ISO) — posiela sa raz */ poslane?: string;
   /** Martin 15. 10.: farár ho nechá na stránke, koľko chce, potom ho zo stránky zmaže (ISO); v Archíve ostáva */ zmazane?: string }

@@ -19,7 +19,7 @@ import { Hlavicka, Galeria, NadpisText, type Medium } from "./Vrch";
 import { PoleOrganizacie, type OrgPole } from "./Pole";
 import { KartaStavu } from "./KartaStavu";
 import { RychleSumyEur, DeedDlazdice, VlastnaSuma, DaryVKrypte, type OtvorPlatbu } from "./Sumy";
-import { PlatobneOkno, potvrditTuknutim, nastavPotvrditTuknutim } from "./Platba";
+import { PlatobneOkno, potvrditTuknutim, nastavPotvrditTuknutim, useRychlyDar, type VysledokPlatby } from "./Platba";
 import type { KanalPlatby } from "./Sumy";
 import { ZdielatRiadok, PravidelnaRiadok, Oblubene, ZapojitFirmuRiadok, RetazRiadok, KartaDorovnava, Darcovia } from "./Riadky";
 import { ZdielatHarok, Harok } from "./Zdielat";
@@ -140,6 +140,9 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
   // OPRAVY 209: naraz je otvorené len jedno okno platby — nové zavrie predchádzajúce
   const jaOkno = useRef(Symbol("zbierka"));
   useEffect(() => { const f = (e: Event) => { if ((e as CustomEvent).detail !== jaOkno.current) setPlatba(null); }; window.addEventListener("deed-okno-platby", f); return () => window.removeEventListener("deed-okno-platby", f); }, []);
+  // OPRAVY 304: dar z okna aj rýchly dar (podržať a zaplatené) sa zapíše rovnako
+  const zapisDar = (v: VysledokPlatby) => pridajDar({ refId: zbierka.id, suma: v.eur, kanal: v.kanal === "eur" ? (v.sposob === "sepa" ? "sepa" : "psp") : "deed", registrovany, volba: v.volba, menoDarcu: v.meno, cezTvorcu });
+  const rychlyDar = useRychlyDar();
   const otvorPlatbu: OtvorPlatbu = (p) => { window.dispatchEvent(new CustomEvent("deed-okno-platby", { detail: jaOkno.current })); setPredDarom(stavPredDarom()); setPlatba(p); };
   // stav zbierky tesne pred darom (pre poďakovanie a hlášku) — zachytí sa pri otvorení okna
   const stavPredDarom = () => {
@@ -202,7 +205,8 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
             ? <DeedDlazdice refId={zbierka.id} registrovany={registrovany} mikro={mikro} cezTvorcu={cezTvorcu} />
             : <RychleSumyEur sumy={p.hodnota === "eurDrobne" ? [1, 3, 5] : zbierka.rychleSumy ?? [10, 25, 45]}
                 doplnok={p.hodnota === "eurDrobne" || miesto === "sukromna" ? undefined : `sumy si volí ${ktoVoli ?? "charita"}`}
-                kDaru={dorovnanie ? (sm) => dorovnanieKDaru(dorovnanie, sm) : undefined} otvor={otvorPlatbu} />}
+                kDaru={dorovnanie ? (sm) => dorovnanieKDaru(dorovnanie, sm) : undefined} otvor={otvorPlatbu}
+                drzat={registrovany ? (sm) => zapisDar(rychlyDar(sm)) : undefined} tukom={potvrditTuknutim()} />}
           {/* OPRAVY 222 (prototyp Spolufinancovanie A): pod rýchlymi sumami „Prispieť ako Farnosť … ›“, len farár */}
           {!naDeed && zaFarnost}
           <VlastnaSuma eur={vlastnaEur} deed={miesto === "deed" && registrovany} otvor={otvorPlatbu} onPodporit={() => setHarok("podporit")}
@@ -213,7 +217,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
     if (p.kluc === "vlastnaEur") return null; // vykreslená spolu s rýchlymi sumami
     const obal = (el: React.ReactNode) => <div key={p.kluc} className="zb-pol" style={{ padding: "0 16px" }}>{el}</div>;
     // OPRAVY 209: pri pohrebe len Zdieľať · QR na celú šírku (Podporiť DEED+ je vedľa Vlastnej sumy)
-    if (p.kluc === "zdielat") return obal(<ZdielatRiadok onZdielat={() => setHarok("zdielat")} sam={p.hodnota === "podporitDeed"} />);
+    if (p.kluc === "zdielat") return obal(<ZdielatRiadok onZdielat={() => setHarok("zdielat")} sam={p.hodnota === "podporitDeed"} darujete={registrovany} />);
     if (p.kluc === "dorovnanie" && dorovnanie) return obal(<>
       <KartaDorovnava d={dorovnanie} />
       {dorovnanieKDaru(dorovnanie, 20) > 0 && <div style={{ margin: "-4px 0 12px", textAlign: "center", fontSize: 13.5, fontWeight: 700, color: "var(--gold)", fontVariantNumeric: "tabular-nums" }}>
@@ -262,9 +266,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
         <PlatobneOkno kanal={platba.kanal} suma={platba.suma} nazov={zbierka.nazov} registrovany={registrovany} pred={predDarom}
           bonus={dorovnanie ? (sm) => dorovnanieKDaru(dorovnanie, sm) : undefined} firma={dorovnanie?.firma}
           onClose={() => setPlatba(null)}
-          onHotovo={(v) => {
-            pridajDar({ refId: zbierka.id, suma: v.eur, kanal: v.kanal === "eur" ? (v.sposob === "sepa" ? "sepa" : "psp") : "deed", registrovany, volba: v.volba, menoDarcu: v.meno, cezTvorcu });
-          }} />
+          onHotovo={zapisDar} />
       )}
 
       {harok === "pravidelna" && <PravidelnaHarok refId={zbierka.id} nazov={zbierka.nazov} registrovany={registrovany} onClose={() => setHarok(null)} />}

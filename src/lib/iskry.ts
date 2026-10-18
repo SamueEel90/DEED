@@ -6,6 +6,7 @@
 // texty z prototypu „Iskra centralna mobil", stav (iskry, sledovanie, námietky) v pamäti relácie.
 // TODO (server): prúd videí, počty Iskier, námietky a cudzie dary v reálnom čase prídu z API / realtime.
 // ============================================================
+import { ADRESA } from "@/lib/adresa";
 import { useSyncExternalStore } from "react";
 import { nacitajIskryZoServera } from "./iskryServer";
 import { najdiTestProfil, type TestProfil, type TestZbierka } from "@/lib/testProfily";
@@ -123,8 +124,8 @@ export function pridajIskru(i: Omit<Iskra, "id" | "iskry" | "zverejnene">): Iskr
 }
 /** Iskra, ktorú už zverejnil server (iskryServer.zverejniIskruNaServeri) */
 export function pridajHotovuIskru(n: Iskra): Iskra { pridane.unshift(n); zmena(); return n; }
-/** verejná adresa appky — VITE_VEREJNA_URL (napr. https://deed.sk, keď bude doména), inak tá, na ktorej appka beží */
-const VEREJNA_URL = (import.meta.env.VITE_VEREJNA_URL || (typeof window !== "undefined" ? window.location.origin : "https://deed.sk")).replace(/\/$/, "");
+/** verejná adresa appky — VITE_VEREJNA_URL — jedna konštanta v lib/adresa */
+const VEREJNA_URL = ADRESA; // OPRAVY 347: jedna adresa appky (lib/adresa)
 /** odkaz Iskry (QR, zdieľanie) — web stránka Iskry (api/iskra.ts); z nej „Otvoriť v DEED" otvorí prúd na tomto videu */
 export const odkazIskry = (id: string) => `${VEREJNA_URL}/i/${encodeURIComponent(id)}`;
 /** charita: videá „všetkým v Iskrách" mesačne v cene programu (Zadarmo 1 · P2 2 · P3 4), ďalšie za cenaNad € */

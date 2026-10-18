@@ -26,9 +26,13 @@ export const PREMENOVAT: Partial<Record<BlokStranky, string>> = {
 };
 export const NAZOV_MAX = 30;
 
-export interface Usporiadanie { poradie: BlokStranky[]; skryte: BlokStranky[]; nazvy: Partial<Record<BlokStranky, string>> }
+export interface Usporiadanie { poradie: BlokStranky[]; skryte: BlokStranky[]; nazvy: Partial<Record<BlokStranky, string>>;
+  /** OPRAVY 323: bloky s „Vedľa predošlého · Áno“ — v Modernom a Klasike na PC idú vedľa bloku pred nimi */ vedla: BlokStranky[] }
+/** OPRAVY 322/323: Teš sa a Spomíname nikdy vedľa seba ani vedľa iného bloku (každý na celú šírku); Zbierky majú vlastné miesto */
+const BEZ_VEDLA: BlokStranky[] = ["zbierky", "tes", "spom"];
+export const mozeVedla = (id: string) => !BEZ_VEDLA.includes(id as BlokStranky);
 const ID = new Set<string>(BLOKY_STRANKY.map((b) => b.id));
-export const POVODNE: Usporiadanie = { poradie: BLOKY_STRANKY.map((b) => b.id), skryte: [], nazvy: {} };
+export const POVODNE: Usporiadanie = { poradie: BLOKY_STRANKY.map((b) => b.id), skryte: [], nazvy: {}, vedla: [] };
 
 /** z hocijakej uloženej hodnoty platné usporiadanie (neznáme bloky preč, chýbajúce na svoje predvolené miesto) */
 export function normalizuj(v: unknown): Usporiadanie {
@@ -40,7 +44,8 @@ export function normalizuj(v: unknown): Usporiadanie {
   if (o.nazvy && typeof o.nazvy === "object") for (const [k, t] of Object.entries(o.nazvy as Record<string, unknown>)) {
     if (PREMENOVAT[k as BlokStranky] && typeof t === "string" && t.trim()) nazvy[k as BlokStranky] = t.trim().slice(0, NAZOV_MAX);
   }
-  return { poradie: por, skryte, nazvy };
+  const vedla = Array.isArray(o.vedla) ? [...new Set(o.vedla.filter((x): x is BlokStranky => typeof x === "string" && ID.has(x) && mozeVedla(x)))] : [];
+  return { poradie: por, skryte, nazvy, vedla };
 }
 export const usporiadanieZPamate = (stranka: string): Usporiadanie => normalizuj(verejneZPamate(stranka)?.usporiadanie);
 export function useUsporiadanie(stranka: string): Usporiadanie {
@@ -49,6 +54,16 @@ export function useUsporiadanie(stranka: string): Usporiadanie {
 }
 /** nadpis bloku na stránke: premenovaný alebo pôvodný */
 export const nadpisBloku = (u: Usporiadanie, id: BlokStranky, povodny: string): string => (PREMENOVAT[id] && u.nazvy[id]?.trim()) || povodny;
+/** OPRAVY 323: riadky stránky (Moderné, Klasika na PC) — blok s „Vedľa predošlého“ ide vedľa bloku pred ním; ostatné na celú šírku.
+ *  l = poradie blokov, ktoré sa na stránke naozaj ukážu (prázdne vynechané) */
+export function radyVedla(u: Usporiadanie, l: string[]): string[][] {
+  const out: string[][] = [];
+  for (let i = 0; i < l.length; i++) {
+    const a = l[i], b = l[i + 1];
+    if (b && u.vedla.includes(b as BlokStranky) && mozeVedla(a) && mozeVedla(b)) { out.push([a, b]); i++; } else out.push([a]);
+  }
+  return out;
+}
 /** poradie viditeľných blokov (skryté preč) */
 export const viditelne = (u: Usporiadanie): BlokStranky[] => u.poradie.filter((id) => !u.skryte.includes(id));
 /** uloží na server; vráti chybu ako text alebo null */

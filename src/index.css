@@ -247,3 +247,18 @@ html.obmedz-anim *, html.obmedz-anim *::before, html.obmedz-anim *::after {
 @keyframes iskPas { from { opacity: 0; } to { opacity: 1; } }
 .isk-pas { animation: iskPas .22s ease both; }
 @media (prefers-reduced-motion: reduce) { .isk-dva { animation-duration: .01s; } .isk-pas { animation: none; } }
+
+/* OPRAVY 337 — iPhone: podržanie tlačidla neoznačí jeho text (žiadne modré úchyty ani Kopírovať).
+   Tlačidlá, čipy, prepínače, karty na ťuk (inline cursor:pointer) a všetky „Podržte…“ aj s vnútorným textom.
+   Textové polia a čitateľný text oznamov (.ftext) ostávajú označiteľné — aj vnútri karty na ťuk (!important). */
+button, button *, summary, summary *,
+[role="button"], [role="button"] *, [role="tab"], [role="tab"] *, [role="radio"], [role="radio"] *,
+[role="checkbox"], [role="checkbox"] *, [role="switch"], [role="switch"] *, [role="menuitem"], [role="menuitem"] *,
+[role="option"], [role="option"] *, label:has(> input[type="radio"]), label:has(> input[type="radio"]) *,
+label:has(> input[type="checkbox"]), label:has(> input[type="checkbox"]) *,
+[style*="cursor: pointer"], [style*="cursor: pointer"] *, [style*="cursor: grab"], [style*="cursor: grab"] * {
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+input, textarea, select, [contenteditable], [contenteditable] *, .ftext, .ftext *, [role="textbox"], [role="textbox"] * {
+  -webkit-user-select: text !important; user-select: text !important; -webkit-touch-callout: default !important;
+}

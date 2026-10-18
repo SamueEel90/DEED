@@ -2,10 +2,12 @@
 // Otvára sa z viacerých miest: tlačidlo v Správe stránky, feed, „Stránka organizácie",
 // adresár aj QR. Verejný odkaz na zdieľanie: /p/svetlo · /p/pekaren · /p/martin.
 // Režim modulu (všade / len v detaile) je v DEV paneli v Mojom profile, nie v adrese.
+import { ADRESA } from "@/lib/adresa";
 import { useEffect, useSyncExternalStore } from "react";
 import { slugNaKluc, klucNaSlug } from "@/lib/testProfily";
 import { hlavnaBezi, useZmenyCentralnej } from "@/lib/centralnaZbierka";
 import { STREAMY } from "@/lib/testTvorca";
+import { strankaZbierky } from "@/lib/novaZbierka";
 
 let otvorene = false;
 let kluc: string | null = null;
@@ -17,7 +19,11 @@ const zmena = () => { verzia++; posluchaci.forEach((f) => f()); };
 let zoSpravy = false;
 // OPRAVY 315: ťuk na upozornenie „Farár zverejnil váš príspevok“ → stránka presne pri príspevku
 let doOznamu: string | null = null;
-export function otvorVerejnyProfil(k: string, o?: { zoSpravy?: boolean; doOznamu?: string }) { otvorene = true; kluc = k; zoSpravy = !!o?.zoSpravy; doOznamu = o?.doOznamu ?? null; zmena(); }
+export function otvorVerejnyProfil(k: string, o?: { zoSpravy?: boolean; doOznamu?: string; doVecnej?: string }) { otvorene = true; kluc = k; zoSpravy = !!o?.zoSpravy; doOznamu = o?.doOznamu ?? null; doVecnej = o?.doVecnej ?? null; zmena(); }
+// OPRAVY 320 doplnok: z upozornenia „Poďakovanie · …“ → stránka s detailom vecnej zbierky (číta sa bez mazania, zmaže zrusDoVecnej)
+let doVecnej: string | null = null;
+export const cielVecnej = (): string | null => doVecnej;
+export function zrusDoVecnej() { doVecnej = null; }
 /** príspevok, pri ktorom sa má stránka otvoriť (číta sa bez mazania, zmaže ho zrusDoOznamu) */
 export const cielOznamu = (): string | null => doOznamu;
 export function zrusDoOznamu() { doOznamu = null; }
@@ -32,7 +38,20 @@ export const verejnyProfilKluc = (): string | null => kluc;
 // OPRAVY 162 · QR farnosti = jeden QR z registrácie (/p/{slug}?qr=1), nikdy sa nemení.
 // Kým hlavná zbierka nebeží, otvorí profil; keď beží, ten istý QR otvorí rovno hlavnú zbierku.
 let qrHlavna = false;
-export const odkazQrStranky = (stranka: string) => `https://deed.sk/p/${klucNaSlug(stranka)}?qr=1`;
+// OPRAVY 320: QR na plagáte vecnej zbierky (/p/{slug}?vz={id}) → stránka farnosti a hneď „Darovali ste?“ (raz)
+let vecnaZQr: string | null = null;
+/** číta sa bez mazania (StrictMode volá inicializáciu dvakrát), zmaže zrusVecnuZQr */
+export const vecnaZQrCitaj = (): string | null => vecnaZQr;
+export function zrusVecnuZQr() { vecnaZQr = null; }
+export const odkazQrStranky = (stranka: string) => `${ADRESA}/p/${klucNaSlug(stranka)}?qr=1`;
+// OPRAVY 347: QR zvončeka (trvalý) → zbierka pri aktuálnej omši · QR zbierky (na dobu zbierky) → priamo zbierka, po skončení „Zbierka skončila“
+export const odkazQrZvonceka = (stranka: string) => `${ADRESA}/p/${klucNaSlug(stranka)}/omsa`;
+export const odkazQrZbierky = (id: string) => `${ADRESA}/z/${encodeURIComponent(id)}`;
+export type QrCiel = { omsa: true } | { zbierka: string };
+let qrCiel: QrCiel | null = null;
+/** cieľ z QR (číta sa bez mazania — StrictMode), zmaže zrusQrCiel */
+export const qrCielCitaj = (): QrCiel | null => qrCiel;
+export function zrusQrCiel() { qrCiel = null; }
 /** profil farnosti otvorený z QR farnosti: keď hlavná zbierka beží, otvor ju (raz) */
 export function useOtvorHlavnuZQr(stranka: string, farnost: boolean, otvor: () => void) {
   useZmenyCentralnej();
@@ -45,7 +64,8 @@ if (typeof window !== "undefined") {
   const m = window.location.pathname.match(/^\/p\/([^/?#]+)/);
   if (m) {
     const k = slugNaKluc(decodeURIComponent(m[1]));
-    if (k) { otvorene = true; kluc = k; qrHlavna = new URLSearchParams(window.location.search).has("qr"); }
+    const omsa = /^\/p\/[^/?#]+\/omsa\/?$/.test(window.location.pathname);
+    if (k) { otvorene = true; kluc = k; qrHlavna = !omsa && new URLSearchParams(window.location.search).has("qr"); vecnaZQr = new URLSearchParams(window.location.search).get("vz"); if (omsa) qrCiel = { omsa: true }; }
     try { window.history.replaceState(null, "", window.location.origin + "/"); } catch { /* sandbox */ }
   }
 }
@@ -56,6 +76,11 @@ if (typeof window !== "undefined") {
   if (m && s && STREAMY[s] && STREAMY[s].zbierka === decodeURIComponent(m[1])) {
     otvorene = true; kluc = `stream:${s}`;
     try { window.history.replaceState(null, "", window.location.origin + "/"); } catch { /* sandbox */ }
+  } else if (m) {
+    // OPRAVY 347: /z/{id} — QR zbierky farnosti, vecnej aj rodiny: stránka, ktorej zbierka patrí, a hneď zbierka
+    const id = decodeURIComponent(m[1]);
+    try { window.history.replaceState(null, "", window.location.origin + "/"); } catch { /* sandbox */ }
+    void strankaZbierky(id).then((st) => { if (st) { qrCiel = { zbierka: id }; otvorVerejnyProfil(st); } });
   }
 }
 

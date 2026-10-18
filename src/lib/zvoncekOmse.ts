@@ -196,6 +196,14 @@ export function riadokOmse(o: Pick<ZvOmsaSDarmi, "nazov" | "cas" | "kostol">, st
   return `${o.nazov} ${o.cas}${miesto ? ` · ${miesto}` : ""}`;
 }
 
+/** OPRAVY 319: riadok omše v Darcoch Hlavnej zbierky — „Večerná omša 18:00 · Pán Boh zaplať“, pri filiálke aj miesto (suma ide zvlášť) */
+export function textRiadkuOmse(r: Pick<DarRiadok, "id" | "omsa">, pod: string): string {
+  if (!r.omsa) return "";
+  const n = r.omsa.nazov.trim(), k = r.id.match(/-zv-([^-:]+)-\d{4}-/)?.[1];
+  const miesto = k && k !== "0" ? vsetkyMiesta(r.omsa.stranka).find((m) => m.id === k)?.nazov.trim() ?? "" : "";
+  return [n, miesto && !n.includes(miesto) ? miesto : "", pod].filter(Boolean).join(" · ");
+}
+
 /** živé okno: prekreslí sa pri novom dare, zmene kalendára, teste a každú minútu */
 export function useZvoncekOkno(stranka: string, kostol = "0"): { okno: ZvOkno | null; dary: DarRiadok[]; uzavrete: ZvOmsaSDarmi[] } {
   useZmenyDarov();

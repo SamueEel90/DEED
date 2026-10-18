@@ -8,6 +8,7 @@
 // Bez DB (mock režim) čisto localStorage — správanie ako doteraz.
 // ============================================================
 import { supabase } from "@/lib/supabase";
+import { zmensiPreZariadenie, uvolniKoncepty } from "@/lib/uploadFoto";
 
 function nacitaj<T>(kluc: string, fallback: T): T {
   try { const s = localStorage.getItem(kluc); return s ? (JSON.parse(s) as T) : fallback; } catch { return fallback; }
@@ -36,8 +37,10 @@ export function ulozStav(oblast: string, id: string, val: unknown): boolean {
   return ok;
 }
 /** OPRAVY 273: zápis, na ktorý sa čaká — s DB rozhoduje server, bez DB zariadenie. Vráti chybu ako text alebo null. */
-export async function ulozStavIsto(oblast: string, id: string, val: unknown): Promise<string | null> {
-  const ok = uloz(kluc(oblast, id), val);
+export async function ulozStavIsto(oblast: string, id: string, val0: unknown): Promise<string | null> {
+  // OPRAVY 335: bez servera fotky zmenšené ako pre Storage; keď miesto nestačí, uvoľnia sa staré rozpísané koncepty
+  const val = supabase ? val0 : await zmensiPreZariadenie(val0);
+  const ok = uloz(kluc(oblast, id), val) || (!supabase && uvolniKoncepty() > 0 && uloz(kluc(oblast, id), val));
   if (supabase && !LOKALNE.has(oblast)) {
     const { error } = await supabase.from("naboz_stav").upsert({ oblast, id, data: val, upravene: new Date().toISOString() }, { onConflict: "oblast,id" });
     return error ? "Nepodarilo sa uložiť na server. Skontrolujte pripojenie a skúste znova." : null;

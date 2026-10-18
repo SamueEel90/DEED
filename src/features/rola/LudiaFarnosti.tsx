@@ -5,6 +5,7 @@
 // Úložisko ako Správcovia charity (karta 35): nastavenia_stranky (0050), kľúče „duch“ a „ludia“ — ukladá sa samo.
 // PLACEBO — karta 61 §1: pozvánky (e-mail, QR odkaz 48 h, Prijať / Potvrdiť) sú zatiaľ len v zozname, práva rolí server ešte nevynucuje.
 // ============================================================
+import { ADRESA } from "@/lib/adresa";
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
@@ -106,7 +107,7 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children }
   const pozvat = () => { if (!okMail || !rola) return; const id = teraz(); ulozL([...L, { id, n: "", k: mail.trim(), r: rola, caka: true }]); setMail(""); setPrid(false); setNr(null); hlas(String(id), "Pozvaný ✓ Príde mu oznámenie v appke. Keď ťukne Prijať, môže začať."); };
   const vytvor = () => { const dt = new Date(teraz() + 48 * 3600e3); const doT = `${dt.getDate()}. ${dt.getMonth() + 1}. o ${dt.getHours()}:${String(dt.getMinutes()).padStart(2, "0")}`; const id = teraz();
     ulozL([...L, { id, n: "", k: `pozvánka cez odkaz · platí do ${doT}`, r: rola, caka: "odkaz", do: doT }]); setPoz({ id, r: rola, do: doT }); };
-  const odkaz = poz ? `https://deed.sk/p/${String(poz.id).slice(-6)}` : "";
+  const odkaz = poz ? `${ADRESA}/p/${String(poz.id).slice(-6)}` : "";
   const sprava = poz ? `${menoFarnosti || "Farnosť"} vás pozýva do správy stránky ako ${poz.r}. Ťuknite na odkaz a vyplňte meno a e-mail: ${odkaz.replace("https://", "")} · platí do ${poz.do}.` : "";
   const ako: [string, string][] = cesta === 0 ? [
     ["Napíšete jeho e-mail", "Ten, s ktorým sa prihlasuje do DEED+. Ťuknete Pozvať."],
