@@ -135,7 +135,6 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const [ob, setOb] = useState(2);
   const [pridat, setPridat] = useState(false);
   const [oznamyHore, setOznamyHore] = useState(0); // KARTA 56G §2: + Pridať → Oznam otvorí Oznamy hore
-  const [kartaOtv, setKartaOtv] = useState(true);
   const [zmazana, setZmazana] = useState(false); // KARTA 56D §5: hláška po zmazaní hlavnej zbierky, na mieste v Zbierkach
   // OPRAVY 267: ukončená hlavná zbierka ostáva v Archíve (názov, kedy, koľko sa vyzbieralo)
   const [archivH, setArchivH] = useState<{ nazov: string; koniec: string; suma: number }[]>(() => nacitajStav("hlavnaArchiv", strankaId, []));
@@ -177,6 +176,25 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const profilAkt = koncept ?? prof.koncept ?? prof.ulozeny;
   const uplnost = uplnostProfilu(profilAkt);
   const meno = cistyNazov(profilAkt?.meno ?? nazov) || "Vaša farnosť";
+  // OPRAVY 347: karta profilu zlatá — hotový: logo, celý názov, „Upraviť profil ›“ (ťuk na celú kartu); nedokončený: percento, pás, čo chýba, Dokončiť profil
+  const kartaProfilu = (m: boolean) => {
+    const ls = m ? 56 : 44, fs = m ? 17 : 14.5;
+    const hlava = (sub2: React.ReactNode) => <>
+      <LogoKarty profil={profilAkt} inicialy="" size={ls} />
+      <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}><b style={{ fontSize: fs, lineHeight: 1.25, color: "var(--ink)", overflowWrap: "anywhere" }}>{meno}</b>{sub2}</span>
+    </>;
+    if (uplnost.pct >= 100) return (
+      <button type="button" onClick={() => go("profil")} style={{ flex: "none", width: "100%", borderRadius: m ? 20 : 18, background: "var(--goldBg)", border: "1.5px solid var(--goldBd)", padding: m ? "14px 16px" : 12, display: "flex", alignItems: "center", gap: m ? 14 : 10, cursor: "pointer", textAlign: "left", fontFamily: "inherit", boxShadow: "none" }}>
+        {hlava(<span style={{ fontSize: m ? 14.5 : 13, fontWeight: 800, color: "var(--gold)" }}>Upraviť profil ›</span>)}
+      </button>);
+    return (
+      <div style={{ flex: "none", borderRadius: m ? 20 : 18, background: "var(--goldBg)", border: "1.5px solid var(--goldBd)", padding: m ? "14px 16px" : 12, display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: m ? 14 : 10 }}>{hlava(<span style={{ fontSize: m ? 14 : 12.5, color: "var(--ink2)" }}>Profil · {uplnost.pct} %</span>)}</div>
+        <span style={{ display: "block", height: 6, borderRadius: 3, background: "rgba(120,128,136,.25)", overflow: "hidden" }}><span style={{ display: "block", width: "100%", height: "100%", borderRadius: 3, background: "var(--green)", transformOrigin: "0 50%", transform: `scaleX(${uplnost.pct / 100})`, transition: "transform .5s ease" }} /></span>
+        {uplnost.chyba && <span style={{ fontSize: 13, lineHeight: 1.4, color: "var(--ink)" }}>{uplnost.chyba}</span>}
+        <button type="button" onClick={() => go("profil")} style={{ minHeight: 44, border: "none", borderRadius: 12, background: "#4B7A35", color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, boxShadow: "none" }}>Dokončiť profil</button>
+      </div>);
+  };
   const [vid, setVid] = useState(() => nacitajStav<"zobrazit" | "skryt" | "len-farar">("viditelnost", strankaId, "zobrazit"));
   // KARTA 62: kostoly a filiálky = miesta farnosti (prvé z registrácie); kľúč miesta = kľúč kostola v kalendári
   const kostoly = useMiesta(strankaId);
@@ -250,10 +268,10 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     ...(odV.umysly ? [{ t: `${odV.umysly} ${odV.umysly === 1 ? "úmysel čaká" : odV.umysly < 5 ? "úmysly čakajú" : "úmyslov čaká"} na omšu`, s: "Zapíšte ich na konkrétnu omšu v Od veriacich.", tap: () => go("veriaci") }] : []),
   ];
   const trebaVybavit = (
-    <section data-treba="1" style={{ ...karta, borderRadius: 18, padding: mobil ? "14px 14px" : "16px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
-      <b style={{ fontSize: 16 }}>Treba vybaviť</b>
+    <section data-treba="1" style={{ ...karta, ...(ulohy.length ? { background: "var(--rBg)", border: "2px solid var(--rBd)" } : {}), borderRadius: 18, padding: mobil ? "14px 14px" : "16px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
+      <b style={{ fontSize: 16, color: ulohy.length ? "var(--cRed)" : undefined }}>Treba vybaviť · {ulohy.length}</b>
       {ulohy.map((u) => (
-        <button key={u.t} type="button" onClick={u.tap} style={{ minHeight: 56, padding: "8px 14px", borderRadius: 14, border: "1.5px solid #C9A24A", background: "var(--field)", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" }}>
+        <button key={u.t} type="button" onClick={u.tap} style={{ minHeight: 56, padding: "8px 14px", borderRadius: 14, border: "1.5px solid var(--rBd2)", background: "var(--field)", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" }}>
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15 }}>{u.t}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>{u.s}</span></span>
           <span aria-hidden="true" style={{ fontSize: 18, color: "var(--ink3)" }}>›</span>
         </button>))}
@@ -295,7 +313,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const pripnute = (
     <section aria-label="Pripnuté" style={{ ...karta, position: "sticky", top: mobil ? 74 : 12, zIndex: 4, borderRadius: 18, padding: 8, display: "flex", alignItems: "center", gap: 6, flexWrap: mobil ? "nowrap" : "wrap", overflowX: mobil ? "auto" : undefined, scrollbarWidth: "none", boxShadow: "0 6px 16px rgba(30,28,20,.10)" }}>
       <span style={{ flex: "none", padding: "0 8px 0 6px", fontSize: 12, fontWeight: 800, letterSpacing: ".07em", color: "var(--acc)" }}>PRIPNUTÉ</span>
-      <button type="button" onClick={() => setPinAkt((a) => (a === "treba" ? null : "treba"))} aria-pressed={pinAkt === "treba"} style={{ flex: "none", whiteSpace: "nowrap", height: 44, padding: "0 12px 0 14px", borderRadius: 13, border: `${pinAkt === "treba" ? 2 : 1.5}px solid ${pinAkt === "treba" ? "var(--green)" : ulohy.length ? "#C9A24A" : "var(--cardBd)"}`, background: pinAkt === "treba" ? "var(--gSoft)" : ulohy.length ? "var(--goldBg)" : "var(--bg)", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--ink)", boxShadow: "none" }}>
+      <button type="button" onClick={() => setPinAkt((a) => (a === "treba" ? null : "treba"))} aria-pressed={pinAkt === "treba"} style={{ flex: "none", whiteSpace: "nowrap", height: 44, padding: "0 12px 0 14px", borderRadius: 13, border: ulohy.length ? "2px solid var(--rBd)" : `${pinAkt === "treba" ? 2 : 1.5}px solid ${pinAkt === "treba" ? "var(--green)" : "var(--cardBd)"}`, background: ulohy.length ? "var(--rBg)" : pinAkt === "treba" ? "var(--gSoft)" : "var(--bg)", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: ulohy.length ? "var(--cRed)" : "var(--ink)", boxShadow: "none" }}>
         Treba vybaviť<span style={{ minWidth: 24, height: 24, padding: "0 7px", borderRadius: 12, background: ulohy.length ? "#A34A2A" : "#85867B", color: "#fff", fontSize: 12.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{ulohy.length}</span>
       </button>
       {piny.map((k) => (
@@ -378,14 +396,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     </section>) : null} />;
   const prehlad = mobil ? <>
     {predPas}
-    <button type="button" onClick={() => go("profil")} style={{ flex: "none", borderRadius: 20, background: "var(--card)", border: "1.5px solid var(--cardBd)", padding: "14px 16px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", textAlign: "left", fontFamily: "inherit", boxShadow: "none" }}>
-      <LogoKarty profil={profilAkt} inicialy="" size={56} />
-      <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
-        <b style={{ fontSize: 19, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{meno}</b>
-        <span style={{ fontSize: 14.5, fontWeight: 700, color: "var(--ink2)" }}>Upraviť profil ›</span>
-        {uplnost.pct < 100 && <span style={{ display: "block", height: 6, marginTop: 4, borderRadius: 3, background: "rgba(168,116,80,.25)", overflow: "hidden" }}><span style={{ display: "block", width: "100%", height: "100%", borderRadius: 3, background: "var(--green)", transformOrigin: "0 50%", transform: `scaleX(${uplnost.pct / 100})` }} /></span>}
-      </span>
-    </button>
+    {kartaProfilu(true)}
     <UcetFarnostiKarta strankaId={strankaId} mobil={mobil} onNastavenia={otvorUcty} />
     <div style={{ flex: "none", display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 10 }}>
       {DLAZDICE9.map(([k, t]) => { const v = k === "verejny"; return (
@@ -758,25 +769,13 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     return (
       <div className="sprava-charity" data-stit="silver" style={{ minHeight: "100dvh", boxSizing: "border-box", padding: "20px 32px", display: "flex", gap: 24, alignItems: "flex-start" }}>
         <aside style={{ width: 244, flex: "none", display: "flex", flexDirection: "column", gap: 12, paddingRight: 16, borderRight: "2px solid", borderImage: "var(--metal) 1", position: "sticky", top: 20, alignSelf: "flex-start", minHeight: "calc(100dvh - 40px)", boxSizing: "border-box" }}>
-          {/* KARTA 56D §1: karta farnosti ako pri charite — logo, názov, percento, pruh, čo chýba, Upraviť */}
-          <div style={{ flex: "none", borderRadius: 18, background: "var(--cuBg)", border: "1.5px solid var(--cuBd)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.45)", overflow: "hidden" }}>
-            <button type="button" onClick={() => setKartaOtv((o) => !o)} aria-expanded={kartaOtv} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: 12, border: "none", background: "transparent", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" }}>
-              <LogoKarty profil={profilAkt} inicialy="" size={40} />
-              <span style={{ flex: 1, minWidth: 0 }}><span title={meno} style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", fontSize: 14.5, fontWeight: 800, lineHeight: 1.25, color: "var(--cuInk)" }}>{meno}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--cuInk2)", whiteSpace: "nowrap" }}>Farnosť · {uplnost.pct} %</span></span>
-              <Ik d={IC.dole} s={18} w={2.4} style={{ transform: `rotate(${kartaOtv ? 180 : 0}deg)`, transition: "transform .2s ease" }} />
-            </button>
-            {kartaOtv && <div style={{ padding: "4px 12px 12px", display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid var(--accLine)" }}>
-              <span style={{ display: "block", height: 6, marginTop: 8, borderRadius: 3, background: "rgba(168,116,80,.25)", overflow: "hidden" }}><span style={{ display: "block", width: "100%", height: "100%", borderRadius: 3, background: "var(--green)", transformOrigin: "0 50%", transform: `scaleX(${uplnost.pct / 100})`, transition: "transform .5s ease" }} /></span>
-              <span style={{ fontSize: 13, lineHeight: 1.4, color: "var(--cuInk)" }}>{uplnost.chyba}</span>
-              <button type="button" onClick={() => go("profil")} style={{ height: 44, border: "none", borderRadius: 12, background: "var(--btn)", color: "var(--ink)", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 800, boxShadow: "none" }}>Upraviť</button>
-            </div>}
-          </div>
+          {kartaProfilu(false)}
           <button type="button" onClick={verejny} style={{ flex: "none", height: 56, padding: "0 14px", borderRadius: 18, background: "var(--tBg)", border: "1px solid var(--tBd)", cursor: "pointer", display: "flex", alignItems: "center", gap: 11, textAlign: "left", fontFamily: "inherit", boxShadow: "none" }}>
             <Ik d={IC.verejny} c="var(--tInk)" />
             <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 15, fontWeight: 800, color: "var(--tInk)" }}>Verejný profil</span><span style={{ fontSize: 12, color: "var(--tInk2)" }}>ako ho vidia veriaci</span></span>
             <span aria-hidden="true" style={{ fontSize: 18, color: "var(--tInk)" }}>›</span>
           </button>
-          <TlacidloNastavenia on={aktivna === "nast"} onClick={() => go("nast")} />
+          <TlacidloNastavenia modre on={aktivna === "nast"} onClick={() => go("nast")} />
           <nav aria-label="Správa farnosti" style={{ flex: "none", display: "flex", flexDirection: "column", gap: 2, padding: "4px 0" }}>
             {nav.map((k) => { const on = aktivna === k; return (
               <button key={k} type="button" onClick={() => go(k)} aria-current={on ? "page" : undefined} className={on ? undefined : "sc-hov"} style={{ height: 48, padding: "0 14px", border: "none", borderRadius: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", boxShadow: "none", background: on ? "var(--accSoft)" : "transparent", color: on || k === "prehlad" ? "var(--ink)" : "var(--ink2)" }}>
@@ -815,8 +814,8 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
           <b style={{ maxWidth: "100%", fontSize: 17, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{mTitul}</b>
           <span style={{ fontSize: 12, color: "var(--ink3)" }}>{dnesText()}</span>
         </span>
-        {/* OPRAVY 218: koliesko Nastavenia (modré ako Verejný profil) a zelené + v hlavičke, plávajúce + zmizlo */}
-        {sub === "prehlad" && <button type="button" onClick={() => go("nast")} aria-label="Nastavenia" style={{ flex: "none", width: 46, height: 46, borderRadius: 14, border: "1px solid var(--tBd)", background: "var(--tBg)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "none" }}><Ik d={IC.nast} s={22} c="var(--tInk)" /></button>}
+        {/* OPRAVY 218 / 347: koliesko Nastavenia (modré) a zelené + v hlavičke, plávajúce + zmizlo */}
+        {sub === "prehlad" && <button type="button" onClick={() => go("nast")} aria-label="Nastavenia" style={{ flex: "none", width: 46, height: 46, borderRadius: 14, border: "1px solid var(--bBd)", background: "var(--bSoft)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "none" }}><Ik d={IC.nast} s={22} c="var(--bInk)" /></button>}
         {!BEZ_PRIDAT.includes(sub) && !pridat ? <button type="button" onClick={pridatTl} aria-label={(PRIDAT_T[sub] ?? "+ Pridať").slice(2)} style={{ flex: "none", width: 46, height: 46, border: "none", borderRadius: 14, background: "#4B7A35", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "none" }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
         </button> : sub !== "prehlad" && <span aria-hidden="true" style={{ flex: "none", width: 46 }} />}

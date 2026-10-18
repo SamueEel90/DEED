@@ -313,7 +313,14 @@ export function Statistiky({ d, tier, mobil, toast }: { d: DataStatistik; tier: 
 
 const NAST_D = "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1";
 /** OPRAVY 157: Nastavenia · aplikácie a účtu — v každej Správe hneď pod Verejný profil (nad Prehľadom) */
-export function TlacidloNastavenia({ on, onClick }: { on: boolean; onClick: () => void }) {
+export function TlacidloNastavenia({ on, onClick, modre = false }: { on: boolean; onClick: () => void; modre?: boolean }) {
+  // OPRAVY 347: farnosť — modré Nastavenia, rovnako vysoké ako Verejný profil (56 px), aktívne = rám 2 px
+  if (modre) return (
+    <button type="button" onClick={onClick} aria-current={on ? "page" : undefined} style={{ flex: "none", width: "100%", height: 56, padding: "0 14px", border: `${on ? 2 : 1}px solid var(--bBd)`, borderRadius: 18, cursor: "pointer", display: "flex", alignItems: "center", gap: 11, textAlign: "left", fontFamily: "inherit", boxShadow: "none", background: "var(--bSoft)", color: "var(--bInk)" }}>
+      <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="var(--bInk)" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "none" }}><path d={NAST_D} /></svg>
+      <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 15, fontWeight: 800, color: "var(--bInk)" }}>Nastavenia</span><span style={{ fontSize: 12, color: "var(--bInk2)" }}>účet, predplatné, vzhľad</span></span>
+      <span aria-hidden="true" style={{ fontSize: 18, color: "var(--bInk)" }}>›</span>
+    </button>);
   return (
     <button type="button" onClick={onClick} className={on ? undefined : "sc-hov"} style={{ flex: "none", width: "100%", minHeight: 56, padding: "6px 14px", border: `1px solid ${on ? "var(--cuBd)" : "var(--cardBd)"}`, borderRadius: 16, cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", boxShadow: "none", background: on ? "var(--accSoft)" : "var(--card)", color: on ? "var(--acc)" : "var(--ink)" }}>
       <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="var(--acc)" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "none" }}><path d={NAST_D} /></svg>

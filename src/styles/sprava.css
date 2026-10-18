@@ -95,3 +95,6 @@ html.dark .sprava-charity,html.dark .sc-tokeny{--red:#E08A7A}
 html.dark .sprava-charity,html.dark .sc-tokeny{--nadSek:#D9D2C4}
 .sprava-charity,.sc-tokeny{--stPBg:#F1DCDD;--stPBd:#9A3A44;--stPInk:#6E1F2A;--stZBg:#F1E6C8;--stZBd:#C9A24A;--stZInk:#6B5414}
 html.dark .sprava-charity,html.dark .sc-tokeny{--stPBg:#3A1A1F;--stPBd:#8C3440;--stPInk:#F0C9CE;--stZBg:#33290F;--stZBd:#C9A24A;--stZInk:#E8CF8A}
+/* OPRAVY 347: modré Nastavenia a červené Treba vybaviť (Správa farnosti) */
+.sprava-charity{--bSoft:#DCE4EE;--bBd:#A9BDD3;--bInk:#2E557A;--bInk2:#4A6680;--rBg:#F4DED6;--rBd:#A34A2A;--rBd2:#C46A4A}
+html.dark .sprava-charity{--bSoft:#18212C;--bBd:#3A5068;--bInk:#9CBCD8;--bInk2:#86A3BD;--rBg:#3A1E16;--rBd:#A34A2A;--rBd2:#C46A4A}
