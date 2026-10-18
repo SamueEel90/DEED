@@ -6,6 +6,7 @@
 // PLACEBO — karta 61 §1: pozvánky (e-mail, QR odkaz 48 h, Prijať / Potvrdiť) sú zatiaľ len v zozname.
 // OPRAVY 380 (0120): človek pozvaný e-mailom s rolou, ktorá smie spravovať (všetky okrem kostolníka, koordinátora detí a účtovníka),
 // je na serveri správca stránky, kým je v zozname — odobratím práva stráca.
+// Koordinátor detí (0123) spravuje len sekciu Deti a mládež a vidí mená prihlásených detí.
 // ============================================================
 import { DOMENA_MAILU } from "@/lib/kontakty";
 import { ADRESA } from "@/lib/adresa";
