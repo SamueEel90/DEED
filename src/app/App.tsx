@@ -9,7 +9,7 @@ import { OverenieHost, OverenieVrstva } from "@/features/overenie/OverenieHost";
 import { useOverenieStav } from "@/lib/overeniePrijemcu";
 import { aplikujNastavenia } from "@/lib/nastaveniaAppky";
 import type { Tema } from "@/components/context";
-import { GaleriaContext, ScrollContext, ScrollElContext, ViacContext, StrankaAkcieContext, UpgradeContext, UpgradePanel, Lightbox, DychajucePozadie, MotivContext, PortalContext, LayoutContext, DeedToaster, FeedSkeleton, PullToRefresh, StitRevealHost } from "@/shared";
+import { GaleriaContext, ScrollContext, ScrollElContext, ViacContext, StrankaAkcieContext, UpgradeContext, AktivaciaContext, UpgradePanel, Lightbox, DychajucePozadie, MotivContext, PortalContext, LayoutContext, DeedToaster, FeedSkeleton, PullToRefresh, StitRevealHost } from "@/shared";
 import type { StrankaAkcie } from "@/components/context";
 import { TabBar, ViacSheet, PridatFAB, nacitajTaby, ulozTaby, VSETKY_MODULY } from "@/components/TabBar";
 import { Sidebar } from "@/components/Sidebar";
@@ -374,6 +374,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
      <ScrollElContext.Provider value={scrollRef}>
       <ViacContext.Provider value={() => setViac(true)}>
       <UpgradeContext.Provider value={() => setUpgradeOpen(true)}>
+      <AktivaciaContext.Provider value={setAktivacia}>
       <StrankaAkcieContext.Provider value={setAkcie}>
       <div data-stit={stitAppky} style={{ height: "100%", display: "flex", flexDirection: desktop ? "row" : "column", position: "relative", overflow: "hidden", isolation: "isolate", background: C.bg }}>
         {/* OPRAVY 98: kovový prechod pre ikony hlavného menu (Sidebar + TabBar), farby --kov1..3 podľa štítu */}
@@ -477,6 +478,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
         )}
       </div>
       </StrankaAkcieContext.Provider>
+      </AktivaciaContext.Provider>
       </UpgradeContext.Provider>
       </ViacContext.Provider>
      </ScrollElContext.Provider>

@@ -102,6 +102,9 @@ export const usePortalEl = () => useContext(PortalContext);
 // ============================================================
 export const UpgradeContext = createContext<() => void>(() => {});
 export const useUpgrade = () => useContext(UpgradeContext);
+/** OPRAVY 374: priamo vrstva Prihlásiť sa („login“) alebo Zaregistrovať sa („aktivny“) — App shell */
+export const AktivaciaContext = createContext<(start: "login" | "aktivny") => void>(() => {});
+export const useAktivacia = () => useContext(AktivaciaContext);
 
 // ============================================================
 // AKCIE STRÁNKY — kontextové akcie aktuálneho modulu (Pridať, Ukáž talent, Nástenka…)

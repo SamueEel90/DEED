@@ -30,7 +30,7 @@ import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { zapisEditora, zapisZPayloadu } from "@/lib/editorStat";
 import { toast } from "@/shared";
-import { useLayout } from "@/components/context";
+import { useLayout, useAktivacia } from "@/components/context";
 import { ZdrojFotiekKontext, zdrojMoje } from "@/components/VyberZGalerie";
 import { mojeFotky } from "@/lib/galeriaFotiek";
 import { CelaGaleria } from "@/components/celaGaleria";
@@ -282,6 +282,15 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   const [sheet, setSheet] = useState(false);
   const fabRez = useFabRezim();
   useEffect(() => { const f = () => setSheet(true); window.addEventListener("deed:farnik-pridaj", f); return () => window.removeEventListener("deed:farnik-pridaj", f); }, []);
+  // OPRAVY 374: neprihlásený → vrstva prihlásenia / registrácie; po prihlásení späť na pridanie príspevku
+  const aktivacia = useAktivacia();
+  const KLUC_PO = "deed.farnik.pridatPo";
+  const naPrihlasenie = (start: "login" | "aktivny") => { try { sessionStorage.setItem(KLUC_PO, strankaId); } catch { /* bez úložiska sa len nevráti */ } setSheet(false); aktivacia(start); };
+  const [regPred, setRegPred] = useState(reg);
+  if (reg !== regPred) {
+    setRegPred(reg);
+    if (reg) { let po: string | null = null; try { po = sessionStorage.getItem(KLUC_PO); sessionStorage.removeItem(KLUC_PO); } catch { /* bez úložiska */ } if (po === strankaId) setSheet(true); }
+  }
   const [k, setK] = useState<DruhFarnika | null>(null);
   const [varIne, setVarIne] = useState<VarIne>("blahozelanie");
   // OPRAVY 335: chyba uloženia priamo nad tlačidlom (na mobile aj okno), rozpísané aj fotky ostávajú
@@ -471,9 +480,8 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
           <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink3)", paddingTop: 6 }}>Ponúka sa len to, čo farár povolil. Pridávať môžu registrovaní v DEED+.</span>
         </div> : <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <span style={{ fontSize: 16, lineHeight: 1.5, color: "var(--ink2)" }}>Pridávať na stránku farnosti môžu len registrovaní v DEED+. Tak vždy vieme, kto čo pridal.</span>
-          {/* PLACEBO — karta 56I: prihlásenie a registrácia z tejto stránky */}
-          <button type="button" onClick={() => { setSheet(false); toast("Prihlásenie odtiaľto pripravujeme."); }} style={{ minHeight: 56, border: "none", borderRadius: 14, background: ZELENA, cursor: "pointer", fontFamily: "inherit", fontSize: 17, fontWeight: 800, color: "#fff" }}>Prihlásiť sa</button>
-          <button type="button" onClick={() => { setSheet(false); toast("Registráciu odtiaľto pripravujeme."); }} style={{ minHeight: 56, borderRadius: 14, border: "1.5px solid var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 17, fontWeight: 800, color: "var(--gInk)" }}>Zaregistrovať sa · 2 minúty</button>
+          <button type="button" onClick={() => naPrihlasenie("login")} style={{ minHeight: 56, border: "none", borderRadius: 14, background: ZELENA, cursor: "pointer", fontFamily: "inherit", fontSize: 17, fontWeight: 800, color: "#fff" }}>Prihlásiť sa</button>
+          <button type="button" onClick={() => naPrihlasenie("aktivny")} style={{ minHeight: 56, borderRadius: 14, border: "1.5px solid var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 17, fontWeight: 800, color: "var(--gInk)" }}>Zaregistrovať sa · 2 minúty</button>
         </div>}
       </div>
     </div>);
