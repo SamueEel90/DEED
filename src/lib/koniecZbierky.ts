@@ -25,6 +25,3 @@ export async function predlzZbierku(stranka: string, z: Pick<SpustenaZbierka, "i
   return e ? { e } : { koniec: n };
 }
 
-// Prvé kroky (348 · krok 5): QR farnosti alebo zbierky aspoň raz stiahnutý na tlač
-export const qrVytlacene = (stranka: string) => !!nacitajStav<string | null>("qrVytlacene", stranka, null);
-export function zapisQrVytlacene(stranka: string) { if (!qrVytlacene(stranka)) void ulozStavIsto("qrVytlacene", stranka, new Date().toISOString()); }

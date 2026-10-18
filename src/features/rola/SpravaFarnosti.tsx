@@ -23,7 +23,7 @@ import { createPortal } from "react-dom";
 import { useLayout } from "@/components/context";
 import { toast } from "@/components/toast";
 import { nacitajStav, ulozStav } from "@/features/viera/stav";
-import { koniecZbierky, dniDoKonca, datumKonca, predlzZbierku, qrVytlacene } from "@/lib/koniecZbierky";
+import { koniecZbierky, dniDoKonca, datumKonca, predlzZbierku } from "@/lib/koniecZbierky";
 import { odFarnikov, pocetyOdVeriacich, useOdFarnikov, useCerstveOdFarnikov } from "@/lib/odFarnikov";
 import { OdVeriacich, type CastOdVeriacich } from "./OdVeriacich";
 import { OmseKalendar, TyzdenVPrehlade } from "./OmseKalendar";
@@ -269,7 +269,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const segment = <T extends string | number | boolean,>(vol: [T, string][], cur: T, set: (v: T) => void) => <Volby value={cur} onChange={set} moznosti={vol} label={vol.map(([, t]) => t).join(" · ")} />;
   const nadpis = (t: string, s: string) => !mobil && <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 12 }}><span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 22, fontWeight: 800 }}>{t}</span><span style={{ display: "block", fontSize: 13.5, color: "var(--ink3)" }}>{s}</span></span></div>;
 
-  // OPRAVY 348 (1): Prvé kroky 1–5 v pevnom poradí — hotový krok ostáva na mieste (zelený ✓, tlmený); pri 5 z 5 bežné Treba vybaviť
+  // OPRAVY 348 (1) · 355: Prvé kroky 1–4 v pevnom poradí (QR nie je povinný krok) — hotový krok ostáva na mieste (zelený ✓, tlmený); pri 4 z 4 bežné Treba vybaviť
   const kalK = kostolKal(strankaId);
   const maOmse = Array.from({ length: 7 }, (_, i) => new Date(teraz0 + i * 86400000)).some((d) => omseZvoncek(kalK, d).length > 0);
   const kroky: { t: string; s: string; hot: boolean; tap: () => void }[] = [
@@ -277,7 +277,6 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     { t: "Overiť účet farnosti", s: "IBAN a platba 0,01 € s kódom", hot: ucetF.overeny, tap: () => { setNId("ucty"); go("n"); } },
     { t: "Spustiť hlavnú zbierku", s: "stála zbierka farnosti, aj mesačne", hot: bezi, tap: () => go("zbierky") },
     { t: "Zadať omše", s: "časy omší a týždenný rozvrh", hot: maOmse, tap: () => go("omse") },
-    { t: "Vytlačiť QR na dvere kostola", s: "nálepka alebo plagát", hot: qrVytlacene(strankaId), tap: () => { go("nastroje"); setDetY(0); setDet("qr"); window.scrollTo(0, 0); } },
   ];
   const hotKroky = kroky.filter((k) => k.hot).length, prveKroky = hotKroky < kroky.length;
   // KARTA 56D §3: Treba vybaviť — len to, čo naozaj čaká (profil a hlavná zbierka; počas Prvých krokov sú v krokoch)
