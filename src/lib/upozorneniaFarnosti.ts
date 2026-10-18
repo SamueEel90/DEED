@@ -6,7 +6,7 @@
 // E-maily z farnosti veriacim sa NEPOSIELAJÚ (Martin 13. 10.).
 // ============================================================
 import { useEffect, useSyncExternalStore } from "react";
-import { nacitajStav, ulozStav, obnovOblast } from "@/features/viera/stav";
+import { nacitajStav, ulozStav, ulozStavIsto, obnovOblast } from "@/features/viera/stav";
 import type { Blok } from "./mojeFarnosti";
 
 export type DruhUpoz = "oznam" | "omsa" | "parte" | "zbierka" | "udalost" | "fotky" | "upravy";
@@ -27,6 +27,13 @@ export function useNastavenieUpoz(stranka: string): (druh: DruhUpoz) => boolean 
   useSyncExternalStore((f) => { posl.add(f); return () => { posl.delete(f); }; }, () => ver);
   useEffect(() => { if (!nacitane.has(stranka)) { nacitane.add(stranka); void obnovOblast("upozornenia", stranka).then((ok) => { if (ok) { ver++; posl.forEach((f) => f()); } }, () => undefined); } }, [stranka]);
   return (d) => predvoleneUpoz(stranka, d);
+}
+/** OPRAVY 341: zápis, na ktorý sa čaká — „uložené ✓“ až po potvrdení servera; vráti chybu alebo null */
+export async function nastavPredvoleneUpozIsto(stranka: string, druh: DruhUpoz, on: boolean): Promise<string | null> {
+  if (druh === "omsa") return null;
+  const e = await ulozStavIsto("upozornenia", stranka, { ...nacitajStav<NastavenieUpoz>("upozornenia", stranka, {}), [druh]: on });
+  ver++; posl.forEach((f) => f());
+  return e;
 }
 export function nastavPredvoleneUpoz(stranka: string, druh: DruhUpoz, on: boolean) {
   if (druh === "omsa") return;

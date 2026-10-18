@@ -9,6 +9,7 @@
 // (ťuk na riadok: text, Upraviť, Ako to vidia ľudia, Podržte a zmažte). Upraviť naplní formulár z `oz`.
 // Pozvať ľudí aj pri krátkom ozname (+ limit pri záväznom), Oznámenie: Parte · Svadba · Jubileum · Iné.
 // ============================================================
+import { BLOKY_STRANKY, PREMENOVAT, nadpisBloku, useUsporiadanie, type BlokStranky } from "@/lib/usporiadanieStranky";
 import { NADPIS_SEKCIE, farbaStitku } from "./KartaNastavenia";
 import { TlZbalit } from "@/features/verejny-profil/zbalit";
 import { CasPole } from "@/components/CasPole";
@@ -161,10 +162,12 @@ function navrhZoStarych(x: VieraFeedItem): PayloadEditora | undefined {
   return undefined;
 }
 
-export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, toast, hore }: { strankaId: string; meno: string; /** uložený profil (Farský úrad, logo) — náhľad verejnej stránky */ profil: ProfilStranky | null; mobil: boolean;
+export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, toast, hore, onUsporiadat }: { strankaId: string; meno: string; /** uložený profil (Farský úrad, logo) — náhľad verejnej stránky */ profil: ProfilStranky | null; mobil: boolean;
   /** KARTA 57 C.6: telefón — po výbere druhu ponuka zmizne, náhľad prilepený hore */ tel?: boolean; toast: (m: string) => void;
-  /** + Pridať oznam (hlavička PC, zelené + na mobile) — otvorí formulár */ hore?: number }) {
+  /** + Pridať oznam (hlavička PC, zelené + na mobile) — otvorí formulár */ hore?: number;
+  /** OPRAVY 341: Premenovať › / Ukázať na stránke › — Nástroje → Usporiadať stránku */ onUsporiadat?: () => void }) {
   const vz = useVzhlad(strankaId, false);
+  const uspS = useUsporiadanie(strankaId); // OPRAVY 341: bloky stránky (poradie, skryté, nadpisy)
   // OPRAVY 204: parte zo šablóny má QR; v náhľade QR stránky farnosti (zbierka rodiny ho na Nástenke prepne na seba)
   const qrFar = useQrObrazok(odkazQrStranky(strankaId));
   const autorJa = useAutorZaMna(strankaId);
@@ -551,11 +554,10 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
         : f && x.plagat ? <ObrazokPlagatu src={f} />
         : f || (st !== "OZNAM" && st !== "ZMENA OMŠE") ? <ObrazokOznamu src={f} inic={iniciy(meno)} /> : null });
   };
-  const SKUPINY: [string, (x: VieraFeedItem) => boolean][] = [
-    ["KRÁTKE OZNAMY", (x) => ["OZNAM", "ZMENA OMŠE"].includes(stitokOznamu(x))],
-    ["UDALOSTI", (x) => stitokOznamu(x) === "UDALOSŤ"],
-    ["OZNÁMENIA", (x) => !["OZNAM", "ZMENA OMŠE", "UDALOSŤ"].includes(stitokOznamu(x))],
-  ];
+  // OPRAVY 341: „Na stránke“ — skupiny podľa bloku verejnej stránky, v poradí z Usporiadať stránku, s nadpisom ako ho farár premenoval
+  const blokOznamu = (x: VieraFeedItem): BlokStranky => { const st = stitokOznamu(x);
+    return st === "OZNAM" || st === "ZMENA OMŠE" ? "ozn" : st === "UDALOSŤ" ? "prid" : st === "PARTE" ? "spom" : "tes"; };
+  const SKUPINY = uspS.poradie.filter((id) => ["ozn", "pom", "prid", "tes", "spom"].includes(id)).map((id) => BLOKY_STRANKY.find((b) => b.id === id)!);
   // OPRAVY 263: zmazanie jedného aj hromadne (kalendár udalosti sa vyčistí)
   const zmazOznam = (x: VieraFeedItem) => {
     zmazPrispevok(strankaId, x.id);
@@ -589,11 +591,24 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   };
   const sprava = (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}><b style={{ fontSize: 18 }}>Správa oznamov a udalostí</b>{zoznam.length > 0 && <span style={{ flex: 1, fontSize: 13, color: "var(--ink3)" }}>{zoznam.length} zverejnené · ťuknite na riadok</span>}{zoznam.length > 1 && <TlacidloVyberu v={hv} />}</div>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}><b style={{ fontSize: 18 }}>Na stránke</b>{zoznam.length > 0 && <span style={{ flex: 1, fontSize: 13, color: "var(--ink3)" }}>{zoznam.length} zverejnené · podľa blokov, ako ich vidia ľudia</span>}{zoznam.length > 1 && <TlacidloVyberu v={hv} />}</div>
       <ListaVyberu v={hv} polozky={zoznam.map((x) => ({ id: x.id, cas: x.vytvorene ?? 0 }))} />
-      {zoznam.length ? SKUPINY.map(([nad, fn]) => { const l = zoznam.filter(fn); return l.length > 0 && (
-        <div key={nad} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, paddingTop: 16 }}><span style={{ ...NADPIS_SEKCIE, paddingTop: 0, flex: 1 }}>{nad} · {l.length}</span><OznacitSkupinu v={hv} ids={l.map((x) => x.id)} /></div>
+      {zoznam.length ? SKUPINY.map((b) => { const l = zoznam.filter((x) => blokOznamu(x) === b.id); if (!l.length) return null;
+        const nm = nadpisBloku(uspS, b.id, b.t), prem = nm !== b.t, skryty = uspS.skryte.includes(b.id);
+        return (
+        <div key={b.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, paddingTop: 16, flexWrap: "wrap" }}>
+            <span aria-hidden="true" style={{ width: 6, height: 22, flex: "none", borderRadius: 3, background: b.farba }} />
+            <span style={{ ...NADPIS_SEKCIE, paddingTop: 0, textTransform: "uppercase" }}>{nm} · {l.length}</span>
+            {prem && <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>pôvodne {b.t}</span>}
+            <span style={{ flex: 1 }} />
+            {onUsporiadat && PREMENOVAT[b.id] && <button type="button" onClick={onUsporiadat} style={{ minHeight: 44, padding: "0 4px", border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--green)", boxShadow: "none" }}>Premenovať ›</button>}
+            <OznacitSkupinu v={hv} ids={l.map((x) => x.id)} />
+          </div>
+          {skryty && <div role="note" style={{ borderRadius: 14, background: "var(--goldBg)", border: "1.5px solid #C9A24A", padding: "10px 14px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <span style={{ flex: "1 1 200px", fontSize: 14, lineHeight: 1.45, color: "var(--ink)" }}>Tento blok je na stránke skrytý. Ľudia tieto oznamy nevidia.</span>
+            {onUsporiadat && <button type="button" onClick={onUsporiadat} style={{ minHeight: 44, padding: "0 14px", borderRadius: 12, border: "1px solid var(--goldBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)", boxShadow: "none" }}>Ukázať na stránke ›</button>}
+          </div>}
           <section style={{ ...karta, padding: mobil ? "4px 14px" : "6px 20px" }}>{l.map(riadok)}</section>
         </div>); })
         : <section style={{ ...karta, padding: "14px 20px", fontSize: 14.5, color: "var(--ink3)" }}>Zatiaľ nič. Ťuknite na + Pridať oznam.</section>}
@@ -619,8 +634,9 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
         <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>{lavy}</div>
         <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 10, position: "sticky", top: 12 }}>{pravy}</div>
       </div>)) : pridatTl}
+    {/* OPRAVY 341: Upozornenia sledujúcim hore, hneď pod výberom druhu oznamu (zbalená zlatá karta) */}
+    <NastavenieUpozorneni strankaId={strankaId} mobil={mobil} />
     {sprava}
-    <NastavenieUpozorneni strankaId={strankaId} />
     {ramSprava && <RamPisania nazov={`${edit ? "Úprava · " : ""}${dr === 2 ? ODRUHY[odr][0] : dr === 1 ? "Udalosť" : "Krátky oznam"}`} teloRef={ramTelo} onSpat={() => { if (edit) vycisti(); setVyb(false); }}
       onNahlad={jub ? undefined : () => setNahlOtv(true)} nahlad={nahlOtv && !jub} onZavriNahlad={() => setNahlOtv(false)} nahladObsah={nahladPisania}
       dole={jub ? <button type="button" onClick={() => setJubOtv(true)} style={{ minHeight: 54, border: "none", borderRadius: 14, background: "#4B7A35", cursor: "pointer", fontFamily: "inherit", fontSize: 16.5, fontWeight: 800, color: "#fff", boxShadow: "none" }}>{jubKon?.typ === edTyp || edit ? "Pokračovať v Editore oznámení ›" : "Otvoriť Editor oznámení ›"}</button> : <>{chybaEl}{potvrdenie}</>}>
