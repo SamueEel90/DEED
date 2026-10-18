@@ -8,7 +8,8 @@ import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { VyberKostola, platnyKostol, kdeNaStranke, INE_MIESTO } from "./VyberKostola";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useStretnutia, ulozStretnutie, zmazStretnutie, skoncilo, DRUHY_STRETNUTIA, type Stretnutie } from "@/lib/detiMladez";
-import { reakcieF, useReakcieF, useCerstveReakcieF } from "@/lib/reakcieFarnosti";
+import { useReakcieF, useCerstveReakcieF } from "@/lib/reakcieFarnosti";
+import { useDetiPrihlasenie } from "@/lib/detiPrihlasenie";
 import { cistyText } from "@/lib/richtext";
 import type { MediumZbierky } from "@/lib/novaZbierka";
 import { CasPole } from "@/components/CasPole";
@@ -40,13 +41,14 @@ export const kedyStretnutia = (s: Pick<Stretnutie, "dat" | "datDo" | "cas">) => 
 };
 
 function Riadok({ b, strankaId, prvy, onUpr, hlas }: { b: Stretnutie; strankaId: string; prvy: boolean; onUpr: () => void; hlas: (t: string) => void }) {
-  const r = reakcieF(strankaId, b.id), l = r.ucast ?? [], mena = l.map((k) => r.mena?.[k] ?? "veriaci").join(", ");
+  const dp = useDetiPrihlasenie(strankaId);
+  const ml = dp.mena(b.id), mena = ml.join(", "); // OPRAVY 383: mená z neverejnej tabuľky (0119)
   const po = skoncilo(b, teraz());
   return (
     <div style={{ padding: "14px 0", borderTop: prvy ? "none" : "1px solid var(--cardBd)", display: "flex", flexDirection: "column", gap: 6 }}>
       <b style={{ fontSize: 15.5 }}>{b.t}</b>
       <span style={{ fontSize: 13, color: po ? CERV : "var(--ink3)", fontWeight: po ? 700 : 500 }}>{[po ? "SKONČILO · na stránke už nie je" : "", b.druh, kedyStretnutia(b), b.kde].filter(Boolean).join(" · ")}</span>
-      {b.pz > 0 && <span style={{ fontSize: 14, fontWeight: 700 }}>{l.length ? `prihlásených ${l.length}${b.limit ? ` z ${b.limit}` : ""} · mená vidíte len vy` : "zatiaľ nikto"}</span>}
+      {b.pz > 0 && <span style={{ fontSize: 14, fontWeight: 700 }}>{ml.length ? `prihlásených ${ml.length}${b.limit ? ` z ${b.limit}` : ""} · mená vidíte len vy` : "zatiaľ nikto"}</span>}
       {mena && <span style={{ fontSize: 13.5, color: "var(--ink2)" }}>{b.druh === "Tábor" ? "Prihlásili: " : "Príde: "}{mena}</span>}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <button type="button" onClick={onUpr} style={obrys}>Upraviť</button>
