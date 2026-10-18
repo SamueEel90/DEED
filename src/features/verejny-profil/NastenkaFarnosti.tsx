@@ -337,6 +337,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   const zvFoto = zvN.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src; // OPRAVY 289: tá istá titulná fotka aj na dlaždici
   const zvDat = zvOkno ? `${Number(zvOkno.den.slice(8))}. ${Number(zvOkno.den.slice(5, 7))}.` : "";
   const piny = usePripnute(strankaId); // OPRAVY 187: zbierky iných subjektov pripnuté farnosťou
+  const zbOst = zoradZbierky([...zbFar.map((z) => ({ t: "far" as const, z })), ...piny.map((z) => ({ t: "pin" as const, z })), ...zbIne.map((z) => ({ t: "ine" as const, z })), ...vecne.map((z) => ({ t: "vec" as const, z }))]);
+  const nazovPol = (p: ZbPol) => (p.t === "ine" ? bezPredpony(p.z.nazov) : p.z.nazov);
   const brigadyF = useBrigady(strankaId); // KARTA 61 §2
   const detailZbierky = (z: SpustenaZbierka): ZbierkaData => ({
     id: z.id, nazov: z.nazov, popis: cistyText(z.popis), overena: true, ciel: cielCislo(z) || undefined, ...sadyZbierky(z),
@@ -765,14 +767,14 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   const stvorce: ReactNode[] = [
     ...(hlOn && hl ? [<ZbierkaStvorec key="hl" stitok="HLAVNÁ ZBIERKA" nazov={nazovHlavnej(hl)} foto={hl.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src} farba={ZELENA} onTap={otvorHlavnu} />] : []),
     ...(zvOn ? [<ZbierkaStvorec key="zv" stitok="ZVONČEKOVÁ" nazov={zvT} foto={zvFoto} farba={ZLATA} onTap={() => zvOkno && otvorZvoncek(zvOkno.id)} />] : []),
-    ...zbFar.map((z) => <ZbierkaStvorec key={z.id} stitok={stitZb(z)} nazov={z.nazov || "Zbierka"} foto={z.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src} farba={TEAL} pod={!ukon(z) && cielCislo(z) ? `cieľ ${eur(cielCislo(z))}` : undefined} onTap={() => otvorZbierku(z)} />),
-    ...piny.map((z) => <ZbierkaStvorec key={z.id} stitok={chipPripnutej(z)} nazov={z.nazov} foto={z.foto} farba={farbaPripnutej(z)} onTap={() => otvorPin(z)} />),
-    ...zbIne.map((z) => <ZbierkaStvorec key={z.id} stitok="ZBIERKA RODINY" nazov={bezPredpony(z.nazov) || "Zbierka"} foto={z.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src} farba={FIALOVA} onTap={() => otvorZbierku(z)} />),
-    ...vecne.map((z) => <ZbierkaStvorec key={z.id} stitok={stitV(z)} nazov={z.nazov} foto={fotoVecnej(z)} farba={ZLATA} onTap={() => setVecnaDet(z.id)} />),
+    ...zbOst.map((p) => p.t === "far" ? <ZbierkaStvorec key={p.z.id} stitok={stitZb(p.z)} nazov={p.z.nazov || "Zbierka"} foto={p.z.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src} farba={TEAL} pod={!ukon(p.z) && cielCislo(p.z) ? `cieľ ${eur(cielCislo(p.z))}` : undefined} onTap={() => otvorZbierku(p.z)} />
+      : p.t === "pin" ? <ZbierkaStvorec key={p.z.id} stitok={chipPripnutej(p.z)} nazov={p.z.nazov} foto={p.z.foto} farba={farbaPripnutej(p.z)} onTap={() => otvorPin(p.z)} />
+      : p.t === "ine" ? <ZbierkaStvorec key={p.z.id} stitok="ZBIERKA RODINY" nazov={bezPredpony(p.z.nazov) || "Zbierka"} foto={p.z.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src} farba={FIALOVA} onTap={() => otvorZbierku(p.z)} />
+      : <ZbierkaStvorec key={p.z.id} stitok={stitV(p.z)} nazov={p.z.nazov} foto={fotoVecnej(p.z)} farba={ZLATA} onTap={() => setVecnaDet(p.z.id)} />),
   ];
   const vMriezke = k3 || !siroka ? 4 : 8;
-  const ineNazvy = [...zbFar.map((z) => z.nazov), ...piny.map((z) => z.nazov), ...zbIne.map((z) => bezPredpony(z.nazov)), ...vecne.map((z) => z.nazov)].slice(Math.max(0, vMriezke - stvorce.length + (zbFar.length + piny.length + zbIne.length + vecne.length)));
-  const zbNazvy = [hlOn && hl ? nazovHlavnej(hl) : "", zvOn ? `Zvončeková · ${zvT}` : "", ...zbFar.map((z) => z.nazov), ...piny.map((z) => z.nazov), ...zbIne.map((z) => bezPredpony(z.nazov)), ...vecne.map((z) => z.nazov)].filter(Boolean);
+  const ineNazvy = zbOst.map(nazovPol).slice(Math.max(0, vMriezke - stvorce.length + zbOst.length));
+  const zbNazvy = [hlOn && hl ? nazovHlavnej(hl) : "", zvOn ? `Zvončeková · ${zvT}` : "", ...zbOst.map(nazovPol)].filter(Boolean);
   const zbS = stvorce.length ? suhrn(poc(stvorce.length, "zbierka", "zbierky", "zbierok"), zbNazvy[0]) : prispela.length ? `Prispeli sme · ${prispela[0].kto}` : "";
   const zbObsah = <>
     {stvorce.length > 0 && <div style={{ display: "grid", gridTemplateColumns: `repeat(${k3 || !siroka ? 2 : 4},minmax(0,1fr))`, gap: 12 }}>{zbVsetky ? stvorce : stvorce.slice(0, vMriezke)}</div>}
@@ -1426,10 +1428,10 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   const kZbierkyRiadky = <>
     {hlOn && hl && zbRiadok("hl", "HLAVNÁ ZBIERKA", "var(--nf-gInk)", nazovHlavnej(hl), otvorHlavnu, true)}
     {zvOn && zbRiadok("zv", "ZVONČEKOVÁ", ZLATA, zvT, () => zvOkno && otvorZvoncek(zvOkno.id))}
-    {zbFar.map((z) => zbRiadok(z.id, stitZb(z), TEAL, z.nazov || "Zbierka", () => otvorZbierku(z)))}
-    {piny.map((z) => zbRiadok(z.id, chipPripnutej(z), farbaPripnutej(z), z.nazov, () => otvorPin(z)))}
-    {zbIne.map((z) => zbRiadok(z.id, "ZBIERKA RODINY", FIALOVA, bezPredpony(z.nazov) || "Zbierka", () => otvorZbierku(z)))}
-    {vecne.map((z) => zbRiadok(z.id, stitV(z), ZLATA, z.nazov, () => setVecnaDet(z.id)))}
+    {zbOst.map((p) => p.t === "far" ? zbRiadok(p.z.id, stitZb(p.z), TEAL, p.z.nazov || "Zbierka", () => otvorZbierku(p.z))
+      : p.t === "pin" ? zbRiadok(p.z.id, chipPripnutej(p.z), farbaPripnutej(p.z), p.z.nazov, () => otvorPin(p.z))
+      : p.t === "ine" ? zbRiadok(p.z.id, "ZBIERKA RODINY", FIALOVA, bezPredpony(p.z.nazov) || "Zbierka", () => otvorZbierku(p.z))
+      : zbRiadok(p.z.id, stitV(p.z), ZLATA, p.z.nazov, () => setVecnaDet(p.z.id)))}
     {prispeliSme}
   </>;
   const kUradObsah = <>
@@ -1569,35 +1571,35 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
           <PasZbierok pasRef={pasZb} onPrebytok={setZbPrebytok} polozky={[
             ...(hlOn && hl ? [{ k: "hl", siroka: true, el: <HlavnaKarta nazov={nazovHlavnej(hl)} foto={hl.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src} onTap={otvorHlavnu} /> }] : []),
             ...(zvOn ? [{ k: "zv", el: <ZvoncekKarta strankaId={strankaId} onTap={otvorZvoncek} /> }] : []),
-            ...zbFar.map((z) => ({ k: z.id, el: <ZbierkaKarta z={z} chip={stitZb(z)} onTap={() => otvorZbierku(z)} /> })),
-            ...piny.map((z) => ({ k: `p${z.id}`, el: <PripnutaKarta z={z} onTap={() => otvorPin(z)} /> })),
-            ...zbIne.map((z) => ({ k: `r${z.id}`, el: <button type="button" onClick={() => otvorZbierku(z)} style={{ width: "100%", textAlign: "left", border: "none", borderRadius: 22, background: KARTA, borderLeft: `5px solid ${FIALOVA}`, padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 8, color: INK, cursor: "pointer", fontFamily: "inherit" }}>
-              <span style={kicker(FIALOVA)}>ZBIERKA RODINY</span><b style={{ fontSize: 20, lineHeight: 1.25 }}>{bezPredpony(z.nazov) || "Zbierka"}</b><span style={{ fontSize: 16, color: INK2 }}>Peniaze idú: rodine · Prispieť ›</span>
-            </button> })),
-            ...vecne.map((z) => ({ k: `v${z.id}`, el: <button type="button" onClick={() => setVecnaDet(z.id)} style={{ width: "100%", textAlign: "left", border: "none", borderRadius: 22, background: KARTA, borderLeft: `5px solid ${ZLATA}`, padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 8, color: INK, cursor: "pointer", fontFamily: "inherit" }}>
-              <span style={kicker(ZLATA)}>{stitV(z)}</span><b style={{ fontSize: 20, lineHeight: 1.25 }}>{z.nazov}</b><span style={{ fontSize: 16, color: INK2 }}>{[z.co, z.doKedy && z.stav === "aktivna" ? `do ${doKedyText(z.doKedy, false)}` : ""].filter(Boolean).join(" · ")} ›</span>
-            </button> })),
+            ...zbOst.map((p) => p.t === "far" ? { k: p.z.id, el: <ZbierkaKarta z={p.z} chip={stitZb(p.z)} onTap={() => otvorZbierku(p.z)} /> }
+              : p.t === "pin" ? { k: `p${p.z.id}`, el: <PripnutaKarta z={p.z} onTap={() => otvorPin(p.z)} /> }
+              : p.t === "ine" ? { k: `r${p.z.id}`, el: <button type="button" onClick={() => otvorZbierku(p.z)} style={{ width: "100%", textAlign: "left", border: "none", borderRadius: 22, background: KARTA, borderLeft: `5px solid ${FIALOVA}`, padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 8, color: INK, cursor: "pointer", fontFamily: "inherit" }}>
+              <span style={kicker(FIALOVA)}>ZBIERKA RODINY</span><b style={{ fontSize: 20, lineHeight: 1.25 }}>{bezPredpony(p.z.nazov) || "Zbierka"}</b><span style={{ fontSize: 16, color: INK2 }}>Peniaze idú: rodine · Prispieť ›</span>
+            </button> }
+              : { k: `v${p.z.id}`, el: <button type="button" onClick={() => setVecnaDet(p.z.id)} style={{ width: "100%", textAlign: "left", border: "none", borderRadius: 22, background: KARTA, borderLeft: `5px solid ${ZLATA}`, padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 8, color: INK, cursor: "pointer", fontFamily: "inherit" }}>
+              <span style={kicker(ZLATA)}>{stitV(p.z)}</span><b style={{ fontSize: 20, lineHeight: 1.25 }}>{p.z.nazov}</b><span style={{ fontSize: 16, color: INK2 }}>{[p.z.co, p.z.doKedy && p.z.stav === "aktivna" ? `do ${doKedyText(p.z.doKedy, false)}` : ""].filter(Boolean).join(" · ")} ›</span>
+            </button> }),
           ]} />
           {prispeliSme}
         </> : siroka ? <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(250px,1fr))", gap: 14, alignItems: "stretch" }}>
           {hlOn && hl && <div style={{ gridColumn: "span 2", display: "flex", minWidth: 0 }}><HlavnaKarta nazov={nazovHlavnej(hl)} foto={hl.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src} onTap={otvorHlavnu} /></div>}
           {zvOn && <ZvoncekKarta strankaId={strankaId} onTap={otvorZvoncek} />}
-          {zbFar.map((z) => <ZbierkaKarta key={z.id} z={z} chip={stitZb(z)} onTap={() => otvorZbierku(z)} />)}
-          {piny.map((z) => <PripnutaKarta key={z.id} z={z} onTap={() => otvorPin(z)} />)}
-          {zbIne.map((z) => <button key={z.id} data-oz={z.id} type="button" onClick={() => otvorZbierku(z)} style={{ textAlign: "left", border: "none", borderRadius: 22, background: KARTA, borderLeft: `5px solid ${FIALOVA}`, padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 8, color: INK, cursor: "pointer", fontFamily: "inherit" }}>
-            <span style={kicker(FIALOVA)}>ZBIERKA RODINY</span><b style={{ fontSize: 20, lineHeight: 1.25 }}>{bezPredpony(z.nazov) || "Zbierka"}</b><span style={{ fontSize: 16, color: INK2 }}>Peniaze idú: rodine · Prispieť ›</span>
-          </button>)}
-          {vecne.map((z) => <div key={z.id} data-oz={z.id} style={{ display: "flex" }}><button type="button" onClick={() => setVecnaDet(z.id)} style={{ width: "100%", textAlign: "left", border: "none", borderRadius: 22, background: KARTA, borderLeft: `5px solid ${ZLATA}`, padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 8, color: INK, cursor: "pointer", fontFamily: "inherit" }}>
-              <span style={kicker(ZLATA)}>{stitV(z)}</span><b style={{ fontSize: 20, lineHeight: 1.25 }}>{z.nazov}</b><span style={{ fontSize: 16, color: INK2 }}>{[z.co, z.doKedy && z.stav === "aktivna" ? `do ${doKedyText(z.doKedy, false)}` : ""].filter(Boolean).join(" · ")} ›</span>
+          {zbOst.map((p) => p.t === "far" ? <ZbierkaKarta key={p.z.id} z={p.z} chip={stitZb(p.z)} onTap={() => otvorZbierku(p.z)} />
+            : p.t === "pin" ? <PripnutaKarta key={p.z.id} z={p.z} onTap={() => otvorPin(p.z)} />
+            : p.t === "ine" ? <button key={p.z.id} data-oz={p.z.id} type="button" onClick={() => otvorZbierku(p.z)} style={{ textAlign: "left", border: "none", borderRadius: 22, background: KARTA, borderLeft: `5px solid ${FIALOVA}`, padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 8, color: INK, cursor: "pointer", fontFamily: "inherit" }}>
+            <span style={kicker(FIALOVA)}>ZBIERKA RODINY</span><b style={{ fontSize: 20, lineHeight: 1.25 }}>{bezPredpony(p.z.nazov) || "Zbierka"}</b><span style={{ fontSize: 16, color: INK2 }}>Peniaze idú: rodine · Prispieť ›</span>
+          </button>
+            : <div key={p.z.id} data-oz={p.z.id} style={{ display: "flex" }}><button type="button" onClick={() => setVecnaDet(p.z.id)} style={{ width: "100%", textAlign: "left", border: "none", borderRadius: 22, background: KARTA, borderLeft: `5px solid ${ZLATA}`, padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 8, color: INK, cursor: "pointer", fontFamily: "inherit" }}>
+              <span style={kicker(ZLATA)}>{stitV(p.z)}</span><b style={{ fontSize: 20, lineHeight: 1.25 }}>{p.z.nazov}</b><span style={{ fontSize: 16, color: INK2 }}>{[p.z.co, p.z.doKedy && p.z.stav === "aktivna" ? `do ${doKedyText(p.z.doKedy, false)}` : ""].filter(Boolean).join(" · ")} ›</span>
             </button></div>)}
           {prispeliSme}
         </div> : <>
           {hlOn && hl && <RiadokZbierky stitok="HLAVNÁ ZBIERKA" farba="var(--nf-gInk)" nazov={nazovHlavnej(hl)} obr={hl.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src} refId={hlRef} ram onTap={otvorHlavnu} />}
           {zvOn && <RiadokZbierky stitok="ZVONČEKOVÁ ZBIERKA" farba={INK3} nazov={zvT} obr={zvFoto} datum={zvDat} onTap={() => zvOkno && otvorZvoncek(zvOkno.id)} />}
-          {zbFar.map((z) => <RiadokZbierky key={z.id} stitok={stitZb(z)} farba={TEAL} nazov={z.nazov || "Zbierka"} obr={z.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src} refId={z.id} ciel={ukon(z) ? undefined : cielCislo(z)} onTap={() => otvorZbierku(z)} />)}
-          {piny.map((z) => <RiadokZbierky key={z.id} stitok={chipPripnutej(z)} farba={farbaPripnutej(z)} nazov={z.nazov} obr={z.foto} pct={z.ciel ? Math.min(100, Math.round((z.vyzbierane / z.ciel) * 100)) : undefined} onTap={() => otvorPin(z)} />)}
-          {zbIne.map((z) => <RiadokZbierky key={z.id} stitok="ZBIERKA RODINY" farba={FIALOVA} nazov={bezPredpony(z.nazov) || "Zbierka"} onTap={() => otvorZbierku(z)} />)}
-          {vecne.map((z) => <RiadokZbierky key={z.id} stitok={stitV(z)} farba={ZLATA} nazov={z.nazov} obr={fotoVecnej(z)} onTap={() => setVecnaDet(z.id)} />)}
+          {zbOst.map((p) => p.t === "far" ? <RiadokZbierky key={p.z.id} stitok={stitZb(p.z)} farba={TEAL} nazov={p.z.nazov || "Zbierka"} obr={p.z.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src} refId={p.z.id} ciel={ukon(p.z) ? undefined : cielCislo(p.z)} onTap={() => otvorZbierku(p.z)} />
+            : p.t === "pin" ? <RiadokZbierky key={p.z.id} stitok={chipPripnutej(p.z)} farba={farbaPripnutej(p.z)} nazov={p.z.nazov} obr={p.z.foto} pct={p.z.ciel ? Math.min(100, Math.round((p.z.vyzbierane / p.z.ciel) * 100)) : undefined} onTap={() => otvorPin(p.z)} />
+            : p.t === "ine" ? <RiadokZbierky key={p.z.id} stitok="ZBIERKA RODINY" farba={FIALOVA} nazov={bezPredpony(p.z.nazov) || "Zbierka"} onTap={() => otvorZbierku(p.z)} />
+            : <RiadokZbierky key={p.z.id} stitok={stitV(p.z)} farba={ZLATA} nazov={p.z.nazov} obr={fotoVecnej(p.z)} onTap={() => setVecnaDet(p.z.id)} />)}
           {prispeliSme}
         </>}
       </div>}
@@ -2063,6 +2065,12 @@ export function ZvoncekKarta({ strankaId, onTap, nahlad }: { strankaId: string; 
 
 /** zbierka farnosti (lavice, organ …) — suma a ľudia z ledgera */
 /** OPRAVY 187: zbierka iného subjektu pripnutá na stránke farnosti */
+/** OPRAVY 356: jedna zbierka v zozname stránky (okrem Hlavnej a Zvončekovej) */
+type ZbPol = { t: "far"; z: SpustenaZbierka } | { t: "pin"; z: ZbierkaNaPripnutie } | { t: "ine"; z: SpustenaZbierka } | { t: "vec"; z: VecnaZbierka };
+const konZb = (p: ZbPol) => (p.t === "vec" ? p.z.stav !== "aktivna" : p.t === "far" && p.z.stav === "ukoncena");
+const casZb = (p: ZbPol) => (p.t === "pin" ? 0 : p.t === "vec" ? (konZb(p) ? p.z.koniec ?? p.z.spustena : p.z.spustena) : Date.parse((konZb(p) ? p.z.koniec : undefined) ?? p.z.spustena) || 0);
+/** Hlavná a Zvončeková idú pred týmto zoznamom; tu bežiace (najnovšia prvá), ukončené na koniec */
+const zoradZbierky = (l: ZbPol[]) => [...l].sort((a, b) => Number(konZb(a)) - Number(konZb(b)) || casZb(b) - casZb(a));
 function PripnutaKarta({ z, onTap }: { z: ZbierkaNaPripnutie; onTap: () => void }) {
   return <KartaNF foto={z.foto} chip={chipPripnutej(z)} farba={farbaPripnutej(z)} nazov={z.nazov} onTap={onTap} />; // OPRAVY 293
 }
