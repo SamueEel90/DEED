@@ -259,15 +259,11 @@ const POZICIA_TYPU = (t: TypStranky): Pozicia => (t === "firma" ? "b2b" : t === 
 
 export function SpravaStranky(props: SpravaStrankyProps) {
   const [typ, setTyp] = useState<TypStranky>(props.typ ?? "charita"); // DEV lišta ho vie prepnúť
-  const { desktop } = useLayout();
   // KARTA 50 · §2: farnosť má vlastnú Správu (rovnaká kostra, položky farnosti) — bez štítu, programov, dokladov a dorovnania
   // OPRAVY 326: stránka farnosti je vždy Správa farnosti — žiadny prepínač ju neotvorí pod inou rolou (charita by čítala a zapisovala jej zbierky)
   const farnostStranka = props.typ === "farnost" || UKAZKOVE_STRANKY.some((x) => x.k === props.strankaId && x.typ === "farnost");
   if (typ === "farnost" || farnostStranka) return <SpravaFarnosti onBack={props.onBack} strankaId={props.strankaId ?? "farnost"} nazov={props.nazov}
-    test={TESTOVACIA && FLAGS.dev_tier_switcher ? (onPozriet: () => void) => (
-      <PrepinacPodania pas={!desktop} sektor="farnost" style={desktop ? { padding: "2px 2px 4px" } : { marginTop: 14 }}
-        vzhlad={{ stranka: props.strankaId ?? "farnost", onPozriet, bezVolby: true }} /* OPRAVY 202: farnosť len Nástenka */
-        /> /* OPRAVY 326: „Ďalšie testovacie ›“ (Typ, Rola) zo Správy farnosti preč — farnosť sa nedá otvoriť ako charita */) : undefined} />;
+    /* OPRAVY 367: testovací pás (Pozrieť profil · Profil: Vyplnený · Prázdny) v Správe farnosti preč */ />;
   return <SpravaStrankyTypu {...props} typ={typ} onTyp={setTyp} />;
 }
 
