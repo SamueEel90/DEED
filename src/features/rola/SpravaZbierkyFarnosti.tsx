@@ -45,13 +45,13 @@ export function rozdelenieZbierkyF(z: SpustenaZbierka): string {
 }
 export const fotoZbierky = (z: SpustenaZbierka) => z.media.find((m) => m.typ === "foto")?.src;
 
-export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat, menoStranky, startQr, onTlacQr }: {
+export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat, menoStranky, startQr, onTlacQr, startTab }: {
   stranka: string; z: SpustenaZbierka; mobil: boolean; toast: (m: string) => void; onSpat: () => void; /** názov farnosti (Potvrdené · … od Farnosti …) */ menoStranky?: string;
-  /** OPRAVY 347: záložka QR */ startQr?: boolean; onTlacQr?: (id: string) => void;
+  /** OPRAVY 347: záložka QR */ startQr?: boolean; onTlacQr?: (id: string) => void; /** OPRAVY 348: Ukončiť › z Prehľadu */ startTab?: number;
 }) {
   useZmenyDarov();
   const ja = usePouzivatel();
-  const [tab, setTab] = useState(startQr ? 5 : 0);
+  const [tab, setTab] = useState(startQr ? 5 : startTab ?? 0);
   // OPRAVY 314: Upraviť zbierku — text, fotky a rýchle sumy sa ukladajú samy, pri poli „Uložené ✓“
   const u = useUkladanie();
   const [ob, setOb] = useState({ popis: z.popis, popis2: z.popis2, media: z.media, eurc: z.eurc, sada: z.sada, sadaE: z.sadaE });

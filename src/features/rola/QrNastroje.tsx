@@ -16,6 +16,7 @@ import { useVecneZbierky, vecnaZbierka, ulozVecnu, odkazVecnej, fotoVecnej, doKe
 import { profilZPamate } from "@/lib/profilStranky";
 import { cistyText } from "@/lib/richtext";
 import { nacitajStav, ulozStavIsto } from "@/features/viera/stav";
+import { zapisQrVytlacene, koniecZbierky, datumKonca } from "@/lib/koniecZbierky";
 
 export const TEXT_PLAGATU_MAX = 140;
 export interface PolozkaQr {
@@ -44,7 +45,7 @@ export function usePolozkyQr(strankaId: string, meno: string): PolozkaQr[] {
   for (const z of zbierkyStrankyZPamate(strankaId)) {
     if ((z.stav ?? "aktivna") !== "aktivna") continue;
     const d = z.farnost?.druh ?? "farnost", rod = d === "pohreb" || d === "svadba";
-    l.push({ id: z.id, t: z.nazov || "Zbierka", s: rod ? "zbierka rodiny · QR je aj na parte" : "zbierka farnosti · beží", kam: rod ? "otvorí zbierku rodiny" : "otvorí priamo túto zbierku",
+    l.push({ id: z.id, t: z.nazov || "Zbierka", s: rod ? "zbierka rodiny · QR je aj na parte" : `zbierka farnosti · beží do ${datumKonca(koniecZbierky(strankaId, z))}`, kam: rod ? "otvorí zbierku rodiny" : "otvorí priamo túto zbierku",
       odkaz: odkazQrZbierky(z.id), trvaly: false, druh: rod ? "ZBIERKA RODINY" : "ZBIERKA FARNOSTI", nazov: z.nazov || "Zbierka",
       text: kratky(cistyText(z.popis) || (rod ? "Ďakujeme za vašu účasť a pomoc rodine." : "")), foto: fotoZbierky(z), organizuje: meno, vecna: false });
   }
@@ -90,7 +91,7 @@ export function QrNastroje({ strankaId, meno, mobil, zvyraznit }: { strankaId: s
     const k = `${p.id}|${fm}|${farba}`;
     if (stav[k] === "busy") return;
     setStav((s) => ({ ...s, [k]: "busy" }));
-    try { stiahni(await nalepkyPdf(p.odkaz, farba, fm as "n5" | "n10"), `qr-${menoSuboru(p.t)}-${fm === "n5" ? "5x5" : "10x10"}.pdf`); setStav((s) => ({ ...s, [k]: "ok" })); }
+    try { stiahni(await nalepkyPdf(p.odkaz, farba, fm as "n5" | "n10"), `qr-${menoSuboru(p.t)}-${fm === "n5" ? "5x5" : "10x10"}.pdf`); setStav((s) => ({ ...s, [k]: "ok" })); zapisQrVytlacene(strankaId); }
     catch { setStav((s) => ({ ...s, [k]: "err" })); }
   };
   const riadok = (p: PolozkaQr, i: number) => {
@@ -190,7 +191,7 @@ export function PlagatOkno({ strankaId, meno, p, format, mobil, onZavri }: { str
   const pis = (v0: string) => { const v = v0.replace(/\n/g, " ").slice(0, TEXT_PLAGATU_MAX); if (riadkovTextu(v, !!foto) <= 3 || v.length < text.length) { setText(v); setPdf(""); } };
   const stiahniPdf = async () => {
     if (pdf === "busy") return; setPdf("busy");
-    try { const { c, qr } = await kresliPlagat(podklad, { bezQr: true }); stiahni(await plagatPdfVektor(c, qr, p.odkaz, f), `plagat-${f}-${menoSuboru(p.nazov)}.pdf`); setPdf("ok"); }
+    try { const { c, qr } = await kresliPlagat(podklad, { bezQr: true }); stiahni(await plagatPdfVektor(c, qr, p.odkaz, f), `plagat-${f}-${menoSuboru(p.nazov)}.pdf`); setPdf("ok"); zapisQrVytlacene(strankaId); }
     catch { setPdf("err"); }
   };
   const vol = (on: boolean): CSSProperties => ({ minHeight: 52, padding: "0 14px", borderRadius: 14, border: on ? "2px solid var(--green)" : "1.5px solid var(--cardBd)", background: on ? "var(--gSoft)" : "var(--card)", display: "flex", alignItems: "center", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--ink)", cursor: "pointer", boxShadow: "none" });
