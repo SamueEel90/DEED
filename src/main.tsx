@@ -5,6 +5,9 @@ import { initPwa } from "./lib/pwa";
 import { naplanujPripomienky } from "./lib/pripomienky";
 import { OverlayStranka, splitZCesty } from "./features/overlay/OverlayStranka";
 import "./index.css";
+import { sledujOvladanie } from "./lib/ovladanie";
+
+sledujOvladanie(); // OPRAVY 351: obrys zamerania na tlačidlách len pri klávesnici
 
 // Počítadlo do streamu je SAMOSTATNÁ stránka, nie obrazovka appky: beží
 // v OBS, nesmie mať hlavičku, menu, session ani service worker. Preto sa
