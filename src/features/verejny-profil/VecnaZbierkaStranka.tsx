@@ -71,7 +71,8 @@ export function VecnaDetail({ strankaId, z, onZavri }: { strankaId: string; z: V
         <span style={{ fontSize: 15.5, fontWeight: 700, color: INK2 }}>{ludiT(pr.ludi)}</span>
       </div>}
       {z.stav === "aktivna" && <span style={{ fontSize: 15, lineHeight: 1.5, color: INK2, padding: "12px 14px", borderRadius: 14, background: KARTA }}>Darujete? Vec vhoďte do krabice a naskenujte QR na plagáte.</span>}
-      {pr.pocet > 0 && <div style={{ display: "flex", flexDirection: "column" }}>
+      {/* OPRAVY 357: riadok Darcovia aj pri nule — vidno, kde sa darcovia objavia */}
+      <div style={{ display: "flex", flexDirection: "column" }}>
         <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".1em", color: INK3, paddingBottom: 4 }}>DARCOVIA · {pr.ludi}</span>
         {darcovia.map((d, i) => <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 46, borderTop: i ? `1px solid ${LINKA}` : "none" }}>
           <b style={{ flex: 1, minWidth: 0, fontSize: 15.5, overflowWrap: "anywhere" }}>{d.meno}</b>
@@ -79,7 +80,7 @@ export function VecnaDetail({ strankaId, z, onZavri }: { strankaId: string; z: V
           <span style={{ fontSize: 13.5, color: INK3 }}>{relCas(d.cas)}</span></div>)}
         {pr.darcovia.length > 5 && (vsetci ? <TlZbalit onZbal={() => setVsetci(false)} />
           : <button type="button" onClick={() => setVsetci(true)} aria-expanded={false} style={{ alignSelf: "flex-start", minHeight: 48, padding: "0 16px", marginTop: 6, borderRadius: 14, border: `1.5px solid ${LINKA}`, background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: INK }}>Všetci darcovia ({pr.darcovia.length}) ›</button>)}
-      </div>}
+      </div>
     </div>
   </Okno>;
 }
