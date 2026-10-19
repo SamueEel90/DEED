@@ -18,7 +18,8 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { useLokalita } from "@/lib/lokalita";
 import { useNastaveniaAppky } from "@/lib/nastaveniaAppky";
 import { jeNeregistrovany } from "@/lib/devDarca";
-import { useMojeStranky, UKAZKOVE_STRANKY } from "@/lib/mojeStranky";
+import { useMojeStranky, UKAZKOVE_STRANKY, strankaCharityPre } from "@/lib/mojeStranky";
+import { registra } from "@/lib/udajeRegistra";
 import { nacitajTiery } from "@/features/rola/stav";
 import { CENTRALNA_ID } from "@/features/rola/vlastneZbierky";
 import { verejneBeziace, zbierkaVRetazi, type ZbierkaVRetazi } from "@/lib/retaz";
@@ -48,7 +49,7 @@ const IK = { spat: "M15 18l-6-6 6-6", hraj: "M8 5l12 7-12 7z", qr: "M4 8V4h4M20 
 export function PridatVyber({ onClose }: { onClose: () => void }) {
   const st = useMojeStranky();
   const { rod } = usePouzivatel(); // bez rodu v profile ostáva mužský tvar
-  const org = UKAZKOVE_STRANKY.find((x) => x.k === st.ako && x.typ === "charita");
+  const org = strankaCharityPre(st.ako, registra(st.ako).nazov); // OPRAVY 420: aj skutočná charita
   const o = (ty: string, vy: string) => (org ? vy : ty);
   const riadok = (ik: string, t: string, s: string, on: () => void) => (
     <button type="button" onClick={() => { onClose(); on(); }} style={{ display: "flex", alignItems: "center", gap: 14, minHeight: 64, padding: "12px 14px", borderRadius: 16, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
@@ -76,7 +77,7 @@ function PridatIskru() {
   const mestoPovolene = useNastaveniaAppky().poloha; // bez povolenej polohy mesto nepíšeme
   const st = useMojeStranky();
   const ako = pridatIskruAko() ?? st.ako; // zo Správy charity vždy za charitu
-  const stranka = UKAZKOVE_STRANKY.find((x) => x.k === ako && x.typ === "charita") ?? null;
+  const stranka = strankaCharityPre(ako, registra(ako).nazov); // OPRAVY 420: aj skutočná charita (autor = jej názov)
   const org = !!stranka;
   const o = (ty: string, vy: string) => (org ? vy : ty);
   const autor = org ? stranka!.n : `${ja.meno || "Ty"}${ja.priezvisko ? ` ${ja.priezvisko[0].toUpperCase()}.` : ""}`;

@@ -58,7 +58,7 @@ export function VykladCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, 
     <button type="button" onClick={() => setStitOtv(true)} aria-label={`Štít DEED+ CARE · ${nazovStitu(profil.stit)} · podrobnosti a overenie`} style={{ flex: "none", width: w, height: h, padding: 0, border: "none", background: "transparent", boxShadow: "none", cursor: "pointer" }}>
       <StitCare stit={profil.stit} w={w} h={h} lesk />
     </button>);
-  const logo = (s: number, r: number, fs: number) => <span style={{ flex: "none", width: s, height: s, borderRadius: r, background: profil.logo ? `#fff url('${profil.logo}') center/contain no-repeat` : "#fff", color: "#3F6E2A", fontSize: fs, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{profil.logo ? null : profil.iniciala}</span>;
+  const logo = (s: number, r: number, fs: number) => <span style={{ flex: "none", width: s, height: s, borderRadius: r, background: profil.logo ? `#fff url(${JSON.stringify(profil.logo)}) center/contain no-repeat` : "#fff", color: "#3F6E2A", fontSize: fs, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{profil.logo ? null : profil.iniciala}</span>;
   const fotoTitulky = (
     <div style={{ position: "relative", flex: pc ? 1.6 : undefined, height: pc ? undefined : 360, background: bgF(profil.titulka) }}>
       <span style={{ position: "absolute", inset: 0, background: `linear-gradient(180deg,rgba(10,8,5,${pc ? ".45" : ".5"}) 0%,rgba(10,8,5,0) 30%,rgba(10,8,5,.9) 100%)` }} />

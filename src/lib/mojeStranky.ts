@@ -64,6 +64,14 @@ export async function premenujStranku(k: string, nazov: string): Promise<void> {
   const { error } = await supabase.rpc("premenuj_stranku", { p_stranka: k, p_nazov: nazov });
   if (error && !/premenuj_stranku|PGRST202|42883/.test(`${error.code ?? ""} ${error.message ?? ""}`)) throw new Error(error.message);
 }
+/** OPRAVY 420: charita, za ktorú sa koná — ukážková alebo skutočná (účtu / novo založená ch-…), inak null */
+export function strankaCharityPre(k: string, nazov?: string): Stranka | null {
+  const vzor = UKAZKOVE_STRANKY.find((x) => x.k === k && x.typ === "charita");
+  if (vzor) return vzor;
+  const r = zUctu?.find((x) => x.id === k && x.typ === "charita");
+  if (!r && !/^ch-/.test(k)) return null;
+  return strankaCharity(k, nazov?.trim() || r?.nazov || "Charita");
+}
 /** OPRAVY 414: stránka účtu je charita (aj staršie id bez „ch-“) */
 export const jeCharitaUctu = (k: string): boolean => !!zUctu?.some((x) => x.id === k && x.typ === "charita");
 export const urovenStranky = (k: string): UrovenStranky => (zUctu?.find((x) => x.id === k)?.uroven === "pomocnik" ? "pomocnik" : "farar");

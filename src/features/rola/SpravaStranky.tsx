@@ -50,6 +50,7 @@ import { useMojePrava, smie, NEMATE_POVOLENE, type Pravo } from "@/lib/pravaPrac
 import { LudiaCharity, pocetLudiCharity } from "./LudiaCharity";
 import { DarcoviaCharity, SledujuciCharity } from "./DarcoviaCharity";
 import { BrigadyFarnosti } from "./BrigadyFarnosti";
+import { IskryCharity } from "./IskryCharity";
 import { SpravaFarnosti } from "./SpravaFarnosti";
 import { useTestStav, zmenTestStav } from "@/lib/testStav";
 import { PrepinacPodania, TestVolba } from "@/features/verejny-profil/casti";
@@ -425,6 +426,8 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   // OPRAVY 405: charita · Darcovia a sumy + Sledujúci (ako Viera), Zadarmo
   else if (sub === "darcovia" && typ === "charita") obsah = <DarcoviaCharity strankaId={strankaId} mobil={!desktop} />;
   else if (sub === "sledujuci" && typ === "charita") obsah = <SledujuciCharity strankaId={strankaId} mobil={!desktop} />;
+  // OPRAVY 420: charita · Obsah → Iskry = zoznam Iskier + Pridať Iskru
+  else if (sub === "video" && typ === "charita") obsah = maPovolenie("video", tier) ? <IskryCharity strankaId={strankaId} nazov={nazov} mobil={!desktop} /> : <Zamknute program={odProgramu("video")} />;
   // OPRAVY 406: charita · Dobrovoľníctvo = Brigády z Viery (od P2)
   else if (sub === "dobrovolnici" && typ === "charita") obsah = maPovolenie("dobrovolnici", tier) ? <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 900 }}><BrigadyFarnosti strankaId={strankaId} mobil={!desktop} charita /></div> : <Zamknute program={odProgramu("dobrovolnici")} />;
   else if (sub === "centralna" && typPovoli("centralna", typ) && maPovolenie("centralna", tier)) obsah = <SpravaCentralnej strankaId={strankaId} nazov={nazov} hlavnyUcet={nacitajIbanOrg(poz)} tier={tier} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onDorovnanie={() => otvor("dorovnanie")} onDarcovia={() => otvor("darcovia")} />;
