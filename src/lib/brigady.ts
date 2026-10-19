@@ -9,7 +9,9 @@ import { nacitajStav, ulozStav, obnovOblast } from "@/features/viera/stav";
 import { bezDataUrl } from "./uploadFoto";
 
 export const DRUHY_BRIGADY = ["Brigáda", "Služba pri omši", "Iná pomoc"] as const;
-export type DruhBrigady = (typeof DRUHY_BRIGADY)[number];
+export type DruhBrigady = (typeof DRUHY_BRIGADY)[number] | (typeof DRUHY_CHARITY)[number];
+/** OPRAVY 406: charita — Dobrovoľníctvo (rovnaký blok, iné slová) */
+export const DRUHY_CHARITY = ["Brigáda", "Dobrovoľníctvo", "Iná pomoc"] as const;
 export interface Brigada {
   id: string; druh: DruhBrigady; t: string; dat: string; cas: string; kde: string;
   /** OPRAVY 287: Celá farnosť „*“ · id kostola · Iné miesto „~“ (bez = celá farnosť) */ kostol?: string;

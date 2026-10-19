@@ -8,7 +8,7 @@ import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { VyberKostola, platnyKostol, kdeNaStranke, INE_MIESTO } from "./VyberKostola";
 import { useAutorZaMna } from "@/lib/autorFarnosti";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { useBrigady, ulozBrigadu, zmazBrigadu, skoncila, DRUHY_BRIGADY, type Brigada } from "@/lib/brigady";
+import { useBrigady, ulozBrigadu, zmazBrigadu, skoncila, DRUHY_BRIGADY as DRUHY_F, DRUHY_CHARITY, type Brigada } from "@/lib/brigady";
 import { reakcieF, useReakcieF, useCerstveReakcieF } from "@/lib/reakcieFarnosti";
 import { PrihlaseniFarara } from "./PrihlaseniFarara";
 import { cistyText } from "@/lib/richtext";
@@ -53,7 +53,8 @@ function Riadok({ b, strankaId, prvy, onUpr, hlas }: { b: Brigada; strankaId: st
     </div>);
 }
 
-export function BrigadyFarnosti({ strankaId, mobil }: { strankaId: string; mobil: boolean }) {
+export function BrigadyFarnosti({ strankaId, mobil, charita = false }: { strankaId: string; mobil: boolean; /** OPRAVY 406: Dobrovoľníctvo charity — iné slová, bez kostolov a upozornenia sledujúcich */ charita?: boolean }) {
+  const DRUHY_BRIGADY: readonly string[] = charita ? DRUHY_CHARITY : DRUHY_F;
   const predvUpoz = useNastavenieUpoz(strankaId);
   const [upozV, setUpozV] = useState<boolean | null>(null);
   useReakcieF(); useCerstveReakcieF(strankaId);
@@ -82,16 +83,16 @@ export function BrigadyFarnosti({ strankaId, mobil }: { strankaId: string; mobil
     setFf(b ? { druh: Math.max(0, DRUHY_BRIGADY.indexOf(b.druh)), t: b.t, dat: b.dat, cas: b.cas, kde: b.kde, ko: b.kostol, txt: b.txt, txt2: b.txt2 ?? "", media: b.foto ? [{ id: 1, typ: "foto", src: b.foto }] : [], pz: b.pz, lim: b.limit ? String(b.limit) : "" } : prazdny());
     setKluc((k) => k + 1); setOn(true);
   };
-  const ko = platnyKostol(f.ko, miestaF);
+  const ko = charita ? INE_MIESTO : platnyKostol(f.ko, miestaF); // OPRAVY 406: charita nemá kostoly — miesto sa píše
   const ch = [!f.t.trim() && "názov", !f.dat && "dátum", !f.cas && "čas", ko === INE_MIESTO && !f.kde.trim() && "miesto"].filter(Boolean) as string[];
   const kedy = kedyBrigady(f.dat, f.cas);
   const foto = f.media.find((m) => m.typ === "foto")?.src;
   // KARTA 63 1c: Upozorniť sledujúcich (predvolené: Udalosť, brigáda, stretnutie · pri úprave Úpravy už zverejneného)
-  const upoz = upozV ?? predvUpoz(edit ? "upravy" : "udalost");
+  const upoz = charita ? false : upozV ?? predvUpoz(edit ? "upravy" : "udalost"); // OPRAVY 406: upozornenie sledujúcich farnosti nie pri charite
   const zverejni = () => {
     if (ch.length) return;
     const st = edit ? L.find((x) => x.id === edit) : undefined;
-    const b: Brigada = { id: edit ?? `br${teraz().toString(36)}`, druh: DRUHY_BRIGADY[f.druh], t: f.t.trim(), dat: f.dat, cas: f.cas, kde: f.kde.trim(), kostol: ko, txt: f.txt, txt2: f.txt2 || undefined,
+    const b: Brigada = { id: edit ?? `br${teraz().toString(36)}`, druh: DRUHY_BRIGADY[f.druh] as Brigada["druh"], t: f.t.trim(), dat: f.dat, cas: f.cas, kde: f.kde.trim(), kostol: ko, txt: f.txt, txt2: f.txt2 || undefined,
       foto, pz: f.pz, limit: f.pz === 2 ? parseInt(f.lim, 10) || 0 : 0, vytvorena: st?.vytvorena ?? new Date().toISOString(), af: st ? st.af : autorJa, upoz };
     if (!edit) zmazKoncept(KON);
     void ulozBrigadu(strankaId, b).then(() => { setOn(false); setEdit(null); setUpozV(null); hlas(`${edit ? "Zmeny sú uložené ✓" : "Zverejnené ✓"} ${b.t} je na stránke v bloku Pomôž.`); });
@@ -125,8 +126,8 @@ export function BrigadyFarnosti({ strankaId, mobil }: { strankaId: string; mobil
             <label style={lab}>Dátum<input type="date" value={f.dat} onChange={(e) => setF({ dat: e.target.value })} style={pole} /></label>
             <label style={lab}>Čas<CasPole value={f.cas} onCommit={(v) => setF({ cas: v })} label="Čas brigády" placeholder="napr. 9:00" style={pole} /></label>
           </div>
-          <VyberKostola miesta={miestaF} value={ko} onChange={(v) => setF({ ko: v })} style={pole} lblStyl={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink2)" }} />
-          <label style={lab}>{ko === INE_MIESTO ? "Miesto *" : "Miesto"}<input value={f.kde} onChange={(e) => setF({ kde: e.target.value.slice(0, 60) })} placeholder={ko === INE_MIESTO ? "napr. hora Butkov" : "napr. Fara"} style={pole} /></label>
+          {!charita && <VyberKostola miesta={miestaF} value={ko} onChange={(v) => setF({ ko: v })} style={pole} lblStyl={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink2)" }} />}
+          <label style={lab}>{ko === INE_MIESTO ? "Miesto *" : "Miesto"}<input value={f.kde} onChange={(e) => setF({ kde: e.target.value.slice(0, 60) })} placeholder={charita ? "napr. sklad charity, Hviezdoslavova 5" : ko === INE_MIESTO ? "napr. hora Butkov" : "napr. Fara"} style={pole} /></label>
           <TextovePolia key={kluc} popis={f.txt} popis2={f.txt2} onPopis={(h) => setF({ txt: h })} onPopis2={(h) => setF({ txt2: h })} ph={mobil}
             popisHlavneho="Čo sa bude robiť a čo si vziať. Najviac 12 riadkov." placeholder="napr. Hrabanie lístia a orezanie kríkov. Rukavice a náradie máme." />
           <GaleriaEditor media={f.media} onMedia={(m) => setF({ media: m.slice(0, 1) })} ph={mobil} max={1} bezVidea nadpis="Fotka — nepovinné" dovetok="" />
@@ -142,7 +143,7 @@ export function BrigadyFarnosti({ strankaId, mobil }: { strankaId: string; mobil
             <label style={lab}>Koľko ľudí najviac<input value={f.lim} inputMode="numeric" onChange={(e) => setF({ lim: e.target.value.replace(/\D/g, "").slice(0, 3) })} placeholder="bez limitu" style={{ ...pole, maxWidth: 160 }} /></label>
             <span style={{ fontSize: 13, color: "var(--ink3)" }}>Nepovinné. Po naplnení sa prihlasovanie zavrie, mená prihlásených uvidíte pri brigáde.</span>
           </>}
-          <UpozornitSledujucich strankaId={strankaId} blok="po" value={upoz} onChange={setUpozV} />
+          {!charita && <UpozornitSledujucich strankaId={strankaId} blok="po" value={upoz} onChange={setUpozV} />}
           {!edit && maObsah && <ZahoditRozpisane onZahodit={zahod} />}
   </>;
   const dole = <>
@@ -165,9 +166,9 @@ export function BrigadyFarnosti({ strankaId, mobil }: { strankaId: string; mobil
     </section>);
 
   return (<>
-    <span style={kick}>DOBROVOĽNÍCTVO A ORGANIZOVANIE BRIGÁD</span>
+    <span style={kick}>{charita ? "DOBROVOĽNÍCTVO" : "DOBROVOĽNÍCTVO A ORGANIZOVANIE BRIGÁD"}</span>
     <section style={{ ...karta, padding: mobil ? "14px 14px" : "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
-      <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>Brigáda, upratovanie, služba pri omši. Na stránke farnosti sa ukáže v bloku <b>Pomôž</b> s tlačidlom Prídem pomôcť.</span>
+      <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>{charita ? <>Brigáda, zbierka oblečenia, pomoc v teréne. Na stránke charity sa ukáže v bloku <b>Pomôž</b> s tlačidlom Prídem pomôcť.</> : <>Brigáda, upratovanie, služba pri omši. Na stránke farnosti sa ukáže v bloku <b>Pomôž</b> s tlačidlom Prídem pomôcť.</>}</span>
       <button type="button" onClick={() => otvor()} style={{ alignSelf: "flex-start", minHeight: 50, padding: "0 20px", border: "none", borderRadius: 14, background: ZELENA, color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800 }}>+ Vytvoriť brigádu</button>
       {kon && <MateRozpisane cas={kon.cas} co={kon.d.t.trim() || "brigáda"} onPokracovat={() => { setEdit(null); setFf({ ...prazdny(), ...kon.d }); setKluc((k) => k + 1); setOn(true); }} onZahodit={() => { zmazKoncept(KON); setKluc((k) => k + 1); }} />}
       {hl && <span role="status" style={hlaskaSt}>{hl}</span>}

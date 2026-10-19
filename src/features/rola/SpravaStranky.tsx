@@ -49,6 +49,7 @@ import { supabase } from "@/lib/supabase";
 import { useMojePrava, smie, NEMATE_POVOLENE, type Pravo } from "@/lib/pravaPracovnika";
 import { LudiaCharity, pocetLudiCharity } from "./LudiaCharity";
 import { DarcoviaCharity, SledujuciCharity } from "./DarcoviaCharity";
+import { BrigadyFarnosti } from "./BrigadyFarnosti";
 import { SpravaFarnosti } from "./SpravaFarnosti";
 import { useTestStav, zmenTestStav } from "@/lib/testStav";
 import { PrepinacPodania, TestVolba } from "@/features/verejny-profil/casti";
@@ -104,7 +105,7 @@ const G: Record<Exclude<Skupina, "g_zbierky" | "g_typ">, Karta[]> = {
   g_ludia: [
     P("M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c1.5-4 4.5-6 8-6s6.5 2 8 6", "Darcovia a sumy", "Zoznam darcov a hromadné poďakovanie", "darcovia"),
     P("M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20c.8-3.2 3.2-5 6-5s5.2 1.8 6 5", "Sledujúci", "Kto sleduje vašu stránku", "sledujuci"),
-    P("M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20c.8-3.2 3.2-5 6-5s5.2 1.8 6 5M16 5.5a3 3 0 0 1 0 5.5", "Dobrovoľníctvo", "Výzva pre verejnosť, dochádzka cez QR, výkaz hodín", "dobrovolnici"),
+    P("M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20c.8-3.2 3.2-5 6-5s5.2 1.8 6 5M16 5.5a3 3 0 0 1 0 5.5", "Dobrovoľníctvo", "Brigády a pomoc · blok Pomôž na stránke", "dobrovolnici"),
     P("M4 6h16v14H4zM4 10h16", "Akcie a podujatia", "Podujatie s QR, predaj lístkov a merchu", "podujatia"),
     P("M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z", "Sponzoring", "Hľadáme sponzora · zmluva, logo na profile", "sponzoring"),
     P("M9 7V4h6v3M4 7h16v13H4z", "Pracovné ponuky", "Hľadáme brigádnika, zamestnanca, pomoc", "inzeraty"),
@@ -423,6 +424,8 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   // OPRAVY 405: charita · Darcovia a sumy + Sledujúci (ako Viera), Zadarmo
   else if (sub === "darcovia" && typ === "charita") obsah = <DarcoviaCharity strankaId={strankaId} mobil={!desktop} />;
   else if (sub === "sledujuci" && typ === "charita") obsah = <SledujuciCharity strankaId={strankaId} mobil={!desktop} />;
+  // OPRAVY 406: charita · Dobrovoľníctvo = Brigády z Viery (od P2)
+  else if (sub === "dobrovolnici" && typ === "charita") obsah = maPovolenie("dobrovolnici", tier) ? <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 900 }}><BrigadyFarnosti strankaId={strankaId} mobil={!desktop} charita /></div> : <Zamknute program={odProgramu("dobrovolnici")} />;
   else if (sub === "centralna" && typPovoli("centralna", typ) && maPovolenie("centralna", tier)) obsah = <SpravaCentralnej strankaId={strankaId} nazov={nazov} hlavnyUcet={nacitajIbanOrg(poz)} tier={tier} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onDorovnanie={() => otvor("dorovnanie")} onDarcovia={() => otvor("darcovia")} />;
   else obsah = !typPovoli(sub as PolozkaSpravy, typ) ? <Pripravujeme /> : maPovolenie(sub as PolozkaSpravy, tier) ? <Pripravujeme /> : <Zamknute program={odProgramu(sub as PolozkaSpravy)} />;
   // OPRAVY 404: pracovník charity vidí len zapnuté časti, zvyšok je zamknutý

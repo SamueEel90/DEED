@@ -40,6 +40,7 @@ import { iskryVsetky } from "@/lib/iskry";
 import { pribehZbierky, orgPribehu, useZmenyPribehov } from "@/lib/pribehZbierky";
 import { PribehZbierky } from "./PribehZbierky";
 import { SektorDarcuKontext } from "@/lib/darcovia";
+import { PomozCharita } from "./PomozCharita";
 
 /** OPRAVY 402: testovací profil, alebo novo založená charita (vlastné id ch-…) — prázdny profil s menom z registra */
 const profilKluca = (k: string): TestProfil | undefined =>
@@ -118,7 +119,8 @@ function VerejnyProfilObsah({ kluc, onBack }: { kluc: string; onBack: () => void
   // KARTA 56I: farnosť — sekcia Od veriacich a zelené + Pridať (veriaci pridáva sám)
   const farnost = profil.typ === "farnost";
   const fab = farnost && fabZapnuty(profil.k);
-  const odF = (pad?: string) => farnost ? <OdFarnikov strankaId={profil.k} novy={novyOdF} pad={pad} fab={fab} /> : undefined;
+  // OPRAVY 406: charita — v tom istom mieste blok Pomôž (Dobrovoľníctvo zo Správy)
+  const odF = (pad?: string) => farnost ? <OdFarnikov strankaId={profil.k} novy={novyOdF} pad={pad} fab={fab} /> : profil.typ === "charita" ? <PomozCharita strankaId={profil.k} pad={pad} /> : undefined;
   const padOdF = pc ? "44px 40px 0" : "28px 16px 0";
   const hore = (pad?: string) => farnost ? <PrihovorNaStranke strankaId={profil.k} pad={pad} /> : undefined; // KARTA 57 C.7–C.8
   // OPRAVY 400: charita — Kontakt (sídlo, prevádzky) a Údaje organizácie na konci stránky
