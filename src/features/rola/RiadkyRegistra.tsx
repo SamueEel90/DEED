@@ -6,13 +6,15 @@
 import { useState, type CSSProperties } from "react";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { premenujStranku } from "@/lib/mojeStranky";
-import { useRegistra, ulozRegistra, useStatutar, ulozStatutara, icoText, vznikText, type UdajeRegistra } from "@/lib/udajeRegistra";
+import { useRegistra, ulozRegistra, useStatutar, ulozStatutara, icoText, vznikText, zamestnanciText, type UdajeRegistra } from "@/lib/udajeRegistra";
 
 type Kluc = keyof UdajeRegistra | "statutar";
 const RIADKY: [Kluc, string, string][] = [
   ["nazov", "Názov", "napr. Pod korunami, o. z."], ["forma", "Právna forma", "napr. občianske združenie"], ["ico", "IČO", "8 číslic"],
+  ["dic", "DIČ", "10 číslic"], ["icdph", "IČ DPH", "ak ste platca DPH · napr. SK2021234567"],
   ["registracia", "Registrácia", "napr. MV SR, reg. č. VVS/1-900/90-57412"], ["sidlo", "Sídlo", "ulica, PSČ, mesto"],
   ["vznik", "Dátum vzniku", "napr. 14. 3. 2017"], ["statutar", "Štatutár", "meno a priezvisko"],
+  ["zamestnanci", "Počet zamestnancov", "dobrovoľný údaj · napr. 12"],
 ];
 const Zamok = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true" style={{ flex: "none" }}><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>;
 const odkaz: CSSProperties = { flex: "none", minHeight: 44, padding: "0 4px", border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--green)", boxShadow: "none" };
@@ -24,13 +26,13 @@ export function RiadkyRegistra({ strankaId, bezNazvu }: { strankaId: string; /**
   const [uprav, setUprav] = useState<Kluc | null>(null);
   const [text, setText] = useState("");
   const [hlaska, setHlaska] = useState<{ k: Kluc; t: string; chyba?: boolean } | null>(null);
-  const hodnota = (k: Kluc) => (k === "statutar" ? st.meno : k === "ico" ? icoText(r.ico) : k === "vznik" ? vznikText(r.vznik) : r[k]);
+  const hodnota = (k: Kluc) => (k === "statutar" ? st.meno : k === "ico" ? icoText(r.ico) : k === "zamestnanci" ? zamestnanciText(r.zamestnanci) : k === "vznik" ? vznikText(r.vznik) : r[k]);
   const zacni = (k: Kluc) => { setUprav(k); setText(k === "statutar" ? st.meno : r[k as keyof UdajeRegistra] ?? ""); setHlaska(null); };
   const uloz = async (k: Kluc) => {
     const v = text.trim().slice(0, 160);
     try {
       if (k === "statutar") ulozStatutara({ meno: v });
-      else await ulozRegistra(strankaId, { [k]: k === "ico" ? v.replace(/\D/g, "").slice(0, 8) : v });
+      else await ulozRegistra(strankaId, { [k]: k === "ico" ? v.replace(/\D/g, "").slice(0, 8) : k === "dic" || k === "zamestnanci" ? v.replace(/\D/g, "").slice(0, k === "dic" ? 10 : 7) : k === "icdph" ? v.replace(/\s/g, "").toUpperCase().slice(0, 14) : v });
       if (k === "nazov" && v) await premenujStranku(strankaId, v); // OPRAVY 414 (3): názov všade (Moje stránky, Správa, verejný profil)
       setUprav(null); setHlaska({ k, t: "Uložené ✓" });
     } catch { setHlaska({ k, t: "Neuložilo sa · skúste znova", chyba: true }); }
@@ -51,7 +53,7 @@ export function RiadkyRegistra({ strankaId, bezNazvu }: { strankaId: string; /**
                 : TESTOVACIA ? <button type="button" onClick={() => zacni(k)} style={{ ...odkaz, color: "var(--ink3)", fontWeight: 700 }}>upraviť (test)</button> : null)}
             </div>
             {uprav === k && <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <input autoFocus value={text} onChange={(e) => setText(e.target.value)} placeholder={ph} aria-label={t} inputMode={k === "ico" ? "numeric" : undefined}
+              <input autoFocus value={text} onChange={(e) => setText(e.target.value)} placeholder={ph} aria-label={t} inputMode={k === "ico" || k === "dic" || k === "zamestnanci" ? "numeric" : undefined}
                 onKeyDown={(e) => { if (e.key === "Enter") void uloz(k); if (e.key === "Escape") setUprav(null); }} style={pole} />
               <button type="button" onClick={() => void uloz(k)} style={{ ...odkaz, minWidth: 72, height: 46, borderRadius: 12, background: "var(--green)", color: "#fff", padding: "0 14px" }}>Uložiť</button>
               <button type="button" onClick={() => setUprav(null)} style={{ ...odkaz, color: "var(--ink2)" }}>Zrušiť</button>

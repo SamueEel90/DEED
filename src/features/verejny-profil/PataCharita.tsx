@@ -1,11 +1,11 @@
 // ============================================================
 // OPRAVY 400 · verejný profil charity: Kontakt (sídlo, prevádzky s popisom, telefóny, e-maily, web a siete)
-// a pod ním Údaje organizácie (právna forma · IČO · registrácia · založené). Štatutár tu nie je.
+// a pod ním Údaje organizácie (právna forma · IČO · DIČ · IČ DPH · registrácia · založené · zamestnanci). Štatutár tu nie je.
 // Zdroj: uložený profil (Upraviť profil) + údaje z registra (verejné nastavenia stránky).
 // ============================================================
 import { useEffect, useState } from "react";
 import { nacitajProfil, profilZPamate, type ProfilStranky } from "@/lib/profilStranky";
-import { useRegistra, icoText, mesiacRok } from "@/lib/udajeRegistra";
+import { useRegistra, icoText, mesiacRok, zamestnanciText } from "@/lib/udajeRegistra";
 import { KontaktBlok, maKontaktCharity } from "@/features/rola/kontakt";
 
 export function PataCharita({ strankaId, pad = "0 16px", siroke }: { strankaId: string; pad?: string; siroke?: boolean }) {
@@ -14,7 +14,7 @@ export function PataCharita({ strankaId, pad = "0 16px", siroke }: { strankaId: 
   const reg = useRegistra(strankaId);
   const k = prof?.kontakt ? { ...prof.kontakt, sidlo: reg.sidlo || prof.kontakt.sidlo } : reg.sidlo ? { sidlo: reg.sidlo, adresaVerejna: "", telefony: [], emaily: [], web: "", siete: {} } : null;
   const zalozene = prof?.zalozene?.trim() || mesiacRok(reg.vznik);
-  const udaje = [reg.forma, reg.ico ? `IČO ${icoText(reg.ico)}` : "", reg.registracia, zalozene ? `založené ${zalozene}` : ""].map((x) => x.trim()).filter(Boolean);
+  const udaje = [reg.forma, reg.ico ? `IČO ${icoText(reg.ico)}` : "", reg.dic ? `DIČ ${reg.dic}` : "", reg.icdph ? `IČ DPH ${reg.icdph}` : "", reg.registracia, zalozene ? `založené ${zalozene}` : "", zamestnanciText(reg.zamestnanci)].map((x) => x.trim()).filter(Boolean);
   if (!(k && maKontaktCharity(k)) && !udaje.length) return null;
   return (
     <section aria-label="Kontakt a údaje organizácie" style={{ padding: pad, display: "flex", flexDirection: "column", gap: 14 }}>
