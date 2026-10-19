@@ -32,6 +32,7 @@ import { upravZbierku, useZmenyZbierok, zbierkyStrankyZPamate, nacitajZbierkyStr
 import { UpravitProfilCharity, VerejnyProfilOkno, zakladnyProfil } from "./UpravitProfilCharity";
 import { VerejnyProfilVSprave } from "@/features/verejny-profil/VerejnyProfil";
 import { PonukyPrace } from "./PonukyPrace";
+import { StitNaWeb } from "./StitNaWeb";
 import { najdiTestProfil } from "@/lib/testProfily";
 import { nacitajProfil, profilZPamate, uplnostProfilu, type ProfilStranky } from "@/lib/profilStranky";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -429,6 +430,8 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   else if (sub === "sledujuci" && typ === "charita") obsah = <SledujuciCharity strankaId={strankaId} mobil={!desktop} />;
   // OPRAVY 420: charita · Obsah → Iskry = zoznam Iskier + Pridať Iskru
   else if (sub === "video" && typ === "charita") obsah = maPovolenie("video", tier) ? <IskryCharity strankaId={strankaId} nazov={nazov} mobil={!desktop} /> : <Zamknute program={odProgramu("video")} />;
+  // OPRAVY 412: charita · Štít dôvery na web (od P1)
+  else if (sub === "embed" && typ === "charita") obsah = maPovolenie("embed", tier) ? <StitNaWeb strankaId={strankaId} nazov={nazov} stit={stit} mobil={!desktop} /> : <Zamknute program={odProgramu("embed")} />;
   // OPRAVY 408: charita · Pracovné ponuky (od P1) — engine Inzeraty, vzhľad Brigády
   else if (sub === "inzeraty" && typ === "charita") obsah = maPovolenie("inzeraty", tier) ? <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 900 }}><PonukyPrace strankaId={strankaId} tier={tier} mobil={!desktop} /></div> : <Zamknute program={odProgramu("inzeraty")} />;
   // OPRAVY 406: charita · Dobrovoľníctvo = Brigády z Viery (od P2)
