@@ -52,6 +52,8 @@ export type ZbierkaData = {
   rychleSumy?: number[];  // € dlaždice — sadu volí charita v nastaveniach zbierky (predvolene 10 / 25 / 45)
   /** KARTA 57C §5: dary v EURC áno / nie a vybraná sada EURC (bez nich ako doteraz) */
   eurc?: boolean; rychleSumyE?: number[];
+  /** OPRAVY 415: pravidelná podpora len keď ju charita pri zbierke zapla (od P1); false = riadok nie je */
+  pravidelna?: boolean;
   tvorca?: TvorcaData;    // karta 13 — zbierka otvorená cez QR tvorcu (alebo súkromná so splitom)
 };
 
@@ -151,7 +153,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
   const [predDarom, setPredDarom] = useState(stavPredDarom);
   // hárky z karty 12 (zatiaľ pôvodné hárky appky — nový vzhľad príde s ich kartami)
   const [harok, setHarok] = useState<"pravidelna" | "firma" | "retaz" | "zdielat" | "podporit" | null>(null);
-  const polozky = pripojene(miesto, k).filter((p) => !bez?.includes(p.kluc) && !(p.kluc === "krypto" && zbierka.eurc === false) && !(bezDarcov && p.kluc === "darcovia"));
+  const polozky = pripojene(miesto, k).filter((p) => !bez?.includes(p.kluc) && !(p.kluc === "krypto" && zbierka.eurc === false) && !(p.kluc === "pravidelna" && zbierka.pravidelna === false) && !(bezDarcov && p.kluc === "darcovia"));
   const pc = useSirokeOkno();
   // karta 13 — tvorca (na mieste tvorca vždy, na súkromnej len so splitom)
   const cezTvorcaMiesto = miesto === "tvorca" || (miesto === "sukromna" && dev.split);

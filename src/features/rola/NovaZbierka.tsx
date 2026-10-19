@@ -8,7 +8,8 @@
 // Obsah · Fotky a video · Suma a účet · Platby · Kontrola — bez dĺžky, dokladovania, pravidelnej podpory a štítu;
 // účet zamknutý „Na účet hlavnej zbierky"; náhľad „Na stránke farnosti" bez cudzích zbierok.
 // ============================================================
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
+import { sucetDarov } from "@/lib/darcovia";
 import { OrezFotky } from "@/components/orezfotky";
 import { ZbierkaModul, type ZbierkaData } from "@/features/zbierka/ZbierkaModul";
 import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
@@ -18,6 +19,7 @@ import { PROGRAM_TIER, nacitajIbanOrg, type Pozicia, type Tier } from "./stav";
 import { eurcText } from "./NastaveniaCharity";
 import { OverenieUctu, useOverenieUctu } from "./OverenieUctu";
 import {
+  zbierkyStrankyZPamate,
   prazdnaZbierka, konceptZbierkyZPamate, nacitajKonceptZbierky, ulozKonceptZbierky, spustiZbierku, lehotaZbierky, cielCislo, jeIne,
   DLHA_FEED_TEXT, DLHA_PRIEBEZNE_TEXT, SADY, SADY_EURC, KROKY_ZBIERKY, UCELY, LEHOTY, NAZOV_ZB, RIADKY_ZB,
   type NovaZbierkaData, type SpustenaZbierka,
@@ -147,9 +149,10 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
     ...(eurcRezim === "nie" ? [] : [["Dary v EURC", eurcOn ? `áno · ${SADY_EURC[d.sadaE][0]} ${SADY_EURC[d.sadaE][1].map(cis).join(" · ")}` : "nie", 4, false] as [string, string, number, boolean]]),
     ...(zadarmo ? [] : [["Pravidelná podpora", d.prav ? "áno, sumu volí darca" : "nie", 4, false] as [string, string, number, boolean]]), ["Dokladovanie", dokladyT, 5, true],
   ];
-  const zbierkaData = (id = "nova"): ZbierkaData => ({
+  // OPRAVY 415: náhľad bez vymyslených darov (id „zb-…“ = skutočná zbierka, nikdy ukážkové dary), pravidelná a EURC podľa nastavenia
+  const zbierkaData = (id = "zb-nahlad"): ZbierkaData => ({
     id, nazov: d.nazov || "Názov zbierky", popis: (d.popis || "<p>Hlavný text zbierky</p>") + (cistyText(d.popis2) ? d.popis2 : ""), overena: true,
-    media: d.media.map((m) => ({ typ: m.typ, src: m.src, popis: m.popis })), vyzbierane: 0, ciel: maCiel ? cielCislo(d) : undefined, ludia: 0, rychleSumy: SADY[d.sada][1],
+    media: d.media.map((m) => ({ typ: m.typ, src: m.src, popis: m.popis })), vyzbierane: 0, ciel: maCiel ? cielCislo(d) : undefined, ludia: 0, rychleSumy: SADY[d.sada][1], pravidelna: !zadarmo && !!d.prav, eurc: eurcOn,
   });
 
   // ============ VÝREZ FOTKY ============
@@ -202,8 +205,9 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
         <div style={{ display: "grid", gridTemplateColumns: ph ? "minmax(0,1fr)" : "repeat(3,minmax(0,1fr))", gap: 12 }}>
           {kartaMini(d.nazov || "Názov zbierky", farnost ? "zbierka farnosti" : typT === "Krátkodobá · 30 dní" ? "ešte 30 dní" : `ešte ${d.mesiace} mesiacov`, maCiel ? `0 / ${fmtEur(cielCislo(d))}` : "0 € · otvorená", hl ? <Media m={hl} /> : null, true)}
           {/* KARTA 56D §6: farnosť — len nová zbierka, žiadne cudzie (ukážkové) */}
-          {!farnost && kartaMini("Strecha pre rodinu Horváthovú", "ešte 9 dní", "8 420 / 12 000 €", <img src="/img/sprava/dom.jpg" alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />)}
-          {!farnost && kartaMini("Centrálna zbierka Svetla pomoci", "na celú činnosť", "2 180 € · otvorená", <span style={{ display: "block", width: "100%", height: "100%", background: "repeating-linear-gradient(135deg,var(--track) 0 12px,var(--btn) 12px 24px)" }} />)}
+          {/* OPRAVY 415: len skutočné zbierky tejto charity z databázy, nič vymyslené */}
+          {!farnost && zbierkyStrankyZPamate(strankaId).filter((z) => (z.stav ?? "aktivna") === "aktivna").map((z) => { const sz = sucetDarov(z.id), c = cielCislo(z), f = z.media.find((m) => m.typ === "foto"); return (
+            <Fragment key={z.id}>{kartaMini(z.nazov || "Zbierka", z.typ === "dlha" ? "dlhodobá" : "krátkodobá", c ? `${fmtEur(sz.suma)} / ${fmtEur(c)}` : `${fmtEur(sz.suma)} · otvorená`, f ? <img src={f.src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : null)}</Fragment>); })}
         </div>
         <span style={pozn}>Kliknite na svoju zbierku a otvorí sa detail, ktorý uvidí darca.</span>
       </section> : <ZbierkaModul zbierka={zbierkaData()} miesto="charita" zoStrankyOrg onBack={() => setNahlad(null)} spatNazov="Späť na kontrolu" />}

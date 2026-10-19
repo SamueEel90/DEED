@@ -76,6 +76,8 @@ export interface TestZbierka {
   d?: string; m?: string; rok?: number;
   /** KARTA 55 · príbeh: krátky text (feed, max 3 riadky), citát, kategória, diel firmy v pruhu, Príbeh týždňa */
   kratky?: string; citat?: { text: string; kto: string }; kategoria?: string; zFirmy?: number; pribehTyzdna?: boolean;
+  /** OPRAVY 415: zbierka charity z databázy — sumy a darcovia len z ledgera, pravidelná a EURC podľa nastavenia zbierky */
+  zDb?: boolean; prav?: boolean; eurc?: boolean;
 }
 
 export interface TestSkutok {

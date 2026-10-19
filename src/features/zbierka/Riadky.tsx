@@ -191,11 +191,11 @@ export function Darcovia({ refId, nadpis = "DARCOVIA", cezTvorcu, bezDorovnania,
     <div style={{ marginTop: 12, borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "14px 16px 6px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
         <span style={{ fontSize: 12.5, fontWeight: 700, letterSpacing: ".05em", color: "var(--ink3)" }}>{nadpis}</span>
-        {!skoncena && <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 700, color: "var(--green)" }}>
+        {!skoncena && pary.length > 0 && <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 700, color: "var(--green)" }}>{/* OPRAVY 415: bez darov nič „naživo“ */}
           <span className="zb-pulz" style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)" }} />rastie naživo
         </span>}
       </div>
-      {pary.length === 0 && <div style={{ fontSize: 13.5, color: "var(--ink3)", padding: "12px 0" }}>Zatiaľ tu nie je žiadny dar.</div>}
+      {pary.length === 0 && <div style={{ fontSize: 13.5, color: "var(--ink3)", padding: "12px 0" }}>Zatiaľ žiadne dary. Prví darcovia sa ukážu tu.</div>}
       {zobraz.map(({ darca, firma }, i) => (
         <div key={darca.id} className={i === 0 ? "zb-novy-riadok" : undefined} style={{ borderTop: "1px solid var(--cardBd)", padding: "10px 0" }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>

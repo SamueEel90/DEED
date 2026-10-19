@@ -72,7 +72,7 @@ function zbierkaProfilu(z: SpustenaZbierka, p: TestProfil): TestZbierka {
   const s = sucetDarov(z.id), ciel = cielCislo(z), foto = z.media?.find((m) => m.typ === "foto")?.src ?? "";
   return { id: z.id, nazov: z.nazov || "Zbierka", popis: cistyText(z.popis ?? ""), mesto: p.mesto, foto, vyzbierane: s.suma, ciel: ciel || undefined, ludia: s.pocet,
     stav: (z.stav ?? "aktivna") !== "aktivna" ? "ukoncena" : z.typ === "dlha" ? "dlhodoba" : "bezi",
-    galeria: (z.media ?? []).map((m) => ({ typ: m.typ, src: m.src, popis: m.popis })) };
+    galeria: (z.media ?? []).map((m) => ({ typ: m.typ, src: m.src, popis: m.popis })), zDb: true, prav: !!z.prav, eurc: !!z.eurc };
 }
 /** OPRAVY 414 (3, 8): skutočná charita — logo, titulná fotka a iniciály z Upraviť profil, zbierky len z databázy */
 function sUdajmiCharity(p: TestProfil, prof: ProfilStranky | null): TestProfil {
