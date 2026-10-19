@@ -5,6 +5,7 @@
 // ============================================================
 import { useState, type CSSProperties } from "react";
 import { TESTOVACIA } from "@/lib/testovacia";
+import { premenujStranku } from "@/lib/mojeStranky";
 import { useRegistra, ulozRegistra, useStatutar, ulozStatutara, icoText, vznikText, type UdajeRegistra } from "@/lib/udajeRegistra";
 
 type Kluc = keyof UdajeRegistra | "statutar";
@@ -30,6 +31,7 @@ export function RiadkyRegistra({ strankaId, bezNazvu }: { strankaId: string; /**
     try {
       if (k === "statutar") ulozStatutara({ meno: v });
       else await ulozRegistra(strankaId, { [k]: k === "ico" ? v.replace(/\D/g, "").slice(0, 8) : v });
+      if (k === "nazov" && v) await premenujStranku(strankaId, v); // OPRAVY 414 (3): názov všade (Moje stránky, Správa, verejný profil)
       setUprav(null); setHlaska({ k, t: "Uložené ✓" });
     } catch { setHlaska({ k, t: "Neuložilo sa · skúste znova", chyba: true }); }
   };
@@ -41,7 +43,7 @@ export function RiadkyRegistra({ strankaId, bezNazvu }: { strankaId: string; /**
           <div key={k} style={{ display: "flex", flexDirection: "column", gap: 6, padding: "8px 0", borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 44 }}>
               <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-                <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{t}</span>
+                <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{t}<span style={{ fontWeight: 400 }}>{` · ${ph}`}</span></span>{/* OPRAVY 414 (7): čo kam patrí */}
                 {v ? <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 15, fontWeight: 700, color: "var(--ink)", overflowWrap: "anywhere" }}><Zamok />{v}</span>
                   : <span style={{ fontSize: 14, color: "var(--ink3)" }}>nevyplnené</span>}
               </span>

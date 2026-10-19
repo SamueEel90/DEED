@@ -170,7 +170,7 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
     </div>
   );
   const kovCiara = <span style={{ display: "block", flex: "none", height: "var(--mH)", background: "var(--metal)" }} />;
-  const logo = (s: number, r: number, fs: number, okraj: string) => <span style={{ flex: "none", width: s, height: s, borderRadius: r, background: "#fff", border: `3px solid ${okraj}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: fs, fontWeight: 800, color: "#3F6E2A", boxShadow: rez === "mob" ? "0 8px 20px rgba(0,0,0,.3)" : "0 8px 24px rgba(0,0,0,.3)" }}>{profil.iniciala}</span>;
+  const logo = (s: number, r: number, fs: number, okraj: string) => <span style={{ flex: "none", width: s, height: s, borderRadius: r, background: profil.logo ? `#fff url('${profil.logo}') center/contain no-repeat` : "#fff", border: `3px solid ${okraj}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: fs, fontWeight: 800, color: "#3F6E2A", boxShadow: rez === "mob" ? "0 8px 20px rgba(0,0,0,.3)" : "0 8px 24px rgba(0,0,0,.3)" }}>{profil.logo ? null : profil.iniciala}</span>;
   const stitTlacidlo = (w: number, h: number, sw: number, sh: number, style?: CSSProperties) => jeFarnost(profil) ? null : ( // KARTA 50: farnosť štít nemá
     <button type="button" onClick={() => setStitOtv(true)} aria-label={`Štít DEED+ CARE · ${nazovStitu(profil.stit)} · podrobnosti a overenie`}
       style={{ position: "relative", width: w, height: h, padding: 0, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flex: "none", ...style }}>

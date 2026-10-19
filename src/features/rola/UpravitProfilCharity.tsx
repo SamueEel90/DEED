@@ -237,10 +237,9 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
         {nadpis("Názov stránky", "predvyplnený z registrácie, môžete ho zmeniť", 14)}
         <input style={pole} value={p.meno ?? nazov} maxLength={80} placeholder="Napríklad: Farnosť sv. Martina" aria-label="Názov stránky" onChange={(e) => zmen({ meno: e.target.value })} />
       </> : <>
-        {nadpis("Názov", "z registrácie, overený cez IČO", 14)}
-        <div style={zamknute}><Zamok />{reg.nazov || nazov}</div>
-        {/* OPRAVY 400: ostatné údaje z registra (zamknuté; čo register nevrátil = doplniť ›) */}
-        <div style={{ padding: "2px 14px", borderRadius: 14, border: "1px solid var(--cardBd)", background: "var(--field)" }}><RiadkyRegistra strankaId={strankaId} bezNazvu /></div>
+        {nadpis("Údaje z registra", "overené cez IČO · v testovacej verzii sa dajú prepísať", 14)}
+        {/* OPRAVY 400 / 414 (7): aj Názov v riadkoch registra (upraviť (test)), pod každým nadpisom čo tam patrí */}
+        <div style={{ padding: "2px 14px", borderRadius: 14, border: "1px solid var(--cardBd)", background: "var(--field)" }}><RiadkyRegistra strankaId={strankaId} /></div>
         {nadpis("Funkcia štatutára", "napr. predsedníčka · na verejnom profile nie je", 14)}
         <input style={pole} value={funkcia ?? statutar.funkcia} maxLength={60} placeholder="napr. predseda, predsedníčka, riaditeľ" aria-label="Funkcia štatutára"
           onChange={(e) => setFunkcia(e.target.value)} onBlur={() => { if (funkcia !== null && funkcia.trim() !== statutar.funkcia) ulozStatutara({ funkcia: funkcia.trim() }); setFunkcia(null); }} />

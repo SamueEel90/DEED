@@ -39,16 +39,18 @@ import { otvorIskry } from "@/features/iskry/otvor";
 import { iskryVsetky } from "@/lib/iskry";
 import { pribehZbierky, orgPribehu, useZmenyPribehov } from "@/lib/pribehZbierky";
 import { PribehZbierky } from "./PribehZbierky";
-import { SektorDarcuKontext } from "@/lib/darcovia";
+import { SektorDarcuKontext, sucetDarov, useZmenyDarov } from "@/lib/darcovia";
+import { jeCharitaUctu } from "@/lib/mojeStranky";
+import { nacitajZbierkyStranky, zbierkyStrankyZPamate, useZmenyZbierok, cielCislo, type SpustenaZbierka } from "@/lib/novaZbierka";
 import { PomozCharita } from "./PomozCharita";
 
 /** OPRAVY 402: testovací profil, alebo novo založená charita (vlastné id ch-…) — prázdny profil s menom z registra */
 const profilKluca = (k: string): TestProfil | undefined =>
-  najdiTestProfil(k) ?? (/^ch-/.test(k) ? prazdnaCharita(k, registra(k).nazov || lokalneStranky().find((x) => x.k === k)?.n) : undefined);
+  najdiTestProfil(k) ?? (/^ch-/.test(k) || jeCharitaUctu(k) ? prazdnaCharita(k, registra(k).nazov || lokalneStranky().find((x) => x.k === k)?.n) : undefined);
 
 /** vložiteľný verejný profil podľa kľúča stránky (svetlo · pekaren · tvorca) */
 /** OPRAVY 159: profil farnosti = sektor Viera (darca bez mena = „Bohu známy veriaci") */
-export function VerejnyProfilView(p: { kluc: string; onBack: () => void; /** OPRAVY 249: len vrstva otvorená tlačidlom Náhľad v Správe */ nahlad?: boolean }) {
+export function VerejnyProfilView(p: { kluc: string; onBack: () => void; /** OPRAVY 249: len vrstva otvorená tlačidlom Náhľad v Správe */ nahlad?: boolean; /** OPRAVY 414: Náhľad neuloženého profilu charity */ profilNahlad?: ProfilStranky }) {
   const k = p.kluc.startsWith("stream:") ? "tvorca" : p.kluc.startsWith("pribeh:") ? orgPribehu(p.kluc.slice(7)) : p.kluc;
   const tp = profilKluca(k);
   // KARTA 57C · 60: farnosť (testovacia aj ktorákoľvek z Adresára) = živá stránka z uloženého
@@ -65,7 +67,25 @@ function sHlavnouZUctu(p: TestProfil): TestProfil {
   return { ...p, centralna: { ...p.centralna, nazov: nazovHlavnej(c), popis: cistyText(c.popis) || undefined, ...(galeria.length ? { galeria, foto: foto ?? p.centralna.foto } : {}) } };
 }
 
-function VerejnyProfilObsah({ kluc, onBack }: { kluc: string; onBack: () => void }) {
+/** OPRAVY 414 (8): zbierka charity z databázy → zbierka profilu (nič predvolené, nič z testovacej stránky) */
+function zbierkaProfilu(z: SpustenaZbierka, p: TestProfil): TestZbierka {
+  const s = sucetDarov(z.id), ciel = cielCislo(z), foto = z.media?.find((m) => m.typ === "foto")?.src ?? "";
+  return { id: z.id, nazov: z.nazov || "Zbierka", popis: cistyText(z.popis ?? ""), mesto: p.mesto, foto, vyzbierane: s.suma, ciel: ciel || undefined, ludia: s.pocet,
+    stav: (z.stav ?? "aktivna") !== "aktivna" ? "ukoncena" : z.typ === "dlha" ? "dlhodoba" : "bezi",
+    galeria: (z.media ?? []).map((m) => ({ typ: m.typ, src: m.src, popis: m.popis })) };
+}
+/** OPRAVY 414 (3, 8): skutočná charita — logo, titulná fotka a iniciály z Upraviť profil, zbierky len z databázy */
+function sUdajmiCharity(p: TestProfil, prof: ProfilStranky | null): TestProfil {
+  if (p.typ !== "charita" || !p.bezCentralnej) return p;
+  const zbierky = zbierkyStrankyZPamate(p.k).map((z) => zbierkaProfilu(z, p));
+  const ini = prof?.bezLoga && prof.inicialy?.trim() ? prof.inicialy.trim() : p.iniciala;
+  // centrálna len keď ju charita sama založila a spustila (Zbierky → Založiť centrálnu zbierku)
+  const c = centralnaZPamate(p.k), foto = c?.media.find((m) => m.typ === "foto")?.src;
+  const centralna = c?.spustena ? { ...p.centralna, popis: cistyText(c.popis) || undefined, foto: foto ?? p.centralna.foto, galeria: c.media.map((m) => ({ typ: m.typ, src: m.src, popis: m.popis })) } : p.centralna;
+  return { ...p, zbierky, iniciala: ini, logo: prof?.logo || undefined, titulka: prof?.cover?.src || p.titulka, centralna, bezCentralnej: !c?.spustena };
+}
+
+function VerejnyProfilObsah({ kluc, onBack, profilNahlad }: { kluc: string; onBack: () => void; profilNahlad?: ProfilStranky }) {
   const zStreamu = kluc.startsWith("stream:") ? kluc.slice(7) : null;
   // KARTA 55 · E: „pribeh:{zbierka}" (odkaz z feedu) → stránka Príbeh; „{Organizácia} ›" otvorí jej profil
   const zPribehu = kluc.startsWith("pribeh:") ? kluc.slice(7) : null;
@@ -106,8 +126,13 @@ function VerejnyProfilObsah({ kluc, onBack }: { kluc: string; onBack: () => void
   // OPRAVY 160: spustená hlavná zbierka farnosti z účtu (názov, text farára, fotky) prepíše testovaciu
   useZmenyCentralnej();
   useEffect(() => { if (typP === "farnost" && profil0) void nacitajCentralnuZbierku(profil0.k); }, [typP, profil0]);
+  // OPRAVY 414: uložený profil a zbierky skutočnej charity
+  useZmenyZbierok(); useZmenyDarov();
+  const kCh = profil0?.bezCentralnej ? profil0.k : null;
+  const [profCh, setProfCh] = useState<ProfilStranky | null>(() => (kCh ? profilZPamate(kCh).ulozeny : null));
+  useEffect(() => { if (!kCh) return; let ziva = true; void nacitajProfil(kCh).then((z) => { if (ziva) setProfCh(z.ulozeny); }); void nacitajZbierkyStranky(kCh); void nacitajCentralnuZbierku(kCh); return () => { ziva = false; }; }, [kCh]);
   if (!profil0) return null;
-  const profil1 = sHlavnouZUctu(ts.prazdny ? vyprazdni(profil0) : profil0);
+  const profil1 = sUdajmiCharity(sHlavnouZUctu(ts.prazdny ? vyprazdni(profil0) : profil0), profilNahlad ?? profCh);
   const profil = profil1.typ === "charita" && regV.nazov.trim() ? { ...profil1, meno: regV.nazov.trim() } : profil1;
   if (zPribehu) {
     const zb = profil0.zbierky.find((x) => x.id === zPribehu), pr = pribehZbierky(zPribehu);
@@ -175,14 +200,15 @@ function VerejnyProfilObsah({ kluc, onBack }: { kluc: string; onBack: () => void
 
 /** OPRAVY 154: verejný profil otvorený zo Správy (charita, farnosť, firma, tvorca, klub, spolok) — okno NAD Správou
  *  ako VerejnyProfilOkno (portál, celá obrazovka), „Späť" vráti do Správy na to isté miesto. */
-export function VerejnyProfilVSprave({ kluc, onZavri }: { kluc: string; onZavri: () => void }) {
+export function VerejnyProfilVSprave({ kluc, onZavri, lista, profilNahlad }: { kluc: string; onZavri: () => void; /** OPRAVY 414: lišta hore (Náhľad · Profil uložený) */ lista?: ReactNode; profilNahlad?: ProfilStranky }) {
   // OPRAVY 155/7: z-index 70 — nad Správou, ale POD oknami profilu (štít 80, platba 150, Iskry 160, galéria 1000)
   const { desktop } = useLayout();
   useEffect(() => vrstvaProfiluPripoj(), []);
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === "Escape") onZavri(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onZavri]);
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label="Verejný profil" style={{ position: "fixed", top: 0, right: 0, bottom: 0, left: desktop ? 104 : 0, zIndex: 70, overflowY: "auto", background: "var(--c-bg)", WebkitOverflowScrolling: "touch" } as CSSProperties}>
-      <VerejnyProfilView kluc={kluc} onBack={onZavri} />
+      {lista ? <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>{lista}<div style={{ flex: 1, minHeight: 0 }}><VerejnyProfilView kluc={kluc} onBack={onZavri} profilNahlad={profilNahlad} /></div></div>
+        : <VerejnyProfilView kluc={kluc} onBack={onZavri} profilNahlad={profilNahlad} />}
     </div>, document.body);
 }
 

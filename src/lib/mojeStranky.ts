@@ -57,6 +57,15 @@ export function useStrankyUctu(prihlaseny: boolean): Stranka[] | null {
   return zUctu == null ? null : zUctu.map(naStranku).filter((x): x is Stranka => !!x);
 }
 /** OPRAVY 393: Farár (všetko) alebo Pomocník (Správa bez Nastavení a ľudí). Bez DB a pri demo vždy farár. */
+/** OPRAVY 414 (3): nový názov stránky (zo „upraviť (test)“ v údajoch registra) — server 0131, zoznam stránok sa obnoví */
+export async function premenujStranku(k: string, nazov: string): Promise<void> {
+  if (zUctu) { zUctu = zUctu.map((x) => (x.id === k ? { ...x, nazov } : x)); ver++; posl.forEach((f) => f()); }
+  if (!supabase) return;
+  const { error } = await supabase.rpc("premenuj_stranku", { p_stranka: k, p_nazov: nazov });
+  if (error && !/premenuj_stranku|PGRST202|42883/.test(`${error.code ?? ""} ${error.message ?? ""}`)) throw new Error(error.message);
+}
+/** OPRAVY 414: stránka účtu je charita (aj staršie id bez „ch-“) */
+export const jeCharitaUctu = (k: string): boolean => !!zUctu?.some((x) => x.id === k && x.typ === "charita");
 export const urovenStranky = (k: string): UrovenStranky => (zUctu?.find((x) => x.id === k)?.uroven === "pomocnik" ? "pomocnik" : "farar");
 export function useUrovenStranky(k: string): UrovenStranky {
   useSyncExternalStore((f) => { posl.add(f); return () => posl.delete(f); }, () => ver, () => 0);

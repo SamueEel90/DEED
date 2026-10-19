@@ -323,7 +323,8 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   const [profil, setProfil] = useState<ProfilStranky | null>(() => profilZPamate(strankaId).ulozeny);
   // OPRAVY 112: koncept (aj práve rozpracovaná úprava) — percento rastie naživo, nie až po Uložiť
   const [koncept, setKoncept] = useState<ProfilStranky | null>(() => profilZPamate(strankaId).koncept);
-  useEffect(() => { let ziva = true; void nacitajProfil(strankaId).then((z) => { if (ziva) { setProfil(z.ulozeny); setKoncept(z.koncept); } }); return () => { ziva = false; }; }, [strankaId]);
+  // OPRAVY 414 (6): po návrate z Upraviť profil (aj po Uložiť) sa percento a pás prepočítajú z uloženého profilu
+  useEffect(() => { const z0 = profilZPamate(strankaId); setProfil(z0.ulozeny); setKoncept(z0.koncept); let ziva = true; void nacitajProfil(strankaId).then((z) => { if (ziva) { setProfil(z.ulozeny); setKoncept(z.koncept); } }); return () => { ziva = false; }; }, [strankaId, sub]);
   const uplnost = uplnostProfilu(koncept ?? profil ?? zakladnyProfil(poz));
   // OPRAVY 91: bočný panel appky berie farbu štítu otvorenej stránky
   useEffect(() => { nastavStitSpravy(stit); }, [stit]);
@@ -350,7 +351,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   const [verejnyTest, setVerejnyTest] = useState(false); // OPRAVY 154: testovací profil (Kronika/Výklad/Pirát) v okne nad Správou
   // KARTA 42: Zadarmo → z hárku Pridať sa Oznamy otvoria rovno na výzve na súrnu pomoc
   const [oznamStart, setOznamStart] = useState<DruhOznamu | undefined>(undefined);
-  const otvor = (s: Sub, oznamDruh?: DruhOznamu) => { zastavDiktovanie(); setOznamStart(oznamDruh); if (s === "x:Verejný profil") { if (najdiTestProfil(strankaId) || /^ch-/.test(strankaId)) setVerejnyTest(true); else setVerejny(true); return; }
+  const otvor = (s: Sub, oznamDruh?: DruhOznamu) => { zastavDiktovanie(); setOznamStart(oznamDruh); if (s === "x:Verejný profil") { if (najdiTestProfil(strankaId) || /^ch-/.test(strankaId) || typ === "charita") setVerejnyTest(true); else setVerejny(true); return; } // OPRAVY 414 (2): charita vždy vo vzhľade z Nastavení
     // KARTA 37 · bod 3: v programe Zadarmo beží jedna zbierka naraz (limit z stav.ts)
     if (s === "x:Nová zbierka" && sub !== s && beziacich >= KONFIG.limitZbierok[tier]) { setLimitOkno(true); return; }
     // OPRAVY 118/121: Pridať skutok = ten istý PridatSkutok, za charitu (organizacia: true)
@@ -573,6 +574,10 @@ const upravitTl = (glow: boolean): React.CSSProperties => glow
   ? { background: "var(--green)", color: "#fff", boxShadow: "0 0 0 3px var(--green), 0 0 18px rgba(78,125,55,.55)" }
   : { background: "var(--btn)", color: "var(--ink)", boxShadow: "none" };
 
+/** OPRAVY 414 (5): Reťaz dobra a dorovnanie teraz nie (Prehľad, Zbierky) */
+const BEZ_RETAZE = true;
+/** OPRAVY 414 (1): prázdny profil (0 %) — Vytvoriť profil, nie Dokončiť */
+const PRAZDNY_PROFIL = "Pridajte logo, titulnú fotku, pár viet o vás a kontakt.";
 // OPRAVY 399: karta charity = ako karta profilu vo Viere (SpravaFarnosti kartaProfilu), pozadie a rám ostávajú bronzové (štít).
 // Hotový profil: logo · názov · „Upraviť profil ›", celá karta je jeden ťuk. Nehotový: percento, pás, čo chýba, Dokončiť profil. Bez zbaľovania.
 function KartaCharity({ nazov, inicialy, otvor, mobil, tablet, uplnost, profil, glow }: { nazov: string; inicialy: string; typ: TypStranky; otvor: (s: Sub) => void; mobil?: boolean; tablet?: boolean; uplnost: { pct: number; chyba: string }; profil: ProfilStranky | null; glow: boolean }) {
@@ -590,8 +595,8 @@ function KartaCharity({ nazov, inicialy, otvor, mobil, tablet, uplnost, profil, 
     <div style={{ ...ram, display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ display: "flex", alignItems: "center", gap: m ? 14 : 10 }}>{hlava(<span style={{ fontSize: m ? 14 : 12.5, color: "var(--cuInk2)" }}>Profil · {uplnost.pct} %</span>)}</div>
       <Pruh sc={uplnost.pct / 100} h={6} bg="rgba(168,116,80,.25)" />
-      {uplnost.chyba && <span style={{ fontSize: 13, lineHeight: 1.4, color: "var(--cuInk)" }}>{uplnost.chyba}</span>}
-      <button type="button" onClick={() => otvor("profil")} style={{ minHeight: 44, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, ...(glow ? upravitTl(true) : { background: "#4B7A35", color: "#fff", boxShadow: "none" }) }}>Dokončiť profil</button>
+      {uplnost.chyba && <span style={{ fontSize: 13, lineHeight: 1.4, color: "var(--cuInk)" }}>{uplnost.pct === 0 ? PRAZDNY_PROFIL : uplnost.chyba}</span>}
+      <button type="button" onClick={() => otvor("profil")} style={{ minHeight: 44, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, ...(glow ? upravitTl(true) : { background: "#4B7A35", color: "#fff", boxShadow: "none" }) }}>{uplnost.pct === 0 ? "Vytvoriť profil" : "Dokončiť profil"}</button>
     </div>);
 }
 
@@ -602,7 +607,7 @@ function KartaVsetko({ onClick }: { onClick: () => void }) {
   return (
     <button onClick={onClick} className="sc-vsetko" style={{ flex: 1, width: "100%", padding: "14px 16px", borderRadius: 16, border: "1.5px solid var(--gBd)", background: "var(--gSoft)", cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", flexDirection: "column", gap: 4 }}>
       <span style={{ fontSize: 15, fontWeight: 800, color: "var(--ink)" }}>Všetko, čo <DeedZnacka /> vie</span>
-      <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>Pozrite si všetky nástroje až po P4 a čo by vám pomohlo.</span>
+      <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>Pozrite si všetky nástroje až po P3 a čo by vám pomohlo.</span>
       <span style={{ fontSize: 13.5, fontWeight: 800, color: "var(--green)" }}>Pozrieť ›</span>
     </button>);
 }
@@ -720,8 +725,8 @@ function KartaRiadok({ nazov, inicialy, profil, pct, chyba, stit, sada, glow, on
   return (
     <div style={{ ...st, boxShadow: "inset 0 1px 0 rgba(255,255,255,.45)", cursor: "default", flexDirection: "column", alignItems: "stretch", gap: 8 }}>
       {vnutro}
-      {chyba && <span style={{ fontSize: 13, lineHeight: 1.4, color: "var(--cuInk)" }}>{chyba}</span>}
-      <button type="button" onClick={onClick} style={{ position: "relative", minHeight: 44, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, ...(glow ? upravitTl(true) : { background: "#4B7A35", color: "#fff", boxShadow: "none" }) }}>Dokončiť profil</button>
+      {chyba && <span style={{ fontSize: 13, lineHeight: 1.4, color: "var(--cuInk)" }}>{pct === 0 ? PRAZDNY_PROFIL : chyba}</span>}
+      <button type="button" onClick={onClick} style={{ position: "relative", minHeight: 44, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, ...(glow ? upravitTl(true) : { background: "#4B7A35", color: "#fff", boxShadow: "none" }) }}>{pct === 0 ? "Vytvoriť profil" : "Dokončiť profil"}</button>
     </div>);
 }
 
@@ -1060,8 +1065,9 @@ function Prehlad({ strankaId, tier: _tier, piny, prepniPin, otvorPolozku, otvor,
     // OPRAVY 95: zbaliteľné sekcie; Treba vybaviť vždy rozbalené. OPRAVY 96: tablet — Reťaz a Dorovnávané vedľa seba
     const obdTxt = ["dnes", "za 7 dní", "za 30 dní", "za rok"][obd];
     const vyz = nova ? N8[0] : D8[obd][0][0];
-    const retazS = <Sekcia id="retaz" nazov="Reťaz dobra" suhrn={nova ? "0 €" : "640 €"} zbal={zbal} prepni={prepniZbal}>{retazEl}</Sekcia>;
-    const dorS = <Sekcia id="dorovnanie" nazov="Dorovnávané zbierky" suhrn={nova ? undefined : "1 beží"} zbal={zbal} prepni={prepniZbal}>{dorEl}</Sekcia>;
+    // OPRAVY 414 (5): Reťaz dobra a Dorovnávané zbierky teraz nerobíme — v Prehľade nie sú
+    const retazS = BEZ_RETAZE ? null : <Sekcia id="retaz" nazov="Reťaz dobra" suhrn={nova ? "0 €" : "640 €"} zbal={zbal} prepni={prepniZbal}>{retazEl}</Sekcia>;
+    const dorS = BEZ_RETAZE ? null : <Sekcia id="dorovnanie" nazov="Dorovnávané zbierky" suhrn={nova ? undefined : "1 beží"} zbal={zbal} prepni={prepniZbal}>{dorEl}</Sekcia>;
     // KARTA 42 · telefón: najprv konať, potom čísla
     if (ph) {
       if (uvod) return (<>{hornaCast}{uvodPanel}{krokyEl}{pinUvod}{treba}{retazS}{dorS}</>);
@@ -1095,14 +1101,14 @@ function Prehlad({ strankaId, tier: _tier, piny, prepniPin, otvorPolozku, otvor,
     }
     if (uvod) return (<>
       {uvodPanel}{krokyEl}{pinUvod}{treba}
-      {tablet ? <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 14, alignItems: "start" }}><div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{retazS}</div><div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{dorS}</div></div> : <>{retazS}{dorS}</>}
+      {!BEZ_RETAZE && (tablet ? <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 14, alignItems: "start" }}><div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{retazS}</div><div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{dorS}</div></div> : <>{retazS}{dorS}</>)}
     </>);
     return (<>
       <Sekcia id="cisla" nazov="Čísla" suhrn={`Vyzbierané ${vyz} ${obdTxt}`} akcia={cislaAkcia} zbal={zbal} prepni={prepniZbal}>{cisla}</Sekcia>
       <Sekcia id="graf" nazov="Graf darov" suhrn={`${sumaEur((nova ? 0 : GRAF_CIEL[obd]))} ${obdTxt}`} zbal={zbal} prepni={prepniZbal}>{grafEl}</Sekcia>
       <Sekcia id="piny" nazov="Pripnuté" suhrn={pocet(pinyV.length, ["položka", "položky", "položiek"])} zbal={zbal} prepni={prepniZbal}>{pinBar}</Sekcia>
       {treba}{zbierky}
-      {tablet ? <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 14, alignItems: "start" }}><div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{retazS}</div><div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{dorS}</div></div> : <>{retazS}{dorS}</>}
+      {!BEZ_RETAZE && (tablet ? <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 14, alignItems: "start" }}><div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{retazS}</div><div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{dorS}</div></div> : <>{retazS}{dorS}</>)}
     </>);
   }
   return (<>
@@ -1113,9 +1119,9 @@ function Prehlad({ strankaId, tier: _tier, piny, prepniPin, otvorPolozku, otvor,
     {uvod && krokyEl}
     {!uvod && grafEl}
     {uvod ? pinUvod : pinBar}
-    <div style={{ flex: "none", display: "grid", gridTemplateColumns: "minmax(0,1fr) 264px", gap: 20, alignItems: "start" }}>
+    <div style={{ flex: "none", display: "grid", gridTemplateColumns: BEZ_RETAZE ? "minmax(0,1fr)" : "minmax(0,1fr) 264px", gap: 20, alignItems: "start" }}>
       <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>{treba}{zbierky}</div>
-      {pravy}
+      {!BEZ_RETAZE && pravy}
     </div>
   </>);
 }
@@ -1325,7 +1331,7 @@ function ObrZbierky(s: Spolocne) {
   const cenFoto = cen.media.find((m) => m.typ === "foto")?.src;
   const cisla = (c: { mesiac: number; mesacne: number }) => [`${c.mesacne} ${c.mesacne === 1 ? "človek dáva" : c.mesacne < 5 && c.mesacne > 1 ? "ľudia dávajú" : "ľudí dáva"} mesačne`, `${eur(c.mesiac)} / mes.`];
   const otvorCen = (i: number) => { nastavVyberCentralnej(i); otvor("centralna"); };
-  const dlazdice = menu.druhy.filter((k) => k.id === "dorovnanie" || k.id === "materialne"); // bod 146: dve dlaždice pod hlavičkou, „Ďalšie druhy zbierok" dole zmizli
+  const dlazdice = menu.druhy.filter((k) => (!BEZ_RETAZE && k.id === "dorovnanie") || k.id === "materialne"); // OPRAVY 414 (8): Dorovnanie daru teraz nie // bod 146: dve dlaždice pod hlavičkou, „Ďalšie druhy zbierok" dole zmizli
   useEffect(() => {
     if (!poslednyRiadok) return;
     const el = document.querySelector(`[data-riadok="${CSS.escape(poslednyRiadok)}"]`);
@@ -1340,7 +1346,9 @@ function ObrZbierky(s: Spolocne) {
           ? <DlazdicaZb key={k.id} d="M4 21V7l8-4 8 4v14M9 21v-5h6v5" t="Dorovnanie daru" sub={dor.length ? `${dorBezi} ${dorBezi === 1 ? "beží" : dorBezi >= 2 && dorBezi <= 4 ? "bežia" : "beží"} · firmy pridávajú k darom` : "Firma pridá k daru ľudí svoj diel"} stitok={dorCaka ? `${dorCaka} ${dorCaka === 1 ? "ČAKÁ" : dorCaka <= 4 ? "ČAKAJÚ" : "ČAKÁ"}` : undefined} onClick={() => otvor("dorovnanie")} />
           : <DlazdicaZb key={k.id} d="M12 3l8 4.5v9L12 21l-8-4.5v-9zM12 12l8-4.5M12 12v9M12 12L4 7.5" t="Materiálne zbierky" sub="Zbierka vecí namiesto peňazí" onClick={() => otvor("materialne")} />)}
       </div>}
-      {centralna && <>
+      {/* OPRAVY 414 (8): žiadna zbierka nevznikne sama — centrálna len po ťuku Založiť centrálnu zbierku (od P1) */}
+      {centralna && !cen.spustena && <DlazdicaZb d="M12 5v14M5 12h14" t="Založiť centrálnu zbierku" sub="Pravidelná podpora celej organizácie · nič nie je predvyplnené" onClick={() => otvorCen(0)} />}
+      {centralna && cen.spustena && <>
         <button type="button" onClick={() => prepniZbal("cen-sektory", !cenOtv)} aria-expanded={cenOtv} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, minHeight: 52, padding: "0 14px", borderRadius: 16, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", color: "var(--ink)", textAlign: "left", fontFamily: "inherit", boxShadow: "none" }}>
           <span style={{ flex: 1, minWidth: 0, ...nadpisZb }}>CENTRÁLNA A SEKTORY · STÁLE</span>
           <span style={{ flex: "none", fontSize: 13, fontWeight: 700, color: "var(--ink3)", fontVariantNumeric: "tabular-nums" }}>{1 + sek.length} · {eur(cC.mesiac + sek.reduce((a, x) => a + (nova ? 0 : cislaSektora(x.id).mesiac), 0))} / mes.</span>
@@ -1353,7 +1361,7 @@ function ObrZbierky(s: Spolocne) {
         <TlZbalit onZbal={() => prepniZbal("cen-sektory", false)} />{/* OPRAVY 321 */}
         </>}
       </>}
-      {(list.length > 0 || rozpisana) && <span style={{ ...nadpisZb, paddingTop: centralna ? 8 : 0 }}>ZBIERKY</span>}
+      {(list.length > 0 || rozpisana) && <span style={{ ...nadpisZb, paddingTop: centralna && cen.spustena ? 8 : 0 }}>ZBIERKY</span>}
       {rozpisana && <section style={{ ...karta, borderRadius: 18, padding: 14, display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
         <span style={{ flex: "1 1 240px", minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}><span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "#8A5A2B" }}>ROZPÍSANÁ ZBIERKA</span><b style={{ fontSize: 16 }}>{rozpisana.nazov || "Bez názvu"}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>Krok {rozpisana.krok} z 6 · {KROKY_ZBIERKY[Math.min(5, Math.max(0, rozpisana.krok - 1))]} · uložené automaticky</span></span>
         <button onClick={() => otvor("x:Nová zbierka")} style={{ ...zeleneTl, flex: "none" }}>Dokončiť</button>
@@ -1537,7 +1545,7 @@ function usePozvanaDo(strankaId: string): string {
 function DevSprava({ pas, tier, stit, stav, onTier, onStit, onStav, charita }: { /** OPRAVY 398: charita len Nová · pozvaná / Nová · zadarmo */ charita: boolean; pas: boolean; tier: Tier; stit: StitCharity; stav: StavDev; onTier: (t: Tier) => void; onStit: (s: StitCharity) => void; onStav: (s: StavDev) => void }) {
   return (<>
     {/* OPRAVY 153: Typ a Rola sú pod „Ďalšie testovacie ›" */}
-    <TestVolba pas={pas} nazov="Program" volby={([0, 1, 2, 3, 4] as Tier[]).map((t) => [t, PROGRAM_NAZOV[t]] as [Tier, string])} hodnota={tier} onVolba={onTier} />
+    <TestVolba pas={pas} nazov="Program" volby={((charita ? [0, 1, 2, 3] : [0, 1, 2, 3, 4]) as Tier[]).map((t) => [t, PROGRAM_NAZOV[t]] as [Tier, string])} hodnota={tier} onVolba={onTier} />
     <StitVolba pas={pas} stit={stit} onStit={onStit} />
     <TestVolba pas={pas} nazov="Stav" volby={([["pozv", "Nová · pozvaná"], ["free", "Nová · zadarmo"], ...(charita ? [] : [["bezna", "Bežná"]])]) as [StavDev, string][]} hodnota={stav} onVolba={onStav} />
   </>);
