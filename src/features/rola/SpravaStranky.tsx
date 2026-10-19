@@ -33,6 +33,7 @@ import { UpravitProfilCharity, VerejnyProfilOkno, zakladnyProfil } from "./Uprav
 import { VerejnyProfilVSprave } from "@/features/verejny-profil/VerejnyProfil";
 import { PonukyPrace } from "./PonukyPrace";
 import { StitNaWeb } from "./StitNaWeb";
+import { StatistikyFarnosti } from "./StatistikyFarnosti";
 import { najdiTestProfil } from "@/lib/testProfily";
 import { nacitajProfil, profilZPamate, uplnostProfilu, type ProfilStranky } from "@/lib/profilStranky";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -430,6 +431,8 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   else if (sub === "sledujuci" && typ === "charita") obsah = <SledujuciCharity strankaId={strankaId} mobil={!desktop} />;
   // OPRAVY 420: charita · Obsah → Iskry = zoznam Iskier + Pridať Iskru
   else if (sub === "video" && typ === "charita") obsah = maPovolenie("video", tier) ? <IskryCharity strankaId={strankaId} nazov={nazov} mobil={!desktop} /> : <Zamknute program={odProgramu("video")} />;
+  // OPRAVY 423: charita · Štatistiky = Štatistiky z Viery (Zadarmo)
+  else if (sub === "statistiky" && typ === "charita") obsah = <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 900 }}><StatistikyFarnosti strankaId={strankaId} mobil={!desktop} charita /></div>;
   // OPRAVY 412: charita · Štít dôvery na web (od P1)
   else if (sub === "embed" && typ === "charita") obsah = maPovolenie("embed", tier) ? <StitNaWeb strankaId={strankaId} nazov={nazov} stit={stit} mobil={!desktop} /> : <Zamknute program={odProgramu("embed")} />;
   // OPRAVY 408: charita · Pracovné ponuky (od P1) — engine Inzeraty, vzhľad Brigády

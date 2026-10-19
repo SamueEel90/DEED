@@ -8,7 +8,9 @@
 import { useState, type CSSProperties } from "react";
 import { darcoviaPre, identitaDarcu, useZmenyDarov, type DarRiadok } from "@/lib/darcovia";
 import { useZvoncekOkno } from "@/lib/zvoncekOmse";
-import { zbierkyStrankyZPamate } from "@/lib/novaZbierka";
+import { zbierkyStrankyZPamate, useZmenyZbierok } from "@/lib/novaZbierka";
+import { skutkyStrankyZPamate, useZmenySkutkovStranky } from "@/lib/skutkyStranky";
+import { skutkyOrg, useZmenySkutkov } from "@/lib/mojeSkutky";
 import { odFarnikov, useOdFarnikov } from "@/lib/odFarnikov";
 import { sumaEur } from "@/lib/suma";
 import { NADPIS_SEKCIE } from "./KartaNastavenia";
@@ -44,28 +46,38 @@ export function useDaryFarnosti(strankaId: string): Polozka[] {
   ];
 }
 
-export function StatistikyFarnosti({ strankaId, mobil }: { strankaId: string; mobil: boolean }) {
-  useOdFarnikov();
+/** OPRAVY 423: všetky dary charity — každá jej zbierka z databázy (centrálna, sektory, ďalšie) */
+function useDaryCharity(strankaId: string): Polozka[] {
+  useZmenyDarov(); useZmenyZbierok();
+  return zbierkyStrankyZPamate(strankaId).flatMap((z) => darcoviaPre(z.id).filter((r) => !r.omsa).map((r) => ({ cas: r.cas, suma: r.suma, darov: 1, zdroj: "dalsie" as const, zbierka: z.id })));
+}
+
+export function StatistikyFarnosti({ strankaId, mobil, charita = false }: { strankaId: string; mobil: boolean; /** OPRAVY 423: Štatistiky charity (bez Zvončeka, omší a podielu rodiny) */ charita?: boolean }) {
+  useOdFarnikov(); useZmenySkutkovStranky(); useZmenySkutkov();
   const [ob, setOb] = useState(2);
   const od = zaciatok(ob);
-  const vsetko = useDaryFarnosti(strankaId);
+  const daryF = useDaryFarnosti(strankaId), daryCh = useDaryCharity(strankaId);
+  const vsetko = charita ? daryCh : daryF;
   const v = vsetko.filter((x) => x.cas >= od);
   const suma = v.reduce((a, x) => a + x.suma, 0), pocet = v.reduce((a, x) => a + x.darov, 0);
   const srv = useStatistikyFarnosti(strankaId, od);
   const prispevky = odFarnikov(strankaId).filter((x) => x.k !== "umysel" && !x.stav && x.cas >= od).length;
+  // OPRAVY 423: skutky charity zverejnené za obdobie (server 0133, inak zo Správy na tomto zariadení)
+  const skutky = charita ? (skutkyStrankyZPamate(strankaId) ?? skutkyOrg(strankaId)).filter((s) => !s.stiahnuty && (s.datum || 0) >= od).length : 0;
   const ramce: [string, string, string][] = [
     ["Vyzbierané", eur(suma), OBD_T[ob]],
     ["Počet darov", String(pocet), OBD_T[ob]],
     ["Priemerný dar", pocet ? eur(suma / pocet) : "—", pocet ? OBD_T[ob] : "zatiaľ žiadne dary"],
     ["Noví darcovia", srv ? String(srv.noviDarcovia) : "—", srv ? OBD_T[ob] : ""],
-    ["Pravidelná podpora", srv?.pravidelna != null ? String(srv.pravidelna) : "—", srv?.pravidelna != null ? "zapnutá na hlavnej zbierke" : ""],
+    ["Pravidelná podpora", srv?.pravidelna != null ? String(srv.pravidelna) : "—", srv?.pravidelna != null ? (charita ? "zapnutá na centrálnej zbierke" : "zapnutá na hlavnej zbierke") : ""],
     ["Darcovia spolu", srv ? String(srv.darciaSpolu) : "—", srv ? "od začiatku" : ""],
     ["Sledujúci", srv ? String(srv.sledujuci) : "—", srv ? `+${srv.sledujuciNovi30} za 30 dní` : ""],
-    ["Príspevky od veriacich", String(prispevky), `${OBD_T[ob]} · na stránke`],
+    charita ? ["Skutky", String(skutky), `${OBD_T[ob]} · zverejnené`] : ["Príspevky od veriacich", String(prispevky), `${OBD_T[ob]} · na stránke`],
   ];
   const zSumy = (z: Polozka["zdroj"]) => v.filter((x) => x.zdroj === z).reduce((a, x) => a + x.suma, 0);
   const zPocet = (z: Polozka["zdroj"]) => v.filter((x) => x.zdroj === z).reduce((a, x) => a + x.darov, 0);
-  const zbierky: [string, string, string][] = [
+  const zbierkyCh = zbierkyStrankyZPamate(strankaId);
+  const zbierky: [string, string, string][] = charita ? zbierkyCh.map((z) => { const x = v.filter((d) => d.zbierka === z.id); return [z.nazov || "Zbierka", darov(x.length), eur(x.reduce((a, d) => a + d.suma, 0))]; }) : [
     ["Hlavná zbierka", `stála, aj mesačne · ${darov(zPocet("hlavna"))}`, eur(zSumy("hlavna"))],
     ["Zvončeková zbierka", `pri omšiach · ${darov(zPocet("zvoncek"))}`, eur(zSumy("zvoncek"))],
     ["Ďalšie zbierky farnosti", `oprava, misie, lavice · ${darov(zPocet("dalsie"))}`, eur(zSumy("dalsie"))],
@@ -95,13 +107,14 @@ export function StatistikyFarnosti({ strankaId, mobil }: { strankaId: string; mo
         </div>))}
     </div>
     <span style={kicker}>PODĽA ZBIEROK</span>
+    {zbierky.length === 0 ? <section style={{ ...karta, padding: "14px 20px", fontSize: 14.5, color: "var(--ink3)" }}>Zatiaľ nemáte žiadnu zbierku.</section> :
     <section style={{ ...karta, padding: mobil ? "4px 14px" : "6px 20px" }}>
       {zbierky.map(([t, s, h], i) => (
         <div key={t} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 58, padding: "8px 0", borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 14.5 }}>{t}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{s}</span></span>
           <b style={{ flex: "none", fontSize: 14.5, fontVariantNumeric: "tabular-nums" }}>{h}</b>
         </div>))}
-    </section>
+    </section>}
     <span style={kicker}>PODĽA MESIACOV · {rok}</span>
     {!maDary ? <section style={{ ...karta, padding: "28px 20px", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center" }}>
       <b style={{ fontSize: 15.5 }}>Zatiaľ žiadne dary</b>
