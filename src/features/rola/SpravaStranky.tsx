@@ -44,7 +44,8 @@ import { potvrditTuknutim, nastavPotvrditTuknutim } from "@/features/zbierka/Pla
 import { TESTOVACIA } from "@/lib/testovacia";
 import { VzhladStranky } from "./VzhladStranky";
 import { useRegistra } from "@/lib/udajeRegistra";
-import { nastavAktivnuCharitu } from "@/lib/aktivnaCharita";
+import { nastavAktivnuCharitu, casRegistracieLokalne } from "@/lib/aktivnaCharita";
+import { supabase } from "@/lib/supabase";
 import { SpravaFarnosti } from "./SpravaFarnosti";
 import { useTestStav, zmenTestStav } from "@/lib/testStav";
 import { PrepinacPodania, TestVolba } from "@/features/verejny-profil/casti";
@@ -308,7 +309,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   const setTier = (t: Tier) => { const n = { ...nacitajTiery(), [poz]: t }; setTiery(n); ulozTiery(n); };
   const [stit, setStit] = useState<StitCharity>(nacitajStitCharity);
   const [nova, setNova] = useState<boolean>(nacitajCharituNovu);
-  // OPRAVY 109: testovacia lišta — Nová · pozvaná (prvých 50, P3 zadarmo) / Nová · zadarmo / Bežná
+  // OPRAVY 109: testovacia lišta — Nová · pozvaná (prvých 50, P3 zadarmo) / Nová · zadarmo / Bežná (OPRAVY 398: charita bez Bežnej)
   const [pozvana, setPozvana] = useState<boolean>(() => { try { return localStorage.getItem("deed.dev.pozvana") === "1"; } catch { return false; } });
   const [piny, setPiny] = useState<PolozkaSpravy[]>(() => pinyZPamate(strankaId));
   useEffect(() => { let ziva = true; void nacitajPiny(strankaId).then((p) => { if (ziva) setPiny(p); }); return () => { ziva = false; }; }, [strankaId]);
@@ -427,14 +428,14 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
         <TestVolba pas={!desktop} nazov="Typ" volby={TYPY_STRANOK.filter((t) => !TYP_SKRYTY[t]).map((t) => [t, TYP_NAZOV[t]] as [TypStranky, string])} hodnota={typ} onVolba={setTyp} />
         <TestVolba pas={!desktop} nazov="Rola" volby={[["hlavny", "Hlavný správca"], ["spravca", "Správca"], ["pomocnik", "Pomocník"], ["organizator", "Organizátor"]] as [RolaStranky, string][]} hodnota={rola} onVolba={(r) => zmenTestStav({ rola: r })} />
       </>}>
-      <DevSprava pas={!desktop} tier={tier} stit={stit} stav={!nova ? "bezna" : pozvana ? "pozv" : "free"}
+      <DevSprava pas={!desktop} tier={tier} stit={stit} charita={typ === "charita"} stav={!nova && typ !== "charita" ? "bezna" : pozvana ? "pozv" : "free"}
         onTier={setTier}
         onStit={(s) => { setStit(s); ulozStitCharity(s); }}
         onStav={(k) => {
-          const n = k !== "bezna", pz = k === "pozv";
+          const n = k !== "bezna", pz = k === "pozv"; // OPRAVY 398: charita Bežnú nemá — tvorí sa od nuly
           setNova(n); ulozCharituNovu(n); setPozvana(pz);
           try { localStorage.setItem("deed.dev.pozvana", pz ? "1" : "0"); } catch { /* LS nedostupné */ }
-          setTier(k === "pozv" ? 3 : k === "free" ? 0 : 1);
+          setTier(pz ? 3 : n ? 0 : 1);
         }} />
     </PrepinacPodania>
   );
@@ -847,7 +848,8 @@ function StitZoom({ stit, sada, onClose }: { stit: StitCharity; sada: StitSada; 
     </div>, document.body);
 }
 
-function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit, sada, menu, mobil, tablet, zbal, prepniZbal, onZoom, uvod, krok1, pozvana, vlastne, hornaCast }: Spolocne & { onZoom: () => void; hornaCast?: React.ReactNode }) {
+function Prehlad({ strankaId, tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit, sada, menu, mobil, tablet, zbal, prepniZbal, onZoom, uvod, krok1, pozvana, vlastne, hornaCast }: Spolocne & { onZoom: () => void; hornaCast?: React.ReactNode }) {
+  const p3Do = usePozvanaDo(strankaId); // OPRAVY 398: dátum registrácie + 2 mesiace (nie napevno)
   const PHZ: PhZbierka[] = [...vlastne.filter(bezi).map(naPh), ...(nova ? [] : PH_ZBIERKY)]; // OPRAVY 114: spustené zbierky navrchu
   const VSE = menu.vse; // KARTA 36: na pripnutie len položky, ktoré typ má
   const ph = mobil && !tablet; // telefón (OPRAVY 96: tablet má časti ako PC)
@@ -943,7 +945,7 @@ function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit
       </div>
       <section style={{ flex: "none", borderRadius: 20, background: pozvana ? "var(--gSoft)" : "var(--card)", border: pozvana ? "1.5px solid var(--gBd)" : "1px solid var(--cardBd)", padding: "16px 20px", display: "flex", flexDirection: ph ? "column" : "row", alignItems: ph ? "flex-start" : "center", gap: ph ? 8 : 16 }}>
         <span style={{ flex: 1, minWidth: 0 }}>
-          <b style={{ display: "block", fontSize: 16, color: pozvana ? "var(--gInk)" : "var(--ink)" }}>{pozvana ? "Ste medzi prvými 50. Program P3 máte zadarmo do 31. 10. 2026." : "Máte program Zadarmo."}</b>
+          <b style={{ display: "block", fontSize: 16, color: pozvana ? "var(--gInk)" : "var(--ink)" }}>{pozvana ? `Ste medzi prvými 50. Program P3 máte zadarmo 2 mesiace od registrácie, do ${p3Do}.` : "Máte program Zadarmo."}</b>
           <span style={{ display: "block", marginTop: 4, fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>{pozvana ? "Potom si vyberiete program. Ak žiadny nevyberiete, zbierky pre ľudí dobehnú do konca. Centrálna a sektorové zbierky sa z profilu stiahnu." : "Jedna zbierka naraz, QR a prehľad darcov. Čo pridajú vyššie programy, vidíte v menu so štítkom."}</span>
         </span>
         <button onClick={() => otvor("n:program")} style={{ flex: "none", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: pozvana ? "var(--gInk)" : "var(--green)", whiteSpace: "nowrap" }}>{pozvana ? "Čo je v P3 ›" : "Porovnať programy ›"}</button>
@@ -1492,11 +1494,26 @@ function Zamknute({ program }: { program: string }) {
 
 // ---------- DEV (len testovacia verzia) ----------
 type StavDev = "pozv" | "free" | "bezna";
-function DevSprava({ pas, tier, stit, stav, onTier, onStit, onStav }: { pas: boolean; tier: Tier; stit: StitCharity; stav: StavDev; onTier: (t: Tier) => void; onStit: (s: StitCharity) => void; onStav: (s: StavDev) => void }) {
+/** OPRAVY 398: koniec P3 zadarmo pre pozvané charity = registrácia + 2 mesiace */
+function usePozvanaDo(strankaId: string): string {
+  const [od, setOd] = useState<string | null>(() => casRegistracieLokalne(strankaId));
+  useEffect(() => {
+    let ziva = true;
+    if (supabase && strankaId) void supabase.from("stranka").select("vytvorene").eq("id", strankaId).maybeSingle()
+      .then(({ data }) => { if (ziva && data?.vytvorene) setOd(data.vytvorene as string); }, () => { /* sieť: ostane lokálny čas */ });
+    return () => { ziva = false; };
+  }, [strankaId]);
+  const d = od ? new Date(od) : new Date();
+  const den = d.getDate();
+  d.setMonth(d.getMonth() + 2);
+  if (d.getDate() !== den) d.setDate(0); // 31. 12. + 2 mesiace → posledný deň februára
+  return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`;
+}
+function DevSprava({ pas, tier, stit, stav, onTier, onStit, onStav, charita }: { /** OPRAVY 398: charita len Nová · pozvaná / Nová · zadarmo */ charita: boolean; pas: boolean; tier: Tier; stit: StitCharity; stav: StavDev; onTier: (t: Tier) => void; onStit: (s: StitCharity) => void; onStav: (s: StavDev) => void }) {
   return (<>
     {/* OPRAVY 153: Typ a Rola sú pod „Ďalšie testovacie ›" */}
     <TestVolba pas={pas} nazov="Program" volby={([0, 1, 2, 3, 4] as Tier[]).map((t) => [t, PROGRAM_NAZOV[t]] as [Tier, string])} hodnota={tier} onVolba={onTier} />
     <StitVolba pas={pas} stit={stit} onStit={onStit} />
-    <TestVolba pas={pas} nazov="Stav" volby={[["pozv", "Nová · pozvaná"], ["free", "Nová · zadarmo"], ["bezna", "Bežná"]] as [StavDev, string][]} hodnota={stav} onVolba={onStav} />
+    <TestVolba pas={pas} nazov="Stav" volby={([["pozv", "Nová · pozvaná"], ["free", "Nová · zadarmo"], ...(charita ? [] : [["bezna", "Bežná"]])]) as [StavDev, string][]} hodnota={stav} onVolba={onStav} />
   </>);
 }
