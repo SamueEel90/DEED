@@ -33,6 +33,7 @@ import { UpravitProfilCharity, VerejnyProfilOkno, zakladnyProfil } from "./Uprav
 import { VerejnyProfilVSprave } from "@/features/verejny-profil/VerejnyProfil";
 import { PonukyPrace } from "./PonukyPrace";
 import { StitNaWeb } from "./StitNaWeb";
+import { KalendarCharity } from "./KalendarCharity";
 import { StatistikyFarnosti } from "./StatistikyFarnosti";
 import { najdiTestProfil } from "@/lib/testProfily";
 import { nacitajProfil, profilZPamate, uplnostProfilu, type ProfilStranky } from "@/lib/profilStranky";
@@ -418,6 +419,10 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   else if (sub === "x:Nová zbierka") obsah = <NovaZbierka strankaId={strankaId} pozicia={poz} tier={tier} nazov={nazov} inicialy={inicialy} mobil={!desktop} tablet={tablet} stit={stit}
     onMojeZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onUcet={() => otvor("n:ucty")} />;
   else if (sub === "x:Správa zbierky" && spravZb) obsah = <SpravaZbierky key={spravZb.id} tier={tier} onDorovnanie={() => otvor("dorovnanie")} z={{ ...spravZb, organizacia: nazov, onObsah: vlastne.some((x) => x.id === spravZb.id) ? (o) => void upravZbierku(strankaId, spravZb.id, o) : undefined }} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onUdaje={() => otvor("n:udaje")} />;
+  // OPRAVY 411: charita · Kalendár (dlaždica na telefóne aj ikona v hlavičke) — plní sa sám, ťuk otvorí správu položky
+  else if ((sub === "kalendar" || sub === "x:Kalendár") && typ === "charita") obsah = <KalendarCharity strankaId={strankaId} mobil={!desktop}
+    onAkcia={(id) => otvor("oznamy", undefined, id)} onBrigady={() => otvor("dobrovolnici")} onPonuky={() => otvor("inzeraty")}
+    onZbierka={(z) => { setSpravZb(naSpravu(naRiadok(z))); otvor("x:Správa zbierky"); }} />;
   else if (sub.startsWith("x:")) obsah = <Pripravujeme />;
   // KARTA 40: Oznamy — v Zadarmo výzva na súrnu pomoc a dva zamknuté druhy (nie „Pripravujeme" ani zámok celej položky)
   else if (sub === "oznamy" && typPovoli("oznamy", typ)) obsah = <OznamySprava strankaId={strankaId} tier={tier} nazov={nazov} inicialy={inicialy} mesto={SUBJEKTY[poz]?.lok ?? "Trenčín"} logo={profil?.logo ?? null} mobil={!desktop} tablet={tablet} toast={toast} onProfil={() => otvor("x:Verejný profil")} start={oznamStart} upravitId={oznamUprav} />;
