@@ -13,7 +13,8 @@ import { GaleriaContext, ScrollContext, ScrollElContext, ViacContext, StrankaAkc
 import type { StrankaAkcie } from "@/components/context";
 import { TabBar, ViacSheet, PridatFAB, nacitajTaby, ulozTaby, VSETKY_MODULY } from "@/components/TabBar";
 import { Sidebar } from "@/components/Sidebar";
-import { useSession } from "@/lib/session";
+import { useSession, setSession } from "@/lib/session";
+import { createPortal } from "react-dom";
 import { resolveSession, subscribeAuth, zaistiSession } from "@/lib/auth";
 import { USE_SUPABASE } from "@/lib/supabase";
 import type { TypUctu } from "@/types";
@@ -33,10 +34,10 @@ import { Registracia } from "@/features/registracia/Registracia";
 import { RetazPodstranka } from "@/features/retaz/RetazPodstranka";
 import { PridatSkutokHost } from "@/features/skutok/PridatSkutok";
 import { IskryHost } from "@/features/iskry/Iskry";
-import { zavriIskry } from "@/features/iskry/otvor";
+import { zavriIskry, startIskry } from "@/features/iskry/otvor";
 import { PridatIskruHost } from "@/features/iskry/PridatIskru";
 import { VerejnyProfilHost } from "@/features/verejny-profil/VerejnyProfil";
-import { useVrstvaProfiluOtvorena } from "@/features/verejny-profil/otvor";
+import { useVrstvaProfiluOtvorena, prisloZQr } from "@/features/verejny-profil/otvor";
 import { AkciaHost } from "@/features/skutok/Akcia";
 import { PomocHost } from "@/features/profil/Pomoc";
 import { PolohaOkruhu } from "@/features/profil/Bezpecnost24";
@@ -323,8 +324,12 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
     return () => { alive = false; unsub(); };
   }, []);
 
-  // splash počas auth-boot reconciliation
-  if (booting) {
+  // OPRAVY 385: QR / odkaz s cieľom (/p/…, /z/…, /i/…, deep-link) bez prihlásenia → rovno cieľ ako hosť, žiadny úvod ani registrácia
+  const hostZQr = !booting && !session && !resumeInfo && !ovp && (prisloZQr() || !!startIskry() || !!dl);
+  useEffect(() => { if (hostZQr) setSession({ typ: "pasivny", meno: "Hosť" }); }, [hostZQr]);
+
+  // splash počas auth-boot reconciliation (aj kým vznikne hosť z QR)
+  if (booting || hostZQr) {
     return (
       <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: C.bg }}>
         <span style={{ width: 52, height: 52, borderRadius: 16, background: "var(--page-grad)", border: `1px solid ${C.line}`, color: C.textSec, fontWeight: 800, fontSize: 24, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
@@ -471,11 +476,11 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
         {/* OPRAVY 338: overenie príjemcu zbierky (sken QR farnosti / upozornenie s kódom) */}
         <OverenieVrstva onPrihlasit={() => setAktivacia("login")} onRegistrovat={() => setAktivacia("aktivny")} />
         {/* overlay aktívnej registrácie (po kliku „Stať sa aktívnym") */}
-        {aktivacia && (
-          <div style={{ position: "absolute", inset: 0, zIndex: 80, background: C.bg }}>
+        {/* OPRAVY 385: nad detailom zbierky a parte (1000–1250), inak by registrácia ostala pod nimi */}
+        {aktivacia && createPortal(
+          <div style={{ position: "fixed", inset: 0, zIndex: 1260, background: C.bg }}>
             <Registracia start={aktivacia} onHotovo={() => setAktivacia(false)} />
-          </div>
-        )}
+          </div>, document.body)}
       </div>
       </StrankaAkcieContext.Provider>
       </AktivaciaContext.Provider>

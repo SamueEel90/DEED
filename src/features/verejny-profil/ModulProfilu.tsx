@@ -147,7 +147,7 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, 
         {k20 > 0 && <div style={{ margin: "-4px 0 0", textAlign: "center", fontSize: 13.5, fontWeight: 700, color: "var(--gold)", fontVariantNumeric: "tabular-nums" }}>daruješ 20 € → do {kam} ide {eurT(20 + k20)}</div>}
       </div>}
       {/* OPRAVY 209 (prototyp Platobny modul charita a viera): bez Drobnej podpory; zvončeková aj bez Páči sa mi a Obľúbené */}
-      <div style={{ marginTop: 12 }}><ZdielatRiadok onZdielat={() => setHarok("zdielat")} sam={bezObjektu} darujete={registrovany} /></div>
+      <div style={{ marginTop: 12 }}><ZdielatRiadok onZdielat={() => setHarok("zdielat")} sam={bezObjektu} darujete={registrovany} host={!registrovany} /></div>
       <RychleSumyEur sumy={sumy} doplnok={`sumy si volí ${ktoVoli}`} kDaru={dorovnanie ? (s) => dorovnanieKDaru(dorovnanie, s) : undefined} otvor={otvor}
         drzat={registrovany ? (s) => { ohlas(); zapisDar(rychlyDar(s)); } : undefined} tukom={potvrditTuknutim()} />
       {/* OPRAVY 222 (prototyp Spolufinancovanie A): farár prispeje ako farnosť, nie na vlastnú zbierku */}

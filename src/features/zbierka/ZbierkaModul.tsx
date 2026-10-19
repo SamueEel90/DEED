@@ -217,7 +217,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
     if (p.kluc === "vlastnaEur") return null; // vykreslená spolu s rýchlymi sumami
     const obal = (el: React.ReactNode) => <div key={p.kluc} className="zb-pol" style={{ padding: "0 16px" }}>{el}</div>;
     // OPRAVY 209: pri pohrebe len Zdieľať · QR na celú šírku (Podporiť DEED+ je vedľa Vlastnej sumy)
-    if (p.kluc === "zdielat") return obal(<ZdielatRiadok onZdielat={() => setHarok("zdielat")} sam={p.hodnota === "podporitDeed"} darujete={registrovany} />);
+    if (p.kluc === "zdielat") return obal(<ZdielatRiadok onZdielat={() => setHarok("zdielat")} sam={p.hodnota === "podporitDeed"} darujete={registrovany} host={!registrovany} />);
     if (p.kluc === "dorovnanie" && dorovnanie) return obal(<>
       <KartaDorovnava d={dorovnanie} />
       {dorovnanieKDaru(dorovnanie, 20) > 0 && <div style={{ margin: "-4px 0 12px", textAlign: "center", fontSize: 13.5, fontWeight: 700, color: "var(--gold)", fontVariantNumeric: "tabular-nums" }}>

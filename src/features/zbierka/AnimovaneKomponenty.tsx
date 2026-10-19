@@ -79,7 +79,7 @@ export function PodakovaniePoDare(p: PodProps) {
             <div style={{ position: 'absolute', left: 0, top: 0, width: 1280, height: 128, background: 'url(/svetlusik-let.png) 0 0/100% 100% no-repeat', animation: 'sprite .55s steps(10) infinite' }} />
           </div>
         </div>
-        <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.25 }}>{p.registrovany && p.meno ? `Ďakujeme, ${p.meno}.` : 'Ďakujeme.'}</div>
+        <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.25 }}>{p.registrovany && p.meno ? `Ďakujeme, ${p.meno}.` : p.registrovany ? 'Ďakujeme.' : 'Ďakujeme za dar.'}</div>
         {p.podNadpisom && <div style={{ marginTop: 4, fontSize: 14, color: 'var(--ink2)' }}>{p.podNadpisom}</div>}
         <div style={{ marginTop: 16, fontSize: 46, fontWeight: 800, letterSpacing: '-.02em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{p.sumaTxt}</div>
         {p.dorovnanieTxt && <div style={{ marginTop: 6, fontSize: 13.5, color: 'var(--ink2)', ...fade(krok >= 2) }}>tvojich {p.sumaTxt} + <span style={{ color: 'var(--gold)', fontWeight: 700 }}>{p.dorovnanieTxt} od {p.firma}</span></div>}

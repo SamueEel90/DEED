@@ -62,10 +62,14 @@ export function useOtvorHlavnuZQr(stranka: string, farnost: boolean, otvor: () =
   useEffect(() => { if (bezi && qrHlavna) { qrHlavna = false; otvor(); } }, [bezi]); // eslint-disable-line react-hooks/exhaustive-deps
 }
 
+// OPRAVY 385: adresa prišla s cieľom (/p/… alebo /z/…) → appka neukáže bránu, otvorí cieľ aj hosťovi
+let prisloSCielom = false;
+export const prisloZQr = (): boolean => prisloSCielom;
 // /p/{slug} — verejný odkaz (QR, zdieľanie). Slug sa preloží na kľúč profilu.
 if (typeof window !== "undefined") {
   const m = window.location.pathname.match(/^\/p\/([^/?#]+)/);
   if (m) {
+    prisloSCielom = true;
     const k = slugNaKluc(decodeURIComponent(m[1]));
     const omsa = /^\/p\/[^/?#]+\/omsa\/?$/.test(window.location.pathname);
     if (k) { otvorene = true; kluc = k; qrHlavna = !omsa && new URLSearchParams(window.location.search).has("qr"); vecnaZQr = new URLSearchParams(window.location.search).get("vz"); if (omsa) qrCiel = { omsa: true }; }
@@ -77,9 +81,10 @@ if (typeof window !== "undefined") {
   const m = window.location.pathname.match(/^\/z\/([^/?#]+)/);
   const s = new URLSearchParams(window.location.search).get("s");
   if (m && s && STREAMY[s] && STREAMY[s].zbierka === decodeURIComponent(m[1])) {
-    otvorene = true; kluc = `stream:${s}`;
+    otvorene = true; prisloSCielom = true; kluc = `stream:${s}`;
     try { window.history.replaceState(null, "", window.location.origin + "/"); } catch { /* sandbox */ }
   } else if (m) {
+    prisloSCielom = true;
     // OPRAVY 347: /z/{id} — QR zbierky farnosti, vecnej aj rodiny: stránka, ktorej zbierka patrí, a hneď zbierka
     const id = decodeURIComponent(m[1]);
     try { window.history.replaceState(null, "", window.location.origin + "/"); } catch { /* sandbox */ }

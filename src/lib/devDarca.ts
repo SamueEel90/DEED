@@ -1,8 +1,13 @@
+import { getSession } from "./session";
 // DEV prepínač na ukážku klientovi: darca registrovaný (uložená karta, účet, peňaženka)
 // alebo neregistrovaný (vypĺňa polia, v zozname darcov je anonym). Len demo session.
 const KLUC = "deed.dev.neregistrovany";
 const posluchaci = new Set<() => void>();
+/** OPRAVY 385: hosť (bez účtu) je vždy neregistrovaný darca — platobné okno s kartou / IBAN, nie rýchly dar. Prepínač len pri demo. */
 export function jeNeregistrovany(): boolean {
+  const s = getSession();
+  if (!s || ("typ" in s && s.typ === "pasivny")) return true;
+  if (!("demo" in s && s.demo)) return false;
   try { return localStorage.getItem(KLUC) === "1"; } catch { return false; }
 }
 export function nastavNeregistrovany(v: boolean) {
