@@ -321,6 +321,18 @@ export interface CharitaFeedItem extends FeedEngineMeta, Partial<GeoBod> {
   zFirmy?: number;
   /** názov organizácie v odkaze na príbeh */
   orgNazov?: string;
+  /** OPRAVY 403: stránka organizácie (otvorí jej verejný profil) a čas vytvorenia (zoradenie od najnovšieho) */
+  stranka?: string;
+  /** ISO čas vytvorenia (zoradenie od najnovšieho) */
+  casVytvorenia?: string;
+}
+
+/** OPRAVY 403: Adresár charít & OZ — len skutočne zaregistrované organizácie (stránky z databázy) */
+export interface OrgAdresar {
+  id: string;
+  nazov: string;
+  /** sídlo z registra (verejné nastavenia), ak je vyplnené */
+  sidlo: string;
 }
 
 /** Položka adresára charít & OZ ako tuple: [skratka, názov, popis, level, ponuky]. */

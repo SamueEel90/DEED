@@ -18,7 +18,7 @@ import { SADY_EURC, SADY_EUR, type SadaEurc, type SadaEur } from "@/lib/sadyDaro
 import { TESTOVACIA } from "@/lib/testovacia";
 import { useFakturyOrg, otvorFakturu, type FakturaOrg } from "@/lib/fakturyOrg";
 import { maNastavenie, citajNastavenie, zapisNastavenie, useZmenyNastaveni } from "@/lib/nastaveniaStranky";
-import { nacitajKryptoOrg, ulozKryptoOrg, nacitajSady, ulozSady, type Tier, type TypStranky, CENNIK_TYPU, TYP_NAZOV, TIER_LABEL, TIER_POPIS } from "./stav";
+import { nacitajIbanOrg, nacitajKryptoOrg, ulozKryptoOrg, nacitajSady, ulozSady, type Tier, type TypStranky, CENNIK_TYPU, TYP_NAZOV, TIER_LABEL, TIER_POPIS } from "./stav";
 import { sumaEur } from "@/lib/suma";
 import { registra, useRegistra, icoText } from "@/lib/udajeRegistra";
 import { RiadkyRegistra } from "./RiadkyRegistra";
@@ -115,7 +115,7 @@ export function ObrOznamenia({ mobil, farnost }: { mobil: boolean; farnost?: boo
         <div style={{ ...krt, padding: "0 14px" }}>
           <RiadokPrep i={0} t="V appke" s="zvonček hore, vždy zapnuté" on zamok />
           <RiadokPrep i={1} t="Na displej telefónu" s="aj keď appku nemáte otvorenú" on={on("displej", true)} onClick={() => prepni("displej", true)} />
-          <RiadokPrep i={2} t="E-mailom" s={farnost ? "na e-mail z Údajov farnosti" : "info@svetlopomoci.sk"} on={on("mail", false)} onClick={() => prepni("mail", false)} />
+          <RiadokPrep i={2} t="E-mailom" s={farnost ? "na e-mail z Údajov farnosti" : "na e-mail z Údajov organizácie"} on={on("mail", false)} onClick={() => prepni("mail", false)} />
         </div>
         <div style={{ ...nad, marginTop: 10 }}>SÚHRN</div>
         <div style={{ ...krt, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
@@ -220,14 +220,16 @@ export function ObrEurc({ mobil }: { mobil: boolean }) {
 // 3 · Správa účtov
 // ============================================================
 export function ObrUcty({ mobil, otvor }: { mobil: boolean; otvor: (s: string) => void }) {
-  const Z: [string, string, string, boolean][] = [["Strecha pre rodinu Horváthovú", "Slovenská sporiteľňa", "SK12 … 8801", true], ["Vozík pre Ninu", "Tatra banka", "SK44 … 2190", true], ["Teplé jedlo na zimu", "VÚB banka", "SK07 … 5532", false]];
+  // OPRAVY 403: ukážkové účty zbierok zmazané — transparentné účty pribudnú zo skutočných zbierok
+  const Z: [string, string, string, boolean][] = [];
+  const ucet = hlavnyUcetOrg();
   return (
     <div style={dvaStlpce(mobil, "1fr", "1.4fr")}>
       <div style={stlpec}>
         <div style={nad}>HLAVNÝ ÚČET</div>
         <div style={{ ...krt, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>{ZAMOK}<span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: "var(--ink3)" }}>overený pri registrácii</span></div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}><span style={{ fontSize: 13, color: "var(--ink3)" }}>Slovenská sporiteľňa</span><span style={{ fontSize: 18, fontWeight: 800, letterSpacing: ".02em", overflowWrap: "anywhere" }}>{HLAVNY_UCET}</span><span style={{ fontSize: 13, color: "var(--ink3)" }}>Svetlo pomoci o.z.</span></div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}><span style={{ fontSize: 18, fontWeight: 800, letterSpacing: ".02em", overflowWrap: "anywhere", color: ucet ? undefined : "var(--ink3)" }}>{ucet || "nevyplnený"}</span><span style={{ fontSize: 13, color: "var(--ink3)" }}>{menoOrg()}</span></div>
           <span style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ink2)" }}>Hlavný účet sa nedá zmeniť v appke. Na zmenu ho musíme znova overiť. Napíšte nám cez podporu.</span>
           <button onClick={() => otvor("n:podpora")} style={{ ...obrys(), alignSelf: "flex-start" }}>Zmeniť cez podporu</button>
         </div>
@@ -235,6 +237,7 @@ export function ObrUcty({ mobil, otvor }: { mobil: boolean; otvor: (s: string) =
       <div style={stlpec}>
         <div style={nad}>TRANSPARENTNÉ ÚČTY ZBIEROK</div>
         <div style={{ ...krt, padding: "0 16px" }}>
+          {!Z.length && <div style={{ padding: "18px 0", fontSize: 14.5, color: "var(--ink3)" }}>Zatiaľ žiadna zbierka s vlastným účtom</div>}
           {Z.map(([z, b, i, bezi], k) => (
             <button key={z} onClick={() => otvor("g_zbierky")} style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, minHeight: 72, border: "none", borderTop: btn(k), background: "transparent", cursor: "pointer", textAlign: "left" }}>
               <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><span style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{z}</span><span style={{ fontSize: 13, color: "var(--ink3)" }}>{b} · {i}</span></span>
@@ -251,7 +254,8 @@ export function ObrUcty({ mobil, otvor }: { mobil: boolean; otvor: (s: string) =
 // ============================================================
 type Stav = false | "prijatie" | "potvrdit";
 type Spravca = { id: number; n: string; k: string; r: number; caka: Stav; ja?: boolean; odkaz?: boolean };
-const SPR0: Spravca[] = [{ id: 1, n: "Martin Štofik", k: "martin@svetlopomoci.sk", r: 0, caka: false, ja: true }];
+// OPRAVY 403: bez vymyslených mien — v zozname je len prihlásený správca
+const SPR0: Spravca[] = [{ id: 1, n: "Vy", k: "", r: 0, caka: false, ja: true }];
 // poradie = ROLY_STRANKY v stav.ts (OPRAVY 121: pribudol Organizátor)
 const ROLY: [string, string][] = [["Hlavný správca", "všetko, aj účty, program a správcovia"], ["Správca", "zbierky, obsah, ľudia, výkazy · bez účtov a programu"], ["Pomocník", "len obsah: skutky, oznamy, nástenka · peniaze nevidí"],
   ["Organizátor", "vedúci skupiny s poverením od vás: skutky a akcie za charitu, QR charity · peniaze, darcov ani nastavenia nevidí"]];
@@ -274,7 +278,7 @@ export function ObrSpravcovia({ mobil }: { mobil: boolean }) {
   };
   const zrusPoz = () => { if (poz) setL((a) => a.filter((y) => y.id !== poz.id)); setPoz(null); };
   const ako: [string, string][] = cesta === 0
-    ? [["Pridáte ho", "Napíšete e-mail, s ktorým je v DEED+."], ["Príde mu oznámenie", "V appke: „Svetlo pomoci vás pridalo ako správcu“. Ťukne Prijať."], ["Hotovo", "Stránku nájde v Môj profil → Moje stránky."]]
+    ? [["Pridáte ho", "Napíšete e-mail, s ktorým je v DEED+."], ["Príde mu oznámenie", `V appke: „${menoOrg()} vás pridala ako správcu“. Ťukne Prijať.`], ["Hotovo", "Stránku nájde v Môj profil → Moje stránky."]]
     : [["Pošlete mu pozvánku", "Odkaz alebo QR, kadiaľ chcete. Platí 48 hodín."], ["Vyplní meno a e-mail", "Príde mu e-mail, ťukne Potvrdiť. Môže si zapnúť prihlásenie odtlačkom alebo Face ID."], ["Vy ho potvrdíte", "Uvidíte ho v zozname so štítkom „čaká na vaše potvrdenie“. Kým nepotvrdíte, nič nevidí."]];
   return (
     <div style={dvaStlpce(mobil, "1.4fr", "1fr")}>
@@ -337,7 +341,7 @@ export function ObrSpravcovia({ mobil }: { mobil: boolean }) {
               <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}><b style={{ fontSize: 14.5 }}>Pozvánka · {ROLY[poz.r][0]}</b><span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>Platí do {poz.do}. Naskenuje QR alebo ťukne na odkaz.</span></span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-              <button onClick={() => void zdielaj({ titul: "Pozvánka do správy stránky", text: "Svetlo pomoci vás pozýva do správy stránky v DEED+. Odkaz platí 48 hodín.", url: poz.url }, toast)} style={{ ...plne(true), height: 48, fontSize: 15 }}>Zdieľať pozvánku</button>
+              <button onClick={() => void zdielaj({ titul: "Pozvánka do správy stránky", text: `${menoOrg()} vás pozýva do správy stránky v DEED+. Odkaz platí 48 hodín.`, url: poz.url }, toast)} style={{ ...plne(true), height: 48, fontSize: 15 }}>Zdieľať pozvánku</button>
               <button onClick={() => void kopiruj(poz.url, toast, "Odkaz je skopírovaný. Platí 48 hodín.")} style={{ ...obrys(), height: 48, fontSize: 15 }}>Kopírovať odkaz</button>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -364,10 +368,13 @@ export function ObrSpravcovia({ mobil }: { mobil: boolean }) {
 // ============================================================
 type Ud = { mail: string; tel: string; dic: string; fmail: string; ina: boolean; adr: string };
 const UD_PRAZDNE: Ud = { mail: "", tel: "", dic: "", fmail: "", ina: true, adr: "" };
-const UD0: Ud = { mail: "info@svetlopomoci.sk", tel: "+421 905 111 222", dic: "", fmail: "info@svetlopomoci.sk", ina: false, adr: "" };
-/** OPRAVY 400: údaje z registra sú v lib/udajeRegistra (zo skutočnej registrácie, nič napevno) — charita = testovacia stránka „svetlo“ */
+const UD0: Ud = { mail: "", tel: "", dic: "", fmail: "", ina: false, adr: "" };
+/** OPRAVY 403: meno organizácie z registra (nie napevno) */
+const menoOrg = () => registra(aktivnaCharita()).nazov || "Organizácia";
+/** OPRAVY 400: údaje z registra sú v lib/udajeRegistra (zo skutočnej registrácie, nič napevno) — charita = aktívna charita */
 /** OPRAVY 114: hlavný účet organizácie z registrácie (jedno miesto — Účty aj Nová zbierka v Zadarmo) */
-export const HLAVNY_UCET = "SK31 0900 0000 0051 2233 4417";
+/** OPRAVY 403: hlavný účet = IBAN z registrácie aktívnej charity (žiadny vymyslený) */
+export const hlavnyUcetOrg = (): string => nacitajIbanOrg("charita").replace(/(.{4})/g, "$1 ").trim();
 
 /** 5. 10. (C3) · fakturačné údaje pre faktúru za platbu DEED+; null = chýbajú (platba sa nespustí) */
 export function fakturacneUdaje(): { nazov: string; ico: string; adresa: string; dic?: string; email: string } | null {
@@ -691,7 +698,7 @@ export function ObrStiahnut({ mobil }: { mobil: boolean }) {
     const t = window.setTimeout(() => setSub((a) => a.map((f) => ({ ...f, pr: false }))), 2500);
     return () => window.clearTimeout(t);
   }, [pr]); // eslint-disable-line react-hooks/exhaustive-deps
-  const priprav = () => { if (!ok) return; const n = `Svetlo pomoci · ${["2026", "2025", "všetko"][ob]}.${["xlsx", "pdf", "json"][fo]}`; setSub((a) => [{ id: Date.now(), n, pr: true }, ...a]); };
+  const priprav = () => { if (!ok) return; const n = `${menoOrg()} · ${["2026", "2025", "všetko"][ob]}.${["xlsx", "pdf", "json"][fo]}`; setSub((a) => [{ id: Date.now(), n, pr: true }, ...a]); };
   return (
     <div style={dvaStlpce(mobil, "1.2fr", "1fr")}>
       <div style={stlpec}>
@@ -799,7 +806,7 @@ export function ObrPodpora({ mobil, otvor }: { mobil: boolean; otvor: (s: string
             <input type="file" multiple accept="image/*,application/pdf" onChange={(e) => { const n = (e.target.files || []).length; e.target.value = ""; setPr((x) => x + n); }} style={{ display: "none" }} />
           </label>
           <button onClick={odosli} aria-disabled={!ok} style={plne(ok)}>Odoslať</button>
-          <span style={pozn}>Odpovieme v appke aj na e-mail info@svetlopomoci.sk. Spolu so správou pošleme aj verziu appky a zariadenie, aby sme chybu našli rýchlejšie.</span>
+          <span style={pozn}>Odpovieme v appke aj na e-mail z Údajov organizácie. Spolu so správou pošleme aj verziu appky a zariadenie, aby sme chybu našli rýchlejšie.</span>
         </div>
       </div>
       <div style={stlpec}>

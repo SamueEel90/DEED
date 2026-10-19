@@ -32,7 +32,7 @@ export function segmentyCharity(): string[] {
 export const segmentyZRegistracie = () => segmenty;
 export function nastavSegmenty(v: string[]) {
   try { localStorage.setItem(KLUC_SEG, JSON.stringify(v)); } catch { /* LS */ }
-  void zapisVerejne("svetlo", "segmentyCentralna", v); // stránka charity v DB (rola/stav STRANKA_POZICIE.charita)
+  void zapisVerejne(aktivnaCharita(), "segmentyCentralna", v); // stránka aktívnej charity v DB
 }
 /** siete z registrácie (na predvyplnenie kontaktu) */
 export function sieteZRegistracie(): Partial<Record<Siet, string>> {

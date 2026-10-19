@@ -29,7 +29,7 @@ import { identitaDarcu, relCas, zobrazenaSuma, useSektorDarcu } from "@/lib/darc
 import { beziaceDorovnanieNaCiel, zostatok } from "@/lib/dorovnanie";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { cisloObjektu } from "@/lib/cisloObjektu";
-import { HLAVNY_UCET } from "./NastaveniaCharity";
+import { hlavnyUcetOrg } from "./NastaveniaCharity";
 import { TestovaciPas } from "@/features/verejny-profil/casti";
 import { kartaK, nadpisK, textK, obrysK, zelenyK, SpatZbierky, UkladaSa, DorovnaniePas, Taby, CislaKarta, AkoDarovat, Zapecatene, QrKarta, Statistiky, type DataStatistik } from "./spravaCasti";
 import { FLAGS, KONFIG, TIER_LABEL, type Tier } from "./stav";
@@ -648,7 +648,7 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
     {voFeede && <button type="button" onClick={() => zmen({ stiahnuta: new Date().toISOString() })} style={obrysK}>Stiahnuť z feedu</button>}
   </section>;
   const ako = <AkoDarovat sada={ob.sada} eurc={ob.eurc} sadaE={ob.sadaE} onZmena={zmenOb} bezi={aktivna} />;
-  const zap = <Zapecatene riadky={[["Cieľ", z.ciel ? eur(z.ciel) : "bez cieľa"], ["Účel", z.ucel ?? (ukazka ? UKAZKA_STRECHA.ucel : "—")], ["Účet", maskUcet(z.ucet ?? (ukazka ? UKAZKA_STRECHA.ucet : HLAVNY_UCET))], ...(bezDokladov ? [] : [["Lehota na doklady", z.lehotaText ?? (s.lehota === "30" ? "30 dní po skončení" : lehT)] as [string, string]])]} />;
+  const zap = <Zapecatene riadky={[["Cieľ", z.ciel ? eur(z.ciel) : "bez cieľa"], ["Účel", z.ucel ?? (ukazka ? UKAZKA_STRECHA.ucel : "—")], ["Účet", maskUcet(z.ucet ?? (ukazka ? UKAZKA_STRECHA.ucet : hlavnyUcetOrg()))], ...(bezDokladov ? [] : [["Lehota na doklady", z.lehotaText ?? (s.lehota === "30" ? "30 dní po skončení" : lehT)] as [string, string]])]} />;
   // OPRAVY 358: ten istý QR ako v QR nástrojoch — /z/{id} (adresa sa hľadá podľa id zbierky, nie podľa názvu)
   const qr = <QrKarta nazov={z.nazov} slug={z.id} odkaz={odkazQrZbierky(z.id)} cislo={cisloObjektu("Z", z.id, z.vs)} organizacia={z.organizacia} toast={toast} />;
   const vlavo = <>{stavKarta}{textKarta}{galeria}</>;

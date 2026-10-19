@@ -55,8 +55,8 @@ export function nacitajKontakt(p: Pozicia, stranka?: string): Kontakt {
   const k = SUBJEKTY[p].kontakt;
   const zaklad: Kontakt = {
     sidlo: k.adresa, adresaVerejna: "",
-    telefony: [{ cislo: k.tel, popis: "Kancelária" }],
-    emaily: [{ adresa: k.email, popis: "" }],
+    telefony: k.tel ? [{ cislo: k.tel, popis: "Kancelária" }] : [], // OPRAVY 403: prázdne = žiadny riadok
+    emaily: k.email ? [{ adresa: k.email, popis: "" }] : [],
     web: k.web ?? "", siete: p === "charita" ? sieteZRegistracie() : {},
   };
   const db = verejneZPamate(stranka ?? STRANKA_KONTAKTU[p])?.["kontakt"] as Partial<Kontakt> | undefined;

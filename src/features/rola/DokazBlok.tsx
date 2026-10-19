@@ -19,7 +19,7 @@ export function MediaNahlad({ src, popis, ovladanie, style }: { src: string; pop
 
 const eur = (n: number) => sumaEur(n);
 
-export function DokazBlok({ dokaz, vyzbierane, odberatel = "Svetlo pomoci o.z." }: { dokaz: Dokaz; vyzbierane?: number; odberatel?: string }) {
+export function DokazBlok({ dokaz, vyzbierane, odberatel = "" }: { dokaz: Dokaz; vyzbierane?: number; odberatel?: string }) {
   const [otvoreny, setOtvoreny] = useState<number | null>(null);
   const spolu = dokaz.doklady.reduce((a, d) => a + d.suma, 0);
   return (
@@ -51,7 +51,7 @@ export function DokazBlok({ dokaz, vyzbierane, odberatel = "Svetlo pomoci o.z." 
               <div style={{ margin: `0 ${SPACE.gutter}px ${SPACE.sm}px`, background: "#fff", color: "#222", borderRadius: RADIUS.xs, padding: SPACE.gutter, fontSize: 12, lineHeight: 1.6, boxShadow: "0 1px 6px rgba(0,0,0,.15)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: 13, marginBottom: 6 }}><span>{d.druh.toUpperCase()}</span><span>{d.cislo}</span></div>
                 <div>Dodávateľ: <b>{d.dodavatel}</b></div>
-                <div>Odberateľ: <b>{odberatel}</b></div>
+                {odberatel && <div>Odberateľ: <b>{odberatel}</b></div>}
                 <div>Dátum: {d.datum}</div>
                 {d.sken && (jePdf(d.sken)
                   ? <span {...pressable(() => void otvorDoklad(d.sken!), "Otvoriť PDF")} style={{ display: "inline-block", margin: "6px 0", fontWeight: 800, color: "#1a5fb4", cursor: "pointer" }}>📄 Otvoriť faktúru (PDF)</span>

@@ -9,8 +9,7 @@ import type {
   Udalost,
   HelpFeedItem,
   CharitaFeedItem,
-  AdresarSekcia,
-  Zbierka,
+  OrgAdresar,
   AktivitaItem,
   Notifikacia,
   RetazZiadost,
@@ -23,7 +22,6 @@ import type {
 
 import { POLOZKY, EVENTS } from "@/features/domov/mock";
 import { MOCK_FEED } from "@/features/help/mock";
-import { FEED_ITEMS, ADRESAR, ZBIERKA } from "@/features/charita/mock";
 import { SEED_ITEMS } from "@/features/aktivity/mock";
 import { NOTIFY } from "@/features/notifikacie/mock";
 import { ZIADOSTI } from "@/features/retaz/mock";
@@ -53,8 +51,7 @@ export interface Repo {
   };
   charita: {
     feed(): Promise<CharitaFeedItem[]>;
-    adresar(): Promise<AdresarSekcia[]>;
-    zbierka(): Promise<Zbierka>;
+    adresar(): Promise<OrgAdresar[]>;
   };
   aktivity: {
     feed(): Promise<AktivitaItem[]>;
@@ -142,9 +139,9 @@ export const mockRepo: Repo = {
     vytvor: () => Promise.resolve(null),
   },
   charita: {
-    feed: () => ok(FEED_ITEMS),
-    adresar: () => ok(ADRESAR),
-    zbierka: () => ok(ZBIERKA),
+    // OPRAVY 403: bez databázy nič vymyslené — prázdny feed aj adresár
+    feed: () => ok([] as CharitaFeedItem[]),
+    adresar: () => ok([] as OrgAdresar[]),
   },
   aktivity: {
     feed: () => ok(SEED_ITEMS as unknown as AktivitaItem[]),

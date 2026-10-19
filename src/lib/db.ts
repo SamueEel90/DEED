@@ -82,8 +82,6 @@ export async function spustiKyc(_ucetId: string, sposob = "nove") {
 export async function najdiIco(ico: string): Promise<RegistrIcoVysledok> {
   await cakaj(700);
   const cislo = (ico || "").replace(/\D/g, "");
-  // ukážkové IČO z prototypu registrácie (karta 44)
-  if (cislo === "12345678") return { ico: cislo, nazov: "Svetlo pomoci o.z.", sidlo: "Mierové nám. 1, Trenčín", datum_vzniku: "2023-03-14", pravna_forma: "Občianske združenie" };
   return {
     ico: cislo || ico,
     nazov: "OZ Pomoc " + (cislo.slice(-3) || "001"),

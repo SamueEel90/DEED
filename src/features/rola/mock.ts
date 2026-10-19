@@ -98,54 +98,22 @@ export interface SubjektMeta {
 }
 
 /** segmenty (témy), ktoré si charita nastavila v správe — darca ich vidí pri pravidelnej podpore (program AKCIA) */
-// Svetlo pomoci — simulácia výberu z registrácie (číselník: sektor → pod-segment)
-export const SEGMENTY_CHARITY = [
-  "Sociálne · chudoba a núdza",
-  "Sociálne · osamelí seniori",
-  "Sociálne · ľudia bez domova",
-  "Deti · ohrozené rodiny",
-];
+// OPRAVY 403: segmenty charity len z registrácie (bez ukážkových Svetla pomoci)
+export const SEGMENTY_CHARITY: string[] = [];
 
 export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
+  // OPRAVY 403: Svetlo pomoci zmazané — charita začína prázdna, údaje doplní registrácia (registracia.ts aplikuj) a Správa
   charita: {
-    nazov: "Svetlo pomoci o.z.", emoji: "srdce", iniciacky: "SP", lok: "Trenčín", overena: true,
-    cover: U("photo-1416879595882-3373a0480b5b"), foto: U("photo-1518199266791-5375a83190b7"),
-    cisla: [["24 600 €", "Vyzbierané"], ["48", "Skutky"], ["3 roky", "S nami"]],
-    onas: "Občianske združenie Svetlo pomoci pomáha rodinám v núdzi v Trenčianskom kraji od roku 2014. Každé euro dokladujeme — transparentnosť per prípad je naša podstata.",
-    kontakt: { adresa: "Mierové námestie 4, Trenčín", email: "info@svetlopomoci.sk", tel: "+421 901 234 567", web: "svetlopomoci.sk" },
+    nazov: "", emoji: "srdce", iniciacky: "", lok: "", overena: false,
+    cisla: [["0 €", "Vyzbierané"], ["0", "Skutky"], ["", "S nami"]],
+    onas: "",
+    kontakt: { adresa: "", email: "", tel: "", web: "" },
     taby: [
       // `odTieru` = od ktorého programu sa to na verejnom profile ukáže (bez neho = ZADARMO).
-      // ZADARMO: jedna aktívna zbierka PRE NIEKOHO. T1: viac súbežných + centrálna. T2: akcie.
-      { key: "zbierky", label: "Zbierky", polozky: [
-        { emoji: "darcek", titul: "", popis: "", zbierkaId: "z-anna" },
-        { emoji: "darcek", titul: "", popis: "", zbierkaId: "z-skola", odTieru: 1 },
-        { emoji: "darcek", titul: "", popis: "", zbierkaId: "z-potraviny", odTieru: 1 },
-      ] },
-      { key: "skutky", label: "Skutky", polozky: [
-        { emoji: "jedlo", titul: "120 teplých jedál", popis: "vydaných tento mesiac v teréne", dokaz: {
-          text: "Každý štvrtok varíme na Mierovom námestí. V septembri sme vydali 120 teplých jedál.",
-          fotky: [
-            { src: U("photo-1593113598332-cd288d649433"), popis: "VÝDAJ" },
-            { src: U("photo-1488459716781-31db52582fe9"), popis: "NÁKUP" },
-          ],
-          doklady: [
-            { druh: "Bloček", nazov: "Suroviny — 4 nákupy", dodavatel: "Kaufland Trenčín", cislo: "4 bločky", datum: "sept. 2026", suma: 386.2 },
-            { druh: "Faktúra", nazov: "Jednorazové obaly a príbory", dodavatel: "Obaly Slovakia s.r.o.", cislo: "FA 26-0931", datum: "3. 9. 2026", suma: 74.9 },
-          ],
-        } },
-        // ukončená a doložená zbierka = jeden skutok (žiadna duplicita so Zbierkami)
-        { emoji: "dom", titul: "", popis: "doložené faktúrami", zbierkaId: "z-horvathova" },
-      ] },
-      // Video: krátke videá — k zbierke, k tomu, čo chystáme, alebo šťastní obdarovaní.
-      // ZADARMO: verejne sa zobrazuje JEDNO video; ďalšie ostávajú v správe, ukážu sa až v platenom programe.
-      { key: "video", label: "Video", polozky: [
-        { emoji: "video", titul: "Pani Anna — prečo zbierame", popis: "september · k zbierke", video: { nahlad: U("photo-1581578731548-c64695cc6952"), dlzka: "0:48", zbierkaId: "z-anna" } },
-        { emoji: "video", titul: "Horváthovci ďakujú — prvá noc v suchu", popis: "august · po odovzdaní daru", video: { nahlad: U("photo-1635424710928-0544e8512eae"), dlzka: "1:12", zbierkaId: "z-horvathova" }, odTieru: 1 },
-      ] },
-      { key: "akcie", label: "Akcie", odTieru: 2, polozky: [
-        { emoji: "kalendar", titul: "Beh pre Svetlo — benefičný beh", popis: "ne 12. 10. · Trenčín, Ostrov · 64 prihlásených" },
-        { emoji: "jedlo", titul: "Varíme pre ulicu — dobrovoľníci", popis: "každý štvrtok · Mierové námestie" },
-      ] },
+      { key: "zbierky", label: "Zbierky", polozky: [] },
+      { key: "skutky", label: "Skutky", polozky: [] },
+      { key: "video", label: "Video", polozky: [] },
+      { key: "akcie", label: "Akcie", odTieru: 2, polozky: [] },
     ],
   },
   tvorca: {

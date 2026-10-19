@@ -20,7 +20,7 @@ import type { ScanVstup, ChainVstup, QrSplitCreateVstup, QrSplitPayVstup } from 
 export const qk = {
   good: { feed: ["good", "feed"] as const, udalosti: ["good", "udalosti"] as const },
   help: { feed: ["help", "feed"] as const },
-  charita: { feed: ["charita", "feed"] as const, adresar: ["charita", "adresar"] as const, zbierka: ["charita", "zbierka"] as const },
+  charita: { feed: ["charita", "feed"] as const, adresar: ["charita", "adresar"] as const },
   aktivity: { feed: ["aktivity", "feed"] as const },
   mapa: { body: ["mapa", "body"] as const },
   top: { rebricky: ["top", "rebricky"] as const, prispevky: ["top", "prispevky"] as const },
@@ -81,7 +81,6 @@ export const useHelpFeed = () => useQuery({ queryKey: qk.help.feed, queryFn: () 
 // ---- Charita ----
 export const useCharitaFeed = () => useQuery({ queryKey: qk.charita.feed, queryFn: () => repo.charita.feed() });
 export const useCharitaAdresar = () => useQuery({ queryKey: qk.charita.adresar, queryFn: () => repo.charita.adresar() });
-export const useCharitaZbierka = () => useQuery({ queryKey: qk.charita.zbierka, queryFn: () => repo.charita.zbierka() });
 
 // ---- Aktivity ----
 export const useAktivityFeed = () => useQuery({ queryKey: qk.aktivity.feed, queryFn: () => repo.aktivity.feed() });

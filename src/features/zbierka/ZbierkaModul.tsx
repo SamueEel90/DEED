@@ -82,7 +82,6 @@ const DEV_ZAKLAD: DevStav = { miesto: "charita", maCiel: true, dorovnanie: false
 /** DEV ukážka: overovateľ + druhá charita (split dar) — kým ich nedodá server */
 const DEV_DALSIE_ORG: OrgPole[] = [
   { meno: "Mesto Trenčín", typ: "overovatel", mesto: "Trenčín", veta: "Zbierku sme overili na mieste.", cisla: [], stit: "Gold" },
-  { meno: "Svetlo pomoci o.z.", typ: "charita", mesto: "Trenčín · Juh", veta: "Pomáhame rodinám v núdzi v Trenčianskom kraji.", cisla: [["12 400 €", "vyzbierané"], ["38", "skutkov"]], stit: "Silver" },
 ];
 function nacitajDev(): DevStav {
   try { const s = localStorage.getItem(KLUC_DEV); return s ? { ...DEV_ZAKLAD, ...JSON.parse(s) } : DEV_ZAKLAD; } catch { return DEV_ZAKLAD; }

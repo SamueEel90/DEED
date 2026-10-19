@@ -395,7 +395,7 @@ const FIRMA: TestProfil = {
       { st: "PREŠOV · DETSKÝ DOMOV", nazov: "Doučovanie v Tábori", vyzbierane: 640, ciel: 1500, este: "860 €", foto: U("photo-1503454537195-1dcabb73ffb9"), zbierkaId: "fz-doucovanie" },
     ],
     vdaka: [
-      { q: "Vďaka pekárni sme mali o polovicu kratšiu zbierku", kto: "Svetlo pomoci · 0:38", foto: "/img/dom-strecha.jpg", iskraId: "zb-pekaren" },
+      { q: "Vďaka pekárni sme mali o polovicu kratšiu zbierku", kto: "Svetlo pomoci · 0:38", foto: "/img/dom-strecha.jpg" },
       { q: "Každé ráno nám vozia chlieb pre 60 ľudí", kto: "Nocľaháreň Mea Culpa · 0:41", foto: U("photo-1542838132-92c53300491e") },
       { q: "Nové dresy, ďakujeme", kto: "Klub Dukla Trenčín · 0:22", foto: U("photo-1517649763962-0c623066013b") },
       { q: "Seniori sa tešia na piatky", kto: "Seniori Rača · 0:35", foto: U("photo-1516307365426-bea591f05011") },
@@ -636,7 +636,8 @@ const FARNOST: TestProfil = {
   ],
 };
 
-export const TEST_PROFILY: TestProfil[] = [CHARITA, FIRMA, TVORCA, FARNOST];
+// OPRAVY 403: Svetlo pomoci zmazané — CHARITA ostáva len ako šablóna prázdneho profilu novej charity
+export const TEST_PROFILY: TestProfil[] = [FIRMA, TVORCA, FARNOST];
 /** OPRAVY 402: verejný profil novo založenej charity — prázdny (len to, čo naozaj vytvorí), meno z registrácie */
 export function prazdnaCharita(k: string, meno = "Nová charita"): TestProfil {
   const e = vyprazdni(CHARITA);
@@ -647,7 +648,7 @@ export function prazdnaCharita(k: string, meno = "Nová charita"): TestProfil {
 }
 export const najdiTestProfil = (k: string): TestProfil | undefined => TEST_PROFILY.find((p) => p.k === k);
 /** verejný odkaz na zdieľanie: /p/svetlo · /p/pekaren · /p/martin → kľúč profilu */
-const SLUG_KLUC: Record<string, string> = { svetlo: "svetlo", pekaren: "pekaren", martin: "tvorca", farnost: "farnost" };
+const SLUG_KLUC: Record<string, string> = { pekaren: "pekaren", martin: "tvorca", farnost: "farnost" };
 // OPRAVY 347: ostatné stránky (skutočné farnosti) majú v odkaze priamo svoj kľúč (klucNaSlug ho nemení)
 export const slugNaKluc = (slug: string): string | undefined => SLUG_KLUC[slug] ?? (slug.trim() || undefined);
 export const klucNaSlug = (k: string): string => (k === "tvorca" ? "martin" : k);
@@ -661,7 +662,6 @@ export function testProfilPreMeno(meno?: string | null): TestProfil | undefined 
   if (!m) return undefined;
   return TEST_PROFILY.find((p) => p.typ !== "farnost" && holeMeno(p.meno) === m); // KARTA 50: farnosti z modulu Viera ostávajú zatiaľ na FarskyProfil
 }
-export const testProfilPodlaTypu = (t: TypProfilu): TestProfil => TEST_PROFILY.find((p) => p.typ === t) ?? CHARITA;
 
 // ---- lokalita ----
 /** nechá len položky z vybraného mesta; „Celé Slovensko" nechá všetko (mesto človeka prvé) */

@@ -101,7 +101,7 @@ const subscribe = (f: () => void) => { posluchaci.add(f); return () => posluchac
 export function useZmenyOznamov(): number { return useSyncExternalStore(subscribe, () => verzia); }
 
 // entita → testovacia stránka v DB (lib/mojeStranky UKAZKOVE_STRANKY); iná entita ostáva lokálne
-const STRANKA_ENTITY: Record<string, string> = { charita: "svetlo", b2b: "pekaren", tvorca: "tvorca", svetlo: "svetlo", pekaren: "pekaren", farnost: "farnost" };
+const STRANKA_ENTITY: Record<string, string> = { b2b: "pekaren", tvorca: "tvorca", pekaren: "pekaren", farnost: "farnost" };
 const strankaEntity = (entita: string): string | null => (supabase ? (entita === "charita" ? aktivnaCharita() : STRANKA_ENTITY[entita]) ?? null : null); // OPRAVY 402
 
 const pamat = new Map<string, Oznam[]>();

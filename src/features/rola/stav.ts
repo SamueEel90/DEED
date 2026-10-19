@@ -86,10 +86,9 @@ export const ulozPoziciu = (p: Pozicia) => uloz(kluc("pozicia"), p);
 const ZAKLAD_TIERY = { charita: 0, tvorca: 0, b2b: 0 } as Record<Pozicia, Tier>;
 export const nacitajTiery = (): Record<Pozicia, Tier> => {
   const t = nacitaj(kluc("tiery"), ZAKLAD_TIERY);
-  return aktivnaCharita() === "svetlo" ? t : { ...t, charita: nacitaj<Tier>(kluc(klucCharity("tier.charita")), 0) };
+  return { ...t, charita: nacitaj<Tier>(kluc(klucCharity("tier.charita")), 0) };
 };
 export const ulozTiery = (t: Record<Pozicia, Tier>) => {
-  if (aktivnaCharita() === "svetlo") { uloz(kluc("tiery"), t); return; }
   uloz(kluc(klucCharity("tier.charita")), t.charita);
   uloz(kluc("tiery"), { ...t, charita: nacitaj(kluc("tiery"), ZAKLAD_TIERY).charita });
 };
@@ -293,7 +292,7 @@ export const ulozStitCharity = (s: StitCharity) => uloz(kluc(klucCharity("stit.c
 export const PIN_MAX = 12;
 // ---- DEV: nová charita (nuly, prázdne stavy) alebo bežiaca ukážka ----
 // OPRAVY 402: novo založená charita začína ako nová (prázdne stavy, úvodné kroky)
-export const nacitajCharituNovu = (): boolean => nacitaj(kluc(klucCharity("charita.nova")), aktivnaCharita() !== "svetlo");
+export const nacitajCharituNovu = (): boolean => nacitaj(kluc(klucCharity("charita.nova")), true);
 export const ulozCharituNovu = (v: boolean) => uloz(kluc(klucCharity("charita.nova")), v);
 
 // ============================================================

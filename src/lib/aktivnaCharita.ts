@@ -3,11 +3,11 @@
 // Správa charity (a všetko, čo doteraz čítalo napevno „svetlo“) berie id odtiaľto. Nastaví ho otvorená Správa charity.
 // Lokálne charity: bez databázy (testovacia verzia) si appka pamätá založené charity v tomto prehliadači.
 // ============================================================
-let id = "svetlo";
+let id = "";
 export const aktivnaCharita = (): string => id;
 export function nastavAktivnuCharitu(stranka: string) { if (stranka) id = stranka; }
-/** kľúč úložiska pre údaje charity — testovacia „svetlo“ ostáva pod starým kľúčom, ostatné majú svoj */
-export const klucCharity = (k: string): string => (id === "svetlo" ? k : `${k}@${id}`);
+/** kľúč úložiska pre údaje charity — každá charita má svoj (OPRAVY 403: testovacia „svetlo“ zmazaná) */
+export const klucCharity = (k: string): string => `${k}@${id}`;
 
 export type LokalnaStranka = { k: string; n: string; typ: "charita" };
 const KLUC = "deed.lokalneStranky";

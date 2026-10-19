@@ -35,25 +35,7 @@ const posl = new Set<() => void>();
 const zmena = () => { ver++; posl.forEach((f) => f()); };
 export const useZmenyPribehov = () => useSyncExternalStore((f) => { posl.add(f); return () => posl.delete(f); }, () => ver, () => 0);
 
-// ---- TESTOVACIE: zverejnený príbeh Strechy pre rodinu Horváthovú (prototyp „Pribeh zbierky") ----
-const U = (id: string) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1200&q=70`;
-const STRECHA: Pribeh = {
-  kratky: "V noci im od komína chytila strecha. Rodina s dvomi malými deťmi spí u susedov v jednej izbe. Krov už stojí, chýba krytina.",
-  text: "<p>V noci z 2. na 3. októbra cítila pani Horváthová dym. Stihla vyniesť deti, Tomáša (7) a Emu (4), aj babku, ktorá chodí o barlách. Hasiči dom zachránili, strecha nie.</p><p>Dobrovoľníci z Opatovej postavili za jeden víkend nový krov. Drevo darovala píla v Selci. Teraz chýba krytina, laty a klampiarske práce, spolu 12 000 €. Ak sa vyzbiera viac, zvyšok pôjde na okná, ktoré praskli od tepla.</p><p>Strechu chceme mať hotovú do 31. októbra, kým prídu mrazy. Každý doklad tu zverejníme a po skončení napíšeme, ako to dopadlo.</p>",
-  media: [
-    { id: 1, typ: "foto", src: U("photo-1486946255434-2466348c2166"), popis: "Dom ráno po požiari" },
-    { id: 2, typ: "foto", src: U("photo-1632759145351-1d592919f522"), popis: "Nový krov · 29. 9." },
-    { id: 3, typ: "foto", src: U("photo-1503454537195-1dcabb73ffb9"), popis: "Tomáš a Ema u susedov" },
-  ],
-  citat: { text: "Ema sa každý večer pýta, kedy pôjdeme spať domov.", meno: "Jana Horváthová", vztah: "mama", suhlas: true },
-  priebeh: [
-    { id: "p3", datum: "2026-10-05", nadpis: "Objednali sme krytinu", text: "Dodávka 14. 10., zálohu 3 000 € sme zaplatili. Doklad je v Dokladoch." },
-    { id: "p2", datum: "2026-09-29", nadpis: "Krov stojí", text: "9 dobrovoľníkov z Opatovej, 2 dni práce. Drevo darovala píla v Selci." },
-    { id: "p1", datum: "2026-10-03", nadpis: "Spustili sme zbierku", text: "Pekáreň Dobrota sa pridala s dorovnaním 1 : 1." },
-  ],
-};
-pamat.set("z-strecha-horvath", { koncept: null, zverejneny: STRECHA, org: "svetlo" });
-tyzdna = { svetlo: "z-strecha-horvath" };
+// OPRAVY 403: ukážkový príbeh Svetla pomoci (Strecha pre Horváthovcov) zmazaný — príbehy len zo Správy / databázy
 
 /** zverejnený príbeh (verejná stránka, odkaz z feedu) */
 export function pribehZbierky(id: string): Pribeh | null { return pamat.get(kluc(id))?.zverejneny ?? null; }
@@ -110,4 +92,4 @@ export function nastavPribehTyzdna(id: string, org: string, zap: boolean): strin
   return zap && pred && pred !== kluc(id) ? pred : null;
 }
 /** testovací profil, pri ktorom príbeh vznikol (verejný odkaz /p/{org}) */
-export const orgPribehu = (id: string) => pamat.get(kluc(id))?.org ?? "svetlo";
+export const orgPribehu = (id: string) => pamat.get(kluc(id))?.org ?? "";
