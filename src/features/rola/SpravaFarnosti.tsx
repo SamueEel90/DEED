@@ -57,6 +57,7 @@ import { DetiMladezFarnosti } from "./DetiMladezFarnosti";
 import { PredplatnePas, PredplatneFarnosti } from "./PredplatneFarnosti";
 import { ObrOznamenia, ObrUdaje, ObrZariadenia, ObrSuhlasy, ObrFaq, ObrPodpora } from "./NastaveniaCharity";
 import { nacitajNastavenia } from "@/lib/nastaveniaStranky";
+import { useUrovenStranky } from "@/lib/mojeStranky";
 import { najdiTestProfil } from "@/lib/testProfily";
 import { cistyNazov, nacitajProfil, profilZPamate, uplnostProfilu, type ProfilStranky } from "@/lib/profilStranky";
 import { nacitajPiny, pinyZPamate, ulozPiny } from "@/lib/spravaPiny";
@@ -135,6 +136,8 @@ const casKonca = (iso?: string) => { if (!iso) return ""; const d = new Date(iso
 function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBack: () => void; strankaId: string; /** názov z registrácie (Moje stránky) */ nazov?: string; /** testovací pás (OPRAVY 147, 153: dostane „Pozrieť profil ›") */ test?: (onPozriet: () => void) => ReactNode }) {
   const { desktop, wide } = useLayout();
   const tablet = wide && !desktop;
+  // OPRAVY 393: Pomocník = celá Správa okrem Nastavení (účet farnosti, predplatné, peňaženka) a pridávania ľudí
+  const pomocnik = useUrovenStranky(strankaId) === "pomocnik";
   const [sub, setSub] = useState<Sub>(() => (cielSpravyPre(strankaId)?.sub === "veriaci" ? "veriaci" : "prehlad")); // OPRAVY 315: z upozornenia rovno Od veriacich
   const [ob, setOb] = useState(2);
   const [pridat, setPridat] = useState(false);
@@ -178,7 +181,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   // OPRAVY 186: obrazovka Nastavení (ako pri charite) — n:<id>
   const [nId, setNId] = useState("");
   useEffect(() => { void nacitajNastavenia(strankaId); }, [strankaId]);
-  const go = (k: Sub) => { setDet(null); setQrZ(null); setNavratQr(false); setZbStart(undefined); setSub(k); setPridat(false); setPinOtv(false); setOznamyHore(0); };
+  const go = (k: Sub) => { if (pomocnik && (k === "nast" || k === "penazenka" || k === "n")) return; setDet(null); setQrZ(null); setNavratQr(false); setZbStart(undefined); setSub(k); setPridat(false); setPinOtv(false); setOznamyHore(0); };
 
   // KARTA 56D §1: profil stránky (profil_stranky) — karta vľavo, percento, „Dokončiť profil"
   const [prof, setProf] = useState(() => profilZPamate(strankaId));
@@ -363,7 +366,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       <button type="button" onClick={() => setPinAkt((a) => (a === "treba" ? null : "treba"))} aria-pressed={pinAkt === "treba"} style={{ flex: "none", whiteSpace: "nowrap", height: 44, padding: "0 12px 0 14px", borderRadius: 13, border: pocetUloh ? "2px solid var(--rBd)" : `${pinAkt === "treba" ? 2 : 1.5}px solid ${pinAkt === "treba" ? "var(--green)" : "var(--cardBd)"}`, background: pocetUloh ? "var(--rBg)" : pinAkt === "treba" ? "var(--gSoft)" : "var(--bg)", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: pocetUloh ? "var(--cRed)" : "var(--ink)", boxShadow: "none" }}>
         {prveKroky ? "Prvé kroky" : "Treba vybaviť"}<span style={{ minWidth: 24, height: 24, padding: "0 7px", borderRadius: 12, background: pocetUloh ? "#A34A2A" : "#85867B", color: "#fff", fontSize: 12.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{pocetUloh}</span>
       </button>
-      {piny.map((k) => (
+      {piny.filter((k) => !pomocnik || (k !== "nast" && k !== "penazenka")).map((k) => (
         <button key={k} type="button" onClick={() => setPinAkt((a) => (a === k ? null : k))} aria-pressed={pinAkt === k} style={{ flex: "none", whiteSpace: "nowrap", height: 44, padding: "0 16px 0 12px", borderRadius: 13, border: pinAkt === k ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: pinAkt === k ? "var(--gSoft)" : "var(--bg)", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontFamily: "inherit", fontSize: 14.5, fontWeight: pinAkt === k ? 800 : 700, color: pinAkt === k ? "var(--gInk)" : "var(--ink)", boxShadow: "none" }}>
           <Ik d={IC[k]} s={18} />{TIT[k]}
         </button>))}
@@ -374,7 +377,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       </button>
       {pinOtv && <div style={{ position: "absolute", right: 8, top: 58, zIndex: 20, width: mobil ? "calc(100% - 16px)" : 340, maxHeight: 420, overflowY: "auto", padding: 8, borderRadius: 18, background: "var(--bg)", border: "1px solid var(--cardBd)", boxShadow: "0 16px 40px rgba(30,28,20,.2)", display: "flex", flexDirection: "column", gap: 2, boxSizing: "border-box" }}>
         <span style={{ padding: "8px 10px 6px", fontSize: 13, color: "var(--ink3)" }}>Pripnite si, čo používate najčastejšie. Najviac 6.</span>
-        {PINY.map((k) => { const on = piny.includes(k); return (
+        {PINY.filter((k) => !pomocnik || (k !== "nast" && k !== "penazenka")).map((k) => { const on = piny.includes(k); return (
           <button key={k} type="button" role="checkbox" aria-checked={on} onClick={() => prepniPin(k)} style={{ minHeight: 46, padding: "0 10px", border: "none", borderRadius: 12, background: on ? "var(--gSoft)" : "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, textAlign: "left", fontFamily: "inherit", boxShadow: "none" }}>
             <span style={{ flex: 1, minWidth: 0, fontSize: 14.5, fontWeight: 700, color: "var(--ink)" }}>{TIT[k]}</span>
             <span style={{ width: 24, height: 24, flex: "none", borderRadius: 7, border: `1.5px solid ${on ? "var(--green)" : "#A8A396"}`, background: on ? "var(--green)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -442,11 +445,11 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       <button type="button" onClick={() => go(pinAkt)} style={{ alignSelf: "flex-start", minHeight: 44, padding: "0 4px", border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--green)", boxShadow: "none" }}>Otvoriť celú sekciu ›</button>
     </section>) : null} />;
   const prehlad = mobil ? <>
-    {predPas}
+    {!pomocnik && predPas}
     {kartaProfilu(true)}
-    <UcetFarnostiKarta strankaId={strankaId} mobil={mobil} onNastavenia={otvorUcty} />
+    {!pomocnik && <UcetFarnostiKarta strankaId={strankaId} mobil={mobil} onNastavenia={otvorUcty} />}
     <div style={{ flex: "none", display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 10 }}>
-      {DLAZDICE9.map(([k, t]) => { const v = k === "verejny"; return (
+      {DLAZDICE9.filter(([k]) => !pomocnik || k !== "penazenka").map(([k, t]) => { const v = k === "verejny"; return (
         <button key={k} type="button" onClick={() => (v ? verejny() : go(k))} style={{ position: "relative", minHeight: 96, padding: "8px 4px", borderRadius: 18, border: `1px solid ${v ? "var(--tBd)" : "var(--cardBd)"}`, background: v ? "var(--tBg)" : "var(--card)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, fontFamily: "inherit", boxShadow: "none" }}>
           <Ik d={IC[k]} s={24} c={v ? "var(--tInk)" : undefined} />
           <span style={{ fontSize: 14, lineHeight: 1.2, fontWeight: 800, textAlign: "center", color: v ? "var(--tInk)" : "var(--ink)" }}>{t}</span>
@@ -455,7 +458,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     </div>
     {trebaVybavit /* OPRAVY 348 (3): na mobile bez lišty Pripnuté — karta farnosti → mriežka → Treba vybaviť / Prvé kroky → Čísla */}
     {cisla}
-  </> : <><UcetFarnostiKarta strankaId={strankaId} mobil={mobil} onNastavenia={otvorUcty} />{predPas}{pripnute}{pinObsah}{cisla}</>;
+  </> : <>{!pomocnik && <><UcetFarnostiKarta strankaId={strankaId} mobil={mobil} onNastavenia={otvorUcty} />{predPas}</>}{pripnute}{pinObsah}{cisla}</>;
 
   // KARTA 56D §6 · OPRAVY 161: ďalšie zbierky stránky (zbierka farnosti / pre veriacich) — z účtu (tabuľka zbierka)
   const sprava = (m: string) => { setZbVyber(false); setZbBlok(false); setNoveOk(null); setZmazana(false); return m; };
@@ -674,7 +677,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       : <section style={{ ...karta, borderRadius: mobil ? 18 : 22, padding: "14px 20px", fontSize: 14.5, color: "var(--ink3)" }}>Zatiaľ žiadne dary.</section>}
   </>;
   const lLud: Dl[] = [
-    { k: "farar", t: "Farár a správcovia", s: "duchovný, kto spravuje stránku · pridať človeka", d: IC.osoba, el: () => <LudiaFarnosti strankaId={strankaId} meno={meno} mobil={mobil} /> },
+    { k: "farar", t: "Farár a správcovia", s: "duchovný, kto spravuje stránku · pridať človeka", d: IC.osoba, el: () => <LudiaFarnosti strankaId={strankaId} meno={meno} mobil={mobil} farar={!pomocnik} /> },
     { k: "brigady", t: "Brigády a služby", s: "blok Pomôž na stránke · brigáda, služba pri omši", d: IC.brigada, el: () => <BrigadyFarnosti strankaId={strankaId} mobil={mobil} /> },
     { k: "deti", t: "Deti a mládež", s: "stretnutia · blok Deti a mládež na stránke", d: IC.dieta, el: () => <DetiMladezFarnosti strankaId={strankaId} mobil={mobil} /> },
     { k: "darcovia", t: "Darcovia", s: "mená bez súm · bez mena = Bohu známy veriaci", d: IC.zbierky, el: darcoviaEl },
@@ -821,7 +824,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
             <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 15, fontWeight: 800, color: "var(--tInk)" }}>Verejný profil</span><span style={{ fontSize: 12, color: "var(--tInk2)" }}>ako ho vidia veriaci</span></span>
             <span aria-hidden="true" style={{ fontSize: 18, color: "var(--tInk)" }}>›</span>
           </button>
-          <TlacidloNastavenia modre on={aktivna === "nast"} onClick={() => go("nast")} />
+          {!pomocnik && <TlacidloNastavenia modre on={aktivna === "nast"} onClick={() => go("nast")} />}
           <nav aria-label="Správa farnosti" style={{ flex: "none", display: "flex", flexDirection: "column", gap: 2, padding: "4px 0" }}>
             {nav.map((k) => { const on = aktivna === k; return (
               <button key={k} type="button" onClick={() => go(k)} aria-current={on ? "page" : undefined} className={on ? undefined : "sc-hov"} style={{ height: 48, padding: "0 14px", border: "none", borderRadius: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", boxShadow: "none", background: on ? "var(--accSoft)" : "transparent", color: on || k === "prehlad" ? "var(--ink)" : "var(--ink2)" }}>
@@ -861,7 +864,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
           <span style={{ fontSize: 12, color: "var(--ink3)" }}>{dnesText()}</span>
         </span>
         {/* OPRAVY 218 / 347: koliesko Nastavenia (modré) a zelené + v hlavičke, plávajúce + zmizlo */}
-        {sub === "prehlad" && <button type="button" onClick={() => go("nast")} aria-label="Nastavenia" style={{ flex: "none", width: 46, height: 46, borderRadius: 14, border: "1px solid var(--bBd)", background: "var(--bSoft)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "none" }}><Ik d={IC.nast} s={22} c="var(--bInk)" /></button>}
+        {sub === "prehlad" && !pomocnik && <button type="button" onClick={() => go("nast")} aria-label="Nastavenia" style={{ flex: "none", width: 46, height: 46, borderRadius: 14, border: "1px solid var(--bBd)", background: "var(--bSoft)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "none" }}><Ik d={IC.nast} s={22} c="var(--bInk)" /></button>}
         {!BEZ_PRIDAT.includes(sub) && !pridat ? <button type="button" onClick={pridatTl} aria-label={(PRIDAT_T[sub] ?? "+ Pridať").slice(2)} style={{ flex: "none", width: 46, height: 46, border: "none", borderRadius: 14, background: "#4B7A35", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "none" }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
         </button> : sub !== "prehlad" && <span aria-hidden="true" style={{ flex: "none", width: 46 }} />}

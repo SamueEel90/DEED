@@ -17,10 +17,12 @@ export const UKAZKOVE_STRANKY: Stranka[] = [
   { k: "farnost", i: "FT", n: "Farnosť Trenčín — mesto", typ: "farnost", rola: "stranky.rola.farar", pozicia: "charita", bg: "var(--btn)", c: "var(--ink)", info: [["stranky.info.zbierky", 2], ["stranky.info.oznamyFarnikov", 2]] },
 ];
 
-// ---- stránky, ktoré účet naozaj spravuje (rpc moje_stranky, 0085b) ----
-// Správa je zatiaľ napojená na 4 testovacie stránky (rola/stav STRANKA_POZICIE) → ukážu sa len tie z nich,
-// ku ktorým má účet v DB rolu. Iná stránka by otvorila cudzie (testovacie) dáta, preto ju zatiaľ vynecháme.
-let zUctu: string[] | null = null;
+// ---- stránky, ktoré účet naozaj spravuje (rpc moje_stranky, 0085b; od 0124 aj z Ľudí a s úrovňou) ----
+// Testovacie stránky (UKAZKOVE_STRANKY) podľa DB roly. OPRAVY 393: skutočné farnosti, kde je človek farár alebo pomocník
+// (Správa farnosti beží nad id stránky). Ostatné skutočné stránky zatiaľ nie — ich Správa je ešte napojená na testovacie dáta.
+export type UrovenStranky = "farar" | "pomocnik";
+type RiadokUctu = { id: string; nazov: string; typ: string; uroven?: UrovenStranky | null };
+let zUctu: RiadokUctu[] | null = null;
 let nacitavam = false;
 export async function nacitajStrankyUctu(): Promise<void> {
   if (!supabase || nacitavam) return;
@@ -28,14 +30,28 @@ export async function nacitajStrankyUctu(): Promise<void> {
   const { data, error } = await supabase.rpc("moje_stranky");
   nacitavam = false;
   if (error) return; // neprihlásený alebo funkcia ešte nebeží (0085b)
-  zUctu = ((data ?? []) as { id: string }[]).map((x) => x.id);
+  zUctu = (data ?? []) as RiadokUctu[];
   ver++; posl.forEach((f) => f());
+}
+const inicialy = (n: string) => n.replace(/^(Farnosť|Rímskokatolícka farnosť|Gréckokatolícka farnosť)\s+/i, "").split(/[\s—-]+/).filter(Boolean).map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "?";
+function naStranku(r: RiadokUctu): Stranka | null {
+  const vzor = UKAZKOVE_STRANKY.find((s) => s.k === r.id);
+  const pomocnik = r.uroven === "pomocnik";
+  if (vzor) return { ...vzor, rola: pomocnik ? "stranky.rola.pomocnik" : vzor.rola };
+  if (r.typ !== "farnost") return null;
+  return { k: r.id, i: inicialy(r.nazov), n: r.nazov, typ: "farnost", rola: pomocnik ? "stranky.rola.pomocnik" : "stranky.rola.farar", pozicia: "charita", bg: "var(--btn)", c: "var(--ink)", info: [] };
 }
 /** stránky účtu z DB (null = ešte nenačítané / bez DB) */
 export function useStrankyUctu(prihlaseny: boolean): Stranka[] | null {
   useSyncExternalStore((f) => { posl.add(f); return () => posl.delete(f); }, () => ver, () => 0);
   if (prihlaseny && zUctu == null) void nacitajStrankyUctu();
-  return zUctu == null ? null : UKAZKOVE_STRANKY.filter((s) => zUctu!.includes(s.k));
+  return zUctu == null ? null : zUctu.map(naStranku).filter((x): x is Stranka => !!x);
+}
+/** OPRAVY 393: Farár (všetko) alebo Pomocník (Správa bez Nastavení a ľudí). Bez DB a pri demo vždy farár. */
+export const urovenStranky = (k: string): UrovenStranky => (zUctu?.find((x) => x.id === k)?.uroven === "pomocnik" ? "pomocnik" : "farar");
+export function useUrovenStranky(k: string): UrovenStranky {
+  useSyncExternalStore((f) => { posl.add(f); return () => posl.delete(f); }, () => ver, () => 0);
+  return urovenStranky(k);
 }
 
 type Stav = { ako: string; prezentacia: boolean };

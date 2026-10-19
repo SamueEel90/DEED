@@ -1,5 +1,5 @@
 -- ============================================================
--- Test 0120 — kaplán zo Správa → Ľudia je správca stránky, kostolník nie; po odobratí práva stratí (OPRAVY 380)
+-- Test 0120 (+0124) — človek zo Správa → Ľudia je správca stránky (pomocník), cudzí nie; po odobratí práva stratí (OPRAVY 380, 393)
 -- Všetko beží v transakcii a na konci sa vráti (ROLLBACK). Každý riadok musí mať ok = t.
 -- ============================================================
 begin;
@@ -25,7 +25,7 @@ insert into t select 'kaplán je správca', public.spravujem_stranku('t120-far')
 insert into public.naboz_stav (oblast, id, data) values ('profil', 't120-far', '{"nazov":"od kaplána"}');
 insert into t select 'kaplán zapíše stav farnosti', exists (select 1 from public.naboz_stav where oblast = 'profil' and id = 't120-far');
 select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-000000120b01', false);
-insert into t select 'kostolník nie je správca', not public.spravujem_stranku('t120-far');
+insert into t select 'kostolník je pomocník (0124)', public.spravujem_stranku('t120-far') and not public.plne_prava('t120-far');
 select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-000000120c01', false);
 insert into t select 'cudzí nie je správca', not public.spravujem_stranku('t120-far');
 

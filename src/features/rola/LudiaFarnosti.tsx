@@ -4,9 +4,9 @@
 // Duchovný nemusí mať účet v DEED („Vypĺňam za …“ → v zozname „bez účtu v DEED“, ten kto vypĺňa = Správca stránky · vy).
 // Úložisko ako Správcovia charity (karta 35): nastavenia_stranky (0050), kľúče „duch“ a „ludia“ — ukladá sa samo.
 // PLACEBO — karta 61 §1: pozvánky (e-mail, QR odkaz 48 h, Prijať / Potvrdiť) sú zatiaľ len v zozname.
-// OPRAVY 380 (0120): človek pozvaný e-mailom s rolou, ktorá smie spravovať (všetky okrem kostolníka, koordinátora detí a účtovníka),
-// je na serveri správca stránky, kým je v zozname — odobratím práva stráca.
-// Koordinátor detí (0123) spravuje len sekciu Deti a mládež a vidí mená prihlásených detí.
+// OPRAVY 393 (0124): dve úrovne — Farár (všetko) a Pomocník (celá Správa okrem Nastavení: účet farnosti, predplatné, ľudia).
+// Názov pri človeku (kaplán, sestra Mária, dobrovoľník …) si farár napíše sám, je to len popis („p“). Server dá práva podľa
+// e-mailu v zozname, kým tam človek je. Pomocník tu zoznam len vidí.
 // ============================================================
 import { DOMENA_MAILU } from "@/lib/kontakty";
 import { ADRESA } from "@/lib/adresa";
@@ -26,7 +26,7 @@ import { useHromadnyVyber, TlacidloVyberu, ListaVyberu, PolickoVyberu, PasVyberu
 
 type Duch = { tp: string; meno: string; tz: string; kde: string; osl: string; fil: string[]; foto: string; som: 0 | 1; /** 0082: účet farára (server podľa neho zapíše farára) */ ucet?: string };
 type Caka = false | true | "odkaz" | "potvrdit";
-type Clovek = { id: number; n: string; k: string; r: string; caka: Caka; do?: string; jaT?: string; vlastny?: boolean; foto?: string };
+type Clovek = { id: number; n: string; k: string; r: string; caka: Caka; do?: string; jaT?: string; vlastny?: boolean; foto?: string; /** OPRAVY 393: popis (kaplán, sestra Mária …) */ p?: string };
 const D0: Duch = { tp: "", meno: "", tz: "", kde: "", osl: "", fil: [], foto: "", som: 0 };
 
 const ZELENA = "#4B7A35", CERV = "#A34A2A";
@@ -43,15 +43,17 @@ const inic = (n: string) => n.split(/\s+/).filter((w) => w && !/\.$/.test(w)).ma
 const hlaskaSt: CSSProperties = { padding: "10px 14px", borderRadius: 12, background: "var(--gSoft)", border: `1.5px solid ${ZELENA}`, fontSize: 14, fontWeight: 700, color: "var(--gInk)" };
 
 /** children = to, čo je pod zoznamom (brigády); pri pridávaní človeka zmizne aj to */
-export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children }: { strankaId: string; meno: string; mobil: boolean; children?: ReactNode }) {
+export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children, farar = true }: { strankaId: string; meno: string; mobil: boolean; children?: ReactNode; /** OPRAVY 393: pomocník zoznam len vidí */ farar?: boolean }) {
   useZmenyNastaveni();
   const ja = usePouzivatel();
   const SL = useSlovaFarnosti(strankaId);
   const T = SL.titul, Tg = SL.titul2p, Sg = SL.jednotka2p, tl = T.charAt(0).toLowerCase() + T.slice(1);
-  const ROLY: [string, string][] = [[T, "všetko, aj peňaženka a ľudia"], ...(SL.dozorca ? [["Dozorca", `rovnaké práva ako ${tl}`] as [string, string]] : []),
-    ["Správca stránky", `všetko za ${Tg} · platbu z peňaženky ${tl} potvrdí`], ["Kaplán / zástupca", "zbierky, omše, oznamy, profil · bez peňaženky a ľudí"],
-    ["Kostolník / pomocník", "len omše, kalendár a oznamy"], ["Koordinátor detí a mládeže", "len sekcia Deti a mládež · stretnutia, prihlásení, fotky · bez peňaženky a ľudí"], ["Účtovník", "len peňaženka a výpisy · nič neupravuje"]];
-  const rI = (n: string) => Math.max(0, ROLY.findIndex((x) => x[0] === n));
+  const ROLY: [string, string][] = [[T, "všetko · aj Nastavenia, účet farnosti, predplatné a ľudia"], ...(SL.dozorca ? [["Dozorca", `rovnaké práva ako ${tl}`] as [string, string]] : []),
+    ["Pomocník", "celá Správa okrem Nastavení · bez účtu farnosti, predplatného a ľudí"]];
+  // OPRAVY 393: staré roly (kaplán, kostolník …) = Pomocník, ich názov ostane ako popis
+  const urov = (r: string) => (r === T || r === "Dozorca" ? r : "Pomocník");
+  const popisZ = (x: Clovek) => x.p || (urov(x.r) !== x.r ? x.r : "");
+  const rI = (n: string) => Math.max(0, ROLY.findIndex((x) => x[0] === urov(n)));
 
   const D0u = { ...D0, ...((maNastavenie("duch") ? citajNastavenie("duch") : {}) as Partial<Duch>) };
   const L = (maNastavenie("ludia") ? citajNastavenie("ludia") : []) as Clovek[];
@@ -64,6 +66,7 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children }
   const [nr, setNr] = useState<number | null>(null);
   const [cesta, setCesta] = useState(0);
   const [mail, setMail] = useState("");
+  const [popis, setPopis] = useState("");
   const [poz, setPoz] = useState<{ id: number; r: string; do: string } | null>(null);
   const [hl, setHl] = useState<{ id: string; t: string } | null>(null);
   const tm = useRef<number | undefined>(undefined);
@@ -108,9 +111,9 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children }
 
   const okMail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail.trim());
   const rola = nr !== null ? ROLY[Math.min(nr, ROLY.length - 1)][0] : "";
-  const pozvat = () => { if (!okMail || !rola) return; const id = teraz(); ulozL([...L, { id, n: "", k: mail.trim(), r: rola, caka: true }]); setMail(""); setPrid(false); setNr(null); hlas(String(id), "Pozvaný ✓ Príde mu oznámenie v appke. Keď ťukne Prijať, môže začať."); };
+  const pozvat = () => { if (!okMail || !rola) return; const id = teraz(); ulozL([...L, { id, n: "", k: mail.trim(), r: rola, caka: true, p: popis.trim() || undefined }]); setMail(""); setPopis(""); setPrid(false); setNr(null); hlas(String(id), "Pozvaný ✓ Príde mu oznámenie v appke. Keď ťukne Prijať, môže začať."); };
   const vytvor = () => { const dt = new Date(teraz() + 48 * 3600e3); const doT = `${dt.getDate()}. ${dt.getMonth() + 1}. o ${dt.getHours()}:${String(dt.getMinutes()).padStart(2, "0")}`; const id = teraz();
-    ulozL([...L, { id, n: "", k: `pozvánka cez odkaz · platí do ${doT}`, r: rola, caka: "odkaz", do: doT }]); setPoz({ id, r: rola, do: doT }); };
+    ulozL([...L, { id, n: "", k: `pozvánka cez odkaz · platí do ${doT}`, r: rola, caka: "odkaz", do: doT, p: popis.trim() || undefined }]); setPoz({ id, r: rola, do: doT }); };
   const odkaz = poz ? `${ADRESA}/p/${String(poz.id).slice(-6)}` : "";
   const sprava = poz ? `${menoFarnosti || "Farnosť"} vás pozýva do správy stránky ako ${poz.r}. Ťuknite na odkaz a vyplňte meno a e-mail: ${odkaz.replace("https://", "")} · platí do ${poz.do}.` : "";
   const ako: [string, string][] = cesta === 0 ? [
@@ -128,7 +131,7 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children }
       <button type="button" onClick={() => { setPrid(false); setNr(null); setPoz(null); }} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--green)" }}>‹ Späť na zoznam</button>
       <b style={{ fontSize: 19 }}>Pridať človeka do správy</b>
       <span style={{ fontSize: 14.5, color: "var(--ink2)" }}>Dva kroky. Najprv vyberte, čo bude robiť, potom ho pozvite.</span>
-      <b style={{ fontSize: 15.5 }}>1. Čo bude robiť</b>
+      <b style={{ fontSize: 15.5 }}>1. Čo smie</b>
       <div role="radiogroup" aria-label="Rola" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {ROLY.map(([t, s], i) => { const on = i === nr; return (
           <button key={t} type="button" role="radio" aria-checked={on} onClick={() => { setNr(i); setPoz(null); }} style={{ minHeight: 56, padding: "8px 36px 8px 14px", borderRadius: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", ...kartaVolby(on) }}>
@@ -137,6 +140,8 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children }
           </button>); })}
       </div>
       {rola && <>
+        <label style={lab}><span>Ako ho voláte <span style={{ fontWeight: 600, color: "var(--ink3)" }}>· nepovinné, len popis</span></span>
+          <input value={popis} onChange={(e) => setPopis(e.target.value.slice(0, 40))} placeholder="napr. kaplán, sestra Mária, dobrovoľník" style={pole} /></label>
         <b style={{ fontSize: 15.5 }}>2. Má účet v <DeedZnacka />?</b>
         <div role="radiogroup" aria-label="Má účet v DEED+" style={{ display: "flex", gap: 4, padding: 4, borderRadius: 12, background: "var(--btn)" }}>
           {["Áno, má účet", "Nemá účet"].map((t, i) => <button key={t} type="button" role="radio" aria-checked={cesta === i} onClick={() => setCesta(i)} style={seg(cesta === i)}>{t}</button>)}
@@ -160,7 +165,6 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children }
           </div>
           <button type="button" onClick={() => { ulozL(L.filter((y) => y.id !== poz.id)); setPoz(null); hlas("zoz", "Pozvánka zrušená ✓"); }} style={{ ...obrys, alignSelf: "flex-start", color: CERV }}>Zrušiť pozvánku</button>
         </div>}
-        {rola === "Správca stránky" && <span style={{ fontSize: 14, lineHeight: 1.5, padding: "10px 14px", borderRadius: 12, background: "var(--goldBg)", border: "1.5px solid #C9A24A" }}>Správca stránky robí všetko za {Tg}. Platba z krypto peňaženky odíde až vtedy, keď ju {tl} potvrdí vo svojej appke.</span>}
         <span style={kick}>{cesta === 0 ? "AKO TO PREBIEHA · MÁ ÚČET" : "AKO TO PREBIEHA · NEMÁ ÚČET"}</span>
         <div style={{ ...karta, padding: "0 14px" }}>
           {ako.map(([t, s], i) => <div key={t} style={{ display: "flex", gap: 12, padding: "12px 0", borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
@@ -182,7 +186,7 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children }
           <b style={{ fontSize: 15.5 }}>{celeMeno || `${T} ${Sg}`}</b>
           <span style={{ fontSize: 13, color: "var(--ink3)" }}>{celeMeno ? ([D0u.kde, D0u.fil.length ? `filiálky: ${D0u.fil.join(", ")}` : ""].filter(Boolean).join(" · ") || "fotka, tituly, kde pôsobí") : "nepovinné · meno, fotka, tituly, filiálky"}</span>
         </span>
-        {!dOtv && <button type="button" onClick={() => setDOtv(true)} style={obrys}>{celeMeno ? "Upraviť ›" : "Vyplniť ›"}</button>}
+        {!dOtv && farar && <button type="button" onClick={() => setDOtv(true)} style={obrys}>{celeMeno ? "Upraviť ›" : "Vyplniť ›"}</button>}
       </div>
       {dOtv && <>
         <label style={{ alignSelf: "flex-start", width: 96, height: 96, borderRadius: "50%", border: "1.5px dashed var(--cardBd)", background: D.foto ? `url("${D.foto}") center/cover no-repeat` : "var(--field)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", fontSize: 12.5, fontWeight: 700, color: "var(--ink3)" }}>
@@ -219,7 +223,7 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children }
     </section>
 
     {/* ---------- kto spravuje ---------- */}
-    <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span style={{ ...kick, flex: 1 }}>{`Kto spravuje stránku ${Sg}`.toUpperCase()}</span>{volitelni.length > 1 && <TlacidloVyberu v={hv} />}</div>
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span style={{ ...kick, flex: 1 }}>{`Kto spravuje stránku ${Sg}`.toUpperCase()}</span>{farar && volitelni.length > 1 && <TlacidloVyberu v={hv} />}</div>
     <ListaVyberu v={hv} polozky={volitelni.map((x) => ({ id: String(x.id), cas: x.id }))} />
     <section style={{ ...karta, borderRadius: 22, padding: mobil ? "4px 14px" : "6px 20px" }}>
       {[...base, ...L].map((x, i) => {
@@ -235,12 +239,15 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children }
               <span style={{ flex: 1, minWidth: 140, display: "flex", flexDirection: "column", gap: 2 }}>
                 <b style={{ fontSize: 15 }}>{x.n || x.k || "Pozvaný"}</b>
                 {x.caka ? <span style={{ alignSelf: "flex-start", padding: "2px 8px", borderRadius: 8, background: "var(--goldBg)", fontSize: 12, fontWeight: 800 }}>{cakaT(x.caka)}</span> : null}
-                <span style={{ fontSize: 13, color: "var(--ink3)" }}>{vlastny ? x.jaT : `${rr[0]} · ${rr[1]}`}</span>
+                <span style={{ fontSize: 13, color: "var(--ink3)" }}>{vlastny ? x.jaT : `${popisZ(x) ? `${popisZ(x)} · ` : ""}${rr[0]} · ${rr[1]}`}</span>
               </span>
-              {!vlastny && !hv.zap && <select value={x.r} aria-label="Rola" onChange={(e) => { ulozL(L.map((y) => (y.id === x.id ? { ...y, r: e.target.value } : y))); hlas(String(x.id), `Rola zmenená ✓ ${e.target.value}`); }}
+              {farar && !vlastny && !hv.zap && <select value={urov(x.r)} aria-label="Čo smie" onChange={(e) => { ulozL(L.map((y) => (y.id === x.id ? { ...y, r: e.target.value, p: popisZ(y) || undefined } : y))); hlas(String(x.id), `Zmenené ✓ ${e.target.value}`); }}
                 style={{ ...pole, width: "auto", height: 44 }}>{ROLY.map(([t]) => <option key={t} value={t}>{t}</option>)}</select>}
             </div>
-            {!vlastny && !hv.zap && <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {farar && !vlastny && !hv.zap && <input key={`p${x.id}-${popisZ(x)}`} defaultValue={popisZ(x)} aria-label={`Popis · ${x.n || x.k}`} placeholder="Popis, napr. kaplán"
+              onBlur={(e) => { const v = e.target.value.trim().slice(0, 40); if (v !== popisZ(x)) { ulozL(L.map((y) => (y.id === x.id ? { ...y, p: v || undefined } : y))); hlas(String(x.id), v ? `Uložené ✓ ${v}` : "Popis zmazaný ✓"); } }}
+              onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }} style={{ ...pole, height: 44, maxWidth: 320 }} />}
+            {farar && !vlastny && !hv.zap && <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {x.caka === "potvrdit" && <button type="button" onClick={() => { ulozL(L.map((y) => (y.id === x.id ? { ...y, caka: false } : y))); hlas(String(x.id), `Potvrdené ✓ ${x.n} môže začať.`); }} style={{ ...plne(true), minHeight: 44 }}>Potvrdiť</button>}
               {x.caka === "odkaz" && TESTOVACIA && <button type="button" onClick={() => ulozL(L.map((y) => (y.id === x.id ? { ...y, caka: "potvrdit", n: "Testovací pozvaný", k: `test@${DOMENA_MAILU}` } : y)))} style={{ ...obrys, borderStyle: "dashed" }}>Ukážka: vyplnil pozvánku ›</button>}
               {posledny ? <span style={{ fontSize: 13, color: "var(--ink3)" }}>{SL.dozorca ? `${T} alebo dozorca musí ostať aspoň jeden.` : `${T} musí ostať aspoň jeden.`}</span>
@@ -258,11 +265,12 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children }
         if (ost < 1) { const nech = z.find(jeDuchR); z = z.filter((y) => y !== nech); }
         ulozL(L.filter((y) => !z.includes(y)));
         return ost < 1 ? `Odobratí: ${z.length} ✓ · ${T} musí ostať aspoň jeden` : `Odobratí: ${z.length} ✓`; }} />
-    <button type="button" onClick={() => { setPrid(true); setDOtv(false); }} style={{ minHeight: 56, padding: "8px 16px", borderRadius: 16, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2, textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
+    {!farar && <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink3)" }}>{`Ľudí do správy pridáva a mení ${tl}.`}</span>}
+    {farar && <button type="button" onClick={() => { setPrid(true); setDOtv(false); }} style={{ minHeight: 56, padding: "8px 16px", borderRadius: 16, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2, textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
       <b style={{ fontSize: 15 }}>Potrebujete pridať ďalších ľudí do správy? ›</b>
       <span style={{ fontSize: 13, color: "var(--ink3)" }}>Nemusíte. Stránku zvládnete spravovať aj sám.</span>
-    </button>
-    <span style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)" }}>{SL.dozorca ? `${T} alebo dozorca musí ostať aspoň jeden.` : `${T} musí ostať aspoň jeden.`} Pri preložení dajte rolu nástupcovi, potom sa môžete odobrať. Odobrať treba podržať.</span>
+    </button>}
+    {farar && <span style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)" }}>{SL.dozorca ? `${T} alebo dozorca musí ostať aspoň jeden.` : `${T} musí ostať aspoň jeden.`} Pri preložení dajte rolu nástupcovi, potom sa môžete odobrať. Odobrať treba podržať.</span>}
     {children}
   </>);
 }
