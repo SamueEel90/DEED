@@ -48,6 +48,7 @@ import { nastavAktivnuCharitu, casRegistracieLokalne } from "@/lib/aktivnaCharit
 import { supabase } from "@/lib/supabase";
 import { useMojePrava, smie, NEMATE_POVOLENE, type Pravo } from "@/lib/pravaPracovnika";
 import { LudiaCharity, pocetLudiCharity } from "./LudiaCharity";
+import { DarcoviaCharity, SledujuciCharity } from "./DarcoviaCharity";
 import { SpravaFarnosti } from "./SpravaFarnosti";
 import { useTestStav, zmenTestStav } from "@/lib/testStav";
 import { PrepinacPodania, TestVolba } from "@/features/verejny-profil/casti";
@@ -419,6 +420,9 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   else if (sub === "dorovnanie" && typPovoli("dorovnanie", typ) && maPovolenie("dorovnanie", tier)) obsah = <SpravaDorovnania nadpis={false} entita={poz} hlavnyUcet={nacitajIbanOrg(poz)} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onOznamy={() => otvor("oznamy")}
     testCiele={{ strecha: naSpravu(ZB_LIST[0]).id, vozik: naSpravu(ZB_LIST[1]).id, ovocie: naSpravu(ZB_LIST[2]).id, skolske: naSpravu(ZB_LIST[3]).id, seniori: `${strankaId}-sek-seniori`, deti: `${strankaId}-sek-deti` }} />;
   // KARTA 39 · bod 3: centrálna zbierka (od P1)
+  // OPRAVY 405: charita · Darcovia a sumy + Sledujúci (ako Viera), Zadarmo
+  else if (sub === "darcovia" && typ === "charita") obsah = <DarcoviaCharity strankaId={strankaId} mobil={!desktop} />;
+  else if (sub === "sledujuci" && typ === "charita") obsah = <SledujuciCharity strankaId={strankaId} mobil={!desktop} />;
   else if (sub === "centralna" && typPovoli("centralna", typ) && maPovolenie("centralna", tier)) obsah = <SpravaCentralnej strankaId={strankaId} nazov={nazov} hlavnyUcet={nacitajIbanOrg(poz)} tier={tier} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onDorovnanie={() => otvor("dorovnanie")} onDarcovia={() => otvor("darcovia")} />;
   else obsah = !typPovoli(sub as PolozkaSpravy, typ) ? <Pripravujeme /> : maPovolenie(sub as PolozkaSpravy, tier) ? <Pripravujeme /> : <Zamknute program={odProgramu(sub as PolozkaSpravy)} />;
   // OPRAVY 404: pracovník charity vidí len zapnuté časti, zvyšok je zamknutý

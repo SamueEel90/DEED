@@ -10,7 +10,7 @@ import { nacitajStav, ulozStavIsto } from "@/features/viera/stav";
 // odpovede 18. 10.: pod tlačidlom posledné poslanie (kedy · komu), uložené pri stránke
 type Posledne = { cas: string; komu: string };
 
-export function PodakovatDarcom({ strankaId, mobil, ciele }: { strankaId: string; mobil: boolean; /** [kľúč, názov] — vsetci, hlavna, id zbierky */ ciele: [string, string][] }) {
+export function PodakovatDarcom({ strankaId, mobil, ciele, od = "od farnosti" }: { strankaId: string; mobil: boolean; /** OPRAVY 405: „od farnosti“ · „od charity“ */ od?: string; /** [kľúč, názov] — vsetci, hlavna, id zbierky */ ciele: [string, string][] }) {
   const [otv, setOtv] = useState(false);
   const [komu, setKomu] = useState("vsetci");
   const [txt, setTxt] = useState("");
@@ -39,7 +39,7 @@ export function PodakovatDarcom({ strankaId, mobil, ciele }: { strankaId: string
       </div>
       <TextovePolia popis={txt} popis2="" onPopis={(h) => { setTxt(h); if (st?.k !== "busy") setSt(null); }} onPopis2={() => undefined} ph={mobil} bezPokracovania
         popisHlavneho="Napíšte darcom pár viet poďakovania." placeholder="Ďakujeme, že ste s nami. Vďaka vašim darom…" />
-      <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>Príde darcom do Oznámení od farnosti.</span>
+      <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{`Príde darcom do Oznámení ${od}.`}</span>
       <button type="button" aria-busy={st?.k === "busy"} aria-live="polite" onClick={() => void posli()} style={{ minHeight: 52, padding: "0 20px", border: tl.bd, borderRadius: 14, background: tl.bg, color: tl.c, cursor: text ? "pointer" : "default", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, boxShadow: "none" }}>{tl.t}</button>
       {st?.k === "ok" && <span role="status" style={{ fontSize: 13.5, color: "var(--gInk)", fontWeight: 700 }}>{st.n === 1 ? "Dostane ho 1 darca." : st.n > 1 && st.n < 5 ? `Dostanú ho ${st.n} darcovia.` : `Dostane ho ${st.n} darcov.`}</span>}
       {posledne && <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>Naposledy poslané {(() => { const d = new Date(posledne.cas); return `${d.getDate()}. ${d.getMonth() + 1}.`; })()} · {posledne.komu}</span>}
