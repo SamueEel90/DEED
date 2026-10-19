@@ -411,7 +411,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
     stit={stit} onUlozene={(pr) => { setProfil(pr); setKoncept(null); }}
     onZmena={setKoncept} onZrusit={() => { hist.current = []; setSub(null); }} onHotovo={() => { hist.current = []; setSub(null); }} />;
   else if (sub === "x:Nová zbierka") obsah = <NovaZbierka strankaId={strankaId} pozicia={poz} tier={tier} nazov={nazov} inicialy={inicialy} mobil={!desktop} tablet={tablet} stit={stit}
-    onMojeZbierky={() => { hist.current = []; setSub("g_zbierky"); }} />;
+    onMojeZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onUcet={() => otvor("n:ucty")} />;
   else if (sub === "x:Správa zbierky" && spravZb) obsah = <SpravaZbierky key={spravZb.id} tier={tier} onDorovnanie={() => otvor("dorovnanie")} z={{ ...spravZb, organizacia: nazov, onObsah: vlastne.some((x) => x.id === spravZb.id) ? (o) => void upravZbierku(strankaId, spravZb.id, o) : undefined }} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onUdaje={() => otvor("n:udaje")} />;
   else if (sub.startsWith("x:")) obsah = <Pripravujeme />;
   // KARTA 40: Oznamy — v Zadarmo výzva na súrnu pomoc a dva zamknuté druhy (nie „Pripravujeme" ani zámok celej položky)

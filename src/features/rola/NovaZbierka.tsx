@@ -32,7 +32,10 @@ import { Ik, I, Zamok, vyber, panel, pole, pozn, fmtEur, fmtSek, cis, cistyText,
 import { AnoNie } from "@/components/AnoNie";
 import { RamPisania } from "@/components/RamPisania";
 
-export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, tablet, stit, onMojeZbierky, farnost }: {
+/** OPRAVY 416: účet zbierky nie je overený pre stránku — návod namiesto „Skúsiť znova“ */
+const UCET_NEOVERENY = "Najprv overte účet · Nastavenia → Účet ›";
+export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, tablet, stit, onMojeZbierky, farnost, onUcet }: {
+  /** OPRAVY 416: neoverený účet → Nastavenia → Účet */ onUcet?: () => void;
   strankaId: string; pozicia: Pozicia; tier: Tier; nazov: string; inicialy: string; mobil: boolean; tablet: boolean; stit: string;
   /** „Moje zbierky" (hotovo) */
   onMojeZbierky: () => void;
@@ -117,7 +120,7 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
       const z = await spustiZbierku(strankaId, zadarmo ? { ...d, typ: "kratka", iban: "", prav: false, ...(farnost ? { ucel: null, farnost: { druh: "farnost" as const, ...(naMiesto ? { miesto: naMiesto.id } : {}), upoz } } : {}) } : d, zadarmo ? hlavnyUcet : d.iban, farnost ? "nabozenstvo" : undefined);
       if (farnost) { farnost.onSpustena(z); return; }
       setHotovo(z);
-    } catch (e) { setChybaSp(e instanceof Error ? e.message : "Zbierku sa nepodarilo spustiť. Skúste znova."); }
+    } catch (e) { const m = e instanceof Error ? e.message : ""; setChybaSp(/nie je overený|ucet_neovereny/i.test(m) ? UCET_NEOVERENY : m || "Zbierku sa nepodarilo spustiť. Skúste znova."); } // OPRAVY 416
     finally { setSpusta(false); }
   };
 
@@ -380,7 +383,9 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
     : tuk
       ? <button type="button" onDoubleClick={() => void zapecat()} aria-disabled={!!chyba} style={{ flex: ph ? 1 : "none", height: 52, padding: "0 24px", border: "none", borderRadius: 14, background: chyba ? "#CFC9BC" : "var(--green)", color: chyba ? "#6B6C62" : "#fff", cursor: chyba ? "default" : "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800 }}>Dvakrát kliknite a zapečaťte</button>
       : <div style={{ flex: ph ? 1 : "none", width: ph ? undefined : 280, ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo label={spusta ? "Spúšťa sa…" : "Podržte a zapečaťte"} disabled={!!chyba} onConfirm={() => void zapecat()} /></div>;
-  const chybaSpEl = <ChybaPriTlacidle text={ki === KROKY.length - 1 ? chybaSp : null} uklada={spusta} onZnova={() => void zapecat()} nadpis="Zbierka sa nespustila" />;
+  const chybaSpEl = chybaSp === UCET_NEOVERENY && onUcet
+    ? <ChybaPriTlacidle text={ki === KROKY.length - 1 ? chybaSp : null} onZnova={onUcet} znovaText="Nastavenia → Účet ›" nadpis="Zbierka sa nespustila" />
+    : <ChybaPriTlacidle text={ki === KROKY.length - 1 ? chybaSp : null} uklada={spusta} onZnova={() => void zapecat()} nadpis="Zbierka sa nespustila" />;
   const spatEl = ki > 0 ? <button type="button" onClick={spat} aria-label="Späť" style={{ flex: "none", height: 52, minWidth: 52, padding: ph ? 0 : "0 18px 0 12px", borderRadius: 14, border: "1.5px solid var(--cardBd)", background: ph ? "var(--field)" : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--ink)", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}><Ik d={I.vlavo} s={18} w={2.4} />{!ph && "Späť"}</button> : null;
 
   const pravidlaEl = pravidla ? <PravidlaObsahu ph={ph} stit={stit} onZavri={() => setPravidla(false)} /> : null;

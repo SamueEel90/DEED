@@ -11,6 +11,7 @@ import { nastavAktivnuCharitu, noveIdCharity, pridajLokalnuStranku, zapisCasRegi
 import { nastavAko, otvorSpravuPoRegistracii, nacitajStrankyUctu, ulozNovuStranku, strankaCharity } from "./mojeStranky";
 import { ulozRegistra } from "./udajeRegistra";
 import { ulozIbanOrg, ulozTypStranky } from "@/features/rola/stav";
+import { poziadajOverenie, simulujOverenie } from "./overenieUctu";
 
 /** testovací IBAN (platný tvar) — v Správe sa dá zmeniť */
 const TEST_IBAN = "SK3112000000198742637541";
@@ -33,6 +34,8 @@ export async function zalozTestovaciuCharitu(): Promise<string> {
   nastavAktivnuCharitu(id);
   await ulozRegistra(id, { nazov, forma: "občianske združenie", ico, registracia: "", sidlo: "Trenčín", vznik: `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}` }).catch(() => undefined);
   ulozIbanOrg("charita", TEST_IBAN);
+  // OPRAVY 416: testovací účet je overený k práve založenej stránke (server dev_over_ucet, len testovacia verzia)
+  if (naServeri) { try { await poziadajOverenie(id, TEST_IBAN); await simulujOverenie(id, TEST_IBAN); } catch { /* zbierku pustí aj 0132 v testovacej verzii */ } }
   ulozTypStranky("charita");
   zapisCasRegistracie(id);
   if (naServeri) await nacitajStrankyUctu().catch(() => undefined);

@@ -1,5 +1,5 @@
 -- ============================================================
--- Test 0079 — testovacia stránka zapečatí zbierku bez overeného účtu, ostrá nie (OPRAVY 198)
+-- Test 0079 + 0132 — testovacia stránka zapečatí zbierku bez overeného účtu, ostrá nie (OPRAVY 198); v testovacej verzii appky áno (OPRAVY 416)
 -- Všetko beží v transakcii a na konci sa vráti (ROLLBACK). Každý riadok musí mať ok = t.
 -- ============================================================
 begin;
@@ -13,6 +13,12 @@ create temp table t(c text, ok boolean);
 insert into public.zbierka (id, nazov, modul, typ, stav, stranka, ucet_id, zapecatena, nastavenie)
  values ('zb-test','Pohreb test','nabozenstvo','zbierka','aktivna','t-test','7e57d100-0000-0000-0000-0000000000f1', now(), '{"ucet":"SK0011000000002612349999"}');
 insert into t select 'testovacia: zapecatene bez overenia', exists (select 1 from zbierka where id = 'zb-test');
+-- 0132: testovacia verzia celej appky (testovacia_pokladna = true) neblokuje ani ostrú stránku
+insert into public.zbierka (id, nazov, modul, typ, stav, stranka, ucet_id, zapecatena, nastavenie)
+ values ('zb-ostra-tv','Zbierka ostra · testovacia verzia','charity','zbierka','aktivna','t-ostra','7e57d100-0000-0000-0000-0000000000f1', now(), '{"ucet":"SK0011000000002612349999"}');
+insert into t select 'testovacia verzia: ostra bez overenia prejde', exists (select 1 from zbierka where id = 'zb-ostra-tv');
+-- po ostrom štarte (prepínač vypnutý) platí kontrola
+update public.ledger_prepinac set zapnute = false where kluc = 'testovacia_pokladna';
 do $$ begin
   insert into public.zbierka (id, nazov, modul, typ, stav, stranka, ucet_id, zapecatena, nastavenie)
    values ('zb-ostra','Pohreb ostra','nabozenstvo','zbierka','aktivna','t-ostra','7e57d100-0000-0000-0000-0000000000f1', now(), '{"ucet":"SK0011000000002612349999"}');
