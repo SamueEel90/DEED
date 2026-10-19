@@ -4,6 +4,7 @@
 // Uložiť / Odoslať / Pridať sú sivé, kým nie je čo uložiť. Žiadne SMS.
 // Stav obrazoviek sa ukladá do účtu stránky (nastavenia_stranky, migrácia 0050) — lib/nastaveniaStranky.
 // ============================================================
+import { aktivnaCharita } from "@/lib/aktivnaCharita";
 import { TlZbalit } from "@/features/verejny-profil/zbalit";
 import { RichTextInput } from "@/components/richtext";
 import { kartaVolby, FajkaVolby } from "@/components/Volby";
@@ -365,14 +366,13 @@ type Ud = { mail: string; tel: string; dic: string; fmail: string; ina: boolean;
 const UD_PRAZDNE: Ud = { mail: "", tel: "", dic: "", fmail: "", ina: true, adr: "" };
 const UD0: Ud = { mail: "info@svetlopomoci.sk", tel: "+421 905 111 222", dic: "", fmail: "info@svetlopomoci.sk", ina: false, adr: "" };
 /** OPRAVY 400: údaje z registra sú v lib/udajeRegistra (zo skutočnej registrácie, nič napevno) — charita = testovacia stránka „svetlo“ */
-const STRANKA_CHARITY = "svetlo";
 /** OPRAVY 114: hlavný účet organizácie z registrácie (jedno miesto — Účty aj Nová zbierka v Zadarmo) */
 export const HLAVNY_UCET = "SK31 0900 0000 0051 2233 4417";
 
 /** 5. 10. (C3) · fakturačné údaje pre faktúru za platbu DEED+; null = chýbajú (platba sa nespustí) */
 export function fakturacneUdaje(): { nazov: string; ico: string; adresa: string; dic?: string; email: string } | null {
   const u = { ...UD0, ...((pamat.get("ud") as Partial<Ud> | undefined) ?? {}) };
-  const r = registra(STRANKA_CHARITY);
+  const r = registra(aktivnaCharita());
   const adresa = u.ina ? u.adr.trim() : r.sidlo.trim();
   const email = u.fmail.trim();
   if (!r.nazov.trim() || !r.ico.trim() || !adresa || !/^\S+@\S+\.\S+$/.test(email)) return null;
@@ -380,7 +380,7 @@ export function fakturacneUdaje(): { nazov: string; ico: string; adresa: string;
 }
 
 /** farnost (OPRAVY 186): názov z registrácie, cirkev (číselník 18), Patrí pod; bez ukážkových údajov charity */
-export function ObrUdaje({ mobil, farnost, strankaId = STRANKA_CHARITY }: { mobil: boolean; farnost?: { nazov: string; cirkev: React.ReactNode }; strankaId?: string }) {
+export function ObrUdaje({ mobil, farnost, strankaId = aktivnaCharita() }: { mobil: boolean; farnost?: { nazov: string; cirkev: React.ReactNode }; strankaId?: string }) {
   const reg = useRegistra(strankaId);
   const [ud, setUd] = usePamat<Ud>("ud", farnost ? UD_PRAZDNE : UD0);
   const [pod, setPod] = usePamat<string>("pod", "");
@@ -583,7 +583,7 @@ function ProgramCharita({ mobil, tier, onTier, otvor }: { mobil: boolean; tier: 
 const denFa = (iso: string) => { const d = new Date(iso); return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`; };
 /** testovacie faktúry za program (platený program = 3 mesačné platby) + faktúry zaplatené v tejto relácii, najnovšie hore */
 function vsetkyFaktury(platby: FakturaOrg[], cur: number): FakturaOrg[] {
-  const r = registra(STRANKA_CHARITY), ud = fakturacneUdaje() ?? { nazov: r.nazov, ico: icoText(r.ico), adresa: r.sidlo, email: UD0.fmail };
+  const r = registra(aktivnaCharita()), ud = fakturacneUdaje() ?? { nazov: r.nazov, ico: icoText(r.ico), adresa: r.sidlo, email: UD0.fmail };
   const program: FakturaOrg[] = cur ? [10, 9, 8].map((m, i) => ({ cislo: `2026/${1042 - i}`, co: `Program ${PROG[cur][0]} · mesačne`, suma: PROG[cur][2], datum: new Date(2026, m - 1, 1, 9).toISOString(), sposob: "faktúra prevodom", odberatel: ud })) : [];
   return [...platby, ...program];
 }

@@ -1,4 +1,6 @@
 import { useState, memo } from "react";
+import { TESTOVACIA } from "@/lib/testovacia";
+import { UDALOST_ZALOZ_CHARITU } from "@/lib/aktivnaCharita";
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { SIRKA, C, SPACE, RADIUS } from "@/theme";
 import { ModulHlavicka, HladanieModal, OblubeneHviezda, toast, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, DoplnokDorovnanie, obalSiroky, OkruhVyber, SegTabs, tint, Lupa, IkonaPlay, IkonaDoska, IkonaKriz, IkonaInstitucia, Overene, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch, SwipeBack } from "@/shared";
@@ -291,6 +293,11 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard, onFire
           <Zvoncek color={K.txt2} toast={toast} />
         </>
       } />
+      {/* OPRAVY 402: len testovacia verzia — ten istý registračný formulár charity (bez overenia účtu), každá = nová charita */}
+      {TESTOVACIA && <div style={{ padding: `0 ${SPACE.md}px ${SPACE.sm}px` }}>
+        <button type="button" onClick={() => window.dispatchEvent(new Event(UDALOST_ZALOZ_CHARITU))}
+          style={{ minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1.5px dashed rgba(128,128,120,.6)", background: "rgba(128,128,120,.15)", color: C.text, fontFamily: "inherit", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>+ Založiť charitu (test)</button>
+      </div>}
 
       {/* živý ticker */}
       <Ticker>Nádej pacientom <b style={{ color: C.greenL }}>práve dostala 100 DeeD</b> → Marek</Ticker>

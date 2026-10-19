@@ -8,19 +8,20 @@
 // Perzistencia: verejné nastavenia stránky charity (nastavenia_stranky.verejne → „zbierkyProfily", vidí aj návštevník),
 // fotky idú do Storage (bezDataUrl). localStorage = záloha (mock/offline).
 // ============================================================
+import { aktivnaCharita } from "@/lib/aktivnaCharita";
 import { useSyncExternalStore } from "react";
 import { useVerejneNastavenia, verejneZPamate, zapisVerejne } from "@/lib/verejneNastavenia";
 import { bezDataUrl } from "@/lib/uploadFoto";
 
 /** stránka charity v DB, ktorej patria centrálna a sektorové zbierky (rola/stav STRANKA_POZICIE.charita) */
-const STRANKA = "svetlo";
+const STRANKA_F = aktivnaCharita; // OPRAVY 402: aktívna charita
 const KLUC_V = "zbierkyProfily";
-const zDb = (): Record<string, ProfilZbierky> | undefined => verejneZPamate(STRANKA)?.[KLUC_V] as Record<string, ProfilZbierky> | undefined;
+const zDb = (): Record<string, ProfilZbierky> | undefined => verejneZPamate(STRANKA_F())?.[KLUC_V] as Record<string, ProfilZbierky> | undefined;
 async function zapisDoDb(id: string, p: ProfilZbierky | null) {
   const bez = p ? await bezDataUrl(p, "zbierky") : null;
   const vsetky = { ...(zDb() ?? {}) };
   if (bez) vsetky[id] = bez; else delete vsetky[id];
-  await zapisVerejne(STRANKA, KLUC_V, vsetky);
+  await zapisVerejne(STRANKA_F(), KLUC_V, vsetky);
 }
 
 export const VLASTNA_ZBIERKA_CFG = {
@@ -72,7 +73,7 @@ let verzia = 0;
 const posluchaci = new Set<() => void>();
 const subscribe = (f: () => void) => { posluchaci.add(f); return () => posluchaci.delete(f); };
 export function useZmenyProfilov(): number {
-  useVerejneNastavenia(STRANKA); // prekreslí sa aj po načítaní z DB
+  useVerejneNastavenia(STRANKA_F()); // prekreslí sa aj po načítaní z DB
   return useSyncExternalStore(subscribe, () => verzia);
 }
 

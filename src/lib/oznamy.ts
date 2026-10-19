@@ -8,6 +8,7 @@
 // synchrónne: cache v pamäti + localStorage, DB sa načíta na pozadí (useZmenyOznamov prekreslí).
 // Entita bez stránky v DB (napr. fara:<id>) a mock/offline = len localStorage.
 // ============================================================
+import { aktivnaCharita } from "@/lib/aktivnaCharita";
 import { useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
 import { bezDataUrl } from "./uploadFoto";
@@ -101,7 +102,7 @@ export function useZmenyOznamov(): number { return useSyncExternalStore(subscrib
 
 // entita → testovacia stránka v DB (lib/mojeStranky UKAZKOVE_STRANKY); iná entita ostáva lokálne
 const STRANKA_ENTITY: Record<string, string> = { charita: "svetlo", b2b: "pekaren", tvorca: "tvorca", svetlo: "svetlo", pekaren: "pekaren", farnost: "farnost" };
-const strankaEntity = (entita: string): string | null => (supabase ? STRANKA_ENTITY[entita] ?? null : null);
+const strankaEntity = (entita: string): string | null => (supabase ? (entita === "charita" ? aktivnaCharita() : STRANKA_ENTITY[entita]) ?? null : null); // OPRAVY 402
 
 const pamat = new Map<string, Oznam[]>();
 const zDb = new Set<string>();       // entity, ktoré už prišli z DB

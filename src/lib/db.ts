@@ -188,6 +188,13 @@ export async function vytvorOrganizaciuPodOsobou(osobaUcetId: string, typ = "cha
   return { id: u.id, typ: u.typ, poradove_cislo: u.poradove_cislo, stav_registracie: u.stav_registracie };
 }
 
+/** OPRAVY 402 (0126): stránka organizácie s vlastným id — každá registrácia charity je nová stránka */
+export async function zalozStrankuOrganizacie(orgUcetId: string, nazov: string): Promise<string> {
+  const { data, error } = await db().rpc("zaloz_stranku_organizacie", { p_org: orgUcetId, p_nazov: nazov });
+  if (error) throw error;
+  return data as string;
+}
+
 export async function dokonciRegistraciu(ucetId: string) {
   const { error } = await db().from("ucet").update({ stav_registracie: "hotovo", aktualizovane: teraz() }).eq("id", ucetId);
   if (error) throw error;

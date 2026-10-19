@@ -4,6 +4,7 @@
 // organizácie (lib/profilStranky, migrácia 0028), na profile sa ukáže až po „Uložiť profil".
 // Editor, orez, logo a kontakt = existujúce RichTextInput, OrezFotky, lib/obrazok, kontakt.tsx.
 // ============================================================
+import { aktivnaCharita } from "@/lib/aktivnaCharita";
 import { useVerejnyProfilOtvoreny } from "@/features/verejny-profil/otvor";
 import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
@@ -36,7 +37,7 @@ export function zakladnyProfil(p: Pozicia, stranka?: string): ProfilStranky {
   const k = nacitajKontakt(p);
   return {
     onas: "", onas2: "",
-    kontakt: { sidlo: p === "charita" ? registra(stranka ?? "svetlo").sidlo : k.sidlo, adresaVerejna: "", telefony: [{ cislo: "", popis: "" }], emaily: [{ adresa: "", popis: "" }], web: "", siete: {} },
+    kontakt: { sidlo: p === "charita" ? registra(stranka ?? aktivnaCharita()).sidlo : k.sidlo, adresaVerejna: "", telefony: [{ cislo: "", popis: "" }], emaily: [{ adresa: "", popis: "" }], web: "", siete: {} },
     logo: null, tvar: "stvorec", logoRezim: "cele", logoPozadie: "biele",
     cover: null, ram: "bez",
   };

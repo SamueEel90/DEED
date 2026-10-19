@@ -8,6 +8,7 @@ import type { StitUroven } from "@/features/zbierka/Pole";
 import { menoBezMena } from "./darcovia";
 import { VIDEO_NAKUP } from "@/lib/ukazkoveVideo";
 import { sumaEur } from "@/lib/suma";
+import { vyprazdni } from "./testStav";
 
 export type Mesto = "Trenčín" | "Prešov" | "Bratislava";
 export const MESTA: Mesto[] = ["Trenčín", "Prešov", "Bratislava"];
@@ -636,6 +637,14 @@ const FARNOST: TestProfil = {
 };
 
 export const TEST_PROFILY: TestProfil[] = [CHARITA, FIRMA, TVORCA, FARNOST];
+/** OPRAVY 402: verejný profil novo založenej charity — prázdny (len to, čo naozaj vytvorí), meno z registrácie */
+export function prazdnaCharita(k: string, meno = "Nová charita"): TestProfil {
+  const e = vyprazdni(CHARITA);
+  const ini = meno.replace(/,?\s*(o\.\s?z\.|n\.\s?o\.)\s*$/i, "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("") || "?";
+  return { ...e, k, meno, iniciala: ini, menoGen: undefined, menoDat: undefined, podporit: undefined, veta: "", stit: "Bronze", odRoku: new Date().getFullYear(),
+    stitky: [], ico: "", ucet: "", sidlo: "", kontakt: "", cisla: [], stitCisla: [["0 %", "doložené"], ["0", "skutkov"], ["0", "sledujúcich"]],
+    centralna: { ...e.centralna, id: `c-${k}`, nazov: "Celá činnosť", vyzbierane: 0, darcovia: 0, mesiac: 0, mesacne: 0, galeria: [], kam: undefined, tipy: undefined }, titulka: "", onas: undefined, dorovnaniePas: undefined };
+}
 export const najdiTestProfil = (k: string): TestProfil | undefined => TEST_PROFILY.find((p) => p.k === k);
 /** verejný odkaz na zdieľanie: /p/svetlo · /p/pekaren · /p/martin → kľúč profilu */
 const SLUG_KLUC: Record<string, string> = { svetlo: "svetlo", pekaren: "pekaren", martin: "tvorca", farnost: "farnost" };

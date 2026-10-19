@@ -24,6 +24,7 @@
 // (dorovnanie_zapecat / dorovnanie_krok / dorovnanie_dar). localStorage verzia je zrušená.
 // Bez databázy (mock) sa len prehrajú statické ukážkové dáta — nič sa nerozhoduje, kroky nejdú.
 // ============================================================
+import { aktivnaCharita } from "@/lib/aktivnaCharita";
 import { useEffect, useSyncExternalStore } from "react";
 import { rovnakaFirma, firma as uctFirmy, UCTY_FIRIEM } from "./firma";
 import { somZamestnanec, menoDarcu } from "./zamestnanci";
@@ -421,7 +422,7 @@ export function smieDorovnat(entita: string, firma: string /* číslo účtu fir
 
 /** stránka v DB pre kľúč subjektu v appke (testovacie stránky z 0035) */
 export function strankaEntity(entita: string): string | undefined {
-  if (entita === "charita") return "svetlo";
+  if (entita === "charita") return aktivnaCharita(); // OPRAVY 402
   if (entita === "tvorca") return "tvorca";
   if (entita === "b2b") return "pekaren";
   if (entita.startsWith("fara")) return "farnost";

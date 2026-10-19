@@ -15,6 +15,7 @@ import { TabBar, ViacSheet, PridatFAB, nacitajTaby, ulozTaby, VSETKY_MODULY } fr
 import { Sidebar } from "@/components/Sidebar";
 import { useSession, setSession } from "@/lib/session";
 import { createPortal } from "react-dom";
+import { UDALOST_ZALOZ_CHARITU } from "@/lib/aktivnaCharita";
 import { resolveSession, subscribeAuth, zaistiSession } from "@/lib/auth";
 import { USE_SUPABASE } from "@/lib/supabase";
 import type { TypUctu } from "@/types";
@@ -272,6 +273,8 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   useVrstva(upgradeOpen, () => setUpgradeOpen(false));
   useVrstva(!!aktivacia, () => setAktivacia(false));
   useVrstva(orgReg, () => { setOrgReg(false); cakajRegistraciuOrg(false); });
+  // OPRAVY 402: testovacie „+ Založiť charitu (test)“ — ten istý formulár registrácie charity
+  useEffect(() => { const f = () => { cakajRegistraciuOrg(true); setOrgReg(true); }; window.addEventListener(UDALOST_ZALOZ_CHARITU, f); return () => window.removeEventListener(UDALOST_ZALOZ_CHARITU, f); }, []);
   useVrstva(!!badgeSheet, () => setBadgeSheet(null));
   useVrstva(!!splitSheet, () => setSplitSheet(null));
   useVrstva(!!chainSheet, () => setChainSheet(null));

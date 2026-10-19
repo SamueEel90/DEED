@@ -16,7 +16,7 @@ import type { StitLevel } from "@/components/stit";
 import { createPortal } from "react-dom";
 import { useLayout } from "@/components/context";
 import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
-import { najdiTestProfil, type TestProfil, type TestZbierka } from "@/lib/testProfily";
+import { najdiTestProfil, prazdnaCharita, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { centralnaZPamate, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
 import { cistyText } from "@/lib/richtext";
 import { otvorVerejnyProfil, useVerejnyProfilOtvoreny, verejnyProfilKluc, zavriVerejnyProfil, vrstvaProfiluPripoj, nahladZoSpravy, cielOznamu, zrusDoOznamu } from "./otvor";
@@ -26,7 +26,8 @@ import { nacitajTiery } from "@/features/rola/stav";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { Kronika } from "./Kronika";
 import { PataCharita } from "./PataCharita";
-import { useRegistra } from "@/lib/udajeRegistra";
+import { useRegistra, registra } from "@/lib/udajeRegistra";
+import { lokalneStranky } from "@/lib/aktivnaCharita";
 import { VykladCharita } from "./VykladCharita";
 import { PiratCharita } from "./PiratCharita";
 import { StrankaFirmy } from "./StrankaFirmy";
@@ -40,11 +41,15 @@ import { pribehZbierky, orgPribehu, useZmenyPribehov } from "@/lib/pribehZbierky
 import { PribehZbierky } from "./PribehZbierky";
 import { SektorDarcuKontext } from "@/lib/darcovia";
 
+/** OPRAVY 402: testovací profil, alebo novo založená charita (vlastné id ch-…) — prázdny profil s menom z registra */
+const profilKluca = (k: string): TestProfil | undefined =>
+  najdiTestProfil(k) ?? (/^ch-/.test(k) ? prazdnaCharita(k, registra(k).nazov || lokalneStranky().find((x) => x.k === k)?.n) : undefined);
+
 /** vložiteľný verejný profil podľa kľúča stránky (svetlo · pekaren · tvorca) */
 /** OPRAVY 159: profil farnosti = sektor Viera (darca bez mena = „Bohu známy veriaci") */
 export function VerejnyProfilView(p: { kluc: string; onBack: () => void; /** OPRAVY 249: len vrstva otvorená tlačidlom Náhľad v Správe */ nahlad?: boolean }) {
   const k = p.kluc.startsWith("stream:") ? "tvorca" : p.kluc.startsWith("pribeh:") ? orgPribehu(p.kluc.slice(7)) : p.kluc;
-  const tp = najdiTestProfil(k);
+  const tp = profilKluca(k);
   // KARTA 57C · 60: farnosť (testovacia aj ktorákoľvek z Adresára) = živá stránka z uloženého
   if (!tp || tp.typ === "farnost") return <SektorDarcuKontext.Provider value="viera"><FarnostStranka strankaId={k} onBack={p.onBack} nahlad={!!p.nahlad} stit={(tp?.stit as StitLevel | undefined) ?? "Silver"} /></SektorDarcuKontext.Provider>;
   return <SektorDarcuKontext.Provider value="ine"><VerejnyProfilObsah {...p} /></SektorDarcuKontext.Provider>;
@@ -63,7 +68,9 @@ function VerejnyProfilObsah({ kluc, onBack }: { kluc: string; onBack: () => void
   const zStreamu = kluc.startsWith("stream:") ? kluc.slice(7) : null;
   // KARTA 55 · E: „pribeh:{zbierka}" (odkaz z feedu) → stránka Príbeh; „{Organizácia} ›" otvorí jej profil
   const zPribehu = kluc.startsWith("pribeh:") ? kluc.slice(7) : null;
-  const profil0 = najdiTestProfil(zStreamu ? "tvorca" : zPribehu ? orgPribehu(zPribehu) : kluc);
+  const kl0 = zStreamu ? "tvorca" : zPribehu ? orgPribehu(zPribehu) : kluc;
+  // OPRAVY 402: novo založená charita (vlastné id) — prázdny profil s menom z registra
+  const profil0 = profilKluca(kl0);
   const [detail, setDetail] = useState<TestZbierka | null>(null);
   // KARTA 57C §1: farnosť = živá nástenka z uloženého (nie testovací profil)
   const [stream, setStream] = useState<string | null>(null);

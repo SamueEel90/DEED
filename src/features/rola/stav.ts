@@ -7,6 +7,7 @@
 // Perzistencia = localStorage (rovnaký vzor ako viera/stav.ts); verejné nastavenia stránky
 // (sady, krypto, centrálna, viditeľnosť, logo, tvar loga, „o nás", zdroj avatara) navyše v DB — lib/verejneNastavenia (0070b).
 // ============================================================
+import { aktivnaCharita, klucCharity } from "@/lib/aktivnaCharita";
 import type { SadaEur, SadaEurc } from "@/lib/sadyDarov";
 import { verejneZPamate, zapisVerejne } from "@/lib/verejneNastavenia";
 import { bezDataUrl } from "@/lib/uploadFoto";
@@ -81,8 +82,17 @@ export const nacitajPoziciu = (): Pozicia => nacitaj<Pozicia>(kluc("pozicia"), "
 export const ulozPoziciu = (p: Pozicia) => uloz(kluc("pozicia"), p);
 
 /** tier per rola — v DEV drží lokálny stav/config, v produkcii sa číta z fakturácie (§0.1b) */
-export const nacitajTiery = (): Record<Pozicia, Tier> => nacitaj(kluc("tiery"), { charita: 0, tvorca: 0, b2b: 0 } as Record<Pozicia, Tier>);
-export const ulozTiery = (t: Record<Pozicia, Tier>) => uloz(kluc("tiery"), t);
+// OPRAVY 402: program charity patrí stránke charity (každá má svoj), ostatné roly ako doteraz
+const ZAKLAD_TIERY = { charita: 0, tvorca: 0, b2b: 0 } as Record<Pozicia, Tier>;
+export const nacitajTiery = (): Record<Pozicia, Tier> => {
+  const t = nacitaj(kluc("tiery"), ZAKLAD_TIERY);
+  return aktivnaCharita() === "svetlo" ? t : { ...t, charita: nacitaj<Tier>(kluc(klucCharity("tier.charita")), 0) };
+};
+export const ulozTiery = (t: Record<Pozicia, Tier>) => {
+  if (aktivnaCharita() === "svetlo") { uloz(kluc("tiery"), t); return; }
+  uloz(kluc(klucCharity("tier.charita")), t.charita);
+  uloz(kluc("tiery"), { ...t, charita: nacitaj(kluc("tiery"), ZAKLAD_TIERY).charita });
+};
 
 /** DEV: som držiteľ roly? (sekcia SPRÁVA viditeľná len role — §0 bod 3) */
 export const nacitajDrzitel = (): boolean => nacitaj(kluc("drzitel"), true);
@@ -115,9 +125,9 @@ export const ulozTerminal = (on: boolean) => uloz(kluc("terminal"), on);
 // logo nepotrebuje — má profilovú fotku osoby). Fallback bez loga = iniciálky. ----
 export const nacitajLogo = (p: Pozicia, stranka?: string): string | null => verejne<string | null>(p, "logo", null, stranka);
 export const ulozLogo = (p: Pozicia, dataUrl: string | null) => {
-  uloz(kluc(`logo.${p}`), dataUrl);
+  uloz(kluc(lk("logo", p)), dataUrl);
   // v DB len URL zo Storage (0064) — nahrá sa najprv, potom ide do verejných nastavení stránky
-  void bezDataUrl(dataUrl, "logo").then((url) => { if (url !== dataUrl) uloz(kluc(`logo.${p}`), url); return zapisVerejne(STRANKA_POZICIE[p], "logo", url); })
+  void bezDataUrl(dataUrl, "logo").then((url) => { if (url !== dataUrl) uloz(kluc(lk("logo", p)), url); return zapisVerejne(STRANKA_POZICIE[p], "logo", url); })
     .catch((e: unknown) => toast(e instanceof Error ? e.message : "Logo sa nepodarilo uložiť."));
 };
 
@@ -133,12 +143,15 @@ export const ulozZdrojAvatara = (p: Pozicia, z: ZdrojAvatara) => ulozVerejne(p, 
 
 // ---- VEREJNÉ nastavenia stránky (0070b): v DB pri stránke, vidí ich aj návštevník; localStorage = záloha (mock/offline).
 // Rola → testovacia stránka v DB (lib/mojeStranky UKAZKOVE_STRANKY). `stranka` prebije rolu (napr. farnosť má rolu charita).
-export const STRANKA_POZICIE: Record<Pozicia, string> = { charita: "svetlo", b2b: "pekaren", tvorca: "tvorca" };
+// OPRAVY 402: charita = aktívna charita (každá registrácia má svoju stránku), firma a tvorca ostávajú testovacie
+export const STRANKA_POZICIE: Record<Pozicia, string> = { get charita() { return aktivnaCharita(); }, b2b: "pekaren", tvorca: "tvorca" };
+/** záložný kľúč v prehliadači — pri charite podľa jej stránky (inak by nová charita zdedila logo a texty inej) */
+const lk = (k: string, p: Pozicia) => (p === "charita" ? klucCharity(`${k}.${p}`) : `${k}.${p}`);
 const verejne = <T>(p: Pozicia, k: string, fallback: T, stranka?: string): T => {
   const v = verejneZPamate(stranka ?? STRANKA_POZICIE[p]);
-  return v && k in v ? (v[k] as T) : nacitaj<T>(kluc(`${k}.${p}`), fallback);
+  return v && k in v ? (v[k] as T) : nacitaj<T>(kluc(lk(k, p)), fallback);
 };
-const ulozVerejne = (p: Pozicia, k: string, v: unknown) => { uloz(kluc(`${k}.${p}`), v); void zapisVerejne(STRANKA_POZICIE[p], k, v); };
+const ulozVerejne = (p: Pozicia, k: string, v: unknown) => { uloz(kluc(lk(k, p)), v); void zapisVerejne(STRANKA_POZICIE[p], k, v); };
 
 // ---- charita: prijíma dary v krypte (EURC)? platí pre všetky jej zbierky ----
 export const nacitajKryptoOrg = (p: Pozicia, stranka?: string): boolean => verejne(p, "krypto", true, stranka);
@@ -162,8 +175,8 @@ export const ulozOnas = (p: Pozicia, html: string | null) => ulozVerejne(p, "ona
 
 // ---- bankový účet organizácie z registrácie (organizacie.bankovy_ucet) ----
 // Centrálna zbierka ho len zobrazuje — mení sa v profile organizácie, nie v zbierke.
-export const nacitajIbanOrg = (p: Pozicia): string => nacitaj<string>(kluc(`iban.${p}`), "");
-export const ulozIbanOrg = (p: Pozicia, v: string) => uloz(kluc(`iban.${p}`), v);
+export const nacitajIbanOrg = (p: Pozicia): string => nacitaj<string>(kluc(lk("iban", p)), "");
+export const ulozIbanOrg = (p: Pozicia, v: string) => uloz(kluc(lk("iban", p)), v);
 
 // ---- zbierky vytvorené v správe charity navyše k mocku (limit per tier §1.3) ----
 export const nacitajOrgExtra = (): OrgZbierka[] => nacitaj<OrgZbierka[]>(kluc("orgzbierky"), []);
@@ -274,13 +287,14 @@ export const odProgramu = (id: PolozkaSpravy): Program => POVOLENIA_CHARITY[id].
 
 // ---- štít charity (CARE) — v produkcii z karmy charity, v DEV prepínač ----
 export type StitCharity = "bronze" | "silver" | "gold" | "platinum" | "legend";
-export const nacitajStitCharity = (): StitCharity => nacitaj<StitCharity>(kluc("stit.charita"), "bronze");
-export const ulozStitCharity = (s: StitCharity) => uloz(kluc("stit.charita"), s);
+export const nacitajStitCharity = (): StitCharity => nacitaj<StitCharity>(kluc(klucCharity("stit.charita")), "bronze");
+export const ulozStitCharity = (s: StitCharity) => uloz(kluc(klucCharity("stit.charita")), s);
 // ---- pripnuté položky v správe stránky: najviac 12 (OPRAVY 94), ukladajú sa do účtu (src/lib/spravaPiny.ts) ----
 export const PIN_MAX = 12;
 // ---- DEV: nová charita (nuly, prázdne stavy) alebo bežiaca ukážka ----
-export const nacitajCharituNovu = (): boolean => nacitaj(kluc("charita.nova"), false);
-export const ulozCharituNovu = (v: boolean) => uloz(kluc("charita.nova"), v);
+// OPRAVY 402: novo založená charita začína ako nová (prázdne stavy, úvodné kroky)
+export const nacitajCharituNovu = (): boolean => nacitaj(kluc(klucCharity("charita.nova")), aktivnaCharita() !== "svetlo");
+export const ulozCharituNovu = (v: boolean) => uloz(kluc(klucCharity("charita.nova")), v);
 
 // ============================================================
 // OPRAVY 121 · bod 9 — roly v správe stránky (poradie = Nastavenia → Správcovia a prístupy).

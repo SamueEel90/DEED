@@ -1,3 +1,4 @@
+import { aktivnaCharita } from "@/lib/aktivnaCharita";
 import { Emo } from "@/components/icons";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { useTestStav, vyprazdni } from "@/lib/testStav";
@@ -116,7 +117,7 @@ function PodporiliFirmy({ zbierkaId, onFirma }: { zbierkaId: string; /** číslo
   );
 }
 
-export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack, strankaId = pozicia === "charita" ? "svetlo" : undefined, profilNahlad, lista }: {
+export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack, strankaId = pozicia === "charita" ? aktivnaCharita() : undefined, profilNahlad, lista }: {
   pozicia: Pozicia; tier?: Tier; logo: string | null; toast: (m: string) => void; onBack: () => void;
   /** OPRAVY 107: stránka, ktorej uložený profil (Upraviť profil) sa ukáže */
   strankaId?: string;

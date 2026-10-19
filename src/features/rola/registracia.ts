@@ -4,6 +4,7 @@
 // dáta v SUBJEKTY — všetky obrazovky (správa, verejný profil, Upraviť profil) ich
 // potom čítajú z jedného miesta. Demo bez účtu ostáva na ukážkových dátach.
 // ============================================================
+import { aktivnaCharita } from "@/lib/aktivnaCharita";
 import { useEffect, useState } from "react";
 import * as db from "@/lib/db";
 import { getSession } from "@/lib/session";
@@ -22,7 +23,7 @@ export function segmentyCharity(): string[] {
     const v2 = localStorage.getItem("deed.rola.segmenty.charita.v2");
     if (v2) return (JSON.parse(v2) as { nazov: string; aktivny: boolean }[]).filter((x) => x.aktivny).map((x) => x.nazov);
   } catch { /* LS */ }
-  const db = verejneZPamate("svetlo")?.["segmentyCentralna"];
+  const db = verejneZPamate(aktivnaCharita())?.["segmentyCentralna"];
   if (Array.isArray(db)) return db as string[];
   try { const s = localStorage.getItem(KLUC_SEG); if (s) return JSON.parse(s) as string[]; } catch { /* LS */ }
   return segmenty;

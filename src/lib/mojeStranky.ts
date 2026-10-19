@@ -38,9 +38,19 @@ function naStranku(r: RiadokUctu): Stranka | null {
   const vzor = UKAZKOVE_STRANKY.find((s) => s.k === r.id);
   const pomocnik = r.uroven === "pomocnik";
   if (vzor) return { ...vzor, rola: pomocnik ? "stranky.rola.pomocnik" : vzor.rola };
+  // OPRAVY 402: aj skutočné charity (každá registrácia je nová stránka)
+  if (r.typ === "charita") return strankaCharity(r.id, r.nazov, pomocnik);
   if (r.typ !== "farnost") return null;
   return { k: r.id, i: inicialy(r.nazov), n: r.nazov, typ: "farnost", rola: pomocnik ? "stranky.rola.pomocnik" : "stranky.rola.farar", pozicia: "charita", bg: "var(--btn)", c: "var(--ink)", info: [] };
 }
+/** OPRAVY 402: stránka charity pre Moje stránky a Správu (bez ukážkových čísel) */
+export const strankaCharity = (k: string, n: string, pomocnik = false): Stranka => ({ k, i: inicialyOrg(n), n, typ: "charita", rola: pomocnik ? "stranky.rola.pomocnik" : "stranky.rola.spravca", pozicia: "charita", bg: "var(--gSoft)", c: "var(--gInk)", info: [] });
+export const inicialyOrg = (n: string) => n.replace(/,?\s*(o\.\s?z\.|n\.\s?o\.|s\.\s?r\.\s?o\.|o\.\s?p\.\s?s\.)\s*$/i, "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("") || "?";
+/** OPRAVY 402: po registrácii charity — ktorú stránku má Profil otvoriť v Správe (raz) */
+const KLUC_NOVA = "deed.novaStranka";
+export function ulozNovuStranku(s: Stranka) { try { sessionStorage.setItem(KLUC_NOVA, JSON.stringify(s)); } catch { /* SS */ } }
+export function novaStranka(): Stranka | null { try { return JSON.parse(sessionStorage.getItem(KLUC_NOVA) ?? "null") as Stranka | null; } catch { return null; } }
+export function zabudniNovuStranku() { try { sessionStorage.removeItem(KLUC_NOVA); } catch { /* SS */ } }
 /** stránky účtu z DB (null = ešte nenačítané / bez DB) */
 export function useStrankyUctu(prihlaseny: boolean): Stranka[] | null {
   useSyncExternalStore((f) => { posl.add(f); return () => posl.delete(f); }, () => ver, () => 0);

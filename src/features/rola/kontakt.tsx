@@ -2,6 +2,7 @@
 // Kontakt subjektu — dáta, kontrola odkazov a zobrazenie (správa aj verejný profil).
 // Predvyplnené z registrácie; sídlo je overené cez IČO a v profile sa nemení.
 // ============================================================
+import { aktivnaCharita, klucCharity } from "@/lib/aktivnaCharita";
 import type { ReactNode } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
 import { MenuSkupina, KontaktPolozka } from "@/components/entity";
@@ -13,7 +14,7 @@ import { verejneZPamate, zapisVerejne } from "@/lib/verejneNastavenia";
 
 // verejný kontakt patrí stránke (nastavenia_stranky.verejne → „kontakt", vidí aj návštevník); localStorage = záloha
 // (rovnaké mapovanie rola → testovacia stránka ako rola/stav STRANKA_POZICIE — tu bez importu hodnoty, nech nevznikne cyklus)
-const STRANKA_KONTAKTU: Record<Pozicia, string> = { charita: "svetlo", b2b: "pekaren", tvorca: "tvorca" };
+const STRANKA_KONTAKTU: Record<Pozicia, string> = { get charita() { return aktivnaCharita(); }, b2b: "pekaren", tvorca: "tvorca" }; // OPRAVY 402
 
 export type Siet = "facebook" | "instagram" | "youtube" | "tiktok" | "linkedin" | "x";
 export const SIETE: { k: Siet; label: string; domeny: string[] }[] = [
@@ -47,7 +48,7 @@ export interface Kontakt {
   udaje?: import("@/lib/uradneUdaje").UradneUdaje;
 }
 
-const kluc = (p: Pozicia) => `deed.rola.kontakt.${p}`;
+const kluc = (p: Pozicia) => (p === "charita" ? klucCharity(`deed.rola.kontakt.${p}`) : `deed.rola.kontakt.${p}`); // OPRAVY 402: každá charita svoj
 
 /** z registrácie (mock = SUBJEKTY) + uložené úpravy (DB → localStorage) */
 export function nacitajKontakt(p: Pozicia, stranka?: string): Kontakt {

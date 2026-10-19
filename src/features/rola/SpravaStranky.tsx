@@ -44,6 +44,7 @@ import { potvrditTuknutim, nastavPotvrditTuknutim } from "@/features/zbierka/Pla
 import { TESTOVACIA } from "@/lib/testovacia";
 import { VzhladStranky } from "./VzhladStranky";
 import { useRegistra } from "@/lib/udajeRegistra";
+import { nastavAktivnuCharitu } from "@/lib/aktivnaCharita";
 import { SpravaFarnosti } from "./SpravaFarnosti";
 import { useTestStav, zmenTestStav } from "@/lib/testStav";
 import { PrepinacPodania, TestVolba } from "@/features/verejny-profil/casti";
@@ -280,6 +281,8 @@ export function SpravaStranky(props: SpravaStrankyProps) {
 }
 
 function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "svetlo", nazov: nazov0 = "Svetlo pomoci o.z.", inicialy: inicialy0 = "SP" }: SpravaStrankyProps & { typ: TypStranky; onTyp: (t: TypStranky) => void }) {
+  // OPRAVY 402: každá charita má svoju stránku — Správa a všetko pod ňou číta údaje tejto charity (musí byť pred čítaním stavu)
+  if (typ === "charita") nastavAktivnuCharitu(strankaId);
   // OPRAVY 400: charita sa volá podľa registra (keď je vyplnený), nie napevno
   const regNazov = useRegistra(strankaId).nazov.trim();
   const nazov = (typ === "charita" && regNazov) || nazov0;
@@ -340,7 +343,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "svetlo", n
   const [verejnyTest, setVerejnyTest] = useState(false); // OPRAVY 154: testovací profil (Kronika/Výklad/Pirát) v okne nad Správou
   // KARTA 42: Zadarmo → z hárku Pridať sa Oznamy otvoria rovno na výzve na súrnu pomoc
   const [oznamStart, setOznamStart] = useState<DruhOznamu | undefined>(undefined);
-  const otvor = (s: Sub, oznamDruh?: DruhOznamu) => { zastavDiktovanie(); setOznamStart(oznamDruh); if (s === "x:Verejný profil") { if (najdiTestProfil(strankaId)) setVerejnyTest(true); else setVerejny(true); return; }
+  const otvor = (s: Sub, oznamDruh?: DruhOznamu) => { zastavDiktovanie(); setOznamStart(oznamDruh); if (s === "x:Verejný profil") { if (najdiTestProfil(strankaId) || /^ch-/.test(strankaId)) setVerejnyTest(true); else setVerejny(true); return; }
     // KARTA 37 · bod 3: v programe Zadarmo beží jedna zbierka naraz (limit z stav.ts)
     if (s === "x:Nová zbierka" && sub !== s && beziacich >= KONFIG.limitZbierok[tier]) { setLimitOkno(true); return; }
     // OPRAVY 118/121: Pridať skutok = ten istý PridatSkutok, za charitu (organizacia: true)

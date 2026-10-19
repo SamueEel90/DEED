@@ -5,7 +5,8 @@
 // Programy len Zadarmo · Zbierka · Akcia · Kampaň (vyberá sa v Správe → Program a predplatné).
 import { useRef, useState } from "react";
 import * as db from "@/lib/db";
-import { nastavAko, otvorSpravuPoRegistracii, cakajRegistraciuOrg } from "@/lib/mojeStranky";
+import { nastavAko, otvorSpravuPoRegistracii, cakajRegistraciuOrg, nacitajStrankyUctu, ulozNovuStranku, strankaCharity } from "@/lib/mojeStranky";
+import { nastavAktivnuCharitu, noveIdCharity, pridajLokalnuStranku } from "@/lib/aktivnaCharita";
 import { ulozIbanOrg, ulozTypStranky } from "@/features/rola/stav";
 import { overIban } from "@/features/rola/segmenty";
 import type { RegistrIcoVysledok } from "@/types";
@@ -30,6 +31,8 @@ export function CharitaB({ prihlaseny, onSpat, onPrihlasit, onBezUctu, onHotovo,
   const [busy, setBusy] = useState(false);
   const [volbaUctu, setVolbaUctu] = useState(0);
   const [org, setOrg] = useState<{ id: string } | null>(null);
+  // OPRAVY 402: stránka tejto charity (vlastné id) — žiadna registrácia neprepisuje inú charitu
+  const [strankaId, setStrankaId] = useState<string | null>(null);
   const [ico, setIco] = useState(""), [reg, setReg] = useState<RegistrIcoVysledok | null>(null), [hladam, setHladam] = useState(false);
   const [jaStatutar, setJaStatutar] = useState(0);
   const [stanovy, setStanovy] = useState<File | null>(null);
@@ -60,20 +63,24 @@ export function CharitaB({ prihlaseny, onSpat, onPrihlasit, onBezUctu, onHotovo,
   };
   const potvrdIco = async () => {
     if (!reg) return;
+    let id = strankaId;
     if (await server(async () => {
       const o = org ?? await db.vytvorOrganizaciuPodOsobou(prihlaseny!.ucetId!);
       setOrg(o);
       await db.ulozOrganizaciu(o.id, { ico: reg.ico, nazov: reg.nazov, sidlo: reg.sidlo, datum_vzniku: reg.datum_vzniku, pravna_forma: reg.pravna_forma, z_registra: true });
+      id = await db.zalozStrankuOrganizacie(o.id, reg.nazov); // OPRAVY 402: vlastná stránka (0126)
     })) {
-      // OPRAVY 400: údaje z registra pre Správu a verejný profil (nová charita = stránka „svetlo“, vždy od nuly; čo register nevrátil, ostane prázdne)
-      void ulozRegistra("svetlo", { nazov: reg.nazov, forma: reg.pravna_forma, ico: reg.ico, registracia: reg.registracia ?? "", sidlo: reg.sidlo, vznik: vznikText(reg.datum_vzniku) }).catch(() => undefined);
+      id = id ?? noveIdCharity(); // bez databázy (testovacia verzia) — id v tomto prehliadači
+      setStrankaId(id); nastavAktivnuCharitu(id);
+      // OPRAVY 400: údaje z registra pre Správu a verejný profil tejto charity; čo register nevrátil, ostane prázdne
+      void ulozRegistra(id, { nazov: reg.nazov, forma: reg.pravna_forma, ico: reg.ico, registracia: reg.registracia ?? "", sidlo: reg.sidlo, vznik: vznikText(reg.datum_vzniku) }).catch(() => undefined);
       ides("statutar");
     }
   };
   const potvrdStatutara = async () => {
     if (await server(() => db.prepojStatutara(org!.id, jaStatutar === 0 ? prihlaseny!.ucetId! : null, jaStatutar === 0 ? "štatutár (register)" : "štatutár (pozvánka)"))) {
       if (jaStatutar === 1) toast("Štatutárovi pošleme pozvánku. Vy ste správca.");
-      void nacitajNastavenia("svetlo").then(() => ulozStatutara({ meno: jaStatutar === 0 ? statutar : "", funkcia: "" })); // OPRAVY 400: meno štatutára (súkromné)
+      if (strankaId) void nacitajNastavenia(strankaId).then(() => ulozStatutara({ meno: jaStatutar === 0 ? statutar : "", funkcia: "" })); // OPRAVY 400: meno štatutára (súkromné)
       ides("stanovy");
     }
   };
@@ -100,7 +107,12 @@ export function CharitaB({ prihlaseny, onSpat, onPrihlasit, onBezUctu, onHotovo,
   };
   const koniec = (ciel: "prehlad" | "program") => {
     ulozTypStranky("charita");
-    nastavAko("svetlo"); // Konáš ako = nová organizácia (zoznam stránok je zatiaľ ukážkový, v produkcii príde z rolí účtu)
+    // OPRAVY 402: Konáš ako = práve založená charita, v Moje stránky pribudne ako ďalšia, otvorí sa jej prázdna Správa
+    const id = strankaId ?? noveIdCharity();
+    if (!naServeri || !prihlaseny?.ucetId) pridajLokalnuStranku({ k: id, n: nazov || "Nová charita", typ: "charita" });
+    else void nacitajStrankyUctu();
+    nastavAko(id);
+    ulozNovuStranku(strankaCharity(id, nazov || "Nová charita"));
     cakajRegistraciuOrg(false);
     otvorSpravuPoRegistracii(ciel);
     onHotovo?.();
