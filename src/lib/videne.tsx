@@ -84,7 +84,10 @@ function pridajCss() {
   if (css || typeof document === "undefined") return;
   css = true;
   const s = document.createElement("style");
-  s.textContent = ".vid-kratko .vid-skry{display:none!important}.vid-kratko{cursor:pointer}";
+  // OPRAVY 399: videná akcia — fotka nižšia (~50 %), text a „viac“ schované, Prídem ostáva
+  s.textContent = ".vid-kratko .vid-skry{display:none!important}.vid-kratko{cursor:pointer}"
+    + ".vid-kratko .vid-nizsia{aspect-ratio:32/9!important;min-height:0!important}.vid-kratko .vid-nizsia-p{aspect-ratio:3/2!important}"
+    + ".vid-kratko .vid-nizsia-h{height:110px!important}.vid-kratko .vid-nizsia-hv{height:150px!important}";
   document.head.appendChild(s);
 }
 

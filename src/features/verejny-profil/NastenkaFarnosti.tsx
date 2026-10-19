@@ -545,6 +545,29 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
         <b style={{ fontSize: 16.5, lineHeight: 1.3, ...riadkyMax(2), overflowWrap: "anywhere" }}>{x.t}</b>
       </span>
     </button>); };
+  // OPRAVY 399 (doplnok 297): Od veriacich ako oznamy — videné zbalené do riadka (meno · nadpis · dátum), ťuk = rozbalí;
+  // … / Upraviť / zmazať až po rozbalení; neprečítané hore celé so štítkom NOVÉ
+  const psVer = (x: PolozkaFarnika) => podpis(x.t, x.s, x.fotky?.join(","));
+  const verZor = zoradVidene(vidO, oznVer, (x) => [x.id, psVer(x)]);
+  const verMeno = (x: PolozkaFarnika) => (x.anon || /Bohu známy/.test(x.kto) ? "veriaci" : x.kto);
+  const verRiadok = (x: PolozkaFarnika, otvor: () => void) => (
+    <button type="button" data-oz={x.id} onClick={otvor} style={{ width: "100%", minWidth: 0, textAlign: "left", display: "flex", alignItems: "center", gap: 14, padding: "12px 14px", borderRadius: 18, border: "none", background: KARTA, color: INK, fontFamily: "inherit", cursor: "pointer", boxShadow: "none" }}>
+      <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+        <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".1em", color: INK3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{verMeno(x)}</span>
+        <b style={{ fontSize: 16.5, lineHeight: 1.3, ...riadkyMax(2), overflowWrap: "anywhere" }}>{x.t}</b>
+      </span>
+      <span style={{ flex: "none", fontSize: 13.5, fontWeight: 700, color: INK3 }}>{dd(x.cas)}</span>
+    </button>);
+  const verKartaPc = (x: PolozkaFarnika) => (
+            <Videne key={x.id} id={x.id} podpis={psVer(x)} kratke={(o) => verRiadok(x, o)}>
+            <div data-oz={x.id} style={{ padding: "16px 20px 18px", borderRadius: 22, background: KARTA, display: "flex", flexDirection: "column", gap: 8 }}>
+              {hlavickaAutora(x)}
+              <span style={kicker(INK3)}>OZNAM · {dd(x.cas)}</span>
+              <b style={{ fontSize: 19, lineHeight: 1.3 }}>{x.t}</b>
+              {x.s && <Viac text={x.s} />}
+              {x.fotky?.some(ziveObr) && <button type="button" onClick={() => setAlbum(x)} aria-label="Fotky na celú obrazovku" style={{ border: "none", padding: 0, borderRadius: 14, overflow: "hidden", cursor: "zoom-in", position: "relative" }}><img src={x.fotky.find(ziveObr)} alt="" style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", display: "block" }} />{x.fotky.length > 1 && <span style={{ position: "absolute", right: 10, bottom: 10, padding: "3px 9px", borderRadius: 7, background: "rgba(20,17,11,.78)", color: "#fff", fontSize: 14, fontWeight: 700 }}>{fotiek(x.fotky.length)}</span>}</button>}
+              <MenuPrispevku x={x} strankaId={strankaId} kto={kto} moje={moje(x)} />
+            </div></Videne>);
   /** KARTA 62 · OPRAVY 287: štítok miesta oznamu — Iné miesto, alebo zaškrtnuté kostoly (pri viacerých kostoloch) */
   function kdeOznamu(x: Oz): string { return x.mimo ?? (miestaF.length > 1 && x.mi ? x.mi.map((id) => miestaF.find((m) => m.id === id)?.nazov).filter(Boolean).join(" · ") : ""); }
   // KARTA 62: karta oznamu (hlavná stránka aj podstránka kostola); pri oznamoch pre konkrétne kostoly štítok kostola
@@ -947,15 +970,16 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   // --- Od veriacich ---
   const kVer = oznVer.length > 0 && sekcia("ver", nzB("ver", "Od veriacich"), S.ver, <>
     <div style={{ display: "grid", gridTemplateColumns: `repeat(${k3 || siroka ? 2 : 1},minmax(0,1fr))`, gap: 14 }}>
-      {oznVer.map((x) => (
-        <div key={x.id} data-oz={x.id} style={{ padding: "18px 20px", borderRadius: 20, background: KARTA, display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+      {verZor.map((x) => (
+        <Videne key={x.id} id={x.id} podpis={psVer(x)} kratke={(o) => verRiadok(x, o)}>
+        <div data-oz={x.id} style={{ padding: "18px 20px", borderRadius: 20, background: KARTA, display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
           {hlavickaAutora(x)}
           <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".1em", color: INK3 }}>OZNAM · {dd(x.cas)}</span>
           <b style={{ fontSize: 19 }}>{x.t}</b>
           {x.s && <Viac text={x.s} velkost={16} />}
           {x.fotky?.some(ziveObr) && <button type="button" onClick={() => setAlbum(x)} aria-label="Fotky na celú obrazovku" style={{ border: "none", padding: 0, borderRadius: 14, overflow: "hidden", cursor: "zoom-in", position: "relative" }}><img src={x.fotky.find(ziveObr)} alt="" style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", display: "block" }} /><OdznakFotiek m={medGal(x.fotky)} /></button>}
           <MenuPrispevku x={x} strankaId={strankaId} kto={kto} moje={moje(x)} />
-        </div>))}
+        </div></Videne>))}
     </div>
   </>);
   // --- Deti a mládež (ten istý blok ako na Nástenke) ---
@@ -1206,7 +1230,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   const pridKarta = (u: Ud, velka: boolean) => { const d = u.dat ? zIso(u.dat) : null; return (
     <Videne key={u.id} id={u.id} podpis={psUd(u)} styl={sirkaKarty(velka ? nPas(1.55) : nPas(3.1))}>
     <div data-oz={u.id} style={{ borderRadius: mob ? 22 : 28, overflow: "hidden", background: PAPIER, display: "flex", flexDirection: "column" }}>
-      <div style={{ position: "relative", flex: "none", height: velka && !mob ? 300 : 220, background: u.foto ? `center/${u.plag ? "contain" : "cover"} no-repeat url('${u.foto}') #14110B` : "linear-gradient(160deg,#3A372E,#14110B)", display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: velka && !mob ? "0 30px 22px" : "0 22px 18px" }}>
+      <div className={velka && !mob ? "vid-nizsia-hv" : "vid-nizsia-h"} style={{ position: "relative", flex: "none", height: velka && !mob ? 300 : 220, background: u.foto ? `center/${u.plag ? "contain" : "cover"} no-repeat url('${u.foto}') #14110B` : "linear-gradient(160deg,#3A372E,#14110B)", display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: velka && !mob ? "0 30px 22px" : "0 22px 18px" }}>
         <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(10,8,5,0) 35%,rgba(10,8,5,.85))" }} />
         {u.foto && <button type="button" onClick={() => otvorGal(u.t, u.gal)} aria-label={u.plag ? "Plagát na celú obrazovku" : "Fotky na celú obrazovku"} style={{ position: "absolute", inset: 0, border: "none", background: "transparent", cursor: "zoom-in" }} />}
         {d && <span style={{ position: "absolute", left: 20, top: 20, pointerEvents: "none" }}><KDatum d={d} /></span>}
@@ -1241,15 +1265,16 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
     <div key={sp.id} data-oz={sp.id} style={{ flex: "none", scrollSnapAlign: "start", padding: "0 16px", borderRadius: 20, background: KARTA }}>
       <SpomZapis foto={sp.foto} siva={sp.siva} znacka={znSpom(sp, -6)} symbol={symbol} meno={sp.d.meno} roky={rokyParte(sp.d.nar, sp.d.umr)} rozlucka={[rozluckaT(sp.d.rd, sp.d.rc), sp.d.rm].filter(Boolean).join(" · ")} zbierka={!!sp.zb} sustrast={n} onTap={() => setParte(sp)} />
     </div>); }));
-  const mVer = <div style={{ display: "grid", gridTemplateColumns: mt ? "repeat(2,minmax(0,1fr))" : "minmax(0,1fr)", gap: 14 }}>{oznVer.map((x) => (
-    <div key={x.id} data-oz={x.id} style={{ padding: 20, borderRadius: 20, background: KARTA, display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+  const mVer = <div style={{ display: "grid", gridTemplateColumns: mt ? "repeat(2,minmax(0,1fr))" : "minmax(0,1fr)", gap: 14 }}>{verZor.map((x) => (
+    <Videne key={x.id} id={x.id} podpis={psVer(x)} kratke={(o) => verRiadok(x, o)}>
+    <div data-oz={x.id} style={{ padding: 20, borderRadius: 20, background: KARTA, display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
       {hlavickaAutora(x)}
       <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".1em", color: INK3 }}>OZNAM · {dd(x.cas)}</span>
       <b style={{ fontSize: 19 }}>{x.t}</b>
       {x.s && <Viac text={x.s} velkost={16} />}
       {x.fotky?.some(ziveObr) && <button type="button" onClick={() => setAlbum(x)} aria-label="Fotky na celú obrazovku" style={{ border: "none", padding: 0, borderRadius: 14, overflow: "hidden", cursor: "zoom-in", position: "relative" }}><img src={x.fotky.find(ziveObr)} alt="" style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", display: "block" }} /><OdznakFotiek m={medGal(x.fotky)} /></button>}
       <MenuPrispevku x={x} strankaId={strankaId} kto={kto} moje={moje(x)} />
-    </div>))}</div>;
+    </div></Videne>))}</div>;
   const mDeti = <div style={{ minWidth: 0 }}><DetiAMladezBlok strankaId={strankaId} blokStyl={{}} lavy={null} kto={kto} mojeMeno={mojeMeno} reg={reg} /></div>;
   const mKostoly = mob
     ? <PasX pasRef={pasKos}>{miestaF.map((m) => <div key={m.id} data-oz={m.id} style={{ ...sirkaKarty(nPas(3)), display: "grid" }}><KartaMiesta m={m} k={kostolKal(strankaId, m.id)} siroka onTap={() => setMiesto(m)} /></div>)}</PasX>
@@ -1696,8 +1721,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
             {udZor.map((u) => { const d = u.dat ? zIso(u.dat) : null; return (
               <Videne key={u.id} id={u.id} podpis={psUd(u)}>
               <div data-oz={u.id} style={{ borderRadius: 24, overflow: "hidden", background: KARTA, display: "flex", flexDirection: "column" }}>
-                {u.foto && u.plag ? <button type="button" onClick={() => otvorGal(u.t, u.gal)} aria-label="Plagát na celú obrazovku" style={{ position: "relative", width: "100%", aspectRatio: "3 / 4", border: "none", padding: 0, background: "var(--nf-pas)", cursor: "zoom-in", display: "block" }}><img src={u.foto} alt="Plagát" style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} /><OdznakFotiek m={u.gal} /></button>
-                  : <div style={{ position: "relative", aspectRatio: u.foto ? "16 / 9" : "4 / 1", minHeight: 110, background: "var(--nf-pas)", overflow: "hidden" }}>
+                {u.foto && u.plag ? <button type="button" className="vid-nizsia-p" onClick={() => otvorGal(u.t, u.gal)} aria-label="Plagát na celú obrazovku" style={{ position: "relative", width: "100%", aspectRatio: "3 / 4", border: "none", padding: 0, background: "var(--nf-pas)", cursor: "zoom-in", display: "block" }}><img src={u.foto} alt="Plagát" style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} /><OdznakFotiek m={u.gal} /></button>
+                  : <div className={u.foto ? "vid-nizsia" : undefined} style={{ position: "relative", aspectRatio: u.foto ? "16 / 9" : "4 / 1", minHeight: 110, background: "var(--nf-pas)", overflow: "hidden" }}>
                     {u.foto && <button type="button" onClick={() => otvorGal(u.t, u.gal)} aria-label="Fotky na celú obrazovku" style={{ position: "absolute", inset: 0, border: "none", padding: 0, background: "transparent", cursor: "zoom-in" }}><img src={u.foto} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} /></button>}
                     {d && <span style={{ position: "absolute", left: 16, top: 16, pointerEvents: "none" }}><Datum d={d} velky /></span>}
                     <OdznakFotiek m={u.gal} />
@@ -1740,16 +1765,14 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
       ver: <>
       {/* ---------- Od veriacich (OPRAVY 197: krátke oznamy veriacich) ---------- */}
       {oznVer.length > 0 && blokN("ver", nzB("ver", "Od veriacich"), "Krátke oznamy, ktoré pridali veriaci.", S.ver, <>
-        <div style={{ flex: "999 1 520px", minWidth: 0, display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(260px,420px))", gap: 16, alignItems: "start" }}>
-          {oznVer.map((x) => (
-            <div key={x.id} data-oz={x.id} style={{ padding: "16px 20px 18px", borderRadius: 22, background: KARTA, display: "flex", flexDirection: "column", gap: 8 }}>
-              {hlavickaAutora(x)}
-              <span style={kicker(INK3)}>OZNAM · {dd(x.cas)}</span>
-              <b style={{ fontSize: 19, lineHeight: 1.3 }}>{x.t}</b>
-              {x.s && <Viac text={x.s} />}
-              {x.fotky?.some(ziveObr) && <button type="button" onClick={() => setAlbum(x)} aria-label="Fotky na celú obrazovku" style={{ border: "none", padding: 0, borderRadius: 14, overflow: "hidden", cursor: "zoom-in", position: "relative" }}><img src={x.fotky.find(ziveObr)} alt="" style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", display: "block" }} />{x.fotky.length > 1 && <span style={{ position: "absolute", right: 10, bottom: 10, padding: "3px 9px", borderRadius: 7, background: "rgba(20,17,11,.78)", color: "#fff", fontSize: 14, fontWeight: 700 }}>{fotiek(x.fotky.length)}</span>}</button>}
-              <MenuPrispevku x={x} strankaId={strankaId} kto={kto} moje={moje(x)} />
-            </div>))}
+        {/* OPRAVY 399: neprečítané hore celé, videné pod nimi v mriežke 3 stĺpcov (ako oznamy) */}
+        <div style={{ flex: "999 1 520px", minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+          {verZor.some((x) => !jeVid(x.id, psVer(x))) && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(260px,420px))", gap: 16, alignItems: "start" }}>
+            {verZor.filter((x) => !jeVid(x.id, psVer(x))).map(verKartaPc)}
+          </div>}
+          {verZor.some((x) => jeVid(x.id, psVer(x))) && <div style={{ display: "grid", gridTemplateColumns: siroka ? "repeat(3,minmax(0,1fr))" : "minmax(0,1fr)", gap: 12, alignItems: "start" }}>
+            {verZor.filter((x) => jeVid(x.id, psVer(x))).map(verKartaPc)}
+          </div>}
         </div>
       </>)}
       </>,
