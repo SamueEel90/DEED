@@ -37,7 +37,7 @@ import { IskryHost } from "@/features/iskry/Iskry";
 import { zavriIskry, startIskry } from "@/features/iskry/otvor";
 import { PridatIskruHost } from "@/features/iskry/PridatIskru";
 import { VerejnyProfilHost } from "@/features/verejny-profil/VerejnyProfil";
-import { useVrstvaProfiluOtvorena, prisloZQr } from "@/features/verejny-profil/otvor";
+import { useVrstvaProfiluOtvorena, useVerejnyProfilOtvoreny, prisloZQr, qrAdresa } from "@/features/verejny-profil/otvor";
 import { AkciaHost } from "@/features/skutok/Akcia";
 import { PomocHost } from "@/features/profil/Pomoc";
 import { PolohaOkruhu } from "@/features/profil/Bezpecnost24";
@@ -200,6 +200,15 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   // OPRAVY 315: upozornenie v zvončeku → Profil → Správa stránky (napr. Od veriacich, príspevok zvýraznený)
   const modulRef = useRef(modul);
   useEffect(() => { modulRef.current = modul; }, [modul]);
+  // OPRAVY 385 doplnok: po zavretí stránky z QR sa adresa vráti na modul (/m/…)
+  const profilOtvoreny = useVerejnyProfilOtvoreny();
+  const bolOtvoreny = useRef(false);
+  useEffect(() => {
+    if (profilOtvoreny) { bolOtvoreny.current = true; return; }
+    if (!bolOtvoreny.current) return;
+    const t = window.setTimeout(() => { if (/^\/(p|z)\//.test(window.location.pathname)) replaceModul(modulRef.current); }, 350);
+    return () => window.clearTimeout(t);
+  }, [profilOtvoreny]);
   useEffect(() => {
     const f = () => { if (modulRef.current !== "profil") pushModul("profil"); setModul("profil" as ModulId); setProfilKluc((k) => k + 1); };
     window.addEventListener(UDALOST_SPRAVA, f); return () => window.removeEventListener(UDALOST_SPRAVA, f);
@@ -248,6 +257,8 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   // Ak čaká deep-link, normalizáciu odloží deep-link effect (inak by slug prepísala).
   useEffect(() => {
     if (!dl) replaceModul(modul);
+    // OPRAVY 385 doplnok: QR adresa (/p/…, /z/…) ostane v prehliadači, kým je cieľ otvorený
+    if (qrAdresa) try { window.history.replaceState({ deedModul: modul }, "", qrAdresa); } catch { /* sandbox */ }
     return sledujModulZUrl((m) => {
       if (m && VSETKY_MODULY.some((x) => x.id === m)) setModul(m as ModulId);
     });
