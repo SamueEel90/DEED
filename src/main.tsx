@@ -7,9 +7,11 @@ import { OverlayStranka, splitZCesty } from "./features/overlay/OverlayStranka";
 import "./index.css";
 import { sledujOvladanie } from "./lib/ovladanie";
 import { sledujPodrzte } from "./lib/podrzteNapoveda";
+import { sledujVrstvy } from "./lib/modalVrstvy";
 
 sledujOvladanie(); // OPRAVY 351: obrys zamerania na tlačidlách len pri klávesnici
 sledujPodrzte(); // OPRAVY 386: krátky ťuk na „Podržte …“ → „Podržte tlačidlo“ pri prste
+sledujVrstvy(); // OPRAVY 387: detail nad stránkou = dialóg (podklad inert, zameranie vo vnútri)
 
 // Počítadlo do streamu je SAMOSTATNÁ stránka, nie obrazovka appky: beží
 // v OBS, nesmie mať hlavičku, menu, session ani service worker. Preto sa

@@ -489,7 +489,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
         {/* overlay aktívnej registrácie (po kliku „Stať sa aktívnym") */}
         {/* OPRAVY 385: nad detailom zbierky a parte (1000–1250), inak by registrácia ostala pod nimi */}
         {aktivacia && createPortal(
-          <div style={{ position: "fixed", inset: 0, zIndex: 1260, background: C.bg }}>
+          <div role="dialog" aria-modal="true" aria-label="Registrácia" style={{ position: "fixed", inset: 0, zIndex: 1260, background: C.bg }}>
             <Registracia start={aktivacia} onHotovo={() => setAktivacia(false)} />
           </div>, document.body)}
       </div>
