@@ -12,7 +12,7 @@ import { VecnaDetail, VecnaDarca, STITOK_VECNEJ } from "./VecnaZbierkaStranka";
 import { useZamokVrstvy } from "@/lib/zamokVrstvy";
 import { useFarbaLinie, useVolbaLinie } from "@/lib/liniaStranky";
 import { useRozlozenie } from "@/lib/rozlozenieFarnosti";
-import { SERIF_KRONIKY, KNadpis, KDatum, ZbierkaStvorec, PomozKarta, SvateOmse, SpomZapis, ArchivRokov, KronikaHladat, KronikaLista, useSerifKroniky, type RokArchivu, type ZapisArchivu, type NajdenePolozka } from "./KronikaFarnosti";
+import { SERIF_KRONIKY, KNadpis, KDatum, ZbierkaStvorec, PomozKarta, SvateOmse, ArchivRokov, KronikaHladat, KronikaLista, useSerifKroniky, type RokArchivu, type ZapisArchivu, type NajdenePolozka } from "./KronikaFarnosti";
 import { useStretnutia, skoncilo } from "@/lib/detiMladez";
 import { useMiesta, nazovDruhu, type Miesto } from "@/lib/miestaFarnosti";
 import { kdeNaStranke } from "@/features/rola/VyberKostola";
@@ -1116,7 +1116,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   const od1200 = useAspon(1200); // OPRAVY 322: Teš sa 3 vedľa seba od 1200 px
   // OPRAVY 278: + je vo všetkých vzhľadoch plávajúce vpravo dole (Karta 65 tu neplatí)
   const [pasMod, posMod] = usePas(), [pasTes, posTes] = usePas(), [pasPrid, posPrid] = usePas(), [pasKos, posKos] = usePas();
-  const [pasOzn, posOzn] = usePas(true), [pasSpom, posSpom] = usePas(true);
+  const [pasOzn, posOzn] = usePas(true), [pasSpom, posSpom] = usePas();
   // OPRAVY 259: Nástenka PC a tablet na šírku — Zbierky farnosti v jednom riadku, listuje sa do boku
   const aspon1024 = useAspon(1024);
   const zbPasOn = siroka && aspon1024;
@@ -1270,12 +1270,21 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   </PasX>;
   // OPRAVY 322: Teš sa na PC na celú šírku, 2 až 3 karty vedľa seba
   const mTes = <PasX pasRef={pasTes} gap={14}>{tesy.map((t) => tesKarta(t, mob ? { flex: "none", scrollSnapAlign: "start", width: !mt ? "calc(100% - 2px)" : 210 } : sirkaKarty(od1200 ? 3 : 2, 14)))}</PasX>; // OPRAVY 275: celý hárok na výšku
-  // OPRAVY 322: Spomíname na PC vždy na celú šírku v mriežke (najviac 3 vedľa seba), ⌃ ⌄ Ďalšie ostáva
-  const spomZoznam = (vo2: boolean) => (mob ? (d: ReactNode) => zoznamY(pasSpom, d, vo2)
-    : (d: ReactNode) => <div ref={pasSpom} className="md-pas" style={{ ...MRIEZKA3, gap: 12, maxHeight: 460, overflowY: "auto", scrollSnapType: "y proximity", scrollbarWidth: "none", overscrollBehaviorY: "contain" }}>{d}</div>)(spomienky.map((sp) => { const n = sp.x ? pocetSus(sp.x) : (reakcieF(strankaId, sp.zb?.id ?? sp.id).sustrast ?? []).length; return (
-    <div key={sp.id} data-oz={sp.id} style={{ flex: "none", scrollSnapAlign: "start", padding: "0 16px", borderRadius: 20, background: KARTA }}>
-      <SpomZapis foto={sp.foto} siva={sp.siva} znacka={znSpom(sp, -6)} symbol={symbol} meno={sp.d.meno} roky={rokyParte(sp.d.nar, sp.d.umr)} rozlucka={[rozluckaT(sp.d.rd, sp.d.rc), sp.d.rm].filter(Boolean).join(" · ")} zbierka={!!sp.zb} sustrast={n} onTap={() => setParte(sp)} />
-    </div>); }));
+  // OPRAVY 396 (ako 360): Spomíname v Moderné = veľký ovál, rovnaká karta ako oslava v Teš sa s nami, meno pod ním, v rade toľko ako oslavy; šípky Ďalšie ostávajú
+  const mSpom = <PasX pasRef={pasSpom} gap={14}>{spomienky.map((sp) => { const roky = rokyParte(sp.d.nar, sp.d.umr); return (
+    <div key={sp.id} data-oz={sp.id} style={{ ...(mob ? { flex: "none", scrollSnapAlign: "start", width: !mt ? "calc(100% - 2px)" : 210 } : sirkaKarty(od1200 ? 3 : 2, 14)), minWidth: 0, padding: 12, borderRadius: 20, background: KARTA, color: INK, display: "flex", flexDirection: "column", gap: 10, boxSizing: "border-box" }}>
+      <button type="button" onClick={() => setParte(sp)} aria-label={`${sp.d.meno} · parte${sp.zb ? " a zbierka rodiny" : ""}`} style={{ position: "relative", width: "100%", aspectRatio: "2 / 3", border: "none", padding: 0, background: "transparent", cursor: "pointer", display: "flex" }}>
+        {znSpom(sp)}
+        <span style={{ flex: 1, borderRadius: "50%", border: "3px solid #C9A24A", overflow: "hidden", background: sp.foto ? undefined : "linear-gradient(160deg,#3A2E3E,#1C1820)", display: "flex", alignItems: "center", justifyContent: "center", color: "#C9A24A", fontSize: 48 }}>
+          {sp.foto ? <span style={{ width: "100%", height: "100%", background: `center/cover no-repeat url('${sp.foto}')`, filter: sp.siva ? "grayscale(1)" : undefined }} /> : symbol}
+        </span>
+      </button>
+      <span style={{ display: "flex", flexDirection: "column", gap: 3, padding: "0 4px", color: INK2 }}>
+        <b style={{ fontSize: 18, lineHeight: 1.25, overflowWrap: "anywhere", color: INK }}>{sp.d.meno}</b>
+        {roky && <span style={{ fontSize: 15 }}>{roky}</span>}
+        {sp.zb && <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".06em", color: "var(--nf-fialova)" }}>ZBIERKA RODINY</span>}
+      </span>
+    </div>); })}</PasX>;
   const mVer = <div style={{ display: "grid", gridTemplateColumns: mt ? "repeat(2,minmax(0,1fr))" : "minmax(0,1fr)", gap: 14 }}>{verZor.map((x) => (
     <Videne key={x.id} id={x.id} podpis={psVer(x)} kratke={(o) => verRiadok(x, o)}>
     <div data-oz={x.id} style={{ padding: 20, borderRadius: 20, background: KARTA, display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
@@ -1328,7 +1337,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
     pom: { id: "pom", t: nzB("pom", "Pomôž"), popis: "Priložte ruku k dielu. Brigáda a služba pri omši.", suhrn: poc(pomoz.length, "prosba o pomoc", "prosby o pomoc", "prosieb o pomoc"), ma: pomoz.length > 0, obsah: () => mPomoz },
     prid: { id: "prid", t: nzB("prid", "Príď a zaži s nami"), popis: "Pozývame vás. Ťuknite Prídem, nech vieme, s koľkými rátať. Fotky z akcií sú tu tiež.", suhrn: S.prid.split(" · ")[0], ma: maPrid, obsah: () => mPrid, sipky: { text: "Ďalšie akcie", posun: posPrid, ukaz: udalosti.length + alba.length > 1 } },
     tes: { id: "tes", t: nzB("tes", "Teš sa s nami"), popis: "Svadby, jubileá a poďakovania. Ťuknite a zablahoželajte.", suhrn: poc(tesy.length, "radosť", "radosti", "radostí"), ma: maTes, obsah: () => mTes, sipky: { text: "Ďalšie", posun: posTes, ukaz: tesy.length > Math.floor(nPas(2.2)) } },
-    spom: { id: "spom", t: nzB("spom", "Spomíname"), popis: "Parte a spomienky. Ťuknite na medailón, otvorí sa parte a zbierka rodiny.", suhrn: poc(spomienky.length, "spomienka", "spomienky", "spomienok"), ma: maSpom, obsah: (vo2) => spomZoznam(vo2), sipky: { text: "Ďalšie", zvisle: true, posun: posSpom, ukaz: spomienky.length > 3 }, pozadie: "var(--nf-spom)" },
+    spom: { id: "spom", t: nzB("spom", "Spomíname"), popis: "Parte a spomienky. Ťuknite na medailón, otvorí sa parte a zbierka rodiny.", suhrn: poc(spomienky.length, "spomienka", "spomienky", "spomienok"), ma: maSpom, obsah: () => mSpom, sipky: { text: "Ďalšie", posun: posSpom, ukaz: spomienky.length > Math.floor(nPas(2.2)) }, pozadie: "var(--nf-spom)" },
     ver: { id: "ver", t: nzB("ver", "Od veriacich"), popis: "Krátke oznamy, ktoré pridali veriaci.", suhrn: poc(oznVer.length, "oznam", "oznamy", "oznamov"), ma: oznVer.length > 0, obsah: () => mVer },
     deti: { id: "deti", t: "Deti a mládež", popis: "Stretká, miništranti, spevokol a tábory.", suhrn: poc(deti1.length, "akcia", "akcie", "akcií"), ma: maDeti, obsah: () => mDeti },
     kostoly: { id: "kostoly", t: "Naše kostoly", popis: "", suhrn: poc(miestaF.length, "kostol", "kostoly", "kostolov"), ma: miestaF.length > 1, obsah: () => mKostoly, sipky: { text: "", posun: posKos, ukaz: mob && miestaF.length > 1 } },
