@@ -279,24 +279,6 @@ export function usePodporaRetazou(zbierkaId: string): PodporaRetazou[] {
     ? [{ retaz: r.id, meno: menoRetaze(r), robi: r.robi, stranka: r.stranka, pct: x.pct, bezi: x.stav === "bezi", poslane: x.poslane }] : [];
 }
 
-/** OPRAVY 414: Prehľad charity — kto podporuje reťazou niektorú z jej zbierok (len skutočné, zo servera) */
-export function usePodporaRetazouViac(zbierky: string[]): (PodporaRetazou & { zbierkaId: string })[] {
-  const o = useObnova();
-  const ids = zbierky.map((z) => idZbierkyDB(z) ?? z), kluc = ids.join("|");
-  useEffect(() => {
-    if (!supabase || !ids.length) return;
-    let zive = true;
-    for (const id of ids) void supabase.rpc("retaz_podporuju", { p_zbierka: id }).then(({ data, error }) => {
-      if (!zive || error || !Array.isArray(data)) return;
-      podpora.set(id, (data as { retaz: string; meno: string; robi?: Strana | null; stranka?: string | null; pct: number; bezi: boolean; poslane: number }[])
-        .map((x) => ({ retaz: x.retaz, meno: x.meno, robi: x.robi ?? undefined, stranka: x.stranka ?? undefined, pct: Number(x.pct), bezi: !!x.bezi, poslane: Number(x.poslane) || 0 })));
-      zmena();
-    }, () => undefined);
-    return () => { zive = false; };
-  }, [kluc, o]); // eslint-disable-line react-hooks/exhaustive-deps
-  return zbierky.flatMap((z, i) => (podpora.get(ids[i]) ?? []).map((x) => ({ ...x, zbierkaId: z })));
-}
-
 /** reťaz na stránke tvorcu: bežiaca zbierka a ukončené (naplnená / skončila) */
 export interface ZbierkaTvorcu { zbierkaId: string; nazov: string; org: string; orgStranka?: string; strana?: Strana; pct: number; stav: StavVRetazi; poslane: number; ciel: number | null; vyzbierane: number; kedy: number }
 export interface RetazTvorcu { id: string; zbierky: ZbierkaTvorcu[] }

@@ -2,7 +2,7 @@
 // OPRAVY 405 (charita) · Správa charity → Ľudia → Darcovia a sumy + Sledujúci (ako Viera 349, 362, 345).
 // Darcovia: hore Poďakovať darcom (Všetkým darcom · každá zbierka) → Oznámenia darcov (server 0106/0130),
 // pod tým Darcovia · N: 1 človek = 1 riadok so súčtom (charita vidí sumy; verejne podľa Viditeľnosť súm).
-// Bez mena = „Anonymný darca“ (každý zvlášť). Reťaz dobra a dorovnanie teraz nie — riadky firiem sa vynechajú.
+// Bez mena = „Anonymný darca“ (každý zvlášť). Dorovnanie firmy je riadok s menom firmy (OPRAVY 417: nič sa neskrýva).
 // Sledujúci: len počty, bez mien (server 0107 statistiky_farnosti).
 // ============================================================
 import { useState, type CSSProperties } from "react";
@@ -21,7 +21,7 @@ type Darca = { k: string; meno: string; suma: number; pocet: number; cas: number
 export function DarcoviaCharity({ strankaId, mobil }: { strankaId: string; mobil: boolean }) {
   useZmenyDarov();
   const zb = zbierkyStrankyZPamate(strankaId);
-  const vsetky: { r: DarRiadok; z: string }[] = zb.flatMap((z) => darcoviaPre(z.id).filter((r) => !r.firma && !r.omsa).map((r) => ({ r, z: z.nazov || "Zbierka" })));
+  const vsetky: { r: DarRiadok; z: string }[] = zb.flatMap((z) => darcoviaPre(z.id).filter((r) => !r.omsa).map((r) => ({ r, z: z.nazov || "Zbierka" })));
   // 1 človek = 1 riadok: registrovaný s menom podľa mena; bez mena každý dar zvlášť (nevieme, či je to ten istý človek)
   const mapa = new Map<string, Darca>();
   for (const { r, z } of vsetky) {

@@ -25,8 +25,7 @@ import { centralnaZPamate, useZmenyCentralnej, prazdnaCentralna } from "@/lib/ce
 import { useSektory, cislaSektora, nastavVyberCentralnej, CENTRALNA_CISLA, NULA, SEKTORY_OD_TIERU } from "@/lib/sektoryCharity";
 import { cistyText } from "@/lib/richtext";
 import { cisloObjektu } from "@/lib/cisloObjektu";
-import { useDorovnania, stavCharity, vycerpane } from "@/lib/dorovnanie";
-import { usePodporaRetazouViac, inicialy as inicialyRetaze } from "@/lib/retaz";
+import { useDorovnania, stavCharity } from "@/lib/dorovnanie";
 import { nacitajStav, pridajDni, SPRAVA_ZBIERKY_CFG } from "@/lib/zbierkaSprava";
 import { SUBJEKTY } from "./mock";
 import { upravZbierku, useZmenyZbierok, zbierkyStrankyZPamate, nacitajZbierkyStranky, konceptZbierkyZPamate, nacitajKonceptZbierky, cielCislo, jeIne, UCELY, KROKY_ZBIERKY, type SpustenaZbierka, type NovaZbierkaData } from "@/lib/novaZbierka";
@@ -575,8 +574,6 @@ const upravitTl = (glow: boolean): React.CSSProperties => glow
   ? { background: "var(--green)", color: "#fff", boxShadow: "0 0 0 3px var(--green), 0 0 18px rgba(78,125,55,.55)" }
   : { background: "var(--btn)", color: "var(--ink)", boxShadow: "none" };
 
-/** OPRAVY 414 (8): dlaždica Dorovnanie daru v Zbierkach teraz nie */
-const BEZ_RETAZE = true;
 /** OPRAVY 414 (1): prázdny profil (0 %) — Vytvoriť profil, nie Dokončiť */
 const PRAZDNY_PROFIL = "Pridajte logo, titulnú fotku, pár viet o vás a kontakt.";
 // OPRAVY 399: karta charity = ako karta profilu vo Viere (SpravaFarnosti kartaProfilu), pozadie a rám ostávajú bronzové (štít).
@@ -859,11 +856,7 @@ function StitZoom({ stit, sada, onClose }: { stit: StitCharity; sada: StitSada; 
     </div>, document.body);
 }
 
-function Prehlad({ strankaId, entita, tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit, sada, menu, mobil, tablet, zbal, prepniZbal, onZoom, uvod, krok1, pozvana, vlastne, hornaCast }: Spolocne & { onZoom: () => void; hornaCast?: React.ReactNode }) {
-  // OPRAVY 414: Reťaz dobra a Dorovnávané zbierky len keď sú skutočné (niekto dorovnáva / vzal zbierku do reťaze)
-  const realR = usePodporaRetazouViac(vlastne.map((z) => z.id));
-  const realD = useDorovnania(entita).filter((d) => d.stav !== "odmietnute" && d.stav !== "zrusene");
-  const maRetaz = !nova || realR.length > 0, maDor = !nova || realD.length > 0;
+function Prehlad({ strankaId, tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit, sada, menu, mobil, tablet, zbal, prepniZbal, onZoom, uvod, krok1, pozvana, vlastne, hornaCast }: Spolocne & { onZoom: () => void; hornaCast?: React.ReactNode }) {
   const p3Do = usePozvanaDo(strankaId); // OPRAVY 398: dátum registrácie + 2 mesiace (nie napevno)
   const PHZ: PhZbierka[] = [...vlastne.filter(bezi).map(naPh), ...(nova ? [] : PH_ZBIERKY)]; // OPRAVY 114: spustené zbierky navrchu
   const VSE = menu.vse; // KARTA 36: na pripnutie len položky, ktoré typ má
@@ -1041,12 +1034,7 @@ function Prehlad({ strankaId, entita, tier: _tier, piny, prepniPin, otvorPolozku
         <div onClick={uvodPc ? () => setUR((o) => !o) : undefined} role={uvodPc ? "button" : undefined} aria-expanded={uvodPc ? rOtv : undefined} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: uvodPc ? 24 : undefined, cursor: uvodPc ? "pointer" : "default" }}><Ik d={IK.retaz} c="#4E7D37" w={2} /><b style={{ flex: 1, fontSize: 16 }}>Reťaz dobra</b><span style={{ fontSize: 13, fontWeight: 800, color: "var(--gInk)" }}>{nova ? "0 €" : "640 €"}</span>{uvodPc && sipka(rOtv)}</div>
         {rOtv && <span style={{ fontSize: 12.5, color: "var(--ink3)", marginTop: -4 }}>ľudia, ktorí sa pripojili k vašim zbierkam</span>}
         {!rOtv ? null : nova
-          ? realR.map((x) => (
-            <div key={`${x.retaz}-${x.zbierkaId}`} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48, borderTop: "1px solid var(--cardBd)" }}>
-              <span style={{ width: 32, height: 32, flex: "none", borderRadius: "50%", background: "var(--gSoft)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "var(--gInk)" }}>{inicialyRetaze(x.meno)}</span>
-              <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><b style={{ fontSize: 14 }}>{x.meno}</b><span style={{ fontSize: 12, color: "var(--ink3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{vlastne.find((z) => z.id === x.zbierkaId)?.nazov || "Zbierka"} · {x.pct} %{x.bezi ? " · beží" : ""}</span></span>
-              <b style={{ flex: "none", fontSize: 14 }}>{sumaEur(x.poslane)}</b>
-            </div>))
+          ? <span style={{ paddingTop: 10, borderTop: "1px solid var(--cardBd)", fontSize: 13.5, lineHeight: 1.45, color: "var(--ink2)" }}>Zatiaľ sa nikto nepripojil. Keď niekto spustí zbierku pre vás, uvidíte ho tu.</span>
           : RETAZ.map(([i, n, z, v]) => (
             <div key={n} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48, borderTop: "1px solid var(--cardBd)" }}>
               <span style={{ width: 32, height: 32, flex: "none", borderRadius: "50%", background: "var(--gSoft)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "var(--gInk)" }}>{i}</span>
@@ -1059,13 +1047,7 @@ function Prehlad({ strankaId, entita, tier: _tier, piny, prepniPin, otvorPolozku
         <div onClick={uvodPc ? () => setUD((o) => !o) : undefined} role={uvodPc ? "button" : undefined} aria-expanded={uvodPc ? dOtv : undefined} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: uvodPc ? 24 : undefined, cursor: uvodPc ? "pointer" : "default" }}><Ik d={IK.budova} c="var(--gold)" w={2} /><b style={{ flex: 1, fontSize: 16 }}>Dorovnávané zbierky</b><span style={{ fontSize: 13, fontWeight: 800, color: "var(--gold)" }}>{nova ? "" : "1 beží"}</span>{uvodPc && sipka(dOtv, "var(--gold)")}</div>
         {dOtv && <span style={{ fontSize: 12.5, color: "var(--cuInk2)", marginTop: -4 }}>partneri, ktorí pridávajú k darom ľudí</span>}
         {!dOtv ? null : nova
-          ? realD.map((d) => (
-            <div key={d.id} style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 10, borderTop: "1px solid rgba(135,103,18,.25)" }}>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}><b style={{ flex: 1, fontSize: 14 }}>{d.firma}</b><span style={{ fontSize: 12, fontWeight: 800, color: "var(--gold)" }}>1 : {d.pomer}</span></div>
-              <span style={{ fontSize: 12, color: "var(--cuInk2)" }}>{d.cielNazov}{d.stropDaru ? ` · do ${sumaEur(d.stropDaru)} na dar` : ""}</span>
-              <Pruh sc={d.strop ? Math.min(1, vycerpane(d) / d.strop) : 0} h={6} bg="rgba(135,103,18,.2)" c="var(--gold)" />
-              <span style={{ fontSize: 12, color: "var(--cuInk2)" }}>dorovnané {sumaEur(vycerpane(d))} z {sumaEur(d.strop)}</span>
-            </div>))
+          ? <span style={{ paddingTop: 10, borderTop: "1px solid rgba(135,103,18,.25)", fontSize: 13.5, lineHeight: 1.45, color: "var(--cuInk2)" }}>Zatiaľ žiadna firma nedorovnáva. Keď sa partner zapojí, uvidíte tu jeho rozpočet.</span>
           : <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 10, borderTop: "1px solid rgba(135,103,18,.25)" }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}><b style={{ flex: 1, fontSize: 14 }}>Pekáreň Dobrota s.r.o.</b><span style={{ fontSize: 12, fontWeight: 800, color: "var(--gold)" }}>1 : 1</span></div>
             <span style={{ fontSize: 12, color: "var(--cuInk2)" }}>Strecha pre rodinu Horváthovú · do 300 € na dar</span>
@@ -1074,16 +1056,15 @@ function Prehlad({ strankaId, entita, tier: _tier, piny, prepniPin, otvorPolozku
           </div>}
       </section>);
   const pravy = (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: mobil ? 0 : 28 }}>{maRetaz && retazEl}{maDor && dorEl}</div>);
+    <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: mobil ? 0 : 28 }}>{retazEl}{dorEl}</div>);
 
   const grafEl = graf && <GrafDarov obd={obd} nova={nova} mobil={ph} onZavri={() => setGraf(() => false)} />;
   if (mobil) {
     // OPRAVY 95: zbaliteľné sekcie; Treba vybaviť vždy rozbalené. OPRAVY 96: tablet — Reťaz a Dorovnávané vedľa seba
     const obdTxt = ["dnes", "za 7 dní", "za 30 dní", "za rok"][obd];
     const vyz = nova ? N8[0] : D8[obd][0][0];
-    // OPRAVY 414: Reťaz dobra a Dorovnávané zbierky len keď je niečo skutočné
-    const retazS = !maRetaz ? null : <Sekcia id="retaz" nazov="Reťaz dobra" suhrn={nova ? sumaEur(realR.reduce((a, x) => a + x.poslane, 0)) : "640 €"} zbal={zbal} prepni={prepniZbal}>{retazEl}</Sekcia>;
-    const dorS = !maDor ? null : <Sekcia id="dorovnanie" nazov="Dorovnávané zbierky" suhrn={nova ? `${realD.length}` : "1 beží"} zbal={zbal} prepni={prepniZbal}>{dorEl}</Sekcia>;
+    const retazS = <Sekcia id="retaz" nazov="Reťaz dobra" suhrn={nova ? "0 €" : "640 €"} zbal={zbal} prepni={prepniZbal}>{retazEl}</Sekcia>;
+    const dorS = <Sekcia id="dorovnanie" nazov="Dorovnávané zbierky" suhrn={nova ? undefined : "1 beží"} zbal={zbal} prepni={prepniZbal}>{dorEl}</Sekcia>;
     // KARTA 42 · telefón: najprv konať, potom čísla
     if (ph) {
       if (uvod) return (<>{hornaCast}{uvodPanel}{krokyEl}{pinUvod}{treba}{retazS}{dorS}</>);
@@ -1117,14 +1098,14 @@ function Prehlad({ strankaId, entita, tier: _tier, piny, prepniPin, otvorPolozku
     }
     if (uvod) return (<>
       {uvodPanel}{krokyEl}{pinUvod}{treba}
-      {(maRetaz || maDor) && (tablet ? <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 14, alignItems: "start" }}><div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{retazS}</div><div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{dorS}</div></div> : <>{retazS}{dorS}</>)}
+      {tablet ? <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 14, alignItems: "start" }}><div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{retazS}</div><div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{dorS}</div></div> : <>{retazS}{dorS}</>}
     </>);
     return (<>
       <Sekcia id="cisla" nazov="Čísla" suhrn={`Vyzbierané ${vyz} ${obdTxt}`} akcia={cislaAkcia} zbal={zbal} prepni={prepniZbal}>{cisla}</Sekcia>
       <Sekcia id="graf" nazov="Graf darov" suhrn={`${sumaEur((nova ? 0 : GRAF_CIEL[obd]))} ${obdTxt}`} zbal={zbal} prepni={prepniZbal}>{grafEl}</Sekcia>
       <Sekcia id="piny" nazov="Pripnuté" suhrn={pocet(pinyV.length, ["položka", "položky", "položiek"])} zbal={zbal} prepni={prepniZbal}>{pinBar}</Sekcia>
       {treba}{zbierky}
-      {(maRetaz || maDor) && (tablet ? <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 14, alignItems: "start" }}><div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{retazS}</div><div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{dorS}</div></div> : <>{retazS}{dorS}</>)}
+      {tablet ? <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 14, alignItems: "start" }}><div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{retazS}</div><div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{dorS}</div></div> : <>{retazS}{dorS}</>}
     </>);
   }
   return (<>
@@ -1135,9 +1116,9 @@ function Prehlad({ strankaId, entita, tier: _tier, piny, prepniPin, otvorPolozku
     {uvod && krokyEl}
     {!uvod && grafEl}
     {uvod ? pinUvod : pinBar}
-    <div style={{ flex: "none", display: "grid", gridTemplateColumns: !(maRetaz || maDor) ? "minmax(0,1fr)" : "minmax(0,1fr) 264px", gap: 20, alignItems: "start" }}>
+    <div style={{ flex: "none", display: "grid", gridTemplateColumns: "minmax(0,1fr) 264px", gap: 20, alignItems: "start" }}>
       <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>{treba}{zbierky}</div>
-      {(maRetaz || maDor) && pravy}
+      {pravy}
     </div>
   </>);
 }
@@ -1347,7 +1328,7 @@ function ObrZbierky(s: Spolocne) {
   const cenFoto = cen.media.find((m) => m.typ === "foto")?.src;
   const cisla = (c: { mesiac: number; mesacne: number }) => [`${c.mesacne} ${c.mesacne === 1 ? "človek dáva" : c.mesacne < 5 && c.mesacne > 1 ? "ľudia dávajú" : "ľudí dáva"} mesačne`, `${eur(c.mesiac)} / mes.`];
   const otvorCen = (i: number) => { nastavVyberCentralnej(i); otvor("centralna"); };
-  const dlazdice = menu.druhy.filter((k) => (!BEZ_RETAZE && k.id === "dorovnanie") || k.id === "materialne"); // OPRAVY 414 (8): Dorovnanie daru teraz nie // bod 146: dve dlaždice pod hlavičkou, „Ďalšie druhy zbierok" dole zmizli
+  const dlazdice = menu.druhy.filter((k) => k.id === "dorovnanie" || k.id === "materialne"); // bod 146: dve dlaždice pod hlavičkou, „Ďalšie druhy zbierok" dole zmizli
   useEffect(() => {
     if (!poslednyRiadok) return;
     const el = document.querySelector(`[data-riadok="${CSS.escape(poslednyRiadok)}"]`);
