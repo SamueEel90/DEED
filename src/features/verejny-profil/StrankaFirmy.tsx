@@ -39,7 +39,7 @@ export function StrankaFirmy({ profil, onDetail, onBack }: { profil: TestProfil;
     const t = window.setInterval(() => { setLiveOp(0); t2 = window.setTimeout(() => { setLive((x) => x + 1); setLiveOp(1); }, 320); }, 5000);
     return () => { window.clearInterval(t); window.clearTimeout(t2); };
   }, []);
-  const [ls, lt] = b.live[live % b.live.length];
+  const [ls, lt] = b.live.length ? b.live[live % b.live.length] : ["", ""]; // OPRAVY 403 doplnok: bez prepojení nič nebeží
   const regiony = [...b.regiony].sort((a, c) => Number(c.mesto === domace) - Number(a.mesto === domace));
   const fond = [profil.centralna, ...profil.sektory];
   const zbal = () => { setMod(null); requestAnimationFrame(() => dlRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })); };
@@ -83,7 +83,7 @@ export function StrankaFirmy({ profil, onDetail, onBack }: { profil: TestProfil;
     <div style={{ borderRadius: 20, background: "var(--goldBg)", border: "1px solid var(--goldBd)", padding: "14px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
       <span style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--gold)", animation: "vpPulz 1.6s ease infinite" }} /><b style={{ fontSize: 12, letterSpacing: ".08em", color: "var(--gold)", whiteSpace: "nowrap" }}>DOROVNALI SME · NAŽIVO</b></span>
       <span style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}><b style={{ fontSize: pc ? 46 : 36, lineHeight: 1, letterSpacing: "-.02em", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{b.dorSum}</b><span style={{ fontSize: 14, color: "var(--ink2)", whiteSpace: "nowrap" }}>tento rok · každý dar 1&nbsp;:&nbsp;1</span></span>
-      <span aria-live="polite" style={{ fontSize: 13.5, color: "var(--ink2)", opacity: liveOp, transition: "opacity .3s" }}><b style={{ color: "var(--gold)" }}>{ls}</b> {lt}</span>
+      {ls && <span aria-live="polite" style={{ fontSize: 13.5, color: "var(--ink2)", opacity: liveOp, transition: "opacity .3s" }}><b style={{ color: "var(--gold)" }}>{ls}</b> {lt}</span>}
       <span style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 8, borderTop: "1px solid var(--goldBd)", paddingTop: 8 }}>
         {b.dorCisla.map(([v, t]) => <span key={t} style={{ display: "flex", flexDirection: "column" }}><b style={{ fontSize: 17, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{v}</b><span style={{ fontSize: 12, color: "var(--ink3)" }}>{t}</span></span>)}
       </span>

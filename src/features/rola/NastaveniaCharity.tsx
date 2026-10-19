@@ -618,7 +618,14 @@ export function ObrFaktury({ mobil, tier, otvor }: { mobil: boolean; tier: Tier;
 // 7 · Prihlásené zariadenia
 // ============================================================
 type Zar = { id: number; pc?: boolean; n: string; kto: string; m: string; a: string; ja?: boolean; nove?: boolean };
-const ZAR0: Zar[] = [{ id: 1, pc: true, n: "MacBook Air · Chrome", kto: "Martin Štofik", m: "Trenčín", a: "teraz", ja: true }, { id: 2, n: "iPhone 15 · appka DEED+", kto: "Martin Štofik", m: "Trenčín", a: "pred 2 hodinami" }, { id: 3, n: "Samsung Galaxy A54 · appka DEED+", kto: "Martin Štofik", m: "Bratislava", a: "dnes 11:20", nove: true }];
+// OPRAVY 403 doplnok: žiadne vymyslené zariadenia — zoznam ukáže len zariadenie, na ktorom ste teraz (z prehliadača)
+function totoZariadenie(): Zar {
+  const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+  const os = /iPhone/.test(ua) ? "iPhone" : /iPad/.test(ua) ? "iPad" : /Android/.test(ua) ? "Android" : /Mac OS X|Macintosh/.test(ua) ? "Mac" : /Windows/.test(ua) ? "Windows" : /Linux/.test(ua) ? "Linux" : "Zariadenie";
+  const pr = /Edg\//.test(ua) ? "Edge" : /Firefox\//.test(ua) ? "Firefox" : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "";
+  return { id: 1, pc: !/iPhone|iPad|Android/.test(ua), n: pr ? `${os} · ${pr}` : os, kto: "Vy", m: "", a: "teraz", ja: true };
+}
+const ZAR0: Zar[] = [totoZariadenie()];
 export function ObrZariadenia({ mobil }: { mobil: boolean }) {
   const [Z, setZ] = usePamat<Zar[]>("zar", ZAR0);
   return (
@@ -633,7 +640,7 @@ export function ObrZariadenia({ mobil }: { mobil: boolean }) {
               </span>
               <span style={{ flex: "1 1 220px", minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
                 <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><b style={{ fontSize: 15 }}>{sZnackou(z.n)}</b>{z.ja && <span style={{ flex: "none", whiteSpace: "nowrap", height: 22, padding: "0 8px", borderRadius: 11, background: "var(--gSoft)", display: "flex", alignItems: "center", fontSize: 11, fontWeight: 800, letterSpacing: ".04em", color: "var(--gInk)" }}>TOTO ZARIADENIE</span>}</span>
-                <span style={{ fontSize: 13, color: "var(--ink3)" }}>{z.kto} · {z.m} · {z.a}</span>
+                <span style={{ fontSize: 13, color: "var(--ink3)" }}>{[z.kto, z.m, z.a].filter(Boolean).join(" · ")}</span>
                 {z.nove && <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--gold)" }}>nové · 24 h bez zmeny účtov a správcov</span>}
               </span>
               {!z.ja && <button onClick={() => { setZ((a) => a.filter((y) => y.id !== z.id)); toast(`${z.n.split(" · ")[0]} je odhlásený.`); }} style={{ ...obrys(CERVENA), marginLeft: "auto", fontSize: 13.5 }}>Odhlásiť</button>}

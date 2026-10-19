@@ -73,7 +73,6 @@ export const TVORCA_DATA: TvorcaData = {
   skolenie: { n: "Zvuk na akcii: od kábla po mix", o: "Dve hodiny naživo. Ukážem celé zapojenie a odpoviem na otázky.", kedy: "sobota 18. 10. · 10:00 – 12:00", kde: "online · odkaz príde v appke", cena: 15, miesta: "12 z 20 miest" },
   zbierky: [
     { id: "tv-husle-emka", n: "Husle pre Emku", v: 640, ciel: 900, ludia: 41, mesto: "Trenčín", kto: "ZUŠ Trenčín", foto: U("photo-1501386761578-eac5c94b800a") },
-    { id: "tv-zvuk-noclaharen", n: "Zvuková technika pre nocľaháreň", v: 420, ciel: 1200, ludia: 27, mesto: "Trenčín", kto: "Svetlo pomoci o.z.", foto: U("photo-1598488035139-bdbb2231ce04") },
   ],
   akcie: [
     { d: "11.", m: "OKT", n: "Benefičný koncert pre Emku", s: "Klub Lúč, Trenčín · 19:00 · vstupné ide na zbierku" },

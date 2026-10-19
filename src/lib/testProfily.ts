@@ -383,23 +383,12 @@ const FIRMA: TestProfil = {
   k: "pekaren", typ: "firma", meno: "Pekáreň Dobrota s.r.o.", iniciala: "PD",
   b2b: {
     kratko: "Pekáreň Dobrota", vetaMob: "Časť z každého bochníka ide tam, kde predávame.",
-    dorSum: "12 480 €", dorCisla: [["1 312", "darov zdvojených"], ["7", "charít"], ["4 380 €", "ešte v rozpočte"]],
-    live: [["+20 €", "Lucia B. dala 10 €, pekáreň pridala 10 € · Strecha pre Horváthovcov"], ["+50 €", "Anonymný darca 25 €, pekáreň 25 € · Vozík pre Ninu"], ["+10 €", "Marek T. 5 €, pekáreň 5 € · Doučovanie v Tábori"]],
-    regiony: [
-      { mesto: "Trenčín", foto: U("photo-1519681393784-d120267933ba"), suma: "5 840 €", zbierok: "· 6 zbierok", kto: "Svetlo pomoci, ZŠ Hodžova, Klub Dukla" },
-      { mesto: "Prešov", foto: U("photo-1542601906990-b4d3fb778b09"), suma: "3 960 €", zbierok: "· 4 zbierky", kto: "Svetlo pomoci, Detský domov Prešov" },
-      { mesto: "Bratislava", foto: U("photo-1503454537195-1dcabb73ffb9"), suma: "2 680 €", zbierok: "· 3 zbierky", kto: "Nocľaháreň Mea Culpa, Seniori Rača" },
-    ],
-    dorZb: [
-      { st: "TRENČÍN · SVETLO POMOCI", nazov: "Strecha pre rodinu Horváthovú", vyzbierane: 8420, ciel: 12000, este: "1 840 €", foto: "/img/dom-strecha.jpg", zbierkaId: "fz-strecha-horvath" },
-      { st: "PREŠOV · DETSKÝ DOMOV", nazov: "Doučovanie v Tábori", vyzbierane: 640, ciel: 1500, este: "860 €", foto: U("photo-1503454537195-1dcabb73ffb9"), zbierkaId: "fz-doucovanie" },
-    ],
-    vdaka: [
-      { q: "Vďaka pekárni sme mali o polovicu kratšiu zbierku", kto: "Svetlo pomoci · 0:38", foto: "/img/dom-strecha.jpg" },
-      { q: "Každé ráno nám vozia chlieb pre 60 ľudí", kto: "Nocľaháreň Mea Culpa · 0:41", foto: U("photo-1542838132-92c53300491e") },
-      { q: "Nové dresy, ďakujeme", kto: "Klub Dukla Trenčín · 0:22", foto: U("photo-1517649763962-0c623066013b") },
-      { q: "Seniori sa tešia na piatky", kto: "Seniori Rača · 0:35", foto: U("photo-1516307365426-bea591f05011") },
-    ],
+    // OPRAVY 403 doplnok: vymyslené prepojenia na charity zmazané — nové prepojenia (dorovnanie) vzniknú pri testovaní
+    dorSum: "0 €", dorCisla: [["0", "darov zdvojených"], ["0", "charít"], ["0 €", "ešte v rozpočte"]],
+    live: [],
+    regiony: [],
+    dorZb: [],
+    vdaka: [],
     zamCisla: [["23", "zamestnancov pomáha"], ["108 h", "dobrovoľníctva"], ["41", "skutkov"]],
     zamSk: [
       { mesto: "TRENČÍN", nazov: "Napiekli sme 400 vianočiek pre seniorov", kto: "Jana K., Peter M. a 6 ďalších", foto: U("photo-1509440159596-0249088772ff") },
@@ -447,20 +436,11 @@ const FIRMA: TestProfil = {
       "Bratislava": { dlazdica: "Bratislava: 12 zamestnancov", minulyMesiac: "V Bratislave odpracovali naši ľudia 96 hodín vo výdajni.", uvidis: "Uvidíš, koľko hodín sme odpracovali", rozpis: [["dobrovoľníctvo", 100]] },
     }, { mesiac: 800, mesacne: 19, kam: "Lavičky, ihriská a susedské akcie v mestách, kde pečieme.", tipy: [[5, "kvetináč na sídlisko"], [10, "vstup na akciu pre rodinu"], [20, "kus lavičky"]] }),
   ],
-  zbierky: [
-    { id: "fz-strecha-horvath", nazov: "Strecha pre rodinu Horváthovú", popis: "Zbierka Svetla pomoci. Dorovnávame každé euro až do 300 € na darcu.", mesto: "Trenčín", foto: F.poziar, vyzbierane: 8420, ciel: 12000, ludia: 148, stav: "bezi", konciDni: 9, dorovnanie: `${DOROVNA} · ešte 1 380 €` },
-    { id: "fz-vozik-nina", nazov: "Invalidný vozík pre Ninu", popis: "Nový vozík pre sedemročnú Ninu. Dorovnávame do konca mesiaca.", mesto: "Trenčín", foto: F.vozik, vyzbierane: 2960, ciel: 4000, ludia: 61, stav: "bezi", dorovnanie: `${DOROVNA} · ešte 520 €` },
-    { id: "fz-strecha-maria", nazov: "Strecha pre pani Máriu", popis: "Pani Mária má 81 rokov a býva sama. Zbierka Svetla pomoci v Prešove.", mesto: "Prešov", foto: F.strecha, vyzbierane: 1260, ciel: 3400, ludia: 38, stav: "bezi", konciDni: 12, dorovnanie: `${DOROVNA} · ešte 940 €` },
-    { id: "fz-doucovanie", nazov: "Doučovanie v Tábori", popis: "Deväť detí, dvakrát týždenne. Platíme učiteľky.", mesto: "Prešov", foto: F.ucenie, vyzbierane: 740, ciel: 2000, ludia: 24, stav: "bezi", dorovnanie: `${DOROVNA} · ešte 1 260 €` },
-    { id: "fz-polievka", nazov: "Polievka na Hlavnej", popis: "Večerná polievka pre 40 ľudí bez domova. Pečivo dávame my.", mesto: "Prešov", foto: F.polievka, vyzbierane: 1890, ludia: 72, stav: "dlhodoba", dorovnanie: `${DOROVNA} · pečivo každý deň` },
-    { id: "fz-bundy", nazov: "Zimné bundy pre deti", popis: "Bundy pre deti z rodín v núdzi. Dorovnávame do výšky 2 000 €.", mesto: "Bratislava", foto: F.bundy, vyzbierane: 1870, ciel: 2600, ludia: 77, stav: "bezi", konciDni: 21, dorovnanie: `${DOROVNA} · ešte 130 €` },
-    { id: "fz-ihrisko", nazov: "Ihrisko na Račianskej", popis: "Nový povrch ihriska pre deti zo sídliska. Doplatili sme zvyšok.", mesto: "Bratislava", foto: F.sport, vyzbierane: 6400, ciel: 6400, ludia: 112, stav: "ukoncena", doklady: 7, skoncila: "30. 6.", spravaDarcom: "Ihrisko je hotové od júla. Chodí tam denne vyše 50 detí, povrch má záruku 10 rokov.", d: "30.", m: "JÚN", rok: 2026 },
-  ],
+  zbierky: [],
   skutky: [
     { id: "fs-vianocky", nazov: "Napiekli sme 400 vianočiek pre seniorov", popis: "nočná zmena · celý tím pekárne", mesto: "Bratislava", kedy: "Včera", foto: F.pecivo, dobrovolnici: 12, d: "2.", m: "OKT", rok: 2026 },
     { id: "fs-vydajna", nazov: "96 hodín vo výdajni potravín", popis: "zamestnanci namiesto zmeny", mesto: "Bratislava", kedy: "28. 9.", foto: F.dobrovolnici, dobrovolnici: 12, d: "28.", m: "SEP", rok: 2026 },
     { id: "fs-pecivo-jedalen", nazov: "Pečivo do jedálne každé ráno", popis: "40 raňajok denne · celý september", mesto: "Trenčín", kedy: "30. 9.", foto: F.pekaren, dobrovolnici: 3, d: "30.", m: "SEP", rok: 2026 },
-    { id: "fs-strecha", nazov: "Doplatili sme krytinu Horváthovcom", popis: "dorovnanie zbierky 1 : 1", mesto: "Trenčín", kedy: "29. 9.", foto: F.strecha, d: "29.", m: "SEP", rok: 2026 },
     { id: "fs-pec", nazov: "Kúpili sme pec do jedálne na Hlavnej", popis: "montáž aj zaškolenie", mesto: "Prešov", kedy: "12. 9.", foto: F.polievka, dobrovolnici: 4, d: "12.", m: "SEP", rok: 2026 },
     { id: "fs-florbal", nazov: "18 detí hrá florbal zadarmo", popis: "celá sezóna · tréningy aj výstroj", mesto: "Prešov", kedy: "5. 9.", foto: F.sport, d: "5.", m: "SEP", rok: 2026 },
     { id: "fs-ihrisko", nazov: "Otvorili sme ihrisko na Račianskej", popis: "s deťmi zo sídliska", mesto: "Bratislava", kedy: "1. 7.", foto: F.komunita, dobrovolnici: 9, d: "1.", m: "JÚL", rok: 2026 },
@@ -476,10 +456,8 @@ const FIRMA: TestProfil = {
     { id: "fp-vodic", nazov: "Vodič rozvozu", druh: "brigadnik", text: "Trenčín · ráno 5 – 9 · dohoda · 8 € na hodinu", mesto: "Trenčín", den: "28.", mesiac: "OKT", pod: "prihlásiť sa do 28. 10." },
   ],
   darcovia: [
-    { id: "fd1", meno: "Pekáreň Dobrota", iniciala: "PD", mesto: "Trenčín", naCo: "Strecha pre rodinu Horváthovú", suma: 150, pred: "pred 8 min" },
     { id: "fd2", meno: "Jana S.", iniciala: "JS", mesto: "Bratislava", naCo: "Fond Dobroty", suma: 10, pred: "pred 19 min" },
     { id: "fd3", meno: "Anonymný darca", iniciala: "A", mesto: "Bratislava", naCo: "Deti a šport", suma: 25, pred: "pred 32 min" },
-    { id: "fd4", meno: "Tomáš R.", iniciala: "TR", mesto: "Prešov", naCo: "Doučovanie v Tábori", suma: 5, pred: "pred 1 h" },
     { id: "fd5", meno: "Katarína D.", iniciala: "KD", mesto: "Trenčín", naCo: "Seniori", pred: "pred 2 h" },
     { id: "fd6", meno: "Anonymný darca", iniciala: "A", mesto: "Prešov", naCo: "Fond Dobroty", suma: 50, pred: "pred 3 h" },
   ],

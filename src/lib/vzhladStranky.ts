@@ -40,6 +40,7 @@ export async function nacitajVzhlad(stranka: string): Promise<Vzhlad | null> {
     else if ((zapisane.get(stranka) ?? 0) < zac) {
       const v = jeVzhlad(data?.vzhlad) ? data!.vzhlad as Vzhlad : null;
       if (v && pamat.get(stranka) !== v) { pamat.set(stranka, v); zmena(); }
+      else if (!v && pamat.has(stranka)) { pamat.delete(stranka); zmena(); } // OPRAVY 403 doplnok: server bez vzhľadu = Klasik
     }
   }
   return pamat.get(stranka) ?? null;
@@ -49,6 +50,21 @@ export async function ulozVzhlad(stranka: string, v: Vzhlad): Promise<void> {
   zapisane.set(stranka, Date.now());
   pamat.set(stranka, v); zmena();
   if (supabase) await supabase.from("profil_stranky").upsert({ stranka, vzhlad: v }, { onConflict: "stranka" });
+}
+/** OPRAVY 403 doplnok · Klasik (tvorca): bez vybraného vzhľadu = pôvodná stránka tvorcu (StrankaTvorcu). Uloží sa hneď (vzhlad = null). */
+export async function ulozKlasik(stranka: string): Promise<void> {
+  zapisane.set(stranka, Date.now());
+  pamat.delete(stranka); zmena();
+  if (supabase) {
+    const { error } = await supabase.from("profil_stranky").upsert({ stranka, vzhlad: null }, { onConflict: "stranka" });
+    if (error) throw error;
+  }
+}
+/** vybraný vzhľad, alebo null = Klasik (nič nevybrané) — pre výber v Správe */
+export function useVybranyVzhlad(stranka: string): Vzhlad | null {
+  useSyncExternalStore((f) => { posl.add(f); return () => posl.delete(f); }, () => ver, () => 0);
+  useEffect(() => { void nacitajVzhlad(stranka); }, [stranka]);
+  return pamat.get(stranka) ?? null;
 }
 /** vybraný vzhľad stránky; zadarmo = vždy vzhľad z configu */
 export function useVzhlad(stranka: string, zadarmo: boolean): Vzhlad {

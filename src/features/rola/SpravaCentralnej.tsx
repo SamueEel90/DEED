@@ -32,7 +32,6 @@ import {
 import { nacitajStav, ulozStav, OVERENY_SKEN, type StavZbierky } from "@/lib/zbierkaSprava";
 import { nastavCiste, sucetDarov, darcoviaPre, identitaDarcu, relCas, zobrazenaSuma, useZmenyDarov, useSektorDarcu } from "@/lib/darcovia";
 import { beziaceDorovnanieNaCiel, zostatok } from "@/lib/dorovnanie";
-import { useUkazky, ukazkyTeraz } from "@/lib/testStav";
 import { cisloObjektu } from "@/lib/cisloObjektu";
 import { overIban, formatujIban } from "./segmenty";
 import { TextovePolia, GaleriaEditor } from "./obsahZbierky";
@@ -59,7 +58,7 @@ const statTest = (jeS: boolean, nazov: string): DataStatistik => ({
   dary: [["Lucia B.", "10 € · cez QR plagát · pred 4 min", "10 €"], ["Anonymný darca", "mesačne · priamo na profile", "25 €"], ["Pekáreň Dobrota", "dorovnanie k daru Lucie B.", "10 €"], ["Martin Konaľ", "split 20 % · z podpory fanúšikov", "6 €"]],
 });
 
-function novyStav(id: string, farnost = false): StavZbierky { return { stav: "aktivna", koniec: new Date(Date.now() + 3650 * 86400000).toISOString(), predlzenia: 0, lehota: "30", text: "", fotky: [], doklady: !farnost && ukazkyTeraz() && id.endsWith("-centralna") ? DOKLADY_TEST : [], spravy: [] }; }
+function novyStav(id: string, _farnost = false): StavZbierky { return { stav: "aktivna", koniec: new Date(Date.now() + 3650 * 86400000).toISOString(), predlzenia: 0, lehota: "30", text: "", fotky: [], doklady: [] /* OPRAVY 403 doplnok: bez ukážkových dokladov */, spravy: [] }; }
 
 export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, toast, onZbierky, onDorovnanie, onDarcovia, farnost, startQr, onTlacQr }: {
   strankaId: string; nazov: string; hlavnyUcet: string; tier: number; mobil: boolean; toast: (m: string) => void;
@@ -115,7 +114,8 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   // ---- čísla a dary ----
   // OPRAVY 311: farnosť (Hlavná zbierka) nikdy ukážkové čísla — len skutočné súčty zo servera (ledger, 0096 s omšami)
   if (farnost) nastavCiste([idZbierky]); // ani ukážkoví darcovia
-  const ukazky = useUkazky() && !farnost; // Profil: Prázdny = bez ukážkových čísel, darov a dokladov
+  // OPRAVY 403 doplnok: žiadne ukážkové čísla, dary ani dorovnanie (vymyslené prepojenia s Pekárňou a tvorcom zmazané) — len skutočné
+  const ukazky = false;
   const c = ukazky ? (sek ? cislaSektora(sek.id) : CENTRALNA_CISLA) : NULA;
   const darov = sucetDarov(idZbierky);
   const hlavnaSuma = farnost ? suhrnHlavnej(strankaId, idZbierky).suma : darov.suma; // farnosť: okná sú v hlavnej (jedno číslo)

@@ -85,13 +85,10 @@ export const ISKRY_MOCK: Iskra[] = [
     zbierka: { id: "iskra-zb-autobus", nazov: "Autobus na majstrovstvá", pozn: "Zbierka pri videu" }, iskry: 420, bg: "linear-gradient(160deg,#4E7D37,#22351A)" },
   { id: "vah", src: "/video/iskry/skutok.mp4", druh: 5, autor: "Jana K.", kto: "Juh · skutok overený", ini: "JK", org: false, popis: "S deťmi sme vyčistili breh Váhu. 14 vriec odpadu a jeden starý bicykel.",
     zbierka: { id: "iskra-zb-nina", nazov: "Invalidný vozík pre Ninu", pozn: "Reťaz dobra · 50 % ide na zbierku" }, iskry: 98, bg: "url('/img/sprava/chrbtica.jpg') center/cover no-repeat #3a3530" },
-  // OPRAVY 135 · Zbierky: videá k zbierkam Pekárne a Martina Konaľa (OPRAVY 403: Svetlo pomoci zmazané) (bez súboru videa → poster z fotky zbierky)
+  // OPRAVY 135 · Zbierky: video k zbierke Martina Konaľa (OPRAVY 403: Svetlo pomoci a prepojenia Pekárne zmazané) (bez súboru videa → poster z fotky zbierky)
   { id: "zb-husle", druh: 6, autor: "Martin Konaľ", kto: "Tvorca · Trenčín", ini: "MK", org: false, iskry: 1180, bg: fotoZb("tvorca", "tz-husle-deti"),
     popis: "Piate husle sú doma. Ešte šesť detí čaká na svoje, hrám pre ne každý piatok na Mierovom námestí.",
     zb: { typ: "vyzva", stitok: "Priebeh", stranka: "tvorca", zbierkaId: "tz-husle-deti" } },
-  { id: "zb-ihrisko", druh: 6, autor: "Pekáreň Dobrota", kto: "Firma · Bratislava", ini: "PD", org: true, iskry: 410, bg: fotoZb("pekaren", "fz-ihrisko"),
-    popis: "Ihrisko na Račianskej je hotové. Ďakujeme všetkým, ktorí sa pridali.",
-    zb: { typ: "dakujeme", stitok: "Ďakujeme", stranka: "pekaren", zbierkaId: "fz-ihrisko" } },
 ];
 
 // ---- KARTA 41b · pridané Iskry: zo servera (0034, iskryServer.ts), bez DB len v relácii ----

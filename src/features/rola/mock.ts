@@ -124,7 +124,6 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
     kontakt: { adresa: "Bratislava", email: "marek@marektvori.sk", tel: "+421 902 111 222", web: "marektvori.sk" },
     taby: [
       { key: "retaz", label: "Reťaz", polozky: [
-        { emoji: "retaz", titul: "", popis: "", zbierkaId: "z-hospic-auto", split: 5 },
         { emoji: "retaz", titul: "", popis: "", zbierkaId: "z-motylik", split: 50 },
         { emoji: "retaz", titul: "", popis: "", zbierkaId: "z-labka", split: 70 },
       ] },
