@@ -5,7 +5,8 @@ import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { toast } from "@/components/toast";
 import { useLayout } from "@/components/context";
 import { usePouzivatel } from "@/lib/pouzivatel";
-import { UKAZKOVE_STRANKY, useMojeStranky, useStrankyUctu, nastavAko, prepniPrezentaciu, TESTOVACIA, type Stranka } from "@/lib/mojeStranky";
+import { UKAZKOVE_STRANKY, useMojeStranky, useStrankyUctu, nastavAko, prepniPrezentaciu, TESTOVACIA, strankaCharity, type Stranka } from "@/lib/mojeStranky";
+import { lokalneStranky } from "@/lib/aktivnaCharita";
 import { DevSimulacia } from "@/features/rola/MojDeedFiremny";
 import { useT } from "@/i18n";
 import "@/styles/platba.css";
@@ -17,7 +18,8 @@ const Ik = ({ d, s = 16, w = 2 }: { d: string; s?: number; w?: number }) => <svg
 export function useStranky(): Stranka[] {
   const ja = usePouzivatel();
   const zUctu = useStrankyUctu(!ja.demo && !!ja.cisloUctu);
-  const zoznam = ja.demo ? UKAZKOVE_STRANKY : zUctu ?? [];
+  // OPRAVY 402: charity založené v tomto prehliadači bez databázy (testovacia verzia) pribudnú k ukážkovým
+  const zoznam = ja.demo ? [...UKAZKOVE_STRANKY, ...lokalneStranky().map((l) => strankaCharity(l.k, l.n))] : zUctu ?? [];
   const ini = `${(ja.meno || "?")[0]}${(ja.priezvisko || "")[0] ?? ""}`.toUpperCase();
   return zoznam.map((s) => (s.typ === "tvorca" ? { ...s, n: ja.celeMeno || s.n, i: ini } : s));
 }

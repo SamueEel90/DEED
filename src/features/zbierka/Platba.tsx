@@ -4,10 +4,9 @@ import { usePoplatok } from "@/lib/poplatky";
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { useLayout } from "@/components/context";
+import { useLayout, useAktivacia } from "@/components/context";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { nacitajPredvolbu, ulozPredvolbu, useSektorDarcu, menoBezMena, volbaBezMena, jeViera, useUkazSumy, type VerziaIdentity, type VolbaDaru, type JaIdentita } from "@/lib/darcovia";
-import { toast } from "@/components/toast";
 import PodrzTlacidlo from "./PodrzTlacidlo";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { MIN_DAR_EUR, KARTA_OD_EUR } from "./nastavenie";
@@ -96,12 +95,13 @@ function chybaUdajov(sepa: boolean, u: UdajePlatby): string[] {
 }
 type UdajePlatby = { cislo: string; platnost: string; cvc: string; iban: string; majitel: string };
 
-type Krok = "suma" | "sposob" | "zhrnutie" | "spracovanie" | "hotovo";
+type Krok = "suma" | "sposob" | "zhrnutie" | "spracovanie" | "hotovo" | /** OPRAVY 385: hosť po dare */ "lakacka";
 /** stav zbierky tesne pred darom — pre poďakovanie a hlášku (karta 09) */
 export type PredDarom = { vyzbierane: number; ciel: number | null; pocetDarov: number; darovDnes: number };
 
-export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonus, firma, pred, onHotovo, onClose }: {
+export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonus, firma, pred, onHotovo, onClose, bezMilnikov }: {
   pred: PredDarom;
+  /** OPRAVY 388: zvončeková — po dare bez pruhu a míľnika */ bezMilnikov?: boolean;
   kanal: KanalPlatby; suma?: number; nazov: string; registrovany: boolean;
   bonus?: (eur: number) => number;   // dorovnanie firmy k daru (len €)
   firma?: string;
@@ -139,6 +139,8 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
   const dorovna = eur && bonus ? bonus(suma) : 0;
 
   const ja = usePouzivatel();
+  const aktivacia = useAktivacia();
+  const registrovat = () => { setOtvorene(false); setTimeout(() => { onClose(); setTimeout(() => aktivacia("aktivny"), 60); }, 250); }; // až po zavretí okna (Späť histórie by zavrel registráciu)
   const chyba = eur && !registrovany && krok === "zhrnutie" ? chybaUdajov(sposob === "sepa", ud) : [];
   const udajeOk = chyba.length === 0;
   useEffect(() => {
@@ -196,7 +198,7 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
           </button>
         )}
       </div>
-      {krok !== "spracovanie" && krok !== "hotovo" && (
+      {krok !== "spracovanie" && krok !== "hotovo" && krok !== "lakacka" && (
         <div style={{ display: "flex", gap: 6, marginTop: 14 }}>
           {kroky.map((k, i) => {
             const ai = kroky.indexOf(krok), hotovy = i <= ai;
@@ -340,9 +342,9 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
       <PodakovaniePoDare meno={ja.meno} registrovany={registrovany} eur={eurHodnota} sumaTxt={vSume(suma, kanal)}
         dorovnanieTxt={dorovna > 0 ? eK(dorovna) : undefined} firma={firma}
         predPct={G ? Math.min(1, pred.vyzbierane / G) : pred.vyzbierane / m0.dalsi} poPct={G ? Math.min(1, po / G) : Math.min(1, po / m1.dalsi)}
-        poTxt={G ? `${eK(po)} z ${eK(G)}` : `Vyzbierané ${eK(po)}`} poPctTxt={G ? `${Math.floor((po / G) * 100)} %` : `ďalší míľnik ${eK(m1.dalsi)}`}
+        poTxt={G ? `${eK(po)} z ${eK(G)}` : `Vyzbierané ${eK(po)}`} poPctTxt={G ? `${Math.floor((po / G) * 100)} %` : bezMilnikov ? "" : `ďalší míľnik ${eK(m1.dalsi)}`} bezPruhu={!G && bezMilnikov}
         hlaska={hlaskaPoDare({ vyzbierane: pred.vyzbierane, ciel: G, pocetDarov: pred.pocetDarov, darovDnes: pred.darovDnes }, { eur: eurHodnota, dorovnanie: dorovna, registrovany })}
-        onRegistrovat={() => toast("Registrácia s pripísaním daru — karta 08")} onHotovo={zatvor}
+        onRegistrovat={registrovat} onHotovo={registrovany ? zatvor : () => setKrok("lakacka")}
         podNadpisom="Tvoj dar odišiel priamo príjemcovi."
         doklad={<div style={{ borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)" }}>
           <div role="button" tabIndex={0} onClick={() => setDoklad(!doklad)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}><span>Doklad</span><span style={{ color: "var(--ink3)" }}>{doklad ? "Skryť" : "Zobraziť ›"}</span></div>
@@ -356,6 +358,15 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
           </div>}
         </div>} />
     );
+  } else if (krok === "lakacka") {
+    // OPRAVY 385: hosť po dare — čo získa registráciou (bez nátlaku, Teraz nie zavrie)
+    obsah = (
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "8px 2px 0" }}>
+        <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.25 }}>Zaregistrujete sa?</div>
+        <div style={{ fontSize: 15, lineHeight: 1.55, color: "var(--ink2)" }}>Vaše dary uvidíte na jednom mieste a v zozname darcov môžete byť menom. Farnosti môžete sledovať a dostávať ich oznamy.</div>
+      </div>
+    );
+    pata = <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><HlavneTlacidlo onClick={registrovat}>Zaregistrovať sa</HlavneTlacidlo><SekundarneTlacidlo onClick={zatvor}>Teraz nie</SekundarneTlacidlo></div>;
   } else {
     obsah = (
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18, textAlign: "center", minHeight: 320 }}>
@@ -370,7 +381,7 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
   const okno: CSSProperties = wide
     ? { position: "relative", width: sirka, maxWidth: "calc(100vw - 32px)", maxHeight: "min(760px, calc(100vh / var(--pismo, 1) - 48px))", borderRadius: 28,
         transform: otvorene ? "none" : "translateY(24px)", opacity: otvorene ? 1 : 0 }
-    : { position: "absolute", left: 0, right: 0, bottom: 0, height: krok === "hotovo" ? undefined : "88%", maxHeight: "92%", borderRadius: "28px 28px 0 0", transform: otvorene ? "none" : "translateY(105%)" }; // mobil zdola, tablet/PC v strede
+    : { position: "absolute", left: 0, right: 0, bottom: 0, height: krok === "hotovo" || krok === "lakacka" ? undefined : "88%", maxHeight: "92%", borderRadius: "28px 28px 0 0", transform: otvorene ? "none" : "translateY(105%)" }; // mobil zdola, tablet/PC v strede
 
   return createPortal(
     <div className="deed-platba" role="dialog" aria-modal="true" aria-label="Platba"
@@ -439,12 +450,13 @@ function RiadokPlatby({ kanal, sposob, registrovany }: { kanal: KanalPlatby; spo
 }
 /** OPRAVY 304: „Darujete ako: Martin Konaľ ⌄“ vedľa Zdieľať · QR — ťuk = tie isté čipy ako v Zhrnutí, voľba sa pamätá pre ďalšie dary.
  *  Vracia tlačidlo (polovica radu) a pod ním panel s čipmi na celú šírku radu. */
-export function DarujeteAko({ styl }: { styl: CSSProperties }) {
+export function DarujeteAko({ styl, host }: { styl: CSSProperties; /** OPRAVY 385: hosť — len bez mena */ host?: boolean }) {
   const ja = usePouzivatel();
   const sektor = useSektorDarcu();
   const bezMena = volbaBezMena(sektor);
-  const moznosti = useMemo(() => volbyMena(ja, bezMena), [ja, bezMena]);
-  const [volba, setVolba] = useState<VolbaDaru>(nacitajPredvolbu);
+  const moznosti = useMemo(() => (host ? [[4, bezMena]] as [VerziaIdentity, string][] : volbyMena(ja, bezMena)), [ja, bezMena, host]);
+  const [volba0, setVolba] = useState<VolbaDaru>(nacitajPredvolbu);
+  const volba = host ? { ...volba0, verzia: 4 as VerziaIdentity } : volba0;
   const [otv, setOtv] = useState(false);
   const [ok, setOk] = useState(false);
   const meno = volba.verzia === 4 ? menoBezMena(sektor) : moznosti.find(([v]) => v === volba.verzia)?.[1] ?? bezMena;
@@ -464,7 +476,7 @@ export function DarujeteAko({ styl }: { styl: CSSProperties }) {
           <button key={v} type="button" onClick={() => vyber(v)} aria-pressed={on}
             style={{ minHeight: 40, padding: "8px 14px", borderRadius: 99, border: `1.5px solid ${on ? "var(--gBd)" : "var(--pillBd)"}`, background: on ? "var(--gSoft)" : "transparent", color: on ? "var(--gInk)" : "var(--ink2)", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>{l}</button>); })}
       </div>
-      <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Platí pre ďalšie dary, kým to nezmeníte.</span>
+      <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{host ? "Menom môžete darovať po registrácii." : "Platí pre ďalšie dary, kým to nezmeníte."}</span>
     </div>}
   </>);
 }

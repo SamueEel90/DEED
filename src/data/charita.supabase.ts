@@ -1,103 +1,76 @@
 // ============================================================
 // DEED · Charita — Supabase repozitár
-// Číta charita-page `prispevok` (riadky s `data.comp`), `adresar_charita`
-// a zbierku (uloženú v urgent riadku) → mapuje späť na modulový tvar
-// (CharitaFeedItem/AdresarSekcia/Zbierka). UI/hooky/feed.ts sa nemenia.
-// Fáza 4 — krok B.
+// OPRAVY 403: len to, čo naozaj niekto vytvoril. Žiadne kurátorské (seed) riadky.
+//   feed    = bežiace zverejnené zbierky skutočných charít (v_zbierky_na_pripnutie + zbierka_verejna, stránka typu
+//             charita, nie testovacia) + skutky, ktoré do feedu Charity pridal prihlásený autor (prispevok_feed,
+//             autor_ucet_id not null). Zoradené od najnovšieho.
+//   adresar = zaregistrované charity (stranka typ charita, nie testovacia) so sídlom z registra.
 // ============================================================
 import { supabase } from "@/lib/supabase";
-import type { CharitaFeedItem, AdresarSekcia, AdresarPolozkaTuple, Zbierka } from "@/types";
+import type { CharitaFeedItem, OrgAdresar } from "@/types";
 
 const DEN = 86_400_000;
+const dniZ = (ts?: string): number => (ts ? Math.max(0, Math.floor((Date.now() - new Date(ts).getTime()) / DEN)) : 0);
+const casMs = (ts?: string) => (ts ? new Date(ts).getTime() : 0);
 
-// vek v dňoch (pre feed.ts životnosť/čerstvosť)
-function dniZ(ts?: string): number {
-  if (!ts) return 0;
-  return Math.max(0, Math.floor((Date.now() - new Date(ts).getTime()) / DEN));
-}
+type Media = { typ?: string; src?: string }[];
 
-/** riadok `prispevok` (charita-page) → CharitaFeedItem. `comp` riadi render karty. */
-function naCharitaItem(r: any): CharitaFeedItem {
-  const d = r.data || {};
+/** skutok z `prispevok_feed` (feed charita, skutočný autor) → karta */
+function naSkutok(r: any): CharitaFeedItem {
   const m = r.media || {};
-  const fotky: string[] | undefined = Array.isArray(m.fotky) && m.fotky.length ? m.fotky : undefined;
   return {
-    id: r.id,                       // uuid (stabilný kľúč)
-    comp: d.comp,                   // urgent | top | mala | zapoj | material | data
-    typ: r.typ,
-    modul: r.modul,
-    kat: r.kat,
-    skore: Number(r.skore),
-    typSituacie: r.typ_situacie,
-    lat: r.lat ?? undefined,
-    lng: r.lng ?? undefined,
-    dni: dniZ(r.vytvorene),
-    podpora: r.podpora_count ?? undefined,
-    narodne: !!r.narodne,
-    // obsah pre dátovú kartu (comp: "data")
-    nazov: r.autor_nazov || r.titul || undefined,
-    popis: r.popis || undefined,
-    emoji: r.emoji || undefined,
-    fotky,
-    vyzbierane: r.vyzbierane != null ? Number(r.vyzbierane) : undefined,
-    ciel: r.ciel != null ? Number(r.ciel) : undefined,
-    overena: !!r.overene,
-    tag: d.tag || undefined,
-    badgeL: d.badgeL || undefined,
-    lok: r.lok || undefined,
+    id: r.id, comp: "data", typ: "skutok", modul: r.modul ?? "charity", kat: r.kat ?? "Pomoc",
+    skore: Number(r.skore ?? 0), typSituacie: r.typ_situacie, lat: r.lat ?? undefined, lng: r.lng ?? undefined,
+    dni: dniZ(r.vytvorene), podpora: r.podpora_count ?? undefined, narodne: !!r.narodne,
+    nazov: r.titul || r.autor_nazov || undefined, popis: r.popis || undefined,
+    fotky: Array.isArray(m.fotky) && m.fotky.length ? m.fotky : undefined,
+    overena: !!r.overene, lok: r.lok || undefined, casVytvorenia: r.vytvorene,
   } as CharitaFeedItem;
-}
-
-/** ploché riadky adresára → sekcie (zoskupenie podľa `sekcia`, chipy zo sekcie). */
-function naAdresar(rows: any[]): AdresarSekcia[] {
-  const mapa = new Map<string, AdresarSekcia>();
-  for (const r of rows) {
-    let sek = mapa.get(r.sekcia);
-    if (!sek) {
-      sek = { sekcia: r.sekcia, chipy: r.chipy || [], polozky: [] };
-      mapa.set(r.sekcia, sek);
-    }
-    sek.polozky.push([r.skratka, r.nazov, r.popis, r.level, r.ponuky] as AdresarPolozkaTuple);
-  }
-  return [...mapa.values()];
 }
 
 export const charitaSupabase = {
   async feed(): Promise<CharitaFeedItem[]> {
     if (!supabase) return [];
-    // len kurátorský charita-page feed (riadky s `data.comp`)
-    const { data, error } = await supabase
-      .from("prispevok_feed") // 0037: vyzbierané z ledgera
-      .select("*")
-      .eq("feed", "charita")   // 5.7: stĺpec, nie kľúč v jsonb
-      .order("skore", { ascending: false })
-      .limit(50);               // 5.4: nikdy celá tabuľka
-    if (error) throw error;
-    return (data || []).map(naCharitaItem);
+    const [zb, sk] = await Promise.all([
+      supabase.from("v_zbierky_na_pripnutie").select("id, nazov, stranka, kto, ciel, vytvorene, vyzbierane, darov").order("vytvorene", { ascending: false }).limit(100),
+      supabase.from("prispevok_feed").select("*").eq("feed", "charita").not("autor_ucet_id", "is", null).order("vytvorene", { ascending: false }).limit(50),
+    ]);
+    if (zb.error) throw zb.error;
+    if (sk.error) throw sk.error;
+    const zbierky = zb.data ?? [];
+    const idStranok = [...new Set(zbierky.map((z: any) => z.stranka as string))];
+    const idZbierok = zbierky.map((z: any) => z.id as string);
+    const [st, nas] = await Promise.all([
+      idStranok.length ? supabase.from("stranka").select("id, typ, testovacia").in("id", idStranok) : Promise.resolve({ data: [], error: null }),
+      idZbierok.length ? supabase.from("zbierka_verejna").select("id, nastavenie").in("id", idZbierok) : Promise.resolve({ data: [], error: null }),
+    ]);
+    if (st.error) throw st.error;
+    if (nas.error) throw nas.error;
+    const charity = new Set((st.data ?? []).filter((s: any) => s.typ === "charita" && !s.testovacia).map((s: any) => s.id as string));
+    const nastavenie = new Map<string, { popis?: string; media?: Media }>((nas.data ?? []).map((n: any) => [n.id as string, n.nastavenie ?? {}] as const));
+    const karty: CharitaFeedItem[] = zbierky.filter((z: any) => charity.has(z.stranka)).map((z: any) => {
+      const n = nastavenie.get(z.id) ?? {};
+      const fotky = (Array.isArray(n.media) ? n.media : []).filter((m) => m.typ === "foto" && m.src).map((m) => m.src as string);
+      const ciel = Number(z.ciel);
+      return {
+        id: z.id, comp: "data", typ: "charita", modul: "charity", kat: "Pomoc", skore: 0, dni: dniZ(z.vytvorene),
+        podpora: Number(z.darov) || undefined, narodne: false,
+        nazov: z.nazov, popis: n.popis || undefined, fotky: fotky.length ? fotky : undefined,
+        vyzbierane: Number(z.vyzbierane) || 0, ciel: ciel > 0 ? ciel : undefined,
+        orgNazov: z.kto, stranka: z.stranka, casVytvorenia: z.vytvorene,
+      } as CharitaFeedItem;
+    });
+    return [...karty, ...(sk.data ?? []).map(naSkutok)].sort((a, b) => casMs(b.casVytvorenia) - casMs(a.casVytvorenia));
   },
 
-  async adresar(): Promise<AdresarSekcia[]> {
+  async adresar(): Promise<OrgAdresar[]> {
     if (!supabase) return [];
-    const { data, error } = await supabase
-      .from("adresar_charita")
-      .select("*")
-      .eq("aktivny", true)
-      .order("poradie", { ascending: true });
+    const { data, error } = await supabase.from("stranka").select("id, nazov").eq("typ", "charita").eq("testovacia", false).order("nazov").limit(500);
     if (error) throw error;
-    return naAdresar(data || []);
-  },
-
-  async zbierka(): Promise<Zbierka> {
-    if (!supabase) throw new Error("Supabase nie je nakonfigurovaný");
-    // hlavná zbierka (detail) je uložená v urgent riadku → data.zbierka
-    const { data, error } = await supabase
-      .from("prispevok_feed") // 0037: vyzbierané z ledgera
-      .select("data")
-      .eq("feed", "charita")
-      .eq("data->>comp", "urgent")   // druh karty v rámci feedu charity
-      .limit(1)
-      .maybeSingle();
-    if (error) throw error;
-    return (data?.data?.zbierka ?? null) as Zbierka;
+    const ids = (data ?? []).map((s: any) => s.id as string);
+    const ver = ids.length ? await supabase.from("nastavenia_stranky_verejne").select("stranka, verejne").in("stranka", ids) : { data: [], error: null };
+    if (ver.error) throw ver.error;
+    const reg = new Map<string, { nazov?: string; sidlo?: string }>((ver.data ?? []).map((v: any) => [v.stranka as string, v.verejne?.registra ?? {}] as const));
+    return (data ?? []).map((s: any) => ({ id: s.id, nazov: reg.get(s.id)?.nazov || s.nazov, sidlo: reg.get(s.id)?.sidlo ?? "" }));
   },
 };

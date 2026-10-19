@@ -15,7 +15,6 @@ import { CasPole } from "@/components/CasPole";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { usePouzivatel } from "@/lib/pouzivatel";
-import { nacitajSelfAdd } from "@/features/viera/UserOznamy";
 import { DRUHY_FARNIKA, CEZ_EDITOR, BLOK_DRUHU, nacitajSmie, smie, stupen, naStranke as jeNaStranke, pridajMojeCakajuce, odFarnikov, zapisOdFarnikaIsto, zmazOdFarnika, prepniVPolozke, nahlasOdFarnika, pocetSus, useOdFarnikov, useCerstveOdFarnikov, PLATI_VERIACI, vyprsal, type DruhFarnika, type PolozkaFarnika, type FormularVeriaceho } from "@/lib/odFarnikov";
 import { dokonciCas, CAS_OK, pekny } from "@/lib/kalendarFarnosti";
 import { bezDataUrl } from "@/lib/uploadFoto";
@@ -30,13 +29,14 @@ import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { zapisEditora, zapisZPayloadu } from "@/lib/editorStat";
 import { toast } from "@/shared";
-import { useLayout } from "@/components/context";
+import { useLayout, useAktivacia } from "@/components/context";
 import { ZdrojFotiekKontext, zdrojMoje } from "@/components/VyberZGalerie";
 import { mojeFotky } from "@/lib/galeriaFotiek";
 import { CelaGaleria } from "@/components/celaGaleria";
 import { nacitajKoncept, ulozKoncept, zmazKoncept, useUkladajKoncept } from "@/lib/koncept";
 import { MateRozpisane, ZahoditRozpisane } from "@/components/RamPisania";
 import { Volby } from "@/components/Volby";
+import { ukazZmazane } from "@/lib/zmazaneMiesto";
 
 const ZELENA = "#4B7A35", ZLATA = "#C9A24A";
 const lab = (zle: boolean): CSSProperties => ({ fontSize: 12.5, fontWeight: 800, letterSpacing: ".06em", color: zle ? "#A07A1C" : "var(--ink3)" });
@@ -129,7 +129,7 @@ export function MenuPrispevku({ x, strankaId, kto, moje, vMenu, bezZmazania, onZ
       {menu && <button type="button" onClick={() => { setMenu(false); setPotvrd(true); }} style={{ minHeight: 40, padding: "0 12px", borderRadius: 10, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--ink)" }}>Nahlásiť nevhodný príspevok</button>}
       {mozeUp && (!vMenu || menu) && <button type="button" onClick={() => nastavUpravu(x.id)} style={{ minHeight: 40, padding: "0 12px", borderRadius: 10, border: "1.5px solid var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--gInk)" }}>Upraviť · moje</button>}
       {mozeZmaz && (!vMenu || menu) && <DrzTlacidlo ms={1200} styl={{ minHeight: 40, padding: "0 12px", borderRadius: 10, border: "1.5px solid #A34A2A", background: "transparent", color: "#A34A2A", fontSize: 13.5, fontWeight: 800 }}
-        onHotovo={() => { zmazOdFarnika(strankaId, x.id); toast("Zmazané ✓"); onZmazane?.(); }}>Podržte · zmazať</DrzTlacidlo>}
+        onHotovo={() => { ukazZmazane(x.id); zmazOdFarnika(strankaId, x.id); onZmazane?.(); }}>Podržte · zmazať</DrzTlacidlo>}
     </div>
   </>;
 }
@@ -263,7 +263,7 @@ export const otvorPridanie = () => window.dispatchEvent(new Event("deed:farnik-p
 /** je tlačidlo + Pridať zapnuté (farár povolil a aspoň 1 druh) */
 export function fabZapnuty(strankaId: string): boolean {
   const s = nacitajSmie(strankaId);
-  return nacitajSelfAdd(strankaId).on && DRUHY_FARNIKA.some((d) => smie(s, d.k));
+  return DRUHY_FARNIKA.some((d) => smie(s, d.k)); // OPRAVY 381
 }
 
 export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: string; mobil: boolean; onPozriet: (id: string) => void }) {
@@ -275,12 +275,21 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   const vpravo = mobil ? "16px" : desktop ? "max(28px, calc((100vw - 104px - 1440px) / 2 + 28px))" : "28px";
   // OPRAVY 204: parte veriaceho nemá vlastnú zbierku — QR vedie na stránku farnosti (Spomíname), nikdy nie ukážkový obrázok
   const qrStr = useQrObrazok(odkazQrStranky(strankaId));
-  const self = nacitajSelfAdd(strankaId), sm = nacitajSmie(strankaId);
+  const sm = nacitajSmie(strankaId);
   const povol = DRUHY_FARNIKA.filter((d) => smie(sm, d.k));
-  const pop = 0; // OPRAVY 310: poplatok za oznam zrušený — všetko zadarmo (self.poplatok sa ignoruje)
+  const pop = 0; // OPRAVY 310: poplatok za oznam zrušený — všetko zadarmo
   const [sheet, setSheet] = useState(false);
   const fabRez = useFabRezim();
   useEffect(() => { const f = () => setSheet(true); window.addEventListener("deed:farnik-pridaj", f); return () => window.removeEventListener("deed:farnik-pridaj", f); }, []);
+  // OPRAVY 374: neprihlásený → vrstva prihlásenia / registrácie; po prihlásení späť na pridanie príspevku
+  const aktivacia = useAktivacia();
+  const KLUC_PO = "deed.farnik.pridatPo";
+  const naPrihlasenie = (start: "login" | "aktivny") => { try { sessionStorage.setItem(KLUC_PO, strankaId); } catch { /* bez úložiska sa len nevráti */ } setSheet(false); aktivacia(start); };
+  const [regPred, setRegPred] = useState(reg);
+  if (reg !== regPred) {
+    setRegPred(reg);
+    if (reg) { let po: string | null = null; try { po = sessionStorage.getItem(KLUC_PO); sessionStorage.removeItem(KLUC_PO); } catch { /* bez úložiska */ } if (po === strankaId) setSheet(true); }
+  }
   const [k, setK] = useState<DruhFarnika | null>(null);
   const [varIne, setVarIne] = useState<VarIne>("blahozelanie");
   // OPRAVY 335: chyba uloženia priamo nad tlačidlom (na mobile aj okno), rozpísané aj fotky ostávajú
@@ -337,7 +346,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   const maObsahV = !!(f.nad.trim() || cistyText(f.txt).trim() || f.datum || f.cas || f.kde.trim() || media.length);
   useUkladajKoncept<KonVer | null>(KONV, k ? { k, f, media } : null, !!k && !edId && !hotovo && !CEZ_EDITOR.includes(k) && maObsahV);
   const [, prekresliK] = useState(0);
-  if (!self.on || !povol.length) return null;
+  if (!povol.length) return null;
 
   const set = (z: Partial<FormularVeriaceho>) => { setF((q) => ({ ...q, ...z })); setChyba(false); };
   const otvor = (kk: DruhFarnika, v: VarIne = "blahozelanie") => { setF(prazdnyF()); setTxtKey((n) => n + 1); setMedia([]); setChyba(false); setHotovo(null); setEdId(null); setSheet(false); setK(kk); setVarIne(v); setChybaUl(null); };
@@ -470,9 +479,8 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
           <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink3)", paddingTop: 6 }}>Ponúka sa len to, čo farár povolil. Pridávať môžu registrovaní v DEED+.</span>
         </div> : <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <span style={{ fontSize: 16, lineHeight: 1.5, color: "var(--ink2)" }}>Pridávať na stránku farnosti môžu len registrovaní v DEED+. Tak vždy vieme, kto čo pridal.</span>
-          {/* PLACEBO — karta 56I: prihlásenie a registrácia z tejto stránky */}
-          <button type="button" onClick={() => { setSheet(false); toast("Prihlásenie odtiaľto pripravujeme."); }} style={{ minHeight: 56, border: "none", borderRadius: 14, background: ZELENA, cursor: "pointer", fontFamily: "inherit", fontSize: 17, fontWeight: 800, color: "#fff" }}>Prihlásiť sa</button>
-          <button type="button" onClick={() => { setSheet(false); toast("Registráciu odtiaľto pripravujeme."); }} style={{ minHeight: 56, borderRadius: 14, border: "1.5px solid var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 17, fontWeight: 800, color: "var(--gInk)" }}>Zaregistrovať sa · 2 minúty</button>
+          <button type="button" onClick={() => naPrihlasenie("login")} style={{ minHeight: 56, border: "none", borderRadius: 14, background: ZELENA, cursor: "pointer", fontFamily: "inherit", fontSize: 17, fontWeight: 800, color: "#fff" }}>Prihlásiť sa</button>
+          <button type="button" onClick={() => naPrihlasenie("aktivny")} style={{ minHeight: 56, borderRadius: 14, border: "1.5px solid var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 17, fontWeight: 800, color: "var(--gInk)" }}>Zaregistrovať sa · 2 minúty</button>
         </div>}
       </div>
     </div>);

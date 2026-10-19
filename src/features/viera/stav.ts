@@ -36,6 +36,8 @@ export function ulozStav(oblast: string, id: string, val: unknown): boolean {
   }
   return ok;
 }
+/** OPRAVY 372: len do zariadenia — na server to zapíše serverová funkcia (veriaci nemá právo zapisovať stav farnosti) */
+export function ulozStavLokalne(oblast: string, id: string, val: unknown): boolean { return uloz(kluc(oblast, id), val); }
 /** OPRAVY 273: zápis, na ktorý sa čaká — s DB rozhoduje server, bez DB zariadenie. Vráti chybu ako text alebo null. */
 export async function ulozStavIsto(oblast: string, id: string, val0: unknown): Promise<string | null> {
   // OPRAVY 335: bez servera fotky zmenšené ako pre Storage; keď miesto nestačí, uvoľnia sa staré rozpísané koncepty

@@ -10,6 +10,8 @@ import { deviceId } from "@/lib/zariadenie";
 export const MAX_ZARIADENI = 5;
 export const NOVE_HODIN = 24;
 export const NOVE_LIMIT_EUR = 50;
+/** OPRAVY 361: kým server kód naozaj nepošle a neoverí, obrazovka „Potvrď nové zariadenie“ sa neukazuje */
+export const OVERENIE_ZARIADENIA = false;
 
 export interface Zariadenie { id: string; nazov: string; typ: "telefon" | "pocitac"; mesto: string; posledna: string; toto?: boolean; nove?: boolean; potvrdene?: string }
 

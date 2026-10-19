@@ -82,8 +82,6 @@ export async function spustiKyc(_ucetId: string, sposob = "nove") {
 export async function najdiIco(ico: string): Promise<RegistrIcoVysledok> {
   await cakaj(700);
   const cislo = (ico || "").replace(/\D/g, "");
-  // ukážkové IČO z prototypu registrácie (karta 44)
-  if (cislo === "12345678") return { ico: cislo, nazov: "Svetlo pomoci o.z.", sidlo: "Mierové nám. 1, Trenčín", datum_vzniku: "2023-03-14", pravna_forma: "Občianske združenie" };
   return {
     ico: cislo || ico,
     nazov: "OZ Pomoc " + (cislo.slice(-3) || "001"),
@@ -186,6 +184,13 @@ export async function vytvorOrganizaciuPodOsobou(osobaUcetId: string, typ = "cha
   if (error) throw error;
   const u = data as { id: string; typ: string; poradove_cislo: number | null; stav_registracie: string };
   return { id: u.id, typ: u.typ, poradove_cislo: u.poradove_cislo, stav_registracie: u.stav_registracie };
+}
+
+/** OPRAVY 402 (0126): stránka organizácie s vlastným id — každá registrácia charity je nová stránka */
+export async function zalozStrankuOrganizacie(orgUcetId: string, nazov: string): Promise<string> {
+  const { data, error } = await db().rpc("zaloz_stranku_organizacie", { p_org: orgUcetId, p_nazov: nazov });
+  if (error) throw error;
+  return data as string;
 }
 
 export async function dokonciRegistraciu(ucetId: string) {

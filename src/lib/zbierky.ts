@@ -62,6 +62,7 @@ const AV = (n: number) => `https://i.pravatar.cc/200?img=${n}`;
 
 const U = (id: string) => `https://images.unsplash.com/${id}?w=1200&q=70&auto=format&fit=crop`;
 
+// OPRAVY 403 doplnok: zbierky Svetla pomoci zmazané (z-hospic-auto, z-anna, z-horvathova, z-skola, z-potraviny)
 export const ZBIERKY: Zbierka[] = [
   {
     id: "z-kovacova",
@@ -108,17 +109,6 @@ export const ZBIERKY: Zbierka[] = [
     ziadatel: { meno: "OZ Túlavá labka", typ: "org", overeny: true, level: "Silver", lok: "Trenčín · okraj", foto: U("photo-1543466835-00a7907e9de1"), onas: "Útulok pre opustené psy a mačky. Kastrácie, adopcie, dočasky.", vyzbierane: "6 850 €", skutky: "31", snami: "2 roky" },
   },
   {
-    id: "z-hospic-auto",
-    nazov: "Auto pre mobilný hospic",
-    komu: "Svetlo pomoci o.z.",
-    popis: "Sestry chodia za pacientmi domov. Bez auta to nejde.",
-    foto: U("photo-1494976388531-d1058494cdd8"),
-    emoji: "🚗",
-    ciel: 12000, vyzbierane: 0, darcovia: 0,
-    lok: "Trenčianský kraj", stav: "aktivna",
-    ziadatel: { meno: "Svetlo pomoci o.z.", typ: "org", overeny: true, level: "Gold", lok: "Trenčín", foto: U("photo-1518199266791-5375a83190b7"), onas: "Pomáhame rodinám v núdzi v Trenčianskom kraji. Každé euro dokladujeme.", vyzbierane: "24 600 €", skutky: "48", snami: "3 roky" },
-  },
-  {
     id: "z-noclaharen",
     nazov: "Zimná nocľaháreň — vybavenie",
     komu: "OZ Otvorené dvere Trenčín",
@@ -128,61 +118,6 @@ export const ZBIERKY: Zbierka[] = [
     ciel: 4000, vyzbierane: 4000, darcovia: 178,
     lok: "Trenčín · centrum", stav: "ukoncena",
     ziadatel: { meno: "OZ Otvorené dvere Trenčín", typ: "org", overeny: true, level: "Silver", lok: "Trenčín · centrum", foto: U("photo-1509099836639-18ba1795216d"), onas: "Nízkoprahová jedáleň a zimná nocľaháreň pre ľudí bez domova.", vyzbierane: "18 400 €", skutky: "64", snami: "4 roky" },
-  },
-  {
-    id: "z-anna",
-    nazov: "Práčka a chladnička pre pani Annu (81)",
-    komu: "pani Anna, Trenčín · Sihoť",
-    popis: "Pani Anna žije sama, práčka aj chladnička jej dosluhujú. Nové spotrebiče jej kúpime a dovezieme.",
-    foto: U("photo-1581578731548-c64695cc6952"),
-    emoji: "🧺",
-    ciel: 900, vyzbierane: 0, darcovia: 0,
-    lok: "Trenčín · Sihoť", stav: "aktivna",
-    ziadatel: { meno: "Svetlo pomoci o.z.", typ: "org", overeny: true, level: "Gold", lok: "Trenčín", foto: U("photo-1518199266791-5375a83190b7"), onas: "Pomáhame rodinám v núdzi v Trenčianskom kraji. Každé euro dokladujeme.", vyzbierane: "24 600 €", skutky: "48", snami: "3 roky" },
-  },
-  {
-    id: "z-horvathova",
-    nazov: "Strecha pre rodinu Horváthovú",
-    komu: "Rodina Horváthová, Nemšová",
-    popis: "Po búrke zatekalo do detskej izby. Strecha je hotová, faktúry sú priložené.",
-    foto: U("photo-1632759145351-1d592919f522"),
-    emoji: "🏠",
-    ciel: 3500, vyzbierane: 3500, darcovia: 142,
-    lok: "Nemšová", stav: "ukoncena",
-    dokaz: {
-      text: "Strecha je hotová od 14. 6. Rodina býva v suchu, detská izba je znova obývateľná.",
-      fotky: [
-        { src: U("photo-1632759145351-1d592919f522"), popis: "PRED" },
-        { src: U("photo-1635424710928-0544e8512eae"), popis: "PO" },
-      ],
-      doklady: [
-        { druh: "Faktúra", nazov: "Strešná krytina a materiál", dodavatel: "Stavebniny Váh s.r.o.", cislo: "FA 2026/0412", datum: "2. 6. 2026", suma: 2180 },
-        { druh: "Faktúra", nazov: "Práca pokrývača", dodavatel: "Pokrývačstvo Kubík", cislo: "FA 118/2026", datum: "14. 6. 2026", suma: 1320 },
-      ],
-    },
-    ziadatel: { meno: "Svetlo pomoci o.z.", typ: "org", overeny: true, level: "Gold", lok: "Trenčín", foto: U("photo-1518199266791-5375a83190b7"), onas: "Pomáhame rodinám v núdzi v Trenčianskom kraji. Každé euro dokladujeme.", vyzbierane: "24 600 €", skutky: "48", snami: "3 roky" },
-  },
-  {
-    id: "z-skola",
-    nazov: "Školské potreby pre troch súrodencov",
-    komu: "Súrodenci Baloghovci, Dubnica",
-    popis: "Mama je na troch deťoch sama. Taška, zošity a prezuvky pre všetkých troch do septembra.",
-    foto: U("photo-1503676260728-1c00da094a0b"),
-    emoji: "🎒",
-    ciel: 450, vyzbierane: 0, darcovia: 0,
-    lok: "Dubnica nad Váhom", stav: "aktivna",
-    ziadatel: { meno: "Svetlo pomoci o.z.", typ: "org", overeny: true, level: "Gold", lok: "Trenčín", foto: U("photo-1518199266791-5375a83190b7"), onas: "Pomáhame rodinám v núdzi v Trenčianskom kraji. Každé euro dokladujeme.", vyzbierane: "24 600 €", skutky: "48", snami: "3 roky" },
-  },
-  {
-    id: "z-potraviny",
-    nazov: "Potravinové balíčky na zimu",
-    komu: "12 rodín v núdzi, Trenčiansky kraj",
-    popis: "Trvanlivé potraviny a hygiena pre dvanásť rodín, ktoré sme v zime prevzali do starostlivosti.",
-    foto: U("photo-1488521787991-ed7bbaae773c"),
-    emoji: "📦",
-    ciel: 1800, vyzbierane: 0, darcovia: 0,
-    lok: "Trenčiansky kraj", stav: "aktivna",
-    ziadatel: { meno: "Svetlo pomoci o.z.", typ: "org", overeny: true, level: "Gold", lok: "Trenčín", foto: U("photo-1518199266791-5375a83190b7"), onas: "Pomáhame rodinám v núdzi v Trenčianskom kraji. Každé euro dokladujeme.", vyzbierane: "24 600 €", skutky: "48", snami: "3 roky" },
   },
 ];
 

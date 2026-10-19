@@ -16,7 +16,7 @@ import type { StitLevel } from "@/components/stit";
 import { createPortal } from "react-dom";
 import { useLayout } from "@/components/context";
 import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
-import { najdiTestProfil, type TestProfil, type TestZbierka } from "@/lib/testProfily";
+import { najdiTestProfil, prazdnaCharita, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { centralnaZPamate, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
 import { cistyText } from "@/lib/richtext";
 import { otvorVerejnyProfil, useVerejnyProfilOtvoreny, verejnyProfilKluc, zavriVerejnyProfil, vrstvaProfiluPripoj, nahladZoSpravy, cielOznamu, zrusDoOznamu } from "./otvor";
@@ -25,6 +25,9 @@ import { useVzhlad, maVybranyVzhlad, type Vzhlad } from "@/lib/vzhladStranky";
 import { nacitajTiery } from "@/features/rola/stav";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { Kronika } from "./Kronika";
+import { PataCharita } from "./PataCharita";
+import { useRegistra, registra } from "@/lib/udajeRegistra";
+import { lokalneStranky } from "@/lib/aktivnaCharita";
 import { VykladCharita } from "./VykladCharita";
 import { PiratCharita } from "./PiratCharita";
 import { StrankaFirmy } from "./StrankaFirmy";
@@ -38,11 +41,15 @@ import { pribehZbierky, orgPribehu, useZmenyPribehov } from "@/lib/pribehZbierky
 import { PribehZbierky } from "./PribehZbierky";
 import { SektorDarcuKontext } from "@/lib/darcovia";
 
+/** OPRAVY 402: testovací profil, alebo novo založená charita (vlastné id ch-…) — prázdny profil s menom z registra */
+const profilKluca = (k: string): TestProfil | undefined =>
+  najdiTestProfil(k) ?? (/^ch-/.test(k) ? prazdnaCharita(k, registra(k).nazov || lokalneStranky().find((x) => x.k === k)?.n) : undefined);
+
 /** vložiteľný verejný profil podľa kľúča stránky (svetlo · pekaren · tvorca) */
 /** OPRAVY 159: profil farnosti = sektor Viera (darca bez mena = „Bohu známy veriaci") */
 export function VerejnyProfilView(p: { kluc: string; onBack: () => void; /** OPRAVY 249: len vrstva otvorená tlačidlom Náhľad v Správe */ nahlad?: boolean }) {
   const k = p.kluc.startsWith("stream:") ? "tvorca" : p.kluc.startsWith("pribeh:") ? orgPribehu(p.kluc.slice(7)) : p.kluc;
-  const tp = najdiTestProfil(k);
+  const tp = profilKluca(k);
   // KARTA 57C · 60: farnosť (testovacia aj ktorákoľvek z Adresára) = živá stránka z uloženého
   if (!tp || tp.typ === "farnost") return <SektorDarcuKontext.Provider value="viera"><FarnostStranka strankaId={k} onBack={p.onBack} nahlad={!!p.nahlad} stit={(tp?.stit as StitLevel | undefined) ?? "Silver"} /></SektorDarcuKontext.Provider>;
   return <SektorDarcuKontext.Provider value="ine"><VerejnyProfilObsah {...p} /></SektorDarcuKontext.Provider>;
@@ -61,7 +68,9 @@ function VerejnyProfilObsah({ kluc, onBack }: { kluc: string; onBack: () => void
   const zStreamu = kluc.startsWith("stream:") ? kluc.slice(7) : null;
   // KARTA 55 · E: „pribeh:{zbierka}" (odkaz z feedu) → stránka Príbeh; „{Organizácia} ›" otvorí jej profil
   const zPribehu = kluc.startsWith("pribeh:") ? kluc.slice(7) : null;
-  const profil0 = najdiTestProfil(zStreamu ? "tvorca" : zPribehu ? orgPribehu(zPribehu) : kluc);
+  const kl0 = zStreamu ? "tvorca" : zPribehu ? orgPribehu(zPribehu) : kluc;
+  // OPRAVY 402: novo založená charita (vlastné id) — prázdny profil s menom z registra
+  const profil0 = profilKluca(kl0);
   const [detail, setDetail] = useState<TestZbierka | null>(null);
   // KARTA 57C §1: farnosť = živá nástenka z uloženého (nie testovací profil)
   const [stream, setStream] = useState<string | null>(null);
@@ -89,6 +98,7 @@ function VerejnyProfilObsah({ kluc, onBack }: { kluc: string; onBack: () => void
   const [tiery] = useState(nacitajTiery);
   const typP = profil0?.typ;
   const tierStranky = TESTOVACIA && ts.program !== null ? ts.program : typP === "charita" ? tiery.charita : typP === "firma" ? tiery.b2b : tiery.tvorca;
+  const regV = useRegistra(profil0?.k ?? kluc); // OPRAVY 400: názov charity z registra
   const vzhlad = useVzhlad(profil0?.k ?? kluc, typP !== "farnost" && tierStranky === 0); // farnosť: jeden platený program, výber má vždy
   const [prepis, setPrepis] = useState<Vzhlad | null>(null);
   const podanie = prepis ?? vzhlad;
@@ -96,7 +106,8 @@ function VerejnyProfilObsah({ kluc, onBack }: { kluc: string; onBack: () => void
   useZmenyCentralnej();
   useEffect(() => { if (typP === "farnost" && profil0) void nacitajCentralnuZbierku(profil0.k); }, [typP, profil0]);
   if (!profil0) return null;
-  const profil = sHlavnouZUctu(ts.prazdny ? vyprazdni(profil0) : profil0);
+  const profil1 = sHlavnouZUctu(ts.prazdny ? vyprazdni(profil0) : profil0);
+  const profil = profil1.typ === "charita" && regV.nazov.trim() ? { ...profil1, meno: regV.nazov.trim() } : profil1;
   if (zPribehu) {
     const zb = profil0.zbierky.find((x) => x.id === zPribehu), pr = pribehZbierky(zPribehu);
     if (zb && pr) return <PribehZbierky profil={profil0} z={zb} p={pr} onBack={onBack} onOrg={() => otvorVerejnyProfil(profil0.k)} />;
@@ -110,10 +121,12 @@ function VerejnyProfilObsah({ kluc, onBack }: { kluc: string; onBack: () => void
   const odF = (pad?: string) => farnost ? <OdFarnikov strankaId={profil.k} novy={novyOdF} pad={pad} fab={fab} /> : undefined;
   const padOdF = pc ? "44px 40px 0" : "28px 16px 0";
   const hore = (pad?: string) => farnost ? <PrihovorNaStranke strankaId={profil.k} pad={pad} /> : undefined; // KARTA 57 C.7–C.8
+  // OPRAVY 400: charita — Kontakt (sídlo, prevádzky) a Údaje organizácie na konci stránky
+  const pata = (pad: string, siroke?: boolean) => profil.typ === "charita" ? <PataCharita strankaId={profil.k} pad={pad} siroke={siroke} /> : undefined;
   const zakladStranka = (): ReactNode => {
-    const podania = podanie === "pirat" ? <PiratCharita profil={profil} onDetail={setDetail} onZaznam={otvorZaznam} onBack={onBack} onKronika={() => setPrepis("kronika")} odFarnikov={odF(padOdF)} hore={hore(pc ? "24px 40px 0" : "16px 16px 0")} />
-      : podanie === "vyklad" ? <VykladCharita profil={profil} onDetail={setDetail} onZaznam={otvorZaznam} onBack={onBack} odFarnikov={odF(padOdF)} hore={hore()} />
-      : <Kronika profil={profil} onDetail={setDetail} onZaznam={otvorZaznam} onBack={onBack} odFarnikov={odF()} hore={hore()} />;
+    const podania = podanie === "pirat" ? <PiratCharita profil={profil} onDetail={setDetail} onZaznam={otvorZaznam} onBack={onBack} onKronika={() => setPrepis("kronika")} odFarnikov={odF(padOdF)} hore={hore(pc ? "24px 40px 0" : "16px 16px 0")} pata={pata(pc ? "40px 40px 0" : "28px 16px 0", pc)} />
+      : podanie === "vyklad" ? <VykladCharita profil={profil} onDetail={setDetail} onZaznam={otvorZaznam} onBack={onBack} odFarnikov={odF(padOdF)} hore={hore()} pata={pata(pc ? "40px 40px 0" : "28px 16px 0", pc)} />
+      : <Kronika profil={profil} onDetail={setDetail} onZaznam={otvorZaznam} onBack={onBack} odFarnikov={odF()} hore={hore()} pata={pata("0", pc)} />;
     const vlastneVzhlady = (profil.typ === "firma" || profil.typ === "tvorca") && maVybranyVzhlad(profil.k);
     if (vlastneVzhlady && !zStreamu) return podania;
     if (profil.typ === "firma") return <StrankaFirmy profil={profil} onDetail={setDetail} onBack={onBack} />; // KARTA 46

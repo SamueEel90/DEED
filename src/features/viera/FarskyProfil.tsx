@@ -9,7 +9,7 @@ import {
   Zdielanie, IkonaVlajka, IkonaDoska, IkonaPlus, IkonaOko, IkonaNastavenia, Srdce, Zvon, useGaleria, useLayout,
   ZoznamDarcov, FormatovanyText, RichTextInput, FotoUpload, KamerkaBadge, ZmenitPill, FotoProfiluSheet, VideoEmbed, vlozenieVidea,
   StatRad, BtnAkcia, BtnIkonka, KontextMenu, MenuSkupina, MenuHlavicka, MenuPolozka, DvaStlpce,
-  IkonaMoznosti, IkonaQr, IkonaKalendar, IkonaMegafon, IkonaCeruzka,
+  IkonaMoznosti, IkonaQr, IkonaKalendar, IkonaCeruzka,
 } from "@/shared";
 import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { usePouzivatel } from "@/lib/pouzivatel";
@@ -19,7 +19,6 @@ import { pressable } from "@/components/pressable";
 import { NahlasitSheet } from "@/components/nahlasit";
 import type { Kanal } from "@/types";
 import { N, Overena, SheetPanel, PrehladTile, A9Potvrdenie } from "./ui";
-import { SelfAddSheet, nacitajSelfAdd } from "./UserOznamy";
 import { ParteMiniatura } from "./SmutocnyOznam";
 import { nacitajStav, ulozStav } from "./stav";
 import { cistyText } from "@/lib/richtext";
@@ -69,7 +68,6 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
   const [moderacia, setModeracia] = useState(false); // správca: moderácia oznamov veriacich
   const [viditOpen, setViditOpen] = useState(false); // správca: viditeľnosť súm (§72)
   const [viditSum, setViditSum] = useState<ViditSum>(() => nacitajStav<ViditSum>("viditelnost", farnost.id, "zobrazit"));
-  const [selfAddOpen, setSelfAddOpen] = useState(false); // správca: oznamy od veriacich ON/OFF + poplatok
   // editovateľný pohľad profilu (mock — perzistovaný do localStorage per farnost.id);
   // staršie uložené profily nemajú farára/osoby/kostoly → domergujú sa defaulty
   const [view, setView] = useState<ProfilView>(() => {
@@ -269,7 +267,6 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
                 <MenuPolozka ikona={<IkonaCeruzka size={16} />} farba={N.ind} label="Upraviť profil farnosti" popis="Foto, popis, video, farár a osoby, kostoly, kontakt" onClick={() => setSprava(true)} />
                 <MenuPolozka ikona={<IkonaKalendar size={16} />} farba={N.info} label="Kalendár a rozvrh" popis="Omše, sviatky, udalosti farnosti" onClick={onKalendar} />
                 <MenuPolozka ikona={<IkonaVlajka size={15} />} farba={N.clay} label="Moderácia príspevkov" popis="Oznamy veriacich — upraviť, zmazať alebo obnoviť" onClick={() => setModeracia(true)} />
-                <MenuPolozka ikona={<IkonaMegafon size={16} />} farba={N.green} label="Oznamy od veriacich" hodnota={selfAddLabel(farnost.id)} popis="Povoliť pridávanie oznamov a voliteľný poplatok" onClick={() => setSelfAddOpen(true)} />
                 <MenuPolozka ikona={<IkonaOko size={16} />} farba={N.ind} label="Viditeľnosť súm zbierok" hodnota={VIDIT_LABEL[viditSum]} popis="Čo vidia návštevníci profilu" onClick={() => setViditOpen(true)} />
                 <MenuPolozka ikona={<IkonaQr size={16} />} farba={N.gold} label="QR na tlač do kostola" popis="Pokladnička, nástenka, lavice — sken otvorí darovanie" onClick={() => setQr("donacny")} posledna />
               </MenuSkupina>
@@ -375,7 +372,6 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
           onCover={(url) => { const v = { ...view, foto: url || predvolenyProfil(farnost).foto }; setView(v); ulozStav("profil", farnost.id, v); toast(url ? "Titulná fotka uložená" : "Titulná fotka vrátená na pôvodnú"); }}
           onClose={() => setFotky(false)} />
       )}
-      {selfAddOpen && <SelfAddSheet farnost={farnost} onClose={() => setSelfAddOpen(false)} toast={toast} />}
       {moderacia && <ModeraciaSheet fid={farnost.id} onClose={() => setModeracia(false)} toast={toast} />}
       {viditOpen && (
         <ViditelnostSheet hodnota={viditSum}
@@ -388,11 +384,6 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
 }
 
 // ---- SPRÁVCA: moderácia oznamov veriacich (REÁLNE zmazať/obnoviť — localStorage) ----
-// label pre správcovský riadok „Oznamy od veriacich" — číta LS pri každom renderi (aktualizuje sa po zavretí sheetu)
-function selfAddLabel(fid: string): string {
-  const v = nacitajSelfAdd(fid);
-  return !v.on ? "Vypnuté" : v.poplatok > 0 ? `Zapnuté · ${v.poplatok.toFixed(2)} €` : "Zapnuté";
-}
 
 function ModeraciaSheet({ fid, onClose, toast }: { fid: string; onClose: () => void; toast: (m: string) => void }) {
   // publikované oznamy z úložiska (raw, bez TTL filtra — mazať sa dá aj expirovaný);

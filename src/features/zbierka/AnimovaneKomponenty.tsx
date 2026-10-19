@@ -54,7 +54,8 @@ type PodProps = { meno?: string; registrovany: boolean; eur: number; sumaTxt: st
   predPct: number; poPct: number; poTxt: string; poPctTxt: string; hlaska: string;
   karmaPridane?: number; karmaSpolu?: number; karmaDoDalsej?: number; karmaPostup?: number;
   kodPripisania?: string; onRegistrovat?: () => void; onHotovo: () => void;
-  /** OPRAVY 234: „Tvoj dar odišiel priamo príjemcovi." a rozbaľovací Doklad (prototyp) */ podNadpisom?: string; doklad?: ReactNode; };
+  /** OPRAVY 234: „Tvoj dar odišiel priamo príjemcovi." a rozbaľovací Doklad (prototyp) */ podNadpisom?: string; doklad?: ReactNode;
+  /** OPRAVY 388: zvončeková — bez pruhu (svetlúšiky letia k sume) */ bezPruhu?: boolean; };
 export function PodakovaniePoDare(p: PodProps) {
   const sektor = useSektorDarcu();
   const root = useRef<HTMLDivElement>(null), maskot = useRef<HTMLDivElement>(null), koniec = useRef<HTMLDivElement>(null);
@@ -79,17 +80,17 @@ export function PodakovaniePoDare(p: PodProps) {
             <div style={{ position: 'absolute', left: 0, top: 0, width: 1280, height: 128, background: 'url(/svetlusik-let.png) 0 0/100% 100% no-repeat', animation: 'sprite .55s steps(10) infinite' }} />
           </div>
         </div>
-        <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.25 }}>{p.registrovany && p.meno ? `Ďakujeme, ${p.meno}.` : 'Ďakujeme.'}</div>
+        <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.25 }}>{p.registrovany && p.meno ? `Ďakujeme, ${p.meno}.` : p.registrovany ? 'Ďakujeme.' : 'Ďakujeme za dar.'}</div>
         {p.podNadpisom && <div style={{ marginTop: 4, fontSize: 14, color: 'var(--ink2)' }}>{p.podNadpisom}</div>}
         <div style={{ marginTop: 16, fontSize: 46, fontWeight: 800, letterSpacing: '-.02em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{p.sumaTxt}</div>
         {p.dorovnanieTxt && <div style={{ marginTop: 6, fontSize: 13.5, color: 'var(--ink2)', ...fade(krok >= 2) }}>tvojich {p.sumaTxt} + <span style={{ color: 'var(--gold)', fontWeight: 700 }}>{p.dorovnanieTxt} od {p.firma}</span></div>}
       </div>
       <div style={{ padding: '14px 16px', borderRadius: 16, background: 'var(--card)', border: '1px solid var(--cardBd)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}><span>{p.poTxt}</span><span style={{ color: 'var(--green)' }}>{p.poPctTxt}</span></div>
-        <div style={{ position: 'relative', height: 10, borderRadius: 10, background: 'var(--track)', overflow: 'hidden', marginTop: 8 }}>
+        {!p.bezPruhu && <div style={{ position: 'relative', height: 10, borderRadius: 10, background: 'var(--track)', overflow: 'hidden', marginTop: 8 }}>
           <div style={{ position: 'absolute', inset: 0, background: '#4B7A35', transformOrigin: '0 50%', transform: `scaleX(${krok >= 1 ? p.poPct : p.predPct})`, transition: 'transform .55s cubic-bezier(.34,1.3,.5,1)' }} />
-        </div>
-        <div style={{ position: 'relative', height: 0 }}><div ref={koniec} style={{ position: 'absolute', top: -5, left: `${p.predPct * 100}%`, width: 0, height: 0 }} /></div>
+        </div>}
+        <div style={{ position: 'relative', height: 0 }}><div ref={koniec} style={{ position: 'absolute', top: -5, left: p.bezPruhu ? 0 : `${p.predPct * 100}%`, width: 0, height: 0 }} /></div>
         <div style={{ marginTop: 10, fontSize: 15.5, fontWeight: 700, ...fade(krok >= 2) }}>{p.hlaska}</div>
       </div>
       {p.registrovany && p.karmaPridane != null && (

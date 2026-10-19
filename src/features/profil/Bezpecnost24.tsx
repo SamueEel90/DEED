@@ -15,7 +15,7 @@ import { useNastaveniaAppky, zmenNastavenia, nacitajNastavenia } from "@/lib/nas
 import { useLokalita, MESTA } from "@/lib/lokalita";
 import { useOsobnyProfil } from "@/lib/osobnyProfil";
 import { getSession } from "@/lib/session";
-import { zariadenia, odhlas, odhlasOstatne, naplnDoLimitu, useZmenyZariadeni, hodinNovehoZariadenia, nastavNoveZariadenie, MAX_ZARIADENI, NOVE_LIMIT_EUR, type Zariadenie } from "@/lib/zariadenia";
+import { zariadenia, odhlas, odhlasOstatne, naplnDoLimitu, useZmenyZariadeni, hodinNovehoZariadenia, nastavNoveZariadenie, MAX_ZARIADENI, NOVE_LIMIT_EUR, OVERENIE_ZARIADENIA, type Zariadenie } from "@/lib/zariadenia";
 import { zablokovani, odblokuj, useZmenyBlokovania } from "@/lib/blokovanie";
 import { useT, tTeraz } from "@/i18n";
 import "@/styles/platba.css";
@@ -187,9 +187,9 @@ export function PrihlaseneZariadenia({ onBack }: { onBack: () => void }) {
         {OCHRANA.map((i) => <Bod key={i}><b style={{ color: "var(--ink)" }}>{t(`bezpecnost.ochrana.${i}t`)}</b> {t(`bezpecnost.ochrana.${i}s`)}</Bod>)}
       </div>
       <div style={{ padding: "10px 12px", borderRadius: 13, background: "var(--field)", border: "1px solid var(--cardBd)", fontSize: 13, lineHeight: 1.5, color: "var(--ink2)" }}>{t("bezpecnost.zar.ozn1")} <b style={{ color: "var(--ink)" }}>{t("bezpecnost.nebolSom")}</b> {t("bezpecnost.zar.ozn2")}</div>
-      {TESTOVACIA && <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+      {TESTOVACIA && <div style={{ display: "grid", gridTemplateColumns: OVERENIE_ZARIADENIA ? "1fr 1fr" : "1fr", gap: 8 }}>
         <button type="button" onClick={() => { naplnDoLimitu(); setDev("limit"); }} style={{ minHeight: 44, borderRadius: 12, border: "1.5px dashed var(--cardBd)", background: "transparent", fontSize: 13, color: "var(--ink3)", cursor: "pointer", fontFamily: "inherit" }}>{t("bezpecnost.dev6")}</button>
-        <button type="button" onClick={() => setDev("nove")} style={{ minHeight: 44, borderRadius: 12, border: "1.5px dashed var(--cardBd)", background: "transparent", fontSize: 13, color: "var(--ink3)", cursor: "pointer", fontFamily: "inherit" }}>{t("bezpecnost.devNove")}</button>
+        {OVERENIE_ZARIADENIA && <button type="button" onClick={() => setDev("nove")} style={{ minHeight: 44, borderRadius: 12, border: "1.5px dashed var(--cardBd)", background: "transparent", fontSize: 13, color: "var(--ink3)", cursor: "pointer", fontFamily: "inherit" }}>{t("bezpecnost.devNove")}</button>}
       </div>}
       {dev === "limit" && <LimitZariadeni onPokracovat={() => setDev(null)} />}
       {dev === "nove" && <PotvrdNoveZariadenie onPotvrdene={() => setDev(null)} onZrusit={() => setDev(null)} />}

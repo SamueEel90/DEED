@@ -8,7 +8,8 @@ import { createPortal } from "react-dom";
 import { RichTextInput } from "@/components/richtext";
 import { cistyText } from "@/lib/richtext";
 import { pridajOznamDarcom } from "@/lib/oznamyDarcom";
-import { najdiTestProfil, type TestZbierka } from "@/lib/testProfily";
+import { najdiTestProfil, prazdnaCharita, type TestZbierka } from "@/lib/testProfily";
+import { registra } from "@/lib/udajeRegistra";
 import {
   pribehNaUpravu, ulozKonceptPribehu, zverejniPribeh, pridajZapisPriebehu, jePribehTyzdna, nastavPribehTyzdna, orgPribehu,
   useZmenyPribehov, PRIBEH_ZNAKOV, PRIBEH_RIADKOV, type Pribeh,
@@ -183,8 +184,8 @@ export function PribehEditor({ z, mobil, toast }: { z: ZbierkaNaSpravu; mobil: b
 
 /** Náhľad = tá istá stránka Príbeh, akú uvidí darca (s konceptom) */
 function NahladPribehu({ z, org, p, onZavri }: { z: ZbierkaNaSpravu; org: string; p: Pribeh; onZavri: () => void }) {
-  const profil = najdiTestProfil(org) ?? najdiTestProfil("svetlo");
-  if (!profil) return null;
+  // OPRAVY 403: charita bez testovacieho profilu = jej prázdny profil s menom z registra
+  const profil = najdiTestProfil(org) ?? prazdnaCharita(org, registra(org).nazov || undefined);
   const tz: TestZbierka = profil.zbierky.find((x) => x.id === z.id || (z.id.startsWith("ukazka-strecha") && x.id === "z-strecha-horvath"))
     ?? { id: z.id, nazov: z.nazov, popis: cistyText(z.popis ?? ""), mesto: "Trenčín", foto: p.media.find((m) => m.typ === "foto")?.src ?? "", vyzbierane: z.vyzbierane, ciel: z.ciel || undefined, ludia: z.darcovia, stav: z.ukoncena ? "ukoncena" : z.dlha ? "dlhodoba" : "bezi" };
   return (

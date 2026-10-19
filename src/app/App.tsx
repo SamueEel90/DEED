@@ -9,11 +9,13 @@ import { OverenieHost, OverenieVrstva } from "@/features/overenie/OverenieHost";
 import { useOverenieStav } from "@/lib/overeniePrijemcu";
 import { aplikujNastavenia } from "@/lib/nastaveniaAppky";
 import type { Tema } from "@/components/context";
-import { GaleriaContext, ScrollContext, ScrollElContext, ViacContext, StrankaAkcieContext, UpgradeContext, UpgradePanel, Lightbox, DychajucePozadie, MotivContext, PortalContext, LayoutContext, DeedToaster, FeedSkeleton, PullToRefresh, StitRevealHost } from "@/shared";
+import { GaleriaContext, ScrollContext, ScrollElContext, ViacContext, StrankaAkcieContext, UpgradeContext, AktivaciaContext, UpgradePanel, Lightbox, DychajucePozadie, MotivContext, PortalContext, LayoutContext, DeedToaster, FeedSkeleton, PullToRefresh, StitRevealHost } from "@/shared";
 import type { StrankaAkcie } from "@/components/context";
 import { TabBar, ViacSheet, PridatFAB, nacitajTaby, ulozTaby, VSETKY_MODULY } from "@/components/TabBar";
 import { Sidebar } from "@/components/Sidebar";
-import { useSession } from "@/lib/session";
+import { useSession, setSession } from "@/lib/session";
+import { createPortal } from "react-dom";
+import { UDALOST_ZALOZ_CHARITU } from "@/lib/aktivnaCharita";
 import { resolveSession, subscribeAuth, zaistiSession } from "@/lib/auth";
 import { USE_SUPABASE } from "@/lib/supabase";
 import type { TypUctu } from "@/types";
@@ -33,10 +35,11 @@ import { Registracia } from "@/features/registracia/Registracia";
 import { RetazPodstranka } from "@/features/retaz/RetazPodstranka";
 import { PridatSkutokHost } from "@/features/skutok/PridatSkutok";
 import { IskryHost } from "@/features/iskry/Iskry";
-import { zavriIskry } from "@/features/iskry/otvor";
+import { zavriIskry, startIskry } from "@/features/iskry/otvor";
 import { PridatIskruHost } from "@/features/iskry/PridatIskru";
 import { VerejnyProfilHost } from "@/features/verejny-profil/VerejnyProfil";
-import { useVrstvaProfiluOtvorena } from "@/features/verejny-profil/otvor";
+import { PozvankaHost } from "@/features/rola/PozvankaDoSpravy";
+import { useVrstvaProfiluOtvorena, useVerejnyProfilOtvoreny, prisloZQr, qrAdresa } from "@/features/verejny-profil/otvor";
 import { AkciaHost } from "@/features/skutok/Akcia";
 import { PomocHost } from "@/features/profil/Pomoc";
 import { PolohaOkruhu } from "@/features/profil/Bezpecnost24";
@@ -199,6 +202,15 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   // OPRAVY 315: upozornenie v zvončeku → Profil → Správa stránky (napr. Od veriacich, príspevok zvýraznený)
   const modulRef = useRef(modul);
   useEffect(() => { modulRef.current = modul; }, [modul]);
+  // OPRAVY 385 doplnok: po zavretí stránky z QR sa adresa vráti na modul (/m/…)
+  const profilOtvoreny = useVerejnyProfilOtvoreny();
+  const bolOtvoreny = useRef(false);
+  useEffect(() => {
+    if (profilOtvoreny) { bolOtvoreny.current = true; return; }
+    if (!bolOtvoreny.current) return;
+    const t = window.setTimeout(() => { if (/^\/(p|z)\//.test(window.location.pathname)) replaceModul(modulRef.current); }, 350);
+    return () => window.clearTimeout(t);
+  }, [profilOtvoreny]);
   useEffect(() => {
     const f = () => { if (modulRef.current !== "profil") pushModul("profil"); setModul("profil" as ModulId); setProfilKluc((k) => k + 1); };
     window.addEventListener(UDALOST_SPRAVA, f); return () => window.removeEventListener(UDALOST_SPRAVA, f);
@@ -247,6 +259,8 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   // Ak čaká deep-link, normalizáciu odloží deep-link effect (inak by slug prepísala).
   useEffect(() => {
     if (!dl) replaceModul(modul);
+    // OPRAVY 385 doplnok: QR adresa (/p/…, /z/…) ostane v prehliadači, kým je cieľ otvorený
+    if (qrAdresa) try { window.history.replaceState({ deedModul: modul }, "", qrAdresa); } catch { /* sandbox */ }
     return sledujModulZUrl((m) => {
       if (m && VSETKY_MODULY.some((x) => x.id === m)) setModul(m as ModulId);
     });
@@ -259,6 +273,8 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   useVrstva(upgradeOpen, () => setUpgradeOpen(false));
   useVrstva(!!aktivacia, () => setAktivacia(false));
   useVrstva(orgReg, () => { setOrgReg(false); cakajRegistraciuOrg(false); });
+  // OPRAVY 402: testovacie „+ Založiť charitu (test)“ — ten istý formulár registrácie charity
+  useEffect(() => { const f = () => { cakajRegistraciuOrg(true); setOrgReg(true); }; window.addEventListener(UDALOST_ZALOZ_CHARITU, f); return () => window.removeEventListener(UDALOST_ZALOZ_CHARITU, f); }, []);
   useVrstva(!!badgeSheet, () => setBadgeSheet(null));
   useVrstva(!!splitSheet, () => setSplitSheet(null));
   useVrstva(!!chainSheet, () => setChainSheet(null));
@@ -323,8 +339,12 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
     return () => { alive = false; unsub(); };
   }, []);
 
-  // splash počas auth-boot reconciliation
-  if (booting) {
+  // OPRAVY 385: QR / odkaz s cieľom (/p/…, /z/…, /i/…, deep-link) bez prihlásenia → rovno cieľ ako hosť, žiadny úvod ani registrácia
+  const hostZQr = !booting && !session && !resumeInfo && !ovp && (prisloZQr() || !!startIskry() || !!dl);
+  useEffect(() => { if (hostZQr) setSession({ typ: "pasivny", meno: "Hosť" }); }, [hostZQr]);
+
+  // splash počas auth-boot reconciliation (aj kým vznikne hosť z QR)
+  if (booting || hostZQr) {
     return (
       <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: C.bg }}>
         <span style={{ width: 52, height: 52, borderRadius: 16, background: "var(--page-grad)", border: `1px solid ${C.line}`, color: C.textSec, fontWeight: 800, fontSize: 24, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
@@ -374,6 +394,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
      <ScrollElContext.Provider value={scrollRef}>
       <ViacContext.Provider value={() => setViac(true)}>
       <UpgradeContext.Provider value={() => setUpgradeOpen(true)}>
+      <AktivaciaContext.Provider value={setAktivacia}>
       <StrankaAkcieContext.Provider value={setAkcie}>
       <div data-stit={stitAppky} style={{ height: "100%", display: "flex", flexDirection: desktop ? "row" : "column", position: "relative", overflow: "hidden", isolation: "isolate", background: C.bg }}>
         {/* OPRAVY 98: kovový prechod pre ikony hlavného menu (Sidebar + TabBar), farby --kov1..3 podľa štítu */}
@@ -406,6 +427,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
 
         {/* KARTA 43: verejný profil — vrstva v obsahu appky (ľavé menu a dok ostávajú nad ňou) */}
         <VerejnyProfilHost />
+        <PozvankaHost />{/* OPRAVY 392 */}
         <AdresarHost />
 
         {/* plávajúci glass dock — moduly (len mobil/tablet; desktop má bočný panel) */}
@@ -470,13 +492,14 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
         {/* OPRAVY 338: overenie príjemcu zbierky (sken QR farnosti / upozornenie s kódom) */}
         <OverenieVrstva onPrihlasit={() => setAktivacia("login")} onRegistrovat={() => setAktivacia("aktivny")} />
         {/* overlay aktívnej registrácie (po kliku „Stať sa aktívnym") */}
-        {aktivacia && (
-          <div style={{ position: "absolute", inset: 0, zIndex: 80, background: C.bg }}>
+        {/* OPRAVY 385: nad detailom zbierky a parte (1000–1250), inak by registrácia ostala pod nimi */}
+        {aktivacia && createPortal(
+          <div role="dialog" aria-modal="true" aria-label="Registrácia" style={{ position: "fixed", inset: 0, zIndex: 1260, background: C.bg }}>
             <Registracia start={aktivacia} onHotovo={() => setAktivacia(false)} />
-          </div>
-        )}
+          </div>, document.body)}
       </div>
       </StrankaAkcieContext.Provider>
+      </AktivaciaContext.Provider>
       </UpgradeContext.Provider>
       </ViacContext.Provider>
      </ScrollElContext.Provider>

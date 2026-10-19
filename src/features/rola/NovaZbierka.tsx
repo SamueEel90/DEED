@@ -15,7 +15,7 @@ import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { potvrditTuknutim } from "@/features/zbierka/Platba";
 import { PROGRAM_TIER, nacitajIbanOrg, type Pozicia, type Tier } from "./stav";
-import { eurcText, HLAVNY_UCET } from "./NastaveniaCharity";
+import { eurcText } from "./NastaveniaCharity";
 import { OverenieUctu, useOverenieUctu } from "./OverenieUctu";
 import {
   prazdnaZbierka, konceptZbierkyZPamate, nacitajKonceptZbierky, ulozKonceptZbierky, spustiZbierku, lehotaZbierky, cielCislo, jeIne,
@@ -43,7 +43,7 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   const zadarmo = !!farnost || tier < PROGRAM_TIER.P1; // farnosť: jeden účet (hlavnej zbierky), bez dlhodobej a pravidelnej
   const KROKY = farnost ? [1, 2, 3, 4, 6] : [1, 2, 3, 4, 5, 6];
   const eurcRezim = eurcText(); // "nie" | "pre všetky zbierky" | "podľa zbierky"
-  const hlavnyUcet = farnost?.ucet || nacitajIbanOrg(pozicia) || HLAVNY_UCET;
+  const hlavnyUcet = farnost?.ucet || nacitajIbanOrg(pozicia); // OPRAVY 403: bez vymysleného náhradného účtu
   const [d, setD] = useState<NovaZbierkaData>(() => konceptZbierkyZPamate(strankaId) ?? prazdnaZbierka());
   const zmenene = useRef(false);
   const [nacitane, setNacitane] = useState(false);

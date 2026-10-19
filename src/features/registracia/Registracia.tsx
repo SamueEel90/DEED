@@ -34,7 +34,9 @@ export function Registracia({ onHotovo, start, resume }: { onHotovo?: () => void
 
   // prihlásený (vrstva v appke) — z neho sa organizácia pridáva
   const s = getSession();
-  const prihlaseny = s && !s.demo && s.typ !== "pasivny" ? { meno: s.meno || "Váš účet", ucetId: s.ucet_id } : null;
+  const prihlaseny = s && !s.demo && s.typ !== "pasivny" ? { meno: s.meno || "Váš účet", ucetId: s.ucet_id }
+    // OPRAVY 402: testovacia verzia bez databázy — charitu založí aj ukážkový účet (bez overenia účtu)
+    : TESTOVACIA && !naServeri && s && "demo" in s && s.demo ? { meno: "Testovací správca" } : null;
 
   const pasivne = () => { setSession({ typ: "pasivny", meno: "Hosť" }); onHotovo?.(); };
 

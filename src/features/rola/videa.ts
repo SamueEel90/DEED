@@ -3,6 +3,7 @@
 // Cenník: ZADARMO = 1 video mesačne, ďalšie 10 €; na profile je v ZADARMO
 // vidieť 1 video (ostatné ostávajú v správe). Mock: localStorage + IndexedDB.
 // ============================================================
+import { aktivnaCharita } from "@/lib/aktivnaCharita";
 import { useSyncExternalStore } from "react";
 import { bezDataUrl } from "@/lib/uploadFoto";
 import { nacitajVerejne, verejneZPamate, zapisVerejne } from "@/lib/verejneNastavenia";
@@ -72,18 +73,18 @@ export function videaNaProfil(tier: Tier): Polozka[] {
 }
 
 // ---- verejné nastavenia stránky charity (0070b): vidí ich aj návštevník, localStorage = záloha ----
-const STRANKA = "svetlo"; // = STRANKA_POZICIE.charita (rola/stav) — bez importu, nech nie je cyklus
+// OPRAVY 403: stránka = aktívna charita (lib/aktivnaCharita, bez ďalších importov — žiadny cyklus)
 export function ulozVidea(v: VideoOrg[]) {
   ulozVideaLokalne(v);
-  void bezDataUrl(v, "videa").then((cist) => zapisVerejne(STRANKA, "videa", cist)).catch(() => { /* bez prihlásenia ostáva lokálne */ });
+  void bezDataUrl(v, "videa").then((cist) => zapisVerejne(aktivnaCharita(), "videa", cist)).catch(() => { /* bez prihlásenia ostáva lokálne */ });
 }
 let zDb = false;
 /** raz stiahne verejnú verziu; keď v DB je, prepíše lokálnu */
 export function nacitajVideaZDb() {
   if (zDb) return;
   zDb = true;
-  void nacitajVerejne(STRANKA).then(() => {
-    const v = verejneZPamate(STRANKA)?.["videa"];
+  void nacitajVerejne(aktivnaCharita()).then(() => {
+    const v = verejneZPamate(aktivnaCharita())?.["videa"];
     if (Array.isArray(v)) ulozVideaLokalne(v as VideoOrg[]);
   });
 }

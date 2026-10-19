@@ -4,6 +4,7 @@
 // organizácie (lib/profilStranky, migrácia 0028), na profile sa ukáže až po „Uložiť profil".
 // Editor, orez, logo a kontakt = existujúce RichTextInput, OrezFotky, lib/obrazok, kontakt.tsx.
 // ============================================================
+import { aktivnaCharita } from "@/lib/aktivnaCharita";
 import { useVerejnyProfilOtvoreny } from "@/features/verejny-profil/otvor";
 import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
@@ -15,8 +16,9 @@ import { toast } from "@/components/toast";
 import { spracujLogo, spracujFotku, rozmeryFotky, LOGO_CFG, COVER_CFG, type LogoRezim, type LogoPozadie } from "@/lib/obrazok";
 import { cistyNazov, nacitajProfil, profilZPamate, ulozKoncept, zverejniProfil, type ProfilStranky, type VyrezFotky, type RamFotky } from "@/lib/profilStranky";
 import { NastenkaFarnosti } from "@/features/verejny-profil/NastenkaFarnosti";
-import { SIDLO_REGISTRA, ICO_REGISTRA } from "./NastaveniaCharity";
-import { nacitajKontakt, SIETE, MAX_TEL, MAX_EMAIL, chybaSiete, chybaWebu, chybaEmailu, chybaTel, type Kontakt } from "./kontakt";
+import { RiadkyRegistra } from "./RiadkyRegistra";
+import { registra, useRegistra, useStatutar, ulozStatutara, mesiacRok } from "@/lib/udajeRegistra";
+import { nacitajKontakt, SIETE, MAX_TEL, MAX_EMAIL, MAX_PREVADZOK, prevadzkyZ, chybaSiete, chybaWebu, chybaEmailu, chybaTel, normalizujSiet, type Kontakt, type Siet } from "./kontakt";
 import { type Pozicia, type Tier, type TvarLoga } from "./stav";
 import { Podstranka } from "./Podstranka";
 import { CasPole } from "@/components/CasPole";
@@ -31,11 +33,11 @@ const ONAS_RIADKY = 12;
 const ONAS_ZNAKY = 1500;
 const NASTROJE = ["bold", "italic", "nadpis", "vacsie", "mensie", "insertUnorderedList", "insertOrderedList", "odkaz", "diktovat", "tx", "spat"];
 /** profil pred prvým uložením = úplne prázdny (Martin 1. 10. 2026), zo registrácie len zamknuté sídlo */
-export function zakladnyProfil(p: Pozicia): ProfilStranky {
+export function zakladnyProfil(p: Pozicia, stranka?: string): ProfilStranky {
   const k = nacitajKontakt(p);
   return {
     onas: "", onas2: "",
-    kontakt: { sidlo: p === "charita" ? SIDLO_REGISTRA : k.sidlo, adresaVerejna: "", telefony: [{ cislo: "", popis: "" }], emaily: [{ adresa: "", popis: "" }], web: "", siete: {} },
+    kontakt: { sidlo: p === "charita" ? registra(stranka ?? aktivnaCharita()).sidlo : k.sidlo, adresaVerejna: "", telefony: [{ cislo: "", popis: "" }], emaily: [{ adresa: "", popis: "" }], web: "", siete: {} },
     logo: null, tvar: "stvorec", logoRezim: "cele", logoPozadie: "biele",
     cover: null, ram: "bez",
   };
@@ -91,6 +93,9 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
   onZmena?: (p: ProfilStranky) => void;
 }) {
   const zdrojGal = useZdrojFotiek(); // OPRAVY 254: Moje fotky (ak sú) · Verejné fotky
+  const reg = useRegistra(strankaId); // OPRAVY 400: údaje z registra (zamknuté)
+  const statutar = useStatutar();
+  const [funkcia, setFunkcia] = useState<string | null>(null);
   const vpOtvoreny = useVerejnyProfilOtvoreny(); // KARTA 50: „Pozrieť verejný profil" — spodná lišta úpravy sa skryje
   const z0 = profilZPamate(strankaId);
   const [p, setP] = useState<ProfilStranky>(() => z0.koncept ?? z0.ulozeny ?? zakladnyProfil(pozicia));
@@ -133,7 +138,9 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
       toast(dlhy ? "Hlavný text je dlhší ako 12 riadkov · skráťte ho." : "Opravte, čo je označené červenou.");
       return;
     }
-    const cisty: ProfilStranky = { ...p, kontakt: { ...k, telefony: k.telefony.filter((t) => t.cislo.trim()), emaily: k.emaily.filter((e, i) => i === 0 || e.adresa.trim()) } };
+    const cisty: ProfilStranky = { ...p, kontakt: { ...k, telefony: k.telefony.filter((t) => t.cislo.trim()), emaily: k.emaily.filter((e, i) => i === 0 || e.adresa.trim()),
+      ...(k.prevadzky ? { prevadzky: k.prevadzky.map((x) => ({ popis: x.popis.trim(), adresa: x.adresa.trim() })).filter((x) => x.adresa || x.popis) } : {}),
+      web: k.web.trim(), siete: Object.fromEntries(Object.entries(k.siete ?? {}).map(([s0, u]) => [s0, normalizujSiet(s0 as Siet, u ?? "")]).filter(([, u]) => u)) } }; // OPRAVY 401
     try { await zverejniProfil(strankaId, cisty); }
     catch { toast("Profil sa nepodarilo uložiť — skúste to znova."); return; }
     zmenene.current = false; setKonceptCas(null); setP(cisty); onUlozene(cisty); setPohlad("ulozene");
@@ -231,7 +238,14 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
         <input style={pole} value={p.meno ?? nazov} maxLength={80} placeholder="Napríklad: Farnosť sv. Martina" aria-label="Názov stránky" onChange={(e) => zmen({ meno: e.target.value })} />
       </> : <>
         {nadpis("Názov", "z registrácie, overený cez IČO", 14)}
-        <div style={zamknute}><Zamok />{nazov} · IČO {ICO_REGISTRA}</div>
+        <div style={zamknute}><Zamok />{reg.nazov || nazov}</div>
+        {/* OPRAVY 400: ostatné údaje z registra (zamknuté; čo register nevrátil = doplniť ›) */}
+        <div style={{ padding: "2px 14px", borderRadius: 14, border: "1px solid var(--cardBd)", background: "var(--field)" }}><RiadkyRegistra strankaId={strankaId} bezNazvu /></div>
+        {nadpis("Funkcia štatutára", "napr. predsedníčka · na verejnom profile nie je", 14)}
+        <input style={pole} value={funkcia ?? statutar.funkcia} maxLength={60} placeholder="napr. predseda, predsedníčka, riaditeľ" aria-label="Funkcia štatutára"
+          onChange={(e) => setFunkcia(e.target.value)} onBlur={() => { if (funkcia !== null && funkcia.trim() !== statutar.funkcia) ulozStatutara({ funkcia: funkcia.trim() }); setFunkcia(null); }} />
+        {nadpis("Založené", "predvyplnené z dátumu vzniku, môžete zmeniť", 14)}
+        <input style={pole} value={p.zalozene ?? mesiacRok(reg.vznik)} maxLength={40} placeholder="napr. marec 2017" aria-label="Založené" onChange={(e) => zmen({ zalozene: e.target.value })} />
       </>}
       <span style={{ marginTop: 6 }}>{nadpis("O nás · hlavný text")}</span>
       <span style={{ fontSize: 13, color: "var(--ink2)", lineHeight: 1.45, marginTop: -4 }}>Toto ľudia uvidia hneď v hlavičke profilu. Kto ste a komu pomáhate, tak, aby to zaujalo. Najviac 12 riadkov.</span>
@@ -258,9 +272,22 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
       {nadpis("Kontakt")}
       <span style={{ ...poznamka, marginTop: -4 }}>Všetko v tejto časti je verejné. Uvidí to každý návštevník vášho profilu.</span>
       {nadpis("Sídlo", "z registrácie, overené cez IČO", 14)}
-      <div style={zamknute}><Zamok />{k.sidlo}</div>
-      {nadpis("Adresa pre verejnosť", "ak sa líši od sídla (výdajňa, kancelária)", 14)}
-      <input style={pole} value={k.adresaVerejna} placeholder="Napríklad: Hviezdoslavova 12, Trenčín" onChange={(e) => zmenK({ adresaVerejna: e.target.value })} aria-label="Adresa pre verejnosť" />
+      <div style={zamknute}><Zamok />{(farnost ? k.sidlo : reg.sidlo) || "nevyplnené · doplňte hore v údajoch z registra"}</div>
+      {farnost ? <>
+        {nadpis("Adresa pre verejnosť", "ak sa líši od sídla (výdajňa, kancelária)", 14)}
+        <input style={pole} value={k.adresaVerejna} placeholder="Napríklad: Hviezdoslavova 12, Trenčín" onChange={(e) => zmenK({ adresaVerejna: e.target.value })} aria-label="Adresa pre verejnosť" />
+      </> : <>
+        {/* OPRAVY 400: prevádzky (iná adresa tej istej organizácie) — nie pobočky, bez limitu programu, najviac 5 */}
+        {nadpis("Prevádzky", "iné adresy, kde vás ľudia nájdu · útulok, výdajňa, kancelária", 14)}
+        {prevadzkyZ(k).map((x, i) => (<div key={`pv${i}`} style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: mobil ? "wrap" : undefined }}>
+          <input style={{ ...pole, flex: 2, minWidth: mobil ? "100%" : 0 }} value={x.popis} maxLength={40} placeholder="Čo tam je? napr. útulok a stanica" aria-label="Popis prevádzky"
+            onChange={(e) => zmenK({ adresaVerejna: "", prevadzky: prevadzkyZ(k).map((y, j) => (j === i ? { ...y, popis: e.target.value } : y)) })} />
+          <input style={{ ...pole, flex: 3 }} value={x.adresa} maxLength={120} placeholder="ulica, PSČ, mesto" aria-label="Adresa prevádzky"
+            onChange={(e) => zmenK({ adresaVerejna: "", prevadzky: prevadzkyZ(k).map((y, j) => (j === i ? { ...y, adresa: e.target.value } : y)) })} />
+          <Zmaz onClick={() => zmenK({ adresaVerejna: "", prevadzky: prevadzkyZ(k).filter((_, j) => j !== i) })} />
+        </div>))}
+        {prevadzkyZ(k).length < MAX_PREVADZOK && <Pridat onClick={() => zmenK({ adresaVerejna: "", prevadzky: [...prevadzkyZ(k), { popis: "", adresa: "" }] })}>+ Pridať prevádzku</Pridat>}
+      </>}
       {nadpis("Telefón", "číslo uvidí každý návštevník", 14)}
       {k.telefony.map((t, i) => (<div key={`t${i}`} style={{ display: "contents" }}>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -289,10 +316,12 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
         return (<div key={r.k} style={{ display: "contents" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ width: 84, flex: "none", fontSize: 13.5, fontWeight: 700, color: "var(--ink2)" }}>{r.label}</span>
-            <input style={{ ...pole, flex: 1 }} value={v} placeholder={r.ph} inputMode="url" aria-label={r.label}
-              onChange={(e) => (r.k === "web" ? zmenK({ web: e.target.value }) : zmenK({ siete: { ...k.siete, [r.k]: e.target.value } }))} />
+            <input style={{ ...pole, flex: 1 }} value={v} placeholder={r.ph} inputMode="url" aria-label={r.label} autoCapitalize="none" autoCorrect="off" spellCheck={false} autoComplete="off"
+              onChange={(e) => (r.k === "web" ? zmenK({ web: e.target.value }) : zmenK({ siete: { ...k.siete, [r.k]: e.target.value } }))}
+              onBlur={(e) => { if (r.k === "web") { if (e.target.value !== e.target.value.trim()) zmenK({ web: e.target.value.trim() }); return; }
+                const n = normalizujSiet(r.k as Siet, e.target.value); if (n !== e.target.value) zmenK({ siete: { ...k.siete, [r.k]: n } }); }} />
           </div>
-          {ch && <span style={{ fontSize: 13, fontWeight: 700, color: "#A34A2A", marginTop: -6, paddingLeft: 94 }}>{ch}</span>}
+          {ch && <span data-chyba="1" style={{ fontSize: 13, fontWeight: 700, color: "#A34A2A", marginTop: -6, paddingLeft: 94 }}>{ch}</span>}
         </div>);
       })}
       {farnost && <>
@@ -455,7 +484,7 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
       </div>
     </div>);
 }
-const PH_SIETE: Partial<Record<string, string>> = { facebook: "facebook.com/…", instagram: "instagram.com/…", youtube: "youtube.com/@…", tiktok: "tiktok.com/@…", linkedin: "linkedin.com/company/…", x: "x.com/…" };
+const PH_SIETE: Partial<Record<string, string>> = { facebook: "facebook.com/…", instagram: "@meno alebo instagram.com/…", youtube: "@meno alebo youtube.com/@…", tiktok: "@meno alebo tiktok.com/@…", linkedin: "linkedin.com/company/…", x: "@meno alebo x.com/…" };
 
 // ============================================================
 // OPRAVY 107: Náhľad, Profil uložený aj tlačidlo Verejný profil = SKUTOČNÝ verejný profil (Podstranka)

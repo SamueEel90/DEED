@@ -2,7 +2,7 @@
 // OPRAVY 338 — stránka /overenie/<token> u príjemcu (pozostalý, snúbenec, príjemca zbierky s overovateľom).
 // Neprihlásený: Prihlásiť sa / Zaregistrovať sa → po prihlásení späť sem (lístok je v zariadení 15 min).
 // Prihlásený: „Farnosť … chce založiť zbierku pre vás · Pohreb · meno · Podržte a potvrďte, že ste to vy“.
-// Potom čaká na kód od farára (upozornenie v zvončeku), napíše ho a podržaním potvrdí rozdelenie.
+// OPRAVY 364: farár pošle na potvrdenie → tu sa hneď ukáže rozdelenie, príjemca ho podrží a potvrdí (bez kódu, 0113).
 // ============================================================
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -14,19 +14,19 @@ const DRUH: Record<NahladOverenia["druh"], string> = { pohreb: "Pohreb", svadba:
 const tlO: CSSProperties = { minHeight: 52, padding: "0 20px", borderRadius: 14, border: "1.5px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "var(--ink)", boxShadow: "none" };
 const tlZ: CSSProperties = { ...tlO, border: "none", background: "var(--green)", color: "#fff" };
 
-/** tlačidlo „Podržte…“ — potvrdí sa po 1,2 s držania (prst aj klávesnica) */
-function Podrz({ text, onHotovo, disabled }: { text: string; onHotovo: () => void; disabled?: boolean }) {
+/** tlačidlo „Podržte…“ — potvrdí sa po ms držania (prst aj klávesnica) */
+function Podrz({ text, onHotovo, disabled, ms = 1200 }: { text: string; onHotovo: () => void; disabled?: boolean; ms?: number }) {
   const [drz, setDrz] = useState(false);
   const tm = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(tm.current), []);
-  const zacni = () => { if (disabled) return; setDrz(true); window.clearTimeout(tm.current); tm.current = window.setTimeout(() => { setDrz(false); onHotovo(); }, 1200); };
+  const zacni = () => { if (disabled) return; setDrz(true); window.clearTimeout(tm.current); tm.current = window.setTimeout(() => { setDrz(false); onHotovo(); }, ms); };
   const pusti = () => { window.clearTimeout(tm.current); setDrz(false); };
   return (
     <button type="button" disabled={disabled} onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); zacni(); }} onPointerUp={pusti} onPointerCancel={pusti}
       onContextMenu={(e) => e.preventDefault()}
       onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !e.repeat) { e.preventDefault(); zacni(); } }} onKeyUp={(e) => { if (e.key === "Enter" || e.key === " ") pusti(); }}
       style={{ position: "relative", minHeight: 58, width: "100%", border: "none", borderRadius: 16, background: "#3F6E2A", overflow: "hidden", cursor: "pointer", touchAction: "none", fontFamily: "inherit", opacity: disabled ? 0.6 : 1 }}>
-      <span style={{ position: "absolute", inset: 0, background: "#6E9F4E", transformOrigin: "0 50%", transform: `scaleX(${drz ? 1 : 0})`, transition: `transform ${drz ? "1.2s" : ".2s"} linear` }} />
+      <span style={{ position: "absolute", inset: 0, background: "#6E9F4E", transformOrigin: "0 50%", transform: `scaleX(${drz ? 1 : 0})`, transition: `transform ${drz ? `${ms / 1000}s` : ".2s"} linear` }} />
       <span style={{ position: "relative", fontSize: 16.5, fontWeight: 800, color: "#fff" }}>{drz ? "Držte…" : text}</span>
     </button>);
 }
@@ -50,10 +50,9 @@ export function OverenieHost({ prihlaseny, meno, onPrihlasit, onRegistrovat }: {
   const [chybaN, setChybaN] = useState<string | null>(null);
   const [chyba, setChyba] = useState<string | null>(null);
   const [uklada, setUklada] = useState(false);
-  const [kod, setKod] = useState("");
   const [obnov, setObnov] = useState(0);
 
-  // náhľad + sledovanie (kým čaká na kód od farára, každé 3 s)
+  // náhľad + sledovanie (kým čaká na potvrdenie od farára, každé 3 s)
   useEffect(() => {
     if (!listok) return;
     let ziva = true;
@@ -105,7 +104,7 @@ export function OverenieHost({ prihlaseny, meno, onPrihlasit, onRegistrovat }: {
       <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" }}>PRÍJEMCA</span>
       <b style={{ fontSize: 18 }}>{meno || "Váš účet"}</b>
     </div>
-    <span style={{ fontSize: 15, lineHeight: 1.5, color: "var(--ink2)" }}>Peniaze zo zbierky pôjdu na váš účet. Farár potom pripraví oznámenie a rozdelenie, potvrdíte ho kódom.</span>
+    <span style={{ fontSize: 15, lineHeight: 1.5, color: "var(--ink2)" }}>Peniaze zo zbierky pôjdu na váš účet. Farár potom pripraví oznámenie a rozdelenie, potvrdíte ho podržaním.</span>
     <ChybaPriTlacidle text={chyba} uklada={uklada} onZnova={() => void akcia(() => ovpPotvrd(listok!))} />
     <Podrz text={uklada ? "Ukladá sa…" : "Podržte a potvrďte, že som to ja"} disabled={uklada} onHotovo={() => void akcia(() => ovpPotvrd(listok!))} />
   </Ram>;
@@ -114,30 +113,26 @@ export function OverenieHost({ prihlaseny, meno, onPrihlasit, onRegistrovat }: {
   if (n.suhlas) return <Ram onZavri={zavriOverenie}>
     {hlava}
     <div role="status" style={{ padding: "16px 18px", borderRadius: 18, background: "var(--gSoft)", border: "2px solid var(--green)", display: "flex", flexDirection: "column", gap: 8 }}>
-      <b style={{ fontSize: 18, color: "var(--gInk)" }}>{n.zbierka ? "Zbierka beží ✓" : "Rozdelenie potvrdené ✓"}</b>
-      <span style={{ fontSize: 15, lineHeight: 1.5 }}>{n.zbierka ? "Nájdete ju v Domov · Moje zbierky. Vidíte tam darcov a zbierku môžete ukončiť." : "Farár teraz zbierku zapečatí. Potom ju nájdete v Domov · Moje zbierky."}</span>
+      <b style={{ fontSize: 18, color: "var(--gInk)" }}>{n.zbierka ? "Zbierka beží ✓" : "Potvrdené ✓ · farár môže zapečatiť"}</b>
+      <span style={{ fontSize: 15, lineHeight: 1.5 }}>{n.zbierka ? "Nájdete ju v Domov · Moje zbierky. Vidíte tam darcov a zbierku môžete ukončiť." : "Keď farár zbierku zapečatí, nájdete ju v Domov · Moje zbierky."}</span>
     </div>
     <button type="button" onClick={zavriOverenie} style={{ ...tlZ, alignSelf: "flex-start" }}>Hotovo</button>
   </Ram>;
 
-  // 2 · čaká na kód / kód prišiel
+  // 2 · čaká, kým farár pošle na potvrdenie → rozdelenie a Podržte (OPRAVY 364, bez kódu)
+  const caka = n.caka ?? n.kod_caka;
   return <Ram onZavri={zavriOverenie}>
     {hlava}
     <div role="status" style={{ padding: "12px 14px", borderRadius: 14, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 15, fontWeight: 800, color: "var(--gInk)" }}>Potvrdili ste, že ste to vy ✓</div>
-    {!n.kod_caka ? <span style={{ fontSize: 16, lineHeight: 1.5, color: "var(--ink2)" }}>Farár teraz pripraví oznámenie a rozdelenie. Keď pošle kód, príde vám upozornenie a tu sa ukáže miesto na kód. Nechajte túto stránku otvorenú.</span> : <>
+    {caka ? <>
       <div style={{ padding: "14px 16px", borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", display: "flex", flexDirection: "column", gap: 4 }}>
         <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" }}>ROZDELENIE ZBIERKY</span>
         <b style={{ fontSize: 16.5, lineHeight: 1.45 }}>{n.rozdelenie ?? "—"}</b>
       </div>
-      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" }}>KÓD Z UPOZORNENIA</span>
-        <input value={kod} onChange={(e) => { setChyba(null); setKod(e.target.value.replace(/\D/g, "").slice(0, 6)); }} inputMode="numeric" autoComplete="one-time-code" placeholder="6 číslic"
-          style={{ height: 56, padding: "0 16px", borderRadius: 14, border: "1.5px solid var(--cardBd)", background: "var(--field)", fontFamily: "inherit", fontSize: 24, fontWeight: 800, letterSpacing: ".2em", color: "var(--ink)", outline: "none" }} />
-      </label>
-      <ChybaPriTlacidle text={chyba} uklada={uklada} nadpis="Nepotvrdilo sa" onZnova={kod.length === 6 ? () => void akcia(() => ovpSuhlas(listok!, kod)) : undefined} />
-      <Podrz text={uklada ? "Ukladá sa…" : "Podržte a potvrďte rozdelenie"} disabled={uklada || kod.length !== 6} onHotovo={() => void akcia(() => ovpSuhlas(listok!, kod))} />
-      {kod.length !== 6 && <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>Napíšte 6 číslic z upozornenia v zvončeku.</span>}
-    </>}
+      <ChybaPriTlacidle text={chyba} uklada={uklada} nadpis="Nepotvrdilo sa" onZnova={() => void akcia(() => ovpSuhlas(listok!))} />
+      <Podrz ms={1500} text={uklada ? "Ukladá sa…" : "Podržte a potvrďte rozdelenie"} disabled={uklada} onHotovo={() => void akcia(() => ovpSuhlas(listok!))} />
+    </> : n.vyprsalo ? <div role="alert" style={{ padding: "14px 16px", borderRadius: 16, background: "var(--errBg)", border: "2px solid var(--cRed)", fontSize: 16, fontWeight: 700, lineHeight: 1.45 }}>Čas vypršal · požiadajte farára o nové potvrdenie</div>
+      : <span style={{ fontSize: 16, lineHeight: 1.5, color: "var(--ink2)" }}>Farár teraz pripraví oznámenie a rozdelenie. Keď ho pošle na potvrdenie, ukáže sa tu. Nechajte túto stránku otvorenú.</span>}
   </Ram>;
 }
 

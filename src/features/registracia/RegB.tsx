@@ -1,7 +1,7 @@
 // KARTA 44 · stavebnice registrácie 1b (osoba aj charita) — 1 : 1 podľa prototypu „Registracia - navrhy.dc.html", stĺpec 1b.
 // Obrazovka = hlava (Späť + kapitoly) · obsah (vstup .35 s) · päta (zelené tlačidlo 58 px + druhá voľba 44 px).
 // Svetlúšik: veľký so žiarou (Vitaj, Hotovo s radosťou a iskrami) alebo bublina (najviac 3 na registráciu).
-import { useEffect, useId, useRef, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { cipFiltra } from "@/components/Volby";
 import { USE_SUPABASE } from "@/lib/supabase";
 import "@/styles/platba.css";
@@ -129,18 +129,24 @@ export function Poznamka({ children }: { children: ReactNode }) {
 }
 
 /** textové pole v štýle prototypu (54 px, predvoľba, fajka, nápoveda) */
-export function Pole({ label, value, onChange, pred, ok, hint, chyba, ...inp }: {
+export function Pole({ label, value, onChange, pred, ok, hint, chyba, oko, ...inp }: {
   label: string; value: string; onChange: (v: string) => void; pred?: string; ok?: boolean; hint?: ReactNode; chyba?: string | null;
+  /** OPRAVY 378: heslo s okom na zobrazenie */ oko?: boolean;
 } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "value" | "onChange">) {
   const id = useId();
+  const [vidno, setVidno] = useState(false);
   return (
     <label htmlFor={id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink2)" }}>{label}</span>
       <span style={{ minHeight: 54, padding: "0 16px", borderRadius: 16, background: "var(--field)", border: `1.5px solid ${chyba ? "#B8452F" : ok ? "var(--gBd)" : "var(--cardBd)"}`, display: "flex", alignItems: "center", gap: 10 }}>
         {pred && <span style={{ flex: "none", paddingRight: 10, borderRight: "1px solid var(--cardBd)", fontSize: 16.5, fontWeight: 700, color: "var(--ink)" }}>{pred}</span>}
-        <input id={id} value={value} onChange={(e) => onChange(e.target.value)} {...inp}
+        <input id={id} value={value} onChange={(e) => onChange(e.target.value)} {...inp} type={oko && vidno ? "text" : inp.type}
           style={{ flex: 1, minWidth: 0, height: 52, border: "none", outline: "none", background: "transparent", fontSize: 16.5, fontWeight: 700, color: "var(--ink)", fontFamily: "inherit", padding: 0 }} />
         {ok && fajka("var(--green)")}
+        {oko && <button type="button" onClick={(e) => { e.preventDefault(); setVidno((v) => !v); }} aria-label={vidno ? "Skryť heslo" : "Zobraziť heslo"} aria-pressed={vidno}
+          style={{ flex: "none", width: 44, height: 44, marginRight: -8, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ink3)", boxShadow: "none" }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" />{vidno && <path d="M3 3l18 18" />}</svg>
+        </button>}
       </span>
       {chyba ? <span role="alert" style={{ fontSize: 12.5, lineHeight: 1.4, fontWeight: 700, color: "#B8452F" }}>{chyba}</span>
         : hint && <span style={{ fontSize: 12.5, lineHeight: 1.4, color: "var(--ink3)" }}>{hint}</span>}
@@ -149,7 +155,7 @@ export function Pole({ label, value, onChange, pred, ok, hint, chyba, ...inp }: 
 }
 
 /** šesť políčok na kód z SMS (jedno skryté pole pod nimi, autofill one-time-code) */
-export function KodPolia({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+export function KodPolia({ value, onChange, label = "Kód z SMS" }: { value: string; onChange: (v: string) => void; label?: string }) {
   const ref = useRef<HTMLInputElement>(null);
   return (
     <div style={{ position: "relative" }} onClick={() => ref.current?.focus()}>
@@ -157,7 +163,7 @@ export function KodPolia({ value, onChange }: { value: string; onChange: (v: str
         {Array.from({ length: 6 }, (_, i) => (
           <span key={i} style={{ height: 60, borderRadius: 14, background: "var(--field)", border: `1.5px solid ${value[i] ? "var(--gBd)" : i === value.length ? "var(--green)" : "var(--cardBd)"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{value[i] ?? ""}</span>))}
       </div>
-      <input ref={ref} value={value} onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" maxLength={6} aria-label="Kód z SMS"
+      <input ref={ref} value={value} onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" maxLength={6} aria-label={label}
         style={{ position: "absolute", inset: 0, opacity: 0, fontSize: 16, width: "100%", height: "100%", border: "none", cursor: "pointer" }} />
     </div>
   );

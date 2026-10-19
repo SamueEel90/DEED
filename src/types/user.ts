@@ -119,6 +119,8 @@ export interface RegistrIcoVysledok {
   sidlo: string;
   datum_vzniku: IsoDate;
   pravna_forma: string;
+  /** OPRAVY 400: registrujúci úrad a reg. č. („MV SR, reg. č. VVS/1-900/90-57412“) — ak ho register vráti */
+  registracia?: string;
 }
 
 /** Výsledok OTP (posliOtp) — DEMO SMS. */

@@ -13,10 +13,11 @@ import { DeedZnacka } from "@/components/DeedZnacka";
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { C, GRAD, SPACE, RADIUS } from "@/theme";
 import { toast, Znacka, IkonaObalka, IkonaZamok, IkonaOko, IkonaOkoOff, IkonaSipVpravo } from "@/shared";
-import { signIn, signUp, resolveSession, resetHeslo, zmenHeslo } from "@/lib/auth";
+import { signIn, signUp, resolveSession, resetHeslo, zmenHeslo, jeNeoverenyEmail, posliEmailKod } from "@/lib/auth";
+import { useOverenieEmailu, OverteEmailTelo } from "./OverteEmail";
 import type { TypUctu } from "@/types";
 import { PotvrdNoveZariadenie, LimitZariadeni } from "@/features/profil/Bezpecnost24";
-import { zariadenia, odKedy, MAX_ZARIADENI } from "@/lib/zariadenia";
+import { zariadenia, odKedy, MAX_ZARIADENI, OVERENIE_ZARIADENIA } from "@/lib/zariadenia";
 
 // 5 zlých pokusov o prihlásenie → 15 minút čakanie. Zadanie 3 · 3.5: počíta to LEN server
 // (Auth hook, migrácia 0042) — appka zobrazí jeho hlášku, sama nič nepočíta.
@@ -38,6 +39,8 @@ export function AuthPage({ onAuthed, onGuest, onPasivny, onRegistrovat, uvodnyRe
   const [chyba, setChyba] = useState<string | null>(null);
   // karta 24 · 3: nové zariadenie potvrdiť, najviac 5 zariadení (zoznam a overenie bude držať server)
   const [brana, setBrana] = useState<null | { krok: "nove" | "limit"; dokonci: () => Promise<void> }>(null);
+  // OPRAVY 378: neoverený e-mail (registrácia aj prihlásenie) → obrazovka Overte e-mail (6 číslic)
+  const [overit, setOverit] = useState<null | { login: boolean }>(null);
 
   const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim());
   const hesloOk = heslo.length >= 6;
@@ -62,6 +65,21 @@ export function AuthPage({ onAuthed, onGuest, onPasivny, onRegistrovat, uvodnyRe
     }
   };
 
+  const poPrihlaseni = async () => {
+    const dokonci = async () => {
+      const res = await resolveSession();
+      if (res.kind === "app") return; // setSession → appka sa zobrazí reaktívne
+      if (res.kind === "resume") { onAuthed(res.authId, email.trim(), res.typ); return; }
+      setChyba("Účet sa nepodarilo načítať. Skús znova.");
+    };
+    if (jeNoveZariadenie()) { if (OVERENIE_ZARIADENIA) { setBrana({ krok: "nove", dokonci }); return; } odKedy(); }
+    if (zariadenia().length > MAX_ZARIADENI) { setBrana({ krok: "limit", dokonci }); return; }
+    await dokonci();
+  };
+  const ovE = useOverenieEmailu(email, async (id) => {
+    if (overit?.login) { setOverit(null); await poPrihlaseni(); return; }
+    setOverit(null); onAuthed(id, email.trim());
+  });
   const submit = async () => {
     if (!canSubmit || busy) return;
     setBusy(true);
@@ -69,19 +87,13 @@ export function AuthPage({ onAuthed, onGuest, onPasivny, onRegistrovat, uvodnyRe
     try {
       if (jeLogin) {
         const r = await signIn(email, heslo);
+        if (!r.ok && jeNeoverenyEmail(r.chyba)) { void posliEmailKod(email); setOverit({ login: true }); return; }
         if (!r.ok) { setChyba(r.chyba ?? "Prihlásenie zlyhalo."); return; }
-        const dokonci = async () => {
-          const res = await resolveSession();
-          if (res.kind === "app") return; // setSession → appka sa zobrazí reaktívne
-          if (res.kind === "resume") { onAuthed(res.authId, email.trim(), res.typ); return; }
-          setChyba("Účet sa nepodarilo načítať. Skús znova.");
-        };
-        if (jeNoveZariadenie()) { setBrana({ krok: "nove", dokonci }); return; }
-        if (zariadenia().length > MAX_ZARIADENI) { setBrana({ krok: "limit", dokonci }); return; }
-        await dokonci();
+        await poPrihlaseni();
       } else {
         const r = await signUp(email, heslo);
-        if (!r.ok || !r.authId) { setChyba(r.chyba ?? "Registrácia zlyhala."); return; }
+        if (!r.ok || !r.authId) { setChyba(r.chyba ?? "Účet sa nepodarilo založiť · Skúsiť znova."); return; }
+        if (r.overitEmail) { setOverit({ login: false }); return; }
         onAuthed(r.authId, email.trim());
       }
     } catch {
@@ -91,6 +103,15 @@ export function AuthPage({ onAuthed, onGuest, onPasivny, onRegistrovat, uvodnyRe
     }
   };
 
+  if (overit) return (
+    <div style={{ height: "100%", overflowY: "auto", background: "transparent" }}>
+      <div style={{ minHeight: "100%", display: "flex", flexDirection: "column", justifyContent: "center", gap: 16, padding: "36px 22px 26px", maxWidth: 440, margin: "0 auto", boxSizing: "border-box" }}>
+        <b style={{ fontSize: 26, letterSpacing: "-.01em" }}>Overte e-mail</b>
+        <OverteEmailTelo email={email.trim()} o={ovE} onZmenit={() => { setOverit(null); setChyba(null); }} />
+        <button type="button" disabled={ovE.kod.length !== 6 || ovE.busy} onClick={() => void ovE.over()} style={{ width: "100%", minHeight: 54, borderRadius: RADIUS.md, border: "none", fontFamily: "inherit", fontSize: 15.5, fontWeight: 700,
+          cursor: ovE.kod.length === 6 && !ovE.busy ? "pointer" : "not-allowed", background: ovE.kod.length === 6 && !ovE.busy ? GRAD : "rgba(var(--glass-rgb),.06)", color: ovE.kod.length === 6 && !ovE.busy ? "#fff" : C.textTer }}>{ovE.busy ? "Overujem…" : "Overiť"}</button>
+      </div>
+    </div>);
   if (brana?.krok === "nove") return <PotvrdNoveZariadenie onZrusit={() => setBrana(null)} onPotvrdene={() => { odKedy(); if (zariadenia().length > MAX_ZARIADENI) setBrana({ ...brana, krok: "limit" }); else { setBrana(null); void brana.dokonci(); } }} />;
   if (brana?.krok === "limit") return <LimitZariadeni onPokracovat={() => { if (zariadenia().length > MAX_ZARIADENI) return; setBrana(null); void brana.dokonci(); }} />;
 

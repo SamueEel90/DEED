@@ -3,6 +3,7 @@
 // vyberie pri pravidelnej podpore („podporím túto tému, nie konkrétnu zbierku").
 // Základ je z registrácie, správca ich tu upravuje. Mock: localStorage.
 // ============================================================
+import { aktivnaCharita } from "@/lib/aktivnaCharita";
 import { useSyncExternalStore } from "react";
 import { nacitajVerejne, verejneZPamate, zapisVerejne } from "@/lib/verejneNastavenia";
 import { segmentyZRegistracie } from "./registracia";
@@ -63,18 +64,18 @@ export function overIban(v: string): string | null {
 export const formatujIban = (v: string) => v.replace(/(.{4})/g, "$1 ").trim();
 
 // ---- verejné nastavenia stránky charity (0070b): vidí ich aj návštevník, localStorage = záloha ----
-const STRANKA = "svetlo"; // = STRANKA_POZICIE.charita (rola/stav) — bez importu, nech nie je cyklus
+// OPRAVY 403: stránka = aktívna charita (lib/aktivnaCharita, bez ďalších importov — žiadny cyklus)
 export function ulozSegmenty(v: SegmentOrg[]) {
   ulozSegmentyLokalne(v);
-  void zapisVerejne(STRANKA, "segmenty", v);
+  void zapisVerejne(aktivnaCharita(), "segmenty", v);
 }
 let zDb = false;
 /** raz stiahne verejnú verziu; keď v DB je, prepíše lokálnu */
 export function nacitajSegmentyZDb() {
   if (zDb) return;
   zDb = true;
-  void nacitajVerejne(STRANKA).then(() => {
-    const v = verejneZPamate(STRANKA)?.["segmenty"];
+  void nacitajVerejne(aktivnaCharita()).then(() => {
+    const v = verejneZPamate(aktivnaCharita())?.["segmenty"];
     if (Array.isArray(v)) ulozSegmentyLokalne(v as SegmentOrg[]);
   });
 }

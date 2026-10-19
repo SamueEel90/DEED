@@ -15,14 +15,13 @@ insert into public.naboz_stav (oblast, id, data) values ('farniksmie', 't99-far'
 create temp table t(c text, ok boolean);
 grant all on t to public;
 
--- A pridá čakajúci oznam (ako appka: celé pole) a verejné parte
+-- A pridá čakajúci oznam a verejné parte (0115: veriaci len cez odf_uloz)
 set role authenticated;
 select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-0000000099a1', false);
-insert into public.naboz_stav (oblast, id, data) values ('odfarnikov', 't99-far',
-  '[{"id":"p1","k":"oznam","t":"Tajny oznam","s":"tajny text","stav":"caka","autor":"7e57c100-0000-0000-0000-0000000099a1"},{"id":"p0","k":"parte","t":"Verejne parte","s":""}]')
-  on conflict (oblast, id) do update set data = excluded.data;
+select public.odf_uloz('t99-far', '{"id":"p0","k":"parte","t":"Verejne parte","s":""}');
+select public.odf_uloz('t99-far', '{"id":"p1","k":"oznam","t":"Tajny oznam","s":"tajny text","stav":"caka"}');
 -- obchádzka: oznam bez stavu (kategória Po schválení) → aj tak čaká
-update public.naboz_stav set data = data || '[{"id":"p2","k":"oznam","t":"Obchadzka","s":"bez stavu"}]'::jsonb where oblast = 'odfarnikov' and id = 't99-far';
+select public.odf_uloz('t99-far', '{"id":"p2","k":"oznam","t":"Obchadzka","s":"bez stavu"}');
 insert into t select 'A vidí svoje 2 čakajúce', (select count(*) = 2 from public.odfarnikov_caka where stranka = 't99-far');
 reset role;
 insert into t select 'verejné pole bez čakajúcich textov', (select data::text not like '%Tajny%' and data::text not like '%Obchadzka%' and data::text like '%Verejne parte%' from public.naboz_stav where oblast = 'odfarnikov' and id = 't99-far');
@@ -34,7 +33,7 @@ insert into t select 'farár dostal Čaká na vaše schválenie', (select count(
 set role authenticated;
 select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-0000000099c1', false);
 insert into t select 'X nevidí čakajúce', (select count(*) = 0 from public.odfarnikov_caka);
-update public.naboz_stav set data = data || '[{"id":"p1","k":"oznam","t":"Tajny oznam","s":"tajny text"}]'::jsonb where oblast = 'odfarnikov' and id = 't99-far';
+select public.odf_uloz('t99-far', '{"id":"p1","k":"oznam","t":"Tajny oznam","s":"tajny text"}');
 insert into t select 'X nezverejní cudzí čakajúci', (select data::text not like '%Tajny%' from public.naboz_stav where oblast = 'odfarnikov' and id = 't99-far');
 insert into t select 'X nezmaže cudzí čakajúci', not public.zmaz_cakajuci('t99-far', 'p2');
 do $$ begin
@@ -65,8 +64,7 @@ insert into t select 'p2 zamietnuty, nie verejne', (select stav = 'zamietnute' f
 -- A so starou kópiou (p1 ešte čaká) nič nepokazí; A zmaže zamietnutý p2
 set role authenticated;
 select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-0000000099a1', false);
-update public.naboz_stav set data = (select jsonb_agg(case when x->>'id' = 'p1' then x || '{"stav":"caka"}'::jsonb else x end) from jsonb_array_elements(data) x)
-  where oblast = 'odfarnikov' and id = 't99-far';
+do $$ begin perform public.odf_uloz('t99-far', '{"id":"p1","k":"oznam","t":"Tajny oznam","s":"tajny text","stav":"caka"}'); exception when others then null; end $$;
 insert into t select 'A vidí rozhodnutie p2', (select stav = 'zamietnute' from public.odfarnikov_caka where id = 'p2');
 insert into t select 'A zmaže svoj zamietnutý', public.zmaz_cakajuci('t99-far', 'p2');
 reset role;

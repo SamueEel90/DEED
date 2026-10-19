@@ -18,7 +18,6 @@ import { rovnakaFirma, nazovFirmy } from "@/lib/firma";
 import { nacitajStav, ulozStav } from "@/lib/zbierkaSprava";
 import { nacitajDoklad } from "@/lib/doklad";
 import { TESTOVACIA } from "@/lib/testovacia";
-import { useUkazky, ukazkyTeraz } from "@/lib/testStav";
 import { RichTextInput } from "@/components/richtext";
 import { cistyText } from "@/lib/richtext";
 import { predvyplnOznam } from "./NovyOznam";
@@ -72,8 +71,7 @@ function statistika(d: Dorovnanie) {
   const dniPocas = Math.max(1, Math.min(14, doDen - odDen + 1)), zacDen = doDen - dniPocas + 1;
   const pocas = Array.from({ length: dniPocas }, (_, i) => { const dd = zacDen + i; const zz = d.zaznamy.filter((z) => Math.floor(z.kedy / DEN) === dd); return { l: zz.reduce((a, z) => a + z.dar, 0), f: zz.reduce((a, z) => a + z.dorovnane, 0) }; });
   const realPred = Array.from({ length: 7 }, (_, i) => darcoviaPre(d.ciel).filter((r) => Math.floor(r.cas / DEN) === odDen - 7 + i).reduce((a, r) => a + r.suma, 0));
-  const avgP = ludia / Math.max(1, pocas.length);
-  const pred = realPred.some((v) => v > 0) || !ukazkyTeraz() ? realPred : [0.5, 0.65, 0.45, 0.6, 0.55, 0.7, 0.5].map((v) => avgP * v); // TESTOVACIE: bez dát pred
+  const pred = realPred; // OPRAVY 403 doplnok: bez ukážkového grafu
   const max = Math.max(1, ...pred, ...pocas.map((p) => p.l + p.f)), H = 90, k = H / max;
   const stl = [...pred.map((v) => ({ hf: 0, hl: Math.max(2, Math.round(v * k)), lc: "var(--gBd)", rl: "3px 3px 0 0" })), ...pocas.map((p) => ({ hf: Math.round(p.f * k), hl: Math.round(p.l * k), lc: "var(--green)", rl: p.f ? "0" : "3px 3px 0 0" }))];
   const priem = (a: number[]) => a.reduce((x, y) => x + y, 0) / Math.max(1, a.length);
@@ -87,7 +85,8 @@ export function SpravaDorovnania({ entita, hlavnyUcet, mobil, toast, onZbierky, 
   /** TESTOVACIE: id zbierok pre ukážkové dorovnania podľa prototypu */
   testCiele?: Parameters<typeof naplnTestovacieDorovnania>[1];
 }) {
-  const ukazky = useUkazky(); // Profil: Prázdny = bez ukážkových dorovnaní (dv-t-…), len skutočné
+  // OPRAVY 403 doplnok: ukážkové dorovnania (dv-t-…) zmazané — nové prepojenia vzniknú pri testovaní
+  const ukazky = false;
   useEffect(() => { if (ukazky && testCiele) void naplnTestovacieDorovnania(entita, testCiele); }, [entita, ukazky]); // eslint-disable-line react-hooks/exhaustive-deps
   const L = useDorovnania(entita).filter((d) => ukazky || !TESTOVACIA || !d.id.startsWith("dv-t-"));
   const [sel, setSel] = useState<string | null>(null);

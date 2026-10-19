@@ -135,6 +135,7 @@ export const profil: Slovnik = {
   "stranky.typ.tvorca": "Creator",
   "stranky.typ.farnost": "Parish",
   "stranky.rola.farar": "parish priest",
+  "stranky.rola.pomocnik": "helper",
   "stranky.info.oznamyFarnikov": { one: "{n} notice from parishioners", other: "{n} notices from parishioners" },
   "stranky.rola.spravca": "admin",
   "stranky.rola.majitel": "owner",

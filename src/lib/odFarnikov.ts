@@ -1,12 +1,13 @@
 // ============================================================
 // KARTA 56I — veriaci pridáva sám (zelené + Pridať na verejnej stránke farnosti).
-// Nastavenie farára: „Veriaci môžu pridávať oznamy" + poplatok = selfadd (viera/UserOznamy),
+// Nastavenie farára (OPRAVY 381: starý vypínač „Veriaci môžu pridávať oznamy“ zmazaný):
 // „Čo smú veriaci pridať sami" = 8 prepínačov (predvolene všetky zapnuté) = oblasť farniksmie.
 // Pridané položky = oblasť odfarnikov (KV stav farnosti, zrkadlo naboz_stav). Zverejní sa hneď, farár môže zmazať.
 // ============================================================
 import { useEffect, useSyncExternalStore } from "react";
-import { nacitajStav, ulozStav, ulozStavIsto, obnovOblast } from "@/features/viera/stav";
+import { nacitajStav, ulozStav, ulozStavIsto, ulozStavLokalne, obnovOblast } from "@/features/viera/stav";
 import { zaregistrujKluc, zmenene } from "./mojeData";
+import { ukazChybuPriTuku } from "./chybaPriTuku";
 import { supabase } from "./supabase";
 
 export type DruhFarnika = "parte" | "svadba" | "ine" | "oznam" | "udalost" | "umysel" | "fotky" | "modlitba";
@@ -95,7 +96,11 @@ export function prepniVPolozke(id: string, pid: string, pole: PoleReakcie, kto: 
   const ma = (x[pole] ?? []).includes(kto);
   if (ma && len === "pridat") return;
   const chce = !ma; // OPRAVY 178: želaný stav, nie prepínač — na čerstvom zozname sa nastaví rovnako
-  zmenZoznam(id, (l) => l.map((y) => {
+  // OPRAVY 372: na serveri len cez odf_reaguj / odf_nahlas (kľúč účtu dosadí server)
+  const naServer = pole === "nahlasili" ? (supabase ? () => supabase!.rpc("odf_nahlas", { p_stranka: id, p_id: pid }) : null)
+    : supabase ? () => supabase!.rpc("odf_reaguj", { p_stranka: id, p_id: pid, p_pole: pole, p_chce: chce, p_meno: meno ?? null }) : null;
+  // OPRAVY 382: keď server odmietne, pri tlačidle „Nepodarilo sa · Skúsiť znova“
+  (naServer ? (f: (l: PolozkaFarnika[]) => PolozkaFarnika[]) => { void cezServer(id, f, naServer).then((e) => { if (e) ukazChybuPriTuku(() => prepniVPolozke(id, pid, pole, kto, len, meno)); }); } : (f: (l: PolozkaFarnika[]) => PolozkaFarnika[]) => zmenZoznam(id, f))((l) => l.map((y) => {
     if (y.id !== pid) return y;
     const z = (y[pole] ?? []).filter((k) => k !== kto);
     return { ...y, [pole]: chce ? [...z, kto] : z, ...(meno && chce ? { mena: { ...y.mena, [kto]: meno } } : {}) };
@@ -104,11 +109,13 @@ export function prepniVPolozke(id: string, pid: string, pole: PoleReakcie, kto: 
 
 /** OPRAVY 339: nahlásiť príspevok (raz za účet), dôvod je nepovinný */
 export function nahlasOdFarnika(id: string, pid: string, kto: string, dovod?: string) {
-  zmenZoznam(id, (l) => l.map((y) => {
+  const f = (l: PolozkaFarnika[]) => l.map((y) => {
     if (y.id !== pid || (y.nahlasili ?? []).includes(kto)) return y;
     const d = dovod?.trim().slice(0, 200);
     return { ...y, nahlasili: [...(y.nahlasili ?? []), kto], nahlInfo: [...(y.nahlInfo ?? []), { cas: Date.now(), ...(d ? { dovod: d } : {}) }] };
-  }));
+  });
+  if (supabase) { void cezServer(id, f, () => supabase!.rpc("odf_nahlas", { p_stranka: id, p_id: pid, p_dovod: dovod?.trim().slice(0, 200) || null })).then((e) => { if (e) ukazChybuPriTuku(() => nahlasOdFarnika(id, pid, kto, dovod)); }); return; }
+  zmenZoznam(id, f);
 }
 /** OPRAVY 339: farár — V poriadku · ponechať: štítok NAHLÁSENÉ zmizne, nahlasovatelia dostanú správu (0105) */
 export function ponechajOdFarnika(id: string, pid: string) {
@@ -127,11 +134,21 @@ const klucCaka = (id: string) => `deed.odfcaka.${id}`;
 const cakaLok = (id: string): PolozkaFarnika[] => { try { return JSON.parse(localStorage.getItem(klucCaka(id)) || "[]") as PolozkaFarnika[]; } catch { return []; } };
 const ulozCakaLok = (id: string, l: PolozkaFarnika[]) => { try { localStorage.setItem(klucCaka(id), JSON.stringify(l)); } catch { /* LS */ } };
 const maStav = (x: PolozkaFarnika) => x.stav === "caka" || x.stav === "zamietnute";
-/** stiahne moje čakajúce (autor) alebo všetky čakajúce stránky (farár); server pustí len tieto */
+// ---- OPRAVY 373 (0116): úmysly na omšu nie sú vo verejnom poli — číta ich len autor a farár (odfarnikov_umysly).
+const klucUm = (id: string) => `deed.odfumysly.${id}`;
+const umLok = (id: string): PolozkaFarnika[] => { try { return JSON.parse(localStorage.getItem(klucUm(id)) || "[]") as PolozkaFarnika[]; } catch { return []; } };
+const ulozUmLok = (id: string, l: PolozkaFarnika[]) => { try { localStorage.setItem(klucUm(id), JSON.stringify(l)); } catch { /* LS */ } };
+async function obnovUmysly(id: string): Promise<boolean> {
+  const { data, error } = await supabase!.from("odfarnikov_umysly").select("id,data").eq("stranka", id);
+  if (error || !data) return false;
+  ulozUmLok(id, (data as { id: string; data: PolozkaFarnika }[]).map((r) => ({ ...r.data, id: r.id, k: "umysel" as const })));
+  return true;
+}
+/** stiahne moje čakajúce (autor) alebo všetky čakajúce stránky (farár); server pustí len tieto · OPRAVY 373: aj úmysly */
 export async function obnovCakajuce(id: string): Promise<boolean> {
   if (!supabase) return false;
-  const { data, error } = await supabase.from("odfarnikov_caka").select("id,data,stav,rozhodnute").eq("stranka", id);
-  if (error || !data) return false;
+  const [{ data, error }, um] = await Promise.all([supabase.from("odfarnikov_caka").select("id,data,stav,rozhodnute").eq("stranka", id), obnovUmysly(id).catch(() => false)]);
+  if (error || !data) return um;
   ulozCakaLok(id, (data as { id: string; data: PolozkaFarnika; stav: string; rozhodnute: string | null }[])
     .filter((r) => r.stav === "caka" || r.stav === "zamietnute")
     .map((r) => ({ ...r.data, id: r.id, stav: r.stav as "caka" | "zamietnute", ...(r.rozhodnute ? { rozhodnute: Date.parse(r.rozhodnute) } : {}) })));
@@ -141,7 +158,7 @@ export const odFarnikov = (id: string): PolozkaFarnika[] => {
   const pub = nacitajStav<PolozkaFarnika[]>("odfarnikov", id, []);
   if (!supabase) return pub;
   const ids = new Set(pub.map((x) => x.id));
-  return [...cakaLok(id).filter((x) => !ids.has(x.id)), ...pub];
+  return [...cakaLok(id).filter((x) => !ids.has(x.id)), ...umLok(id).filter((x) => !ids.has(x.id)), ...pub];
 };
 /** OPRAVY 178: každá zmena zoznamu hneď lokálne a potom znova na čerstvom stave z DB (iní ľudia medzitým mohli pridať alebo reagovať) */
 function zmenZoznam(id: string, f: (l: PolozkaFarnika[]) => PolozkaFarnika[]) {
@@ -149,15 +166,38 @@ function zmenZoznam(id: string, f: (l: PolozkaFarnika[]) => PolozkaFarnika[]) {
   void obnovOblast("odfarnikov", id).then((ok) => { if (ok) { zapisLok(id, f(odFarnikov(id))); zmena(); void obnovCakajuce(id).then((o) => { if (o) zmena(); }, () => undefined); } }, () => undefined);
 }
 /** OPRAVY 330: zápis poľa — s DB server čakajúce z poľa vyberie (0099), lokálne ostanú v kópii čakajúcich */
-function zapisLok(id: string, l: PolozkaFarnika[]) {
-  if (supabase) { const ids = new Set(l.map((x) => x.id)); ulozCakaLok(id, [...l.filter(maStav), ...cakaLok(id).filter((x) => !ids.has(x.id))].filter((x, i, a) => a.findIndex((y) => y.id === x.id) === i)); }
-  ulozStav("odfarnikov", id, l);
+function zapisLok(id: string, l: PolozkaFarnika[], bezServera = false) {
+  if (supabase) {
+    const ids = new Set(l.map((x) => x.id));
+    ulozCakaLok(id, [...l.filter(maStav), ...cakaLok(id).filter((x) => !ids.has(x.id))].filter((x, i, a) => a.findIndex((y) => y.id === x.id) === i));
+    ulozUmLok(id, l.filter((x) => x.k === "umysel" && !maStav(x))); // OPRAVY 373: server ich z poľa vyberie (0116)
+  }
+  if (bezServera) ulozStavLokalne("odfarnikov", id, l); else ulozStav("odfarnikov", id, l);
+}
+/** OPRAVY 372: zmena veriaceho — hneď v zariadení, na serveri ju urobí serverová funkcia; potom čerstvý stav zo servera */
+type Odpoved = PromiseLike<{ error: { message: string } | null }>;
+function cezServer(id: string, f: (l: PolozkaFarnika[]) => PolozkaFarnika[], volanie: () => Odpoved): Promise<string | null> {
+  zapisLok(id, f(odFarnikov(id)), true); zmena();
+  return Promise.resolve(volanie()).then(async ({ error }) => {
+    await obnovOblast("odfarnikov", id).catch(() => false); await obnovCakajuce(id).catch(() => false); zmena();
+    return error ? chybaOdf(error.message) : null;
+  }, async () => { await obnovOblast("odfarnikov", id).catch(() => false); zmena(); return "Nie je spojenie so serverom. Skúste znova."; });
+}
+/** chyba serverovej funkcie → veta pre človeka */
+export function chybaOdf(m: string): string {
+  if (/neprihlaseny/.test(m)) return "Prihláste sa a skúste znova.";
+  if (/zakazane/.test(m)) return "Farnosť tento druh príspevku teraz nepovoľuje.";
+  if (/cudzi_prispevok/.test(m)) return "Tento príspevok nie je váš.";
+  if (/plne/.test(m)) return "Kapacita je už plná.";
+  return "Nepodarilo sa uložiť na server. Skúste znova.";
 }
 /** OPRAVY 273: pridanie / úprava, na ktoré sa čaká — hláška „Zverejnené“ až po naozajstnom uložení. Vráti chybu alebo null. */
 export async function zapisOdFarnikaIsto(id: string, p: PolozkaFarnika, uprava = false): Promise<string | null> {
   await obnovOblast("odfarnikov", id).catch(() => false); // čerstvý zoznam (iní medzitým mohli pridať)
   const l = odFarnikov(id);
   const nove = uprava ? l.map((x) => (x.id === p.id ? { ...x, ...p } : x)) : [p, ...l.filter((x) => x.id !== p.id)];
+  // OPRAVY 372: veriaci zapisuje len cez odf_uloz (autor = jeho účet, serverové polia nemení)
+  if (supabase) return cezServer(id, () => nove, () => supabase!.rpc("odf_uloz", { p_stranka: id, p_polozka: uprava ? { ...l.find((x) => x.id === p.id), ...p } : p }));
   if (supabase) ulozCakaLok(id, [...nove.filter(maStav), ...cakaLok(id).filter((x) => !nove.some((y) => y.id === x.id))]); // OPRAVY 330
   const e = await ulozStavIsto("odfarnikov", id, nove);
   zmena();
@@ -170,8 +210,18 @@ export function zmazOdFarnika(id: string, pid: string) { zmazOdFarnikov(id, [pid
 export function zmazOdFarnikov(id: string, pids: string[]) {
   const z = new Set(pids);
   if (supabase) {
+    const um = umLok(id).filter((x) => z.has(x.id)); // OPRAVY 373: úmysel zmaže server (autor svoj, správca hocijaký)
+    if (um.length) { ulozUmLok(id, umLok(id).filter((x) => !z.has(x.id))); um.forEach((x) => { void supabase!.rpc("umysel_zmaz", { p_stranka: id, p_id: x.id }).then(() => undefined, () => undefined); }); }
     const caka = cakaLok(id).filter((x) => z.has(x.id));
     if (caka.length) { ulozCakaLok(id, cakaLok(id).filter((x) => !z.has(x.id))); caka.forEach((x) => { void supabase!.rpc("zmaz_cakajuci", { p_stranka: id, p_id: x.id }).then(() => undefined, () => undefined); }); }
+  }
+  if (supabase) { // OPRAVY 372: verejné príspevky zmaže server (autor svoj, správca hocijaký)
+    const ids = pids.filter((p) => nacitajStav<PolozkaFarnika[]>("odfarnikov", id, []).some((x) => x.id === p));
+    void cezServer(id, (l) => l.filter((x) => !z.has(x.id)), async () => {
+      for (const p of ids) { const r = await supabase!.rpc("odf_zmaz", { p_stranka: id, p_id: p }); if (r.error) return r; }
+      return { error: null };
+    });
+    return;
   }
   zmenZoznam(id, (l) => l.filter((x) => !z.has(x.id)));
 }
@@ -189,6 +239,14 @@ export function rozhodniOdFarnikov(id: string, pids: string[], zverejnit: boolea
     return;
   }
   zmenZoznam(id, (l) => l.map((x) => (z.has(x.id) ? { ...x, stav: zverejnit ? undefined : "zamietnute", rozhodnute: t } : x)));
+}
+/** OPRAVY 375 (0117): správa farára k úmyslu — uloží sa a autorovi príde do zvončeka. Vráti chybu alebo null. */
+export async function posliSpravuUmyslu(id: string, pid: string, text: string): Promise<string | null> {
+  if (!supabase) { upravOdFarnika(id, pid, { sprava: { text, cas: Date.now() } }); return null; }
+  const { error } = await supabase.rpc("umysel_sprava", { p_stranka: id, p_id: pid, p_text: text });
+  if (error) return /nie_spravca/.test(error.message) ? "Túto stránku nespravujete." : "Správa sa neposlala. Skúste znova.";
+  await obnovCakajuce(id).catch(() => false); zmena();
+  return null;
 }
 /** KARTA 57 D.2: oprava farára (nadpis, text) */
 export function upravOdFarnika(id: string, pid: string, patch: Partial<PolozkaFarnika>) { zmenZoznam(id, (l) => l.map((x) => (x.id === pid ? { ...x, ...patch } : x))); }

@@ -20,20 +20,21 @@ const riadkove: CSSProperties = { whiteSpace: "nowrap", minWidth: 0, height: 50,
 const male: CSSProperties = { height: 44, borderRadius: 14, background: "transparent", border: "1px solid var(--cardBd)", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontSize: 14, fontWeight: 700, color: "var(--ink2)", cursor: "pointer", fontFamily: "inherit" };
 
 // ---------------- Zdieľať · QR + Páči sa mi ----------------
-export function ZdielatRiadok({ onZdielat, paciSa = 0, onPodporitDeed, sam, darujete }: { onZdielat: () => void; paciSa?: number; /** KARTA 57C §4: na mieste Páči sa mi je Podporiť DEED */ onPodporitDeed?: () => void;
+export function ZdielatRiadok({ onZdielat, paciSa = 0, onPodporitDeed, sam, darujete, host }: { onZdielat: () => void; paciSa?: number; /** KARTA 57C §4: na mieste Páči sa mi je Podporiť DEED */ onPodporitDeed?: () => void;
   /** OPRAVY 209: pohrebná zbierka — len Zdieľať · QR na celú šírku */ sam?: boolean;
-  /** OPRAVY 304: registrovaný — vedľa Zdieľať · QR „Darujete ako: … ⌄“ (každé polovica šírky) */ darujete?: boolean }) {
+  /** OPRAVY 304: registrovaný — vedľa Zdieľať · QR „Darujete ako: … ⌄“ (každé polovica šírky) */ darujete?: boolean;
+  /** OPRAVY 385: hosť — „Darujete ako: Bohu známy veriaci ⌄“ (bez mena, menom až po registrácii) */ host?: boolean }) {
   const [paci, setPaci] = useState(false);
   const pocet = paciSa + (paci ? 1 : 0);
   // Martin 16. 10.: vo Viere nie je Páči sa mi vôbec (neregistrovaný má Zdieľať · QR na celú šírku)
   const viera = jeViera(useSektorDarcu());
-  if (viera && !darujete && !onPodporitDeed) sam = true;
+  if (viera && !darujete && !host && !onPodporitDeed) sam = true;
   return (
-    <div style={{ display: "grid", gridTemplateColumns: sam && !darujete ? "1fr" : "minmax(0,1fr) minmax(0,1fr)", gap: 10, marginTop: 2 }}>
+    <div style={{ display: "grid", gridTemplateColumns: sam && !darujete && !host ? "1fr" : "minmax(0,1fr) minmax(0,1fr)", gap: 10, marginTop: 2 }}>
       <button type="button" className="zb-karta" onClick={onZdielat} style={riadkove}>
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" /></svg>Zdieľať · QR
       </button>
-      {darujete ? <DarujeteAko styl={riadkove} /> : sam ? null : onPodporitDeed ? <button type="button" className="zb-karta" onClick={onPodporitDeed} style={{ ...riadkove, color: "var(--green)" }}>
+      {darujete || host ? <DarujeteAko styl={riadkove} host={host} /> : sam ? null : onPodporitDeed ? <button type="button" className="zb-karta" onClick={onPodporitDeed} style={{ ...riadkove, color: "var(--green)" }}>
         <span style={{ width: 18, height: 18, borderRadius: 5, background: "var(--green)", color: "#fff", fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>D</span>
         <span>Podporiť <DeedZnacka /></span>
       </button> : <>

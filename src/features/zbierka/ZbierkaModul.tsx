@@ -82,7 +82,6 @@ const DEV_ZAKLAD: DevStav = { miesto: "charita", maCiel: true, dorovnanie: false
 /** DEV ukážka: overovateľ + druhá charita (split dar) — kým ich nedodá server */
 const DEV_DALSIE_ORG: OrgPole[] = [
   { meno: "Mesto Trenčín", typ: "overovatel", mesto: "Trenčín", veta: "Zbierku sme overili na mieste.", cisla: [], stit: "Gold" },
-  { meno: "Svetlo pomoci o.z.", typ: "charita", mesto: "Trenčín · Juh", veta: "Pomáhame rodinám v núdzi v Trenčianskom kraji.", cisla: [["12 400 €", "vyzbierané"], ["38", "skutkov"]], stit: "Silver" },
 ];
 function nacitajDev(): DevStav {
   try { const s = localStorage.getItem(KLUC_DEV); return s ? { ...DEV_ZAKLAD, ...JSON.parse(s) } : DEV_ZAKLAD; } catch { return DEV_ZAKLAD; }
@@ -217,7 +216,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
     if (p.kluc === "vlastnaEur") return null; // vykreslená spolu s rýchlymi sumami
     const obal = (el: React.ReactNode) => <div key={p.kluc} className="zb-pol" style={{ padding: "0 16px" }}>{el}</div>;
     // OPRAVY 209: pri pohrebe len Zdieľať · QR na celú šírku (Podporiť DEED+ je vedľa Vlastnej sumy)
-    if (p.kluc === "zdielat") return obal(<ZdielatRiadok onZdielat={() => setHarok("zdielat")} sam={p.hodnota === "podporitDeed"} darujete={registrovany} />);
+    if (p.kluc === "zdielat") return obal(<ZdielatRiadok onZdielat={() => setHarok("zdielat")} sam={p.hodnota === "podporitDeed"} darujete={registrovany} host={!registrovany} />);
     if (p.kluc === "dorovnanie" && dorovnanie) return obal(<>
       <KartaDorovnava d={dorovnanie} />
       {dorovnanieKDaru(dorovnanie, 20) > 0 && <div style={{ margin: "-4px 0 12px", textAlign: "center", fontSize: 13.5, fontWeight: 700, color: "var(--gold)", fontVariantNumeric: "tabular-nums" }}>

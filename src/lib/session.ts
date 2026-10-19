@@ -42,15 +42,21 @@ export function clearSession() {
 }
 
 // React hook — re-renderuje pri prihlásení/odhlásení (aj naprieč tabmi)
+// OPRAVY 370: iná karta s appkou zapisuje do localStorage stále (príspevky, videné, zvonček …) — každý zápis
+// prekreslil celú appku v tejto karte (aj Nástenku), na PC s viacerými kartami sa rolovanie zasekávalo.
+// Teraz len zmena session a len keď sa naozaj zmenila.
+const surova = () => { try { return localStorage.getItem(KEY); } catch { return null; } };
 export function useSession(): Session {
   const [s, setS] = useState<Session>(getSession);
   useEffect(() => {
-    const l = () => setS(getSession());
+    let posledna = surova();
+    const l = () => { const r = surova(); if (r === posledna) return; posledna = r; setS(getSession()); };
+    const naStorage = (e: StorageEvent) => { if (e.key === KEY || e.key === null) l(); };
     listeners.add(l);
-    window.addEventListener("storage", l);
+    window.addEventListener("storage", naStorage);
     return () => {
       listeners.delete(l);
-      window.removeEventListener("storage", l);
+      window.removeEventListener("storage", naStorage);
     };
   }, []);
   return s;
