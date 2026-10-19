@@ -43,11 +43,11 @@ function UdajePonuky({ o }: { o: Oznam }) {
   const p = o.ponuka;
   if (!p) return null;
   const udaje = [
-    p.miesto && { i: "📍", t: p.miesto },
-    p.uvazok && { i: "⏱", t: p.uvazok },
-    p.nastup && { i: "📅", t: `nástup ${p.nastup}` },
-    p.mzda && { i: "💶", t: p.mzda },
-  ].filter(Boolean) as { i: string; t: string }[];
+    p.miesto && { i: "Miesto", t: p.miesto },
+    p.uvazok && { i: "Úväzok", t: p.uvazok },
+    p.nastup && { i: "Nástup", t: p.nastup },
+    p.mzda && { i: "Mzda", t: p.mzda },
+  ].filter(Boolean) as { i: string; t: string }[]; // OPRAVY 408: bez emoji
   const dni = p.uzavierka ? Math.ceil((p.uzavierka + DEN - teraz) / DEN) : null;
   if (!udaje.length && !p.uzavierka) return null;
   return (
@@ -56,7 +56,7 @@ function UdajePonuky({ o }: { o: Oznam }) {
         <div style={{ display: "flex", flexWrap: "wrap", gap: SPACE.xxs }}>
           {udaje.map((u, i) => (
             <span key={i} style={{ fontSize: 11.5, fontWeight: 700, color: C.textSec, background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.pill, padding: `2px ${SPACE.xs}px` }}>
-              {u.i} {u.t}
+              {u.i}: {u.t}
             </span>
           ))}
         </div>
@@ -78,7 +78,7 @@ function PrilohaPonuky({ o }: { o: Oznam }) {
   return (
     <a href={url ?? undefined} target="_blank" rel="noopener noreferrer" download={o.ponuka.prilohaNazov}
       style={{ display: "inline-flex", alignItems: "center", gap: SPACE.xxs, marginTop: SPACE.xs, fontSize: 12.5, fontWeight: 700, color: "var(--a-info)", textDecoration: "none" }}>
-      📄 {o.ponuka.prilohaNazov || "Podrobnosti (PDF)"}
+      {o.ponuka.prilohaNazov || "Podrobnosti (PDF)"}
     </a>
   );
 }
@@ -111,7 +111,6 @@ export function InzeratKarta({ o, autor, logo, deti }: { o: Oznam; autor: string
     {/* ponuka je platená a má sa odlíšiť od oznamu — zlatý rám a pás navrchu */}
     <div style={{ background: C.surface, border: `1px solid ${tint(ZLATA, .45)}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, background: tint(ZLATA, .14), padding: `${SPACE.xxs}px ${SPACE.sm}px` }}>
-        <span style={{ fontSize: 13 }}>💼</span>
         <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".05em", color: ZLATA }}>PRACOVNÁ PONUKA</span>
       </div>
       {fotky[0] && (
@@ -256,7 +255,7 @@ function Formular({ entita, autor, logo, uprava, toast, onHotovo, onSpat }: {
         <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, margin: `${SPACE.sm}px 0 4px` }}>Dokument výberového konania <span style={{ fontWeight: 400, color: C.textTer }}>— PDF, ak ho už máte</span></div>
         {p.priloha ? (
           <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, fontSize: 12.5 }}>
-            <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📄 {p.prilohaNazov}</span>
+            <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.prilohaNazov}</span>
             <span {...pressable(() => { void zmazPrilohu(p.priloha); setP({ ...p, priloha: undefined, prilohaNazov: undefined }); }, "Odstrániť prílohu")}
               style={{ fontSize: 11.5, fontWeight: 700, color: C.textTer, cursor: "pointer" }}>Odstrániť</span>
           </div>
@@ -386,7 +385,7 @@ export function InzeratySheet({ entita, autor, logo, tier, toast, onPaywall, onC
 
   return (
     <Sheet onClose={onClose} label="Pracovné ponuky">
-      <div style={{ fontSize: 16, fontWeight: 800 }}>📌 Pracovné ponuky</div>
+      <div style={{ fontSize: 16, fontWeight: 800 }}>Pracovné ponuky</div>
       <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2, lineHeight: 1.45, marginBottom: SPACE.sm }}>
         Hľadáte brigádnika, zamestnanca alebo pomoc? Dajte to na profil. Kto má záujem, klikne — a vy uvidíte jeho meno a kontakt. Žiadne dopisovanie.
       </div>

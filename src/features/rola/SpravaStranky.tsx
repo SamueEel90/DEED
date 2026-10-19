@@ -31,6 +31,7 @@ import { SUBJEKTY } from "./mock";
 import { upravZbierku, useZmenyZbierok, zbierkyStrankyZPamate, nacitajZbierkyStranky, konceptZbierkyZPamate, nacitajKonceptZbierky, cielCislo, jeIne, UCELY, KROKY_ZBIERKY, type SpustenaZbierka, type NovaZbierkaData } from "@/lib/novaZbierka";
 import { UpravitProfilCharity, VerejnyProfilOkno, zakladnyProfil } from "./UpravitProfilCharity";
 import { VerejnyProfilVSprave } from "@/features/verejny-profil/VerejnyProfil";
+import { PonukyPrace } from "./PonukyPrace";
 import { najdiTestProfil } from "@/lib/testProfily";
 import { nacitajProfil, profilZPamate, uplnostProfilu, type ProfilStranky } from "@/lib/profilStranky";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -428,6 +429,8 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   else if (sub === "sledujuci" && typ === "charita") obsah = <SledujuciCharity strankaId={strankaId} mobil={!desktop} />;
   // OPRAVY 420: charita · Obsah → Iskry = zoznam Iskier + Pridať Iskru
   else if (sub === "video" && typ === "charita") obsah = maPovolenie("video", tier) ? <IskryCharity strankaId={strankaId} nazov={nazov} mobil={!desktop} /> : <Zamknute program={odProgramu("video")} />;
+  // OPRAVY 408: charita · Pracovné ponuky (od P1) — engine Inzeraty, vzhľad Brigády
+  else if (sub === "inzeraty" && typ === "charita") obsah = maPovolenie("inzeraty", tier) ? <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 900 }}><PonukyPrace strankaId={strankaId} tier={tier} mobil={!desktop} /></div> : <Zamknute program={odProgramu("inzeraty")} />;
   // OPRAVY 406: charita · Dobrovoľníctvo = Brigády z Viery (od P2)
   else if (sub === "dobrovolnici" && typ === "charita") obsah = maPovolenie("dobrovolnici", tier) ? <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 900 }}><BrigadyFarnosti strankaId={strankaId} mobil={!desktop} charita /></div> : <Zamknute program={odProgramu("dobrovolnici")} />;
   else if (sub === "centralna" && typPovoli("centralna", typ) && maPovolenie("centralna", tier)) obsah = <SpravaCentralnej strankaId={strankaId} nazov={nazov} hlavnyUcet={nacitajIbanOrg(poz)} tier={tier} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onDorovnanie={() => otvor("dorovnanie")} onDarcovia={() => otvor("darcovia")} />;

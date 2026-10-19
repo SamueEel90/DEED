@@ -16,7 +16,9 @@ import type { StitLevel } from "@/components/stit";
 import { createPortal } from "react-dom";
 import { useLayout } from "@/components/context";
 import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
-import { najdiTestProfil, prazdnaCharita, type TestProfil, type TestZbierka, type TestSkutok, type TestOznam } from "@/lib/testProfily";
+import { najdiTestProfil, prazdnaCharita, type TestProfil, type TestZbierka, type TestSkutok, type TestOznam, type TestPraca } from "@/lib/testProfily";
+import { verejneOznamy, useZmenyOznamov, type Oznam } from "@/lib/oznamy";
+import { pracaZPonuky } from "@/features/rola/PonukyPrace";
 import { centralnaZPamate, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
 import { cistyText } from "@/lib/richtext";
 import { otvorVerejnyProfil, useVerejnyProfilOtvoreny, verejnyProfilKluc, zavriVerejnyProfil, vrstvaProfiluPripoj, nahladZoSpravy, cielOznamu, zrusDoOznamu } from "./otvor";
@@ -85,6 +87,11 @@ function skutokProfilu(s: MojSkutok, p: TestProfil): TestSkutok {
   return { id: s.id, nazov: s.nazov, popis: cistyText(s.popis), mesto: p.mesto, kedy: `${d.getDate()}. ${d.getMonth() + 1}.`, foto: s.fotky[0] ?? "",
     dobrovolnici: s.ucastnici?.length || undefined, d: `${d.getDate()}.`, m: MES[d.getMonth()], rok: d.getFullYear() };
 }
+/** OPRAVY 408: pracovná ponuka zo Správy → plagát Hľadáme ľudí */
+function pracaProfilu(o: Oznam, p: TestProfil): TestPraca {
+  const j = pracaZPonuky(o), d = new Date(o.ponuka?.uzavierka ?? o.vytvorene);
+  return { ...j, druh: "zamestnanec", text: j.opis ?? "", mesto: p.mesto, den: `${d.getDate()}.`, mesiac: MES[d.getMonth()], pod: j.pod ?? "" };
+}
 function oznamProfilu(o: OznamCharity, p: TestProfil): TestOznam {
   const d = new Date(o.datum ? `${o.datum}T12:00:00` : o.zverejnene);
   const druh: TestOznam["druh"] = o.druh === "vyzva" ? "vyzva" : o.druh === "verejny" ? "akcia" : "oznam";
@@ -103,8 +110,9 @@ function sUdajmiCharity(p: TestProfil, prof: ProfilStranky | null): TestProfil {
   // OPRAVY 418: skutky a oznamy zo Správy (server; bez neho zo správy na tomto zariadení)
   const sk = (skutkyStrankyZPamate(p.k) ?? skutkyOrg(p.k).filter((x) => !x.stiahnuty)).map((s) => skutokProfilu(s, p));
   const oz = oznamyStranky(p.k).filter((o) => oznamBezi(o)).map((o) => oznamProfilu(o, p));
+  const praca = verejneOznamy(`stranka:${p.k}`, "inzerat").map((o) => pracaProfilu(o, p)); // OPRAVY 408
   // OPRAVY 418: O nás · hlavný text z Upraviť profil = veta v hlavičke profilu (všetky 3 vzhľady)
-  return { ...p, veta: cistyText(prof?.onas ?? "").trim() || p.veta, zbierky, skutky: sk, oznamy: oz, iniciala: ini, logo: prof?.logo || undefined, titulka: prof?.cover?.src || p.titulka, centralna, bezCentralnej: !c?.spustena };
+  return { ...p, veta: cistyText(prof?.onas ?? "").trim() || p.veta, zbierky, skutky: sk, oznamy: oz, praca, iniciala: ini, logo: prof?.logo || undefined, titulka: prof?.cover?.src || p.titulka, centralna, bezCentralnej: !c?.spustena };
 }
 
 function VerejnyProfilObsah({ kluc, onBack, profilNahlad }: { kluc: string; onBack: () => void; profilNahlad?: ProfilStranky }) {
@@ -149,7 +157,7 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad }: { kluc: string; onBa
   useZmenyCentralnej();
   useEffect(() => { if (typP === "farnost" && profil0) void nacitajCentralnuZbierku(profil0.k); }, [typP, profil0]);
   // OPRAVY 414: uložený profil a zbierky skutočnej charity
-  useZmenyZbierok(); useZmenyDarov(); useZmenySkutkovStranky(); useZmenySkutkov(); useZmenyOznamovCharity();
+  useZmenyZbierok(); useZmenyDarov(); useZmenySkutkovStranky(); useZmenySkutkov(); useZmenyOznamovCharity(); useZmenyOznamov();
   const kCh = profil0?.bezCentralnej ? profil0.k : null;
   const [profCh, setProfCh] = useState<ProfilStranky | null>(() => (kCh ? profilZPamate(kCh).ulozeny : null));
   useEffect(() => { if (!kCh) return; let ziva = true; void nacitajProfil(kCh).then((z) => { if (ziva) setProfCh(z.ulozeny); }); void nacitajZbierkyStranky(kCh); void nacitajCentralnuZbierku(kCh); void nacitajSkutkyStranky(kCh); void nacitajOznamyStranky(kCh); nacitajPrud(); return () => { ziva = false; }; }, [kCh]);
