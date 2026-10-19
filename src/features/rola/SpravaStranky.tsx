@@ -19,7 +19,7 @@ import { SpravaZbierky, type ZbierkaNaSpravu } from "./SpravaZbierky";
 import { SpravaCentralnej } from "./SpravaCentralnej";
 import { SpravaDorovnania } from "./SpravaDorovnania";
 import { SkutkyCharity } from "./SkutkyCharity";
-import { OznamySprava } from "./NovyOznam";
+import { OznamySprava, AkcieCharity } from "./NovyOznam";
 import type { DruhOznamu } from "@/lib/oznamyNove";
 import { centralnaZPamate, useZmenyCentralnej, prazdnaCentralna } from "@/lib/centralnaZbierka";
 import { useSektory, cislaSektora, nastavVyberCentralnej, CENTRALNA_CISLA, NULA, SEKTORY_OD_TIERU } from "@/lib/sektoryCharity";
@@ -355,7 +355,8 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   const [verejnyTest, setVerejnyTest] = useState(false); // OPRAVY 154: testovací profil (Kronika/Výklad/Pirát) v okne nad Správou
   // KARTA 42: Zadarmo → z hárku Pridať sa Oznamy otvoria rovno na výzve na súrnu pomoc
   const [oznamStart, setOznamStart] = useState<DruhOznamu | undefined>(undefined);
-  const otvor = (s: Sub, oznamDruh?: DruhOznamu) => { zastavDiktovanie(); setOznamStart(oznamDruh); if (s === "x:Verejný profil") { if (najdiTestProfil(strankaId) || /^ch-/.test(strankaId) || typ === "charita") setVerejnyTest(true); else setVerejny(true); return; } // OPRAVY 414 (2): charita vždy vo vzhľade z Nastavení
+  const [oznamUprav, setOznamUprav] = useState<string | undefined>(undefined); // OPRAVY 407
+  const otvor = (s: Sub, oznamDruh?: DruhOznamu, upravId?: string) => { zastavDiktovanie(); setOznamStart(oznamDruh); setOznamUprav(upravId); if (s === "x:Verejný profil") { if (najdiTestProfil(strankaId) || /^ch-/.test(strankaId) || typ === "charita") setVerejnyTest(true); else setVerejny(true); return; } // OPRAVY 414 (2): charita vždy vo vzhľade z Nastavení
     // KARTA 37 · bod 3: v programe Zadarmo beží jedna zbierka naraz (limit z stav.ts)
     if (s === "x:Nová zbierka" && sub !== s && beziacich >= KONFIG.limitZbierok[tier]) { setLimitOkno(true); return; }
     // OPRAVY 118/121: Pridať skutok = ten istý PridatSkutok, za charitu (organizacia: true)
@@ -419,7 +420,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   else if (sub === "x:Správa zbierky" && spravZb) obsah = <SpravaZbierky key={spravZb.id} tier={tier} onDorovnanie={() => otvor("dorovnanie")} z={{ ...spravZb, organizacia: nazov, onObsah: vlastne.some((x) => x.id === spravZb.id) ? (o) => void upravZbierku(strankaId, spravZb.id, o) : undefined }} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onUdaje={() => otvor("n:udaje")} />;
   else if (sub.startsWith("x:")) obsah = <Pripravujeme />;
   // KARTA 40: Oznamy — v Zadarmo výzva na súrnu pomoc a dva zamknuté druhy (nie „Pripravujeme" ani zámok celej položky)
-  else if (sub === "oznamy" && typPovoli("oznamy", typ)) obsah = <OznamySprava strankaId={strankaId} tier={tier} nazov={nazov} inicialy={inicialy} mesto={SUBJEKTY[poz]?.lok ?? "Trenčín"} logo={profil?.logo ?? null} mobil={!desktop} tablet={tablet} toast={toast} onProfil={() => otvor("x:Verejný profil")} start={oznamStart} />;
+  else if (sub === "oznamy" && typPovoli("oznamy", typ)) obsah = <OznamySprava strankaId={strankaId} tier={tier} nazov={nazov} inicialy={inicialy} mesto={SUBJEKTY[poz]?.lok ?? "Trenčín"} logo={profil?.logo ?? null} mobil={!desktop} tablet={tablet} toast={toast} onProfil={() => otvor("x:Verejný profil")} start={oznamStart} upravitId={oznamUprav} />;
   // Obsah → Skutky: zoznam skutkov charity + Pridať skutok (ten istý ako v Nástrojoch)
   else if (sub === "skutky" && typPovoli("skutky", typ) && maPovolenie("skutky", tier)) obsah = <SkutkyCharity strankaId={strankaId} mobil={!desktop} onPridat={() => otvor("pridatSkutok")} />;
   // KARTA 49: Dorovnanie daru (pohľad charity)
@@ -431,6 +432,8 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   else if (sub === "sledujuci" && typ === "charita") obsah = <SledujuciCharity strankaId={strankaId} mobil={!desktop} />;
   // OPRAVY 420: charita · Obsah → Iskry = zoznam Iskier + Pridať Iskru
   else if (sub === "video" && typ === "charita") obsah = maPovolenie("video", tier) ? <IskryCharity strankaId={strankaId} nazov={nazov} mobil={!desktop} /> : <Zamknute program={odProgramu("video")} />;
+  // OPRAVY 407: charita · Akcie a podujatia (od P2) = akcie z Oznamov
+  else if (sub === "podujatia" && typ === "charita") obsah = maPovolenie("podujatia", tier) ? <div style={{ maxWidth: 1100 }}><AkcieCharity strankaId={strankaId} mobil={!desktop} tablet={tablet} toast={toast} onPridat={() => otvor("oznamy", "verejny")} onUpravit={(id) => otvor("oznamy", undefined, id)} /></div> : <Zamknute program={odProgramu("podujatia")} />;
   // OPRAVY 423: charita · Štatistiky = Štatistiky z Viery (Zadarmo)
   else if (sub === "statistiky" && typ === "charita") obsah = <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 900 }}><StatistikyFarnosti strankaId={strankaId} mobil={!desktop} charita /></div>;
   // OPRAVY 412: charita · Štít dôvery na web (od P1)
