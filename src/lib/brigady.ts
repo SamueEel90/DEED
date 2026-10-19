@@ -17,6 +17,7 @@ export interface Brigada {
   foto?: string;
   /** Pozvať ľudí: 0 bez prihlásenia · 1 nezáväzne (Prídem pomôcť) · 2 záväzne (Prihlásiť sa) */ pz: 0 | 1 | 2;
   /** len pri záväznom: koľko ľudí najviac (0 = bez limitu) */ limit: number;
+  /** OPRAVY 397: mená prihlásených na stránke — Ukázať (predvolené pri brigáde) · false = Len pre mňa */ menaVer?: boolean;
   vytvorena: string;
   /** riadok autora: kto brigádu pridal */ af?: import("./autorFarnosti").AutorF;
   /** KARTA 63: farár zvolil Upozorniť sledujúcich (blok Pomôž) */ upoz?: boolean;

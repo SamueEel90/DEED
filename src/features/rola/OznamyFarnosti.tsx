@@ -21,7 +21,9 @@ import type { MediumZbierky } from "@/lib/novaZbierka";
 import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { GaleriaEditor, cistyText, NASTROJE } from "./obsahZbierky";
-import { vlastnePrispevky, zmazPrispevok, type VieraFeedItem } from "@/features/viera/mock";
+import { vlastnePrispevky, zmazPrispevok, upravPrispevok, type VieraFeedItem } from "@/features/viera/mock";
+import { reakcieF } from "@/lib/reakcieFarnosti";
+import { PrihlaseniFarara } from "./PrihlaseniFarara";
 import { zapisPrispevokIsto, usePrispevkySync } from "@/features/viera/prispevkyDB";
 import { Plagat, prazdneUdaje, prvaVolba, chybaOznamu, popisOznamu, type DruhOznamu, type UdajeOznamu, type VolbaSablony } from "@/features/viera/Sablony";
 import { zmenKostol, CAS_OK, pekny, type KalKostol } from "@/lib/kalendarFarnosti";
@@ -142,7 +144,6 @@ export function ObrazokOznamu({ src, inic, bg = "#2F3A2A" }: { src?: string; ini
   </span>;
 }
 const fmtDatum = (iso: string) => { if (!iso) return ""; const [y, m, d] = iso.split("-").map(Number); const dt = new Date(y, m - 1, d); return `${["Ne", "Po", "Ut", "St", "Št", "Pi", "So"][dt.getDay()]} ${d}. ${m}.`; };
-const pocetLudi = (n: number) => `${n} ${n === 1 ? "človek" : n >= 2 && n <= 4 ? "ľudia" : "ľudí"}`;
 
 /** KARTA 57 C.1: mazanie len podržaním (1,5 s) */
 
@@ -579,7 +580,10 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
         </button>
         {o && <div style={{ padding: "0 0 14px", display: "flex", flexDirection: "column", gap: 10 }}>
           {tx && <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)", whiteSpace: "pre-line" }}>{tx}</span>}
-          {x.pozvanie && <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink2)" }}>{x.pozvanie.zavazne ? `Prihlásení: 0${x.pozvanie.limit ? ` z ${x.pozvanie.limit}` : ""} · záväzne` : `Zúčastní sa: ${pocetLudi(0)} · nezáväzne`}</span>}
+          {/* OPRAVY 397: celý zoznam prihlásených (meno · ako · kedy), Napísať prihláseným, Stiahnuť zoznam, mená na stránke */}
+          {(x.pozvanie || x.rsvp) && (() => { const r = reakcieF(strankaId, x.id), zav = x.pozvanie ? x.pozvanie.zavazne : !!x.udalost?.zavazne;
+            return <PrihlaseniFarara strankaId={strankaId} refId={x.id} nazov={x.nazov ?? ""} rezim={zav ? 2 : 1} limit={x.pozvanie?.limit} zoznam={r.ucast ?? []} mena={r.mena} kedy={r.kedy}
+              menaVer={!!x.pozvanie?.menaVer} onMenaVer={(v) => { upravPrispevok(strankaId, x.id, { pozvanie: { zavazne: zav, limit: x.pozvanie?.limit, menaVer: v } }); obnov((y) => y + 1); }} />; })()}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {!zm && !editor && <button type="button" onClick={() => upravit(x)} style={{ minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--btn)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)", boxShadow: "none" }}>Upraviť</button>}
             <button type="button" onClick={() => setPozri(pozri === x.id ? null : x.id)} aria-expanded={pozri === x.id} style={{ minHeight: 44, padding: "0 14px", borderRadius: 12, border: "1.5px solid var(--gBd)", background: pozri === x.id ? "var(--gSoft)" : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--gInk)", boxShadow: "none" }}>Ako to vidia ľudia ›</button>

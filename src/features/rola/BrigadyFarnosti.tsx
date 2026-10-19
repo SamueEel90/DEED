@@ -10,6 +10,7 @@ import { useAutorZaMna } from "@/lib/autorFarnosti";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useBrigady, ulozBrigadu, zmazBrigadu, skoncila, DRUHY_BRIGADY, type Brigada } from "@/lib/brigady";
 import { reakcieF, useReakcieF, useCerstveReakcieF } from "@/lib/reakcieFarnosti";
+import { PrihlaseniFarara } from "./PrihlaseniFarara";
 import { cistyText } from "@/lib/richtext";
 import type { MediumZbierky } from "@/lib/novaZbierka";
 import { CasPole } from "@/components/CasPole";
@@ -35,14 +36,15 @@ const prazdny = (): Form => ({ druh: 0, t: "", dat: "", cas: "", kde: "", txt: "
 export const kedyBrigady = (dat: string, cas: string) => { const d = dat ? new Date(`${dat}T12:00:00`) : null; return [d ? `${DNI[d.getDay()]} ${d.getDate()}. ${d.getMonth() + 1}.` : "", cas].filter(Boolean).join(" · "); };
 
 function Riadok({ b, strankaId, prvy, onUpr, hlas }: { b: Brigada; strankaId: string; prvy: boolean; onUpr: () => void; hlas: (t: string) => void }) {
-  const r = reakcieF(strankaId, b.id), l = r.ucast ?? [], mena = l.map((k) => r.mena?.[k] ?? "veriaci").join(", ");
+  const r = reakcieF(strankaId, b.id), l = r.ucast ?? [];
   const po = skoncila(b, teraz());
   return (
     <div style={{ padding: "14px 0", borderTop: prvy ? "none" : "1px solid var(--cardBd)", display: "flex", flexDirection: "column", gap: 6 }}>
       <b style={{ fontSize: 15.5 }}>{b.t}</b>
       <span style={{ fontSize: 13, color: po ? CERV : "var(--ink3)", fontWeight: po ? 700 : 500 }}>{[po ? "SKONČILA · v archíve" : "", b.druh, kedyBrigady(b.dat, b.cas), b.kde].filter(Boolean).join(" · ")}</span>
-      {b.pz > 0 && <span style={{ fontSize: 14, fontWeight: 700 }}>{l.length ? `${l.length} príde${b.limit ? ` z ${b.limit}` : ""}` : "zatiaľ nikto"}</span>}
-      {b.pz === 2 && mena && <span style={{ fontSize: 13.5, color: "var(--ink2)" }}>Príde: {mena}</span>}
+      {/* OPRAVY 397: celý zoznam prihlásených (meno · ako · kedy), Napísať prihláseným, Stiahnuť zoznam, mená na stránke */}
+      {b.pz > 0 && <PrihlaseniFarara strankaId={strankaId} refId={b.id} nazov={b.t} rezim={b.pz === 2 ? 2 : 1} limit={b.limit} zoznam={l} mena={r.mena} kedy={r.kedy}
+        menaVer={b.menaVer !== false} onMenaVer={(v) => { void ulozBrigadu(strankaId, { ...b, menaVer: v }); }} />}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <button type="button" onClick={onUpr} style={obrys}>Upraviť</button>
         <DrzTlacidlo ms={1200} styl={{ minHeight: 44, padding: "0 14px", borderRadius: 12, border: `1.5px solid ${CERV}`, background: "transparent", color: CERV, fontSize: 14, fontWeight: 800 }}

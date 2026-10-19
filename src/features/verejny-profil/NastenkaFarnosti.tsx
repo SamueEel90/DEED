@@ -420,20 +420,20 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   const stit = (x: VieraFeedItem) => (x.oz?.dr === 2 && x.ntyp !== "udalost" ? (["PARTE", "SVADBA", "JUBILEUM", "BLAHOŽELANIE"][x.oz.odr] ?? "BLAHOŽELANIE") : x.tag === "Oznámenie" && !x.oz ? "BLAHOŽELANIE" : stitokOznamu(x));
 
   // ---------- Príď a zaži s nami ----------
-  type Ud = { id: string; ms: number; dat: string; t: string; txt: string; kedy: string; od: string; foto: string; plag: boolean; pz: 0 | 1 | 2; limit: number; zoznam: string[]; mena: Record<string, string>; prepni: () => void; mojeX?: PolozkaFarnika; /** KARTA 61 §2: brigáda (Prídem pomôcť) */ pomoc?: boolean; af?: AutorF; /** OPRAVY 270 */ gal: MediumGalerie[] };
+  type Ud = { id: string; ms: number; dat: string; t: string; txt: string; kedy: string; od: string; foto: string; plag: boolean; pz: 0 | 1 | 2; limit: number; zoznam: string[]; mena: Record<string, string>; /** OPRAVY 397: mená prihlásených na stránke (farár: Ukázať · Len pre mňa) */ menaVer: boolean; prepni: () => void; mojeX?: PolozkaFarnika; /** KARTA 61 §2: brigáda (Prídem pomôcť) */ pomoc?: boolean; af?: AutorF; /** OPRAVY 270 */ gal: MediumGalerie[] };
   const udFar: Ud[] = OZ.filter((x) => x.ntyp === "udalost" && (!x.datum || x.datum >= vc)).map((x) => {
     const r = reakcieF(strankaId, x.id), pz: 0 | 1 | 2 = x.pozvanie ? (x.pozvanie.zavazne ? 2 : 1) : x.rsvp ? (x.udalost?.zavazne ? 2 : 1) : 0;
     const d = x.datum ? zIso(x.datum) : null;
     return { id: x.id, ms: d?.getTime() ?? 9e15, dat: x.datum ?? "", t: x.nazov ?? "", txt: (x.oz?.dr === 1 && x.oz.txt) || x.udalost?.text || "", od: "Farnosť",
       kedy: [d ? `${DNW_V[dvt(d)]} ${d.getDate()}. ${d.getMonth() + 1}.` : "", x.udalost?.cas, kdeNaStranke(x.oz?.kdeV ?? x.oz?.kk, x.udalost?.miesto ?? "", miestaF).toLocaleUpperCase("sk-SK")].filter(Boolean).join(" · "), // OPRAVY 287: Iné miesto, inak kostol
-      foto: ziveObr(x.fotky?.[0]) ? x.fotky![0] : posterVidea(x.video) ?? "", plag: !!x.plagat, pz, limit: x.pozvanie?.limit ?? 0, zoznam: r.ucast ?? [], mena: r.mena ?? {},
+      foto: ziveObr(x.fotky?.[0]) ? x.fotky![0] : posterVidea(x.video) ?? "", plag: !!x.plagat, pz, limit: x.pozvanie?.limit ?? 0, zoznam: r.ucast ?? [], mena: r.mena ?? {}, menaVer: !!x.pozvanie?.menaVer,
       prepni: () => prepniReakciuF(strankaId, x.id, "ucast", kto, mojeMeno), af: x.af, gal: medGal(x.fotky, x.popisy, x.video) };
   });
   const udVer: Ud[] = OD.filter((x) => x.k === "udalost").map((x) => {
     const d = x.f?.datum ? zIso(x.f.datum) : null;
     return { id: x.id, ms: d?.getTime() ?? 9e15, dat: x.f?.datum ?? "", t: x.t, txt: x.s, od: autor(x),
       kedy: [d ? `${DNW_V[dvt(d)]} ${d.getDate()}. ${d.getMonth() + 1}.` : "", x.f?.cas, x.f?.kde?.toLocaleUpperCase("sk-SK")].filter(Boolean).join(" · "),
-      foto: ziveObr(x.fotky?.[0]) ? x.fotky![0] : "", plag: false, pz: x.pozv ?? 0, limit: x.limit ?? 0, zoznam: x.ucast ?? [], mena: x.mena ?? {},
+      foto: ziveObr(x.fotky?.[0]) ? x.fotky![0] : "", plag: false, pz: x.pozv ?? 0, limit: x.limit ?? 0, zoznam: x.ucast ?? [], mena: x.mena ?? {}, menaVer: false,
       prepni: () => prepniVPolozke(strankaId, x.id, "ucast", kto, undefined, mojeMeno), mojeX: x, gal: medGal(x.fotky, x.popisy) };
   });
   const udalosti = [...udFar, ...udVer].sort((a, b) => a.ms - b.ms);
@@ -517,7 +517,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   const pomoz = brigadyF.filter((b) => !skoncila(b, cas.getTime())).sort((a, b) => a.dat.localeCompare(b.dat)).map((b) => {
     const r = reakcieF(strankaId, b.id);
     const u: Ud = { id: b.id, ms: 0, dat: b.dat, t: b.t, txt: b.txt.trim(), kedy: `${b.druh}${b.dat ? ` · ${kedyBrigady(b.dat, b.cas)}` : ""}`.toLocaleUpperCase("sk-SK"), od: kdeNaStranke(b.kostol, b.kde, miestaF), foto: b.foto && ziveObr(b.foto) ? b.foto : "", gal: medGal([b.foto]), plag: false,
-      pz: b.pz, limit: b.limit, zoznam: r.ucast ?? [], mena: r.mena ?? {}, prepni: () => prepniReakciuF(strankaId, b.id, "ucast", kto, mojeMeno), pomoc: true, af: b.af };
+      pz: b.pz, limit: b.limit, zoznam: r.ucast ?? [], mena: r.mena ?? {}, menaVer: b.menaVer !== false, prepni: () => prepniReakciuF(strankaId, b.id, "ucast", kto, mojeMeno), pomoc: true, af: b.af };
     return u;
   });
   // ---------- Oznamy farnosti ----------
@@ -636,21 +636,32 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   </div> : null;
 
   // ---------- spoločné kúsky ----------
+  // OPRAVY 397: „Prihlásení · N“ + mená (Mária K.), ťuk = všetci; len pre registrovaných a keď farár zapol Ukázať.
+  // Prihlásený vidí seba „Vy ✓ · Zrušiť účasť (podržať)“ — zrušenie len podržaním.
+  const kratkeMeno = (m?: string) => { const c = (m ?? "").trim().split(/\s+/).filter(Boolean); return !c.length ? "veriaci" : c.length === 1 ? c[0] : `${c[0]} ${c[c.length - 1][0].toLocaleUpperCase("sk-SK")}.`; };
   const pozvat = (u: Ud) => {
     const jaV = u.zoznam.includes(kto), n = u.zoznam.length, zav = u.pz === 2;
     const plne = !jaV && zav && u.limit > 0 && n >= u.limit;
-    const t = plne ? "Plné · ďakujeme" : jaV ? (zav ? "Prihlásený ✓ · zrušiť" : u.pomoc ? "Prídem pomôcť ✓ · zrušiť" : "Prídem ✓ · zrušiť") : zav ? "Prihlásiť sa" : u.pomoc ? "Prídem pomôcť" : "Prídem";
+    const t = plne ? "Plné · ďakujeme" : jaV ? (zav ? "Prihlásený ✓" : u.pomoc ? "Prídem pomôcť ✓" : "Prídem ✓") : zav ? "Prihlásiť sa" : u.pomoc ? "Prídem pomôcť" : "Prídem";
     const poc = n ? (zav ? `prihlásení ${n}${u.limit ? ` z ${u.limit}` : ""}` : `${ludi(n)} príde`) : u.limit ? `miesta: ${u.limit}` : "";
     const zozOn = zoz === u.id;
-    const mena = u.zoznam.map((x) => `${u.mena[x] ?? "veriaci"}${x === kto ? " (vy)" : ""}`);
+    const ukaz = reg && u.menaVer && n > 0;
+    const ini = u.zoznam.filter((x) => x !== kto).map((x) => kratkeMeno(u.mena[x]));
+    const ukazka = ini.slice(0, 3).join(", ") + (ini.length > 3 ? ` a ďalší ${ini.length - 3}` : "");
     return <>
       <span style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", paddingTop: 6 }}>
-        <button type="button" aria-pressed={jaV} disabled={plne} onClick={() => { if (zav && !jaV && !reg) { toast("Prihlásiť sa menom môžu len registrovaní v DEED+."); return; } u.prepni(); }} style={tlacR(jaV, true, plne)}>{t}</button>
-        {poc && <span style={{ fontSize: 16, fontWeight: 700 }}>{poc}</span>}
+        <button type="button" aria-pressed={jaV} disabled={plne} onClick={() => { if (jaV) return; if (zav && !reg) { toast("Prihlásiť sa menom môžu len registrovaní v DEED+."); return; } u.prepni(); }} style={tlacR(jaV, true, plne)}>{t}</button>
+        {poc && !ukaz && <span style={{ fontSize: 16, fontWeight: 700 }}>{poc}</span>}
       </span>
-      {zav && mena.length > 0 && <>
-        <button type="button" aria-expanded={zozOn} onClick={() => setZoz(zozOn ? null : u.id)} style={{ alignSelf: "flex-start", minHeight: 44, padding: "0 4px", border: "none", background: "transparent", color: INK, fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 4 }}>{zozOn ? "Skryť zoznam ⌃" : `Kto sa prihlásil · ${mena.length} ⌄`}</button>
-        {zozOn && <div style={{ display: "flex", flexDirection: "column", borderTop: `1px solid ${LINKA}` }}>{mena.map((m, i) => <span key={i} style={{ padding: "9px 0", borderBottom: `1px solid ${LINKA}`, fontSize: 16 }}>{m}</span>)}</div>}
+      {jaV && <span style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <b style={{ fontSize: 15.5, color: INK }}>Vy ✓</b>
+        <DrzTlacidlo ms={1200} styl={odstranStyl} onHotovo={() => u.prepni()}>Zrušiť účasť (podržať)</DrzTlacidlo>
+      </span>}
+      {ukaz && <>
+        <button type="button" aria-expanded={zozOn} onClick={() => setZoz(zozOn ? null : u.id)} style={{ alignSelf: "flex-start", minHeight: 44, padding: "0 4px", border: "none", background: "transparent", color: INK, fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, cursor: "pointer", textAlign: "left" }}>
+          {`${zav ? "Prihlásení" : "Prídu"} · ${n}${u.limit ? ` z ${u.limit}` : ""}`}{ukazka && !zozOn ? <span style={{ fontWeight: 600 }}>{` · ${ukazka}`}</span> : null} {zozOn ? "⌃" : "⌄"}</button>
+        {zozOn && <div style={{ display: "flex", flexDirection: "column", borderTop: `1px solid ${LINKA}` }}>
+          {u.zoznam.map((x, i) => <span key={i} style={{ padding: "9px 0", borderBottom: `1px solid ${LINKA}`, fontSize: 16, fontWeight: x === kto ? 800 : 400 }}>{x === kto ? "Vy ✓" : kratkeMeno(u.mena[x])}</span>)}</div>}
       </>}
     </>;
   };
