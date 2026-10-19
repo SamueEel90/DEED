@@ -11,6 +11,8 @@ import { overIban } from "@/features/rola/segmenty";
 import type { RegistrIcoVysledok } from "@/types";
 import { Obrazovka, Nadpis, Svetlo, Bublina, Pole, Volby, Prepinace, Cipy, KycKarty, PlanKapitol, Register, Odomknute, kapitoly, naServeri, pockaj, vibruj, IK, U } from "./RegB";
 import { ulozKrok } from "./OsobaB";
+import { ulozRegistra, ulozStatutara, vznikText } from "@/lib/udajeRegistra";
+import { nacitajNastavenia } from "@/lib/nastaveniaStranky";
 
 export type KrokOrg = "ucet" | "plan" | "ico" | "statutar" | "stanovy" | "profil" | "moznosti" | "nahlad" | "hotovo";
 const PORADIE: KrokOrg[] = ["ucet", "plan", "ico", "statutar", "stanovy", "profil", "moznosti", "nahlad", "hotovo"];
@@ -62,11 +64,16 @@ export function CharitaB({ prihlaseny, onSpat, onPrihlasit, onBezUctu, onHotovo,
       const o = org ?? await db.vytvorOrganizaciuPodOsobou(prihlaseny!.ucetId!);
       setOrg(o);
       await db.ulozOrganizaciu(o.id, { ico: reg.ico, nazov: reg.nazov, sidlo: reg.sidlo, datum_vzniku: reg.datum_vzniku, pravna_forma: reg.pravna_forma, z_registra: true });
-    })) ides("statutar");
+    })) {
+      // OPRAVY 400: údaje z registra pre Správu a verejný profil (nová charita = stránka „svetlo“, vždy od nuly; čo register nevrátil, ostane prázdne)
+      void ulozRegistra("svetlo", { nazov: reg.nazov, forma: reg.pravna_forma, ico: reg.ico, registracia: reg.registracia ?? "", sidlo: reg.sidlo, vznik: vznikText(reg.datum_vzniku) }).catch(() => undefined);
+      ides("statutar");
+    }
   };
   const potvrdStatutara = async () => {
     if (await server(() => db.prepojStatutara(org!.id, jaStatutar === 0 ? prihlaseny!.ucetId! : null, jaStatutar === 0 ? "štatutár (register)" : "štatutár (pozvánka)"))) {
       if (jaStatutar === 1) toast("Štatutárovi pošleme pozvánku. Vy ste správca.");
+      void nacitajNastavenia("svetlo").then(() => ulozStatutara({ meno: jaStatutar === 0 ? statutar : "", funkcia: "" })); // OPRAVY 400: meno štatutára (súkromné)
       ides("stanovy");
     }
   };

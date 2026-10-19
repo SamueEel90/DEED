@@ -31,6 +31,8 @@ export interface ProfilStranky {
   bezLoga?: boolean;
   inicialy?: string;
   ramLoga?: RamFotky;
+  /** OPRAVY 400: Založené („marec 2017“) — predvyplnené z dátumu vzniku v registri, dá sa zmeniť */
+  zalozene?: string;
   /** OPRAVY 206: duchovný farnosti z Ľudia (meno s titulmi, fotka) — riadok autora pri všetkom, čo pridá Správa */
   duchovny?: DuchovnyStranky | null;
 }

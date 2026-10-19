@@ -25,13 +25,18 @@ export const SIETE: { k: Siet; label: string; domeny: string[] }[] = [
   { k: "x", label: "X", domeny: ["x.com", "twitter.com"] }, // KARTA 33
 ];
 export const MAX_TEL = 3;
+export const MAX_PREVADZOK = 5; // OPRAVY 400
+/** OPRAVY 400: prevádzky (staré „Adresa pre verejnosť“ = jedna prevádzka) */
+export const prevadzkyZ = (k: Kontakt) => (k.prevadzky?.length ? k.prevadzky : k.adresaVerejna?.trim() ? [{ popis: "", adresa: k.adresaVerejna.trim() }] : []);
 export const MAX_EMAIL = 3; // Martin 1. 10. 2026: najviac 3 e-maily (aj v starom hárku)
 
 export interface Kontakt {
   /** sídlo z registrácie (overené cez IČO) — needituje sa */
   sidlo: string;
-  /** kde ich ľudia nájdu, ak to nie je sídlo (výdajňa, kancelária) */
+  /** kde ich ľudia nájdu, ak to nie je sídlo (výdajňa, kancelária) — farnosť; charita má od OPRAVY 400 prevádzky */
   adresaVerejna: string;
+  /** OPRAVY 400: prevádzky charity (iná adresa tej istej organizácie, nie pobočka) — popis + adresa, najviac 5 */
+  prevadzky?: { popis: string; adresa: string }[];
   telefony: { cislo: string; popis: string }[];
   emaily: { adresa: string; popis: string }[];
   web: string;
@@ -69,28 +74,46 @@ export function ulozKontakt(p: Pozicia, k: Kontakt) {
 const bezProtokolu = (u: string) => u.trim().replace(/^https?:\/\//i, "").replace(/^www\./i, "").replace(/\/$/, "");
 export const naUrl = (u: string) => (/^https?:\/\//i.test(u.trim()) ? u.trim() : `https://${u.trim()}`);
 
-/** chyba odkazu na sieť (null = v poriadku alebo prázdne) */
+// OPRAVY 401: pri Facebooku, Instagrame, TikToku, X a YouTube stačí meno („podkorunami“ alebo „@podkorunami“) — doménu doplníme sami
+const HANDLE: Partial<Record<Siet, (m: string) => string>> = {
+  facebook: (m) => `facebook.com/${m}`, instagram: (m) => `instagram.com/${m}`, tiktok: (m) => `tiktok.com/@${m}`, x: (m) => `x.com/${m}`, youtube: (m) => `youtube.com/@${m}`,
+};
+const jeMeno = (u: string) => /^@?[\w.-]{1,60}$/.test(u.trim()) && !/^[\w-]+(\.[\w-]+)+$/.test(u.trim().replace(/^@/, ""));
+/** odkaz na sieť v tvare na uloženie: meno → celá adresa, inak ako ho človek napísal (orezaný) */
+export function normalizujSiet(s: Siet, u: string): string {
+  const t = u.trim();
+  if (!t) return "";
+  const h = HANDLE[s];
+  return h && jeMeno(t) ? h(t.replace(/^@/, "")) : t;
+}
+/** chyba odkazu na sieť (null = v poriadku alebo prázdne). Len keď je to iná stránka — písanie nikdy neblokuje. */
 export function chybaSiete(s: Siet, u: string): string | null {
-  if (!u.trim()) return null;
-  const host = bezProtokolu(u).split("/")[0].toLowerCase();
+  const t = normalizujSiet(s, u);
+  if (!t) return null;
+  const host = bezProtokolu(t).split(/[/?#]/)[0].toLowerCase();
   const def = SIETE.find((x) => x.k === s)!;
   if (!def.domeny.some((d) => host === d || host.endsWith(`.${d}`))) return `Toto nie je odkaz na ${def.label}`;
-  if (!bezProtokolu(u).includes("/")) return "Chýba názov stránky/profilu za lomkou";
   return null;
 }
 export function chybaWebu(u: string): string | null {
   if (!u.trim()) return null;
-  return /^[a-z0-9-]+(\.[a-z0-9-]+)+(\/.*)?$/i.test(bezProtokolu(u)) ? null : "Neplatná adresa webu";
+  return /^[a-z0-9-]+(\.[a-z0-9-]+)+([/?#].*)?$/i.test(bezProtokolu(u)) ? null : "Neplatná adresa webu";
 }
 export const chybaEmailu = (e: string) => (!e.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim()) ? null : "Neplatný e-mail");
 export const chybaTel = (t: string) => (!t.trim() || /^\+?[0-9 ]{9,16}$/.test(t.trim()) ? null : "Neplatné číslo (napr. +421 901 234 567)");
 
+/** OPRAVY 400: je čo ukázať v Kontakte na verejnom profile charity */
+export const maKontaktCharity = (k: Kontakt) => !!(k.sidlo.trim() || k.adresaVerejna?.trim() || k.prevadzky?.some((x) => x.adresa.trim()) || k.telefony.some((t) => t.cislo.trim()) || k.emaily.some((e) => e.adresa.trim()) || k.web.trim() || Object.values(k.siete ?? {}).some((u) => u?.trim()));
 /** sekcia KONTAKT — rovnaká v správe aj na verejnom profile */
 export function KontaktBlok({ k, zbalitelna, vodorovne }: { k: Kontakt; zbalitelna?: string;
   /** na širokej ploche: kontakt dole na celú šírku, položky vedľa seba (nie stĺpec vpravo) */
   vodorovne?: boolean }) {
   const riadky: ReactNode[] = [];
-  riadky.push(<KontaktPolozka key="adr" ikona={<IkonaPin size={15} />} label={k.adresaVerejna ? "Adresa pre verejnosť" : "Adresa"} hodnota={k.adresaVerejna || k.sidlo} />);
+  // OPRAVY 400: charita s prevádzkami — sídlo + každá prevádzka s popisom; inak ako doteraz (adresa pre verejnosť alebo sídlo)
+  if (k.prevadzky?.length) {
+    if (k.sidlo.trim()) riadky.push(<KontaktPolozka key="adr" ikona={<IkonaPin size={15} />} label="Sídlo" hodnota={k.sidlo} />);
+    k.prevadzky.filter((x) => x.adresa.trim()).forEach((x, i) => riadky.push(<KontaktPolozka key={`pv${i}`} ikona={<IkonaPin size={15} />} label={x.popis.trim() || "Prevádzka"} hodnota={x.adresa} />));
+  } else if ((k.adresaVerejna || k.sidlo).trim()) riadky.push(<KontaktPolozka key="adr" ikona={<IkonaPin size={15} />} label={k.adresaVerejna ? "Adresa pre verejnosť" : "Adresa"} hodnota={k.adresaVerejna || k.sidlo} />);
   k.telefony.filter((t) => t.cislo.trim()).forEach((t, i) => riadky.push(
     <KontaktPolozka key={`t${i}`} ikona={<span style={{ fontSize: 13 }}>📞</span>} label={t.popis || "Telefón"} hodnota={t.cislo} href={`tel:${t.cislo.replace(/\s/g, "")}`} />));
   k.emaily.filter((e) => e.adresa.trim()).forEach((e, i) => riadky.push(
@@ -108,7 +131,7 @@ export function KontaktBlok({ k, zbalitelna, vodorovne }: { k: Kontakt; zbalitel
       {siete.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: SPACE.xs, marginTop: SPACE.xs }}>
           {siete.map((s) => (
-            <a key={s.k} href={naUrl(k.siete[s.k]!)} target="_blank" rel="noreferrer"
+            <a key={s.k} href={naUrl(normalizujSiet(s.k, k.siete[s.k]!))} target="_blank" rel="noreferrer"
               style={{ fontSize: 12, fontWeight: 700, color: "var(--a-info)", textDecoration: "none", border: `1px solid ${C.line}`, borderRadius: RADIUS.pill, padding: `4px ${SPACE.sm}px` }}>
               {s.label}
             </a>
@@ -124,7 +147,7 @@ export function KontaktBlok({ k, zbalitelna, vodorovne }: { k: Kontakt; zbalitel
       {siete.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: SPACE.xs, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
           {siete.map((s) => (
-            <a key={s.k} href={naUrl(k.siete[s.k]!)} target="_blank" rel="noreferrer"
+            <a key={s.k} href={naUrl(normalizujSiet(s.k, k.siete[s.k]!))} target="_blank" rel="noreferrer"
               style={{ fontSize: 12, fontWeight: 700, color: "var(--a-info)", textDecoration: "none", border: `1px solid ${C.line}`, borderRadius: RADIUS.pill, padding: `4px ${SPACE.sm}px` }}>
               {s.label}
             </a>

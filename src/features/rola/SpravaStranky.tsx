@@ -43,6 +43,7 @@ import { useNastaveniaAppky, zmenNastavenia } from "@/lib/nastaveniaAppky";
 import { potvrditTuknutim, nastavPotvrditTuknutim } from "@/features/zbierka/Platba";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { VzhladStranky } from "./VzhladStranky";
+import { useRegistra } from "@/lib/udajeRegistra";
 import { SpravaFarnosti } from "./SpravaFarnosti";
 import { useTestStav, zmenTestStav } from "@/lib/testStav";
 import { PrepinacPodania, TestVolba } from "@/features/verejny-profil/casti";
@@ -278,7 +279,11 @@ export function SpravaStranky(props: SpravaStrankyProps) {
   return <SpravaStrankyTypu {...props} typ={typ} onTyp={setTyp} />;
 }
 
-function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "svetlo", nazov = "Svetlo pomoci o.z.", inicialy = "SP" }: SpravaStrankyProps & { typ: TypStranky; onTyp: (t: TypStranky) => void }) {
+function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "svetlo", nazov: nazov0 = "Svetlo pomoci o.z.", inicialy: inicialy0 = "SP" }: SpravaStrankyProps & { typ: TypStranky; onTyp: (t: TypStranky) => void }) {
+  // OPRAVY 400: charita sa volá podľa registra (keď je vyplnený), nie napevno
+  const regNazov = useRegistra(strankaId).nazov.trim();
+  const nazov = (typ === "charita" && regNazov) || nazov0;
+  const inicialy = typ === "charita" && regNazov ? regNazov.replace(/,?\s*(o\.\s?z\.|n\.\s?o\.|s\.\s?r\.\s?o\.)$/i, "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("") : inicialy0;
   const { desktop, wide } = useLayout();
   // 0035: tester = správca testovacej stránky; potom nastavenia stránky z účtu (0050)
   useEffect(() => { void pripojTestovaciuStranku(strankaId).then(() => nacitajNastavenia(strankaId)); }, [strankaId]);

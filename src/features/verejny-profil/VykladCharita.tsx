@@ -33,7 +33,7 @@ const kdeZb = (z: TestZbierka) => [z.mesto, z.stav === "dlhodoba" ? "dlhodobá" 
 // oznam „Tento týždeň u nás": dátum vo farbe druhu, súrne #8E3B2F
 const OZ_FARBA = { vyzva: ["#8E3B2F", "var(--red)"], akcia: [druhF("akcia"), druhT("akcia")], oznam: ["#3A342A", "var(--ink2)"] } as const;
 
-export function VykladCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, hore }: { /** KARTA 56I: sekcia Od veriacich (farnosť) */ odFarnikov?: ReactNode; /** KARTA 57 C.7–C.8 */ hore?: ReactNode; profil: TestProfil; onDetail: (z: TestZbierka) => void; onZaznam: (p: PolCh) => void; onBack: () => void }) {
+export function VykladCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, hore, pata }: { /** OPRAVY 400 */ pata?: ReactNode; /** KARTA 56I: sekcia Od veriacich (farnosť) */ odFarnikov?: ReactNode; /** KARTA 57 C.7–C.8 */ hore?: ReactNode; profil: TestProfil; onDetail: (z: TestZbierka) => void; onZaznam: (p: PolCh) => void; onBack: () => void }) {
   const pc = usePc();
   const mob = !pc;
   const domace = useDomaceMesto(profil);
@@ -258,7 +258,7 @@ export function VykladCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, 
       </div>
       <aside style={{ width: 420, flex: "none", display: "flex", flexDirection: "column", gap: 14, position: "sticky", top: 20 }}>{hore}{nazivo}{podporit}</aside>
     </div>
-    {odFarnikov}{hladame}{dokazali}{iskry}
+    {odFarnikov}{hladame}{dokazali}{iskry}{pata}
   </>);
 
   return obal(<>
@@ -270,7 +270,7 @@ export function VykladCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, 
       {podporit}
       {dalsie.length > 0 && <><b style={{ fontSize: 26, letterSpacing: "-.02em", paddingTop: 18 }}>Ďalšie príbehy</b>{dalsie.map(dalsiPribeh)}</>}
     </div>
-    {odFarnikov}{hladame}{dokazali}{iskry}
+    {odFarnikov}{hladame}{dokazali}{iskry}{pata}
     <div style={{ height: DOK + 24 }} />
   </>);
 }

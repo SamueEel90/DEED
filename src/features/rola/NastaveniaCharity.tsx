@@ -19,6 +19,8 @@ import { useFakturyOrg, otvorFakturu, type FakturaOrg } from "@/lib/fakturyOrg";
 import { maNastavenie, citajNastavenie, zapisNastavenie, useZmenyNastaveni } from "@/lib/nastaveniaStranky";
 import { nacitajKryptoOrg, ulozKryptoOrg, nacitajSady, ulozSady, type Tier, type TypStranky, CENNIK_TYPU, TYP_NAZOV, TIER_LABEL, TIER_POPIS } from "./stav";
 import { sumaEur } from "@/lib/suma";
+import { registra, useRegistra, icoText } from "@/lib/udajeRegistra";
+import { RiadkyRegistra } from "./RiadkyRegistra";
 
 // ---------- nastavenia v účte stránky (OPRAVY 88 · migrácia 0050) ----------
 // Oznámenia, EURC, údaje, súhlasy, správcovia, zariadenia… — jeden záznam na stránku, ukladá sa samo.
@@ -362,24 +364,24 @@ export function ObrSpravcovia({ mobil }: { mobil: boolean }) {
 type Ud = { mail: string; tel: string; dic: string; fmail: string; ina: boolean; adr: string };
 const UD_PRAZDNE: Ud = { mail: "", tel: "", dic: "", fmail: "", ina: true, adr: "" };
 const UD0: Ud = { mail: "info@svetlopomoci.sk", tel: "+421 905 111 222", dic: "", fmail: "info@svetlopomoci.sk", ina: false, adr: "" };
-/** IČO a sídlo z registra — jeden zdroj pre Údaje organizácie aj Upraviť profil (OPRAVY 108). TODO: tabuľka organizacia.sidlo */
-export const SIDLO_REGISTRA = "Palackého 14, 911 01 Trenčín";
-export const ICO_REGISTRA = "00 000 000";
+/** OPRAVY 400: údaje z registra sú v lib/udajeRegistra (zo skutočnej registrácie, nič napevno) — charita = testovacia stránka „svetlo“ */
+const STRANKA_CHARITY = "svetlo";
 /** OPRAVY 114: hlavný účet organizácie z registrácie (jedno miesto — Účty aj Nová zbierka v Zadarmo) */
 export const HLAVNY_UCET = "SK31 0900 0000 0051 2233 4417";
 
 /** 5. 10. (C3) · fakturačné údaje pre faktúru za platbu DEED+; null = chýbajú (platba sa nespustí) */
 export function fakturacneUdaje(): { nazov: string; ico: string; adresa: string; dic?: string; email: string } | null {
   const u = { ...UD0, ...((pamat.get("ud") as Partial<Ud> | undefined) ?? {}) };
-  const adresa = u.ina ? u.adr.trim() : SIDLO_REGISTRA;
+  const r = registra(STRANKA_CHARITY);
+  const adresa = u.ina ? u.adr.trim() : r.sidlo.trim();
   const email = u.fmail.trim();
-  if (!adresa || !/^\S+@\S+\.\S+$/.test(email)) return null;
-  return { nazov: NAZOV_REGISTRA, ico: ICO_REGISTRA, adresa, dic: u.dic.trim() || undefined, email };
+  if (!r.nazov.trim() || !r.ico.trim() || !adresa || !/^\S+@\S+\.\S+$/.test(email)) return null;
+  return { nazov: r.nazov.trim(), ico: icoText(r.ico), adresa, dic: u.dic.trim() || undefined, email };
 }
-export const NAZOV_REGISTRA = "Svetlo pomoci o.z.";
 
 /** farnost (OPRAVY 186): názov z registrácie, cirkev (číselník 18), Patrí pod; bez ukážkových údajov charity */
-export function ObrUdaje({ mobil, farnost }: { mobil: boolean; farnost?: { nazov: string; cirkev: React.ReactNode } }) {
+export function ObrUdaje({ mobil, farnost, strankaId = STRANKA_CHARITY }: { mobil: boolean; farnost?: { nazov: string; cirkev: React.ReactNode }; strankaId?: string }) {
+  const reg = useRegistra(strankaId);
   const [ud, setUd] = usePamat<Ud>("ud", farnost ? UD_PRAZDNE : UD0);
   const [pod, setPod] = usePamat<string>("pod", "");
   const [podD, setPodD] = useState<string | null>(null);
@@ -387,7 +389,7 @@ export function ObrUdaje({ mobil, farnost }: { mobil: boolean; farnost?: { nazov
   const v = <K extends keyof Ud>(k: K): Ud[K] => (d[k] ?? ud[k]) as Ud[K];
   const zmena = (Object.keys(d) as (keyof Ud)[]).some((k) => d[k] !== ud[k]) || (podD !== null && podD !== pod);
   const set = (k: keyof Ud) => (e: React.ChangeEvent<HTMLInputElement>) => { const x = e.target.value; setD((c) => ({ ...c, [k]: x })); };
-  const REG: [string, string][] = farnost ? [["Názov", farnost.nazov]] : [["Názov", NAZOV_REGISTRA], ["IČO", ICO_REGISTRA], ["Právna forma", "Občianske združenie"], ["Sídlo", SIDLO_REGISTRA], ["Dátum vzniku", "14. 3. 2012"], ["Štatutár", "Martin Štofik · overený"]];
+  const REG: [string, string][] = farnost ? [["Názov", farnost.nazov]] : [];
   const Pole = ({ k, t, ph, typ = "text" }: { k: keyof Ud; t: React.ReactNode; ph?: string; typ?: string }) => (
     <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink2)" }}>{t}</span><input type={typ} value={v(k) as string} onChange={set(k)} placeholder={ph} style={pole} /></label>);
   return (
@@ -395,6 +397,7 @@ export function ObrUdaje({ mobil, farnost }: { mobil: boolean; farnost?: { nazov
       <div style={stlpec}>
         <div style={nad}>Z REGISTRA</div>
         <div style={{ ...krt, padding: "0 16px" }}>
+          {!farnost && <RiadkyRegistra strankaId={strankaId} />}
           {REG.map(([t, x], i) => <div key={t} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 58, padding: "8px 0", borderTop: btn(i) }}><span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{t}</span><span style={{ fontSize: 15, fontWeight: 700 }}>{x}</span></span>{ZAMOK}</div>)}
         </div>
         {farnost ? <>
@@ -404,8 +407,7 @@ export function ObrUdaje({ mobil, farnost }: { mobil: boolean; farnost?: { nazov
           <label style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 4 }}><span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink2)" }}>Patrí pod</span>
             <input value={podD ?? pod} onChange={(e) => setPodD(e.target.value)} placeholder="napr. diecéza, dekanát" style={pole} /></label>
         </> : <>
-          <span style={pozn}>Tieto údaje sme overili pri registrácii vo verejnom registri. V appke sa nedajú prepísať. Keď ich zmeníte v registri, načítajte ich znova.</span>
-          <button onClick={() => toast("Údaje sme načítali z registra. Nič sa nezmenilo.")} style={{ ...obrys(), alignSelf: "flex-start" }}>Načítať znova z registra</button>
+          <span style={pozn}>Údaje z verejného registra, načítané pri registrácii. V appke sa nemenia. Čo register nevrátil, doplňte.</span>
         </>}
       </div>
       <div style={stlpec}>
@@ -418,7 +420,7 @@ export function ObrUdaje({ mobil, farnost }: { mobil: boolean; farnost?: { nazov
         <div style={{ ...nad, marginTop: 10 }}>FAKTURAČNÉ ÚDAJE</div>
         <div style={{ ...krt, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
           {Pole({ k: "dic", t: <>DIČ <span style={{ fontWeight: 600, color: "var(--ink3)" }}>· ak ho máte</span></>, ph: "napr. 2021234567" })}
-          {!farnost && <RiadokPrep i={0} minH={48} t="Fakturačná adresa = sídlo" s={SIDLO_REGISTRA} on={!v("ina")} onClick={() => setD((c) => ({ ...c, ina: !v("ina") }))} />}
+          {!farnost && <RiadokPrep i={0} minH={48} t="Fakturačná adresa = sídlo" s={reg.sidlo || "sídlo zatiaľ nie je vyplnené"} on={!v("ina")} onClick={() => setD((c) => ({ ...c, ina: !v("ina") }))} />}
           {(farnost || v("ina")) && <input value={v("adr")} onChange={set("adr")} placeholder="ulica, PSČ, mesto" aria-label="Fakturačná adresa" style={pole} />}
           {Pole({ k: "fmail", t: "E-mail na faktúry", typ: "email" })}
           <span style={pozn}>{farnost ? "Na tieto údaje vystavíme faktúru za predplatné farnosti." : "Na tieto údaje vystavíme faktúru za program. V programe Zadarmo neplatíte nič."}</span>
@@ -581,7 +583,7 @@ function ProgramCharita({ mobil, tier, onTier, otvor }: { mobil: boolean; tier: 
 const denFa = (iso: string) => { const d = new Date(iso); return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`; };
 /** testovacie faktúry za program (platený program = 3 mesačné platby) + faktúry zaplatené v tejto relácii, najnovšie hore */
 function vsetkyFaktury(platby: FakturaOrg[], cur: number): FakturaOrg[] {
-  const ud = fakturacneUdaje() ?? { nazov: NAZOV_REGISTRA, ico: ICO_REGISTRA, adresa: SIDLO_REGISTRA, email: UD0.fmail };
+  const r = registra(STRANKA_CHARITY), ud = fakturacneUdaje() ?? { nazov: r.nazov, ico: icoText(r.ico), adresa: r.sidlo, email: UD0.fmail };
   const program: FakturaOrg[] = cur ? [10, 9, 8].map((m, i) => ({ cislo: `2026/${1042 - i}`, co: `Program ${PROG[cur][0]} · mesačne`, suma: PROG[cur][2], datum: new Date(2026, m - 1, 1, 9).toISOString(), sposob: "faktúra prevodom", odberatel: ud })) : [];
   return [...platby, ...program];
 }
