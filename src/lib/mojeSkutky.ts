@@ -4,6 +4,7 @@
 // Demo účet dostane ukážkovú históriu (SEED); nový účet začína prázdny → ukážky pre začiatok.
 import { useEffect, useSyncExternalStore } from "react";
 import { getSession } from "@/lib/session";
+import { zapisSkutokStranky } from "./skutkyStranky";
 import { supabase } from "@/lib/supabase";
 import { bezDataUrl } from "@/lib/uploadFoto";
 import { toast } from "@/components/toast";
@@ -205,10 +206,12 @@ export const ulozKonceptOrg = (stranka: string, k: Koncept | null) => {
   uloz({ konceptOrg: m });
 };
 export const skutkyOrg = (stranka: string): MojSkutok[] => nacitaj().skutkyOrg?.[stranka] ?? [];
-export const pridajSkutokOrg = (stranka: string, x: MojSkutok) => uloz({ skutkyOrg: { ...(nacitaj().skutkyOrg ?? {}), [stranka]: [x, ...skutkyOrg(stranka)] } });
+export const pridajSkutokOrg = (stranka: string, x: MojSkutok) => { uloz({ skutkyOrg: { ...(nacitaj().skutkyOrg ?? {}), [stranka]: [x, ...skutkyOrg(stranka)] } }); void zapisSkutokStranky(stranka, x); }; // OPRAVY 418: aj na verejný profil
 /** Obsah → Skutky: úprava zverejneného skutku charity (text) alebo stiahnutie */
-export const upravSkutokOrg = (stranka: string, id: string, z: Partial<MojSkutok>) =>
+export const upravSkutokOrg = (stranka: string, id: string, z: Partial<MojSkutok>) => {
   uloz({ skutkyOrg: { ...(nacitaj().skutkyOrg ?? {}), [stranka]: skutkyOrg(stranka).map((x) => (x.id === id ? { ...x, ...z } : x)) } });
+  const n = skutkyOrg(stranka).find((x) => x.id === id); if (n) void zapisSkutokStranky(stranka, n); // OPRAVY 418
+};
 
 // ---------- ohlásený skutok (Chystám sa to urobiť) ----------
 export const ohlasenie = () => nacitaj().ohlasenie;
