@@ -62,7 +62,7 @@ export function OsobaB({ start = "plan", onSpat, onHotovo, authId: authIdVst, em
   const [zobr, setZobr] = useState(1), [nick, setNick] = useState("");
   const [zaujmy, setZaujmy] = useState<string[]>([]);
   const [potvrd, setPotvrd] = useState([false, false]);
-  const [clen, setClen] = useState<number>(1248);
+  const [clen, setClen] = useState<number | null>(null); // OPRAVY 409: len číslo zo servera, nikdy vymyslené
 
   const [meno = "", ...zvysok] = menoCele.trim().split(/\s+/);
   const priezvisko = zvysok.join(" ");
@@ -70,7 +70,7 @@ export function OsobaB({ start = "plan", onSpat, onHotovo, authId: authIdVst, em
   // existujúci auth user bez dokončenej registrácie (návrat) → účet načítať (idempotentné na auth_id)
   useEffect(() => {
     if (!authIdVst || !naServeri) return;
-    db.vytvorUcetAuth({ authId: authIdVst, typ: "aktivny", email: emailVst ?? null, stav: "telefon" }).then((u) => setUcet(u)).catch(() => toast("Účet sa nepodarilo načítať · skúste znova."));
+    db.vytvorUcetAuth({ authId: authIdVst, typ: "aktivny", email: emailVst ?? null, stav: "telefon" }).then((u) => { setUcet(u); if (u.poradove_cislo != null) setClen(Number(u.poradove_cislo)); }).catch(() => toast("Účet sa nepodarilo načítať · skúste znova."));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -216,7 +216,7 @@ export function OsobaB({ start = "plan", onSpat, onHotovo, authId: authIdVst, em
   };
   const doProfilu = () => {
     if (preOrg) cakajRegistraciuOrg(true); else otvorProfilPoRegistracii();
-    setSession({ ucet_id: ucet?.id || undefined, typ: "aktivny", poradove_cislo: clen, meno: meno ?? "" });
+    setSession({ ucet_id: ucet?.id || undefined, typ: "aktivny", poradove_cislo: clen ?? undefined, meno: meno ?? "" });
     onHotovo?.();
   };
 
@@ -312,7 +312,7 @@ export function OsobaB({ start = "plan", onSpat, onHotovo, authId: authIdVst, em
     case "hotovo": return (
       <Obrazovka {...zak} cta={preOrg ? "Pokračovať k organizácii" : "Do môjho profilu"} onCta={doProfilu}>
         <Svetlo vyska={200} radost />
-        <Nadpis stred t={`Vitaj${meno ? `, ${meno}` : ""}. Si ${clenCislo(clen)}. člen DEED+`} sub="Účet je overený. V profile si pridaj fotku a pozri, čo si môžeš nastaviť." />
+        <Nadpis stred t={`Vitaj${meno ? `, ${meno}` : ""}. Si ${clen != null ? `${clenCislo(clen)}. ` : ""}člen DEED+`} sub="Účet je overený. V profile si pridaj fotku a pozri, čo si môžeš nastaviť." />
         <Odomknute polozky={["Darovať a robiť skutky", "Peňaženka a DeeD", "Žiadosť o pomoc v Help"]} />
       </Obrazovka>);
   }
