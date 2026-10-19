@@ -9,7 +9,9 @@ import { nacitajStav, ulozStav, obnovOblast } from "@/features/viera/stav";
 import { bezDataUrl } from "./uploadFoto";
 
 export const DRUHY_BRIGADY = ["Brigáda", "Služba pri omši", "Iná pomoc"] as const;
-export type DruhBrigady = (typeof DRUHY_BRIGADY)[number];
+export type DruhBrigady = (typeof DRUHY_BRIGADY)[number] | (typeof DRUHY_CHARITY)[number];
+/** OPRAVY 406: charita — Dobrovoľníctvo (rovnaký blok, iné slová) */
+export const DRUHY_CHARITY = ["Brigáda", "Dobrovoľníctvo", "Iná pomoc"] as const;
 export interface Brigada {
   id: string; druh: DruhBrigady; t: string; dat: string; cas: string; kde: string;
   /** OPRAVY 287: Celá farnosť „*“ · id kostola · Iné miesto „~“ (bez = celá farnosť) */ kostol?: string;
@@ -17,6 +19,7 @@ export interface Brigada {
   foto?: string;
   /** Pozvať ľudí: 0 bez prihlásenia · 1 nezáväzne (Prídem pomôcť) · 2 záväzne (Prihlásiť sa) */ pz: 0 | 1 | 2;
   /** len pri záväznom: koľko ľudí najviac (0 = bez limitu) */ limit: number;
+  /** OPRAVY 397: mená prihlásených na stránke — Ukázať (predvolené pri brigáde) · false = Len pre mňa */ menaVer?: boolean;
   vytvorena: string;
   /** riadok autora: kto brigádu pridal */ af?: import("./autorFarnosti").AutorF;
   /** KARTA 63: farár zvolil Upozorniť sledujúcich (blok Pomôž) */ upoz?: boolean;

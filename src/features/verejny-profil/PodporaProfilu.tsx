@@ -43,7 +43,7 @@ export function PodporaProfilu({ profil, lok, domace, rez, stlpce = rez === "tab
   const nadpisRef = useRef<HTMLSpanElement | null>(null);
   const sk = lok === "Celé Slovensko";
   const mestoV = sk ? "celom Slovensku" : vMeste(lok);
-  const sektory: TestSektor[] = [profil.centralna, ...profil.sektory].slice(0, 4);
+  const sektory: TestSektor[] = [...(profil.bezCentralnej ? [] : [profil.centralna]), ...profil.sektory].slice(0, 4); // OPRAVY 414: centrálna nevzniká sama
   const zbal = () => {
     setMod(null);
     requestAnimationFrame(() => nadpisRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
@@ -51,6 +51,7 @@ export function PodporaProfilu({ profil, lok, domace, rez, stlpce = rez === "tab
   const modul = mod != null && typeof mod === "object" ? <ModulZbierky profil={profil} z={mod} onZbal={zbal} />
     : typeof mod === "number" && sektory[mod] && <ModulProfilu key={sektory[mod].id} profil={profil} sektor={sektory[mod]} poradie={mod} mestoV={mestoV} onZbal={zbal}
       typ={sektory[mod].typ} typ2={sektory[mod].typ2} info={sektory[mod].info} hlavna={jeFarnost(profil) && !mod} dorovnanie={!jeFarnost(profil)} />;
+  if (!sektory.length) return null; // OPRAVY 414: bez centrálnej a sektorov dlaždice nie sú
   return (
     <>
       <span ref={nadpisRef} style={{ scrollMarginTop: 56, fontSize: 11.5, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)", paddingTop: rez === "mob" ? 6 : 4 }}>{nadpis}{nadpis === "TIPY NA PRAVIDELNÝ DAR" && <> <span style={{ fontWeight: 600, letterSpacing: 0, color: "var(--ink3)" }}>· aj jednorazovo, zrušíš kedykoľvek</span></>}</span>

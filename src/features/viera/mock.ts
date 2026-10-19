@@ -39,7 +39,7 @@ export type VieraFeedItem = CharitaFeedItem & {
   /** OPRAVY 212: popisy fotiek z GaleriaEditor (v poradí `fotky`) */ popisy?: string[];
   /** OPRAVY 270: video z GaleriaEditor (udalosť) — v prehliadači fotiek prvé */ video?: string;        // KARTA 56H §4: vlastný plagát — ukázať celý, bez orezu (contain, aj na výšku)
   /** KARTA 57 C.4: Pozvať ľudí (krátky oznam aj udalosť) — záväzne = Prihlásiť sa, inak Zúčastním sa; limit len pri záväznom */
-  pozvanie?: { zavazne: boolean; limit?: number };
+  pozvanie?: { zavazne: boolean; limit?: number; /** OPRAVY 397: mená prihlásených na stránke — true Ukázať · false Len pre mňa (farár) */ menaVer?: boolean };
   /** KARTA 57 C.3: nastavenie formulára farára — Upraviť zverejnené ho naplní 1:1 */
   oz?: import("@/features/rola/OznamyFarnosti").NastavenieOznamu;
   linkedZbierka?: boolean; // parte režim 2 — pripojená pohrebná zbierka (samostatná entita; tu len flag + ciel)

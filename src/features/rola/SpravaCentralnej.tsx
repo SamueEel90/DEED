@@ -85,7 +85,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const prepni = (i: number) => { setTyp(i); nastavVyberCentralnej(i); setNovySek(false); };
 
   // ---- obsah položky (text, galéria, sumy) — ukladá sa samo ----
-  const nacitaj = (): CentralnaZbierka => (sek ? obsahSektora(sek.id) : centralnaZPamate(strankaId)) ?? (farnost ? prazdnaHlavna() : prazdnaCentralna());
+  const nacitaj = (): CentralnaZbierka => (sek ? obsahSektora(sek.id) : centralnaZPamate(strankaId)) ?? (farnost ? prazdnaHlavna() : { ...prazdnaCentralna(), popis: "" }); // OPRAVY 414: charita — nič predvyplnené
   const [d, setD] = useState<CentralnaZbierka>(nacitaj);
   const [ulozene, setUlozene] = useState(false);
   const zmenene = useRef(false);
@@ -131,7 +131,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   // jednotliví darcovia zvončekovej sa do hlavnej nepripisujú; suma hlavnej už omše obsahuje
   const podZv = podakovanieZvoncek(useZvoncek(strankaId), useSlovaFarnosti(strankaId));
   const ja = usePouzivatel();
-  const spustena = !farnost || !!d.spustena;
+  const spustena = !!sek || !!d.spustena; // OPRAVY 414 (8): aj centrálna charity beží až po Podržte a spustite
   const farnostDary: [string, string, string][] = !farnost ? [] : [
     // OPRAVY 294: skončená omša je v daroch Hlavnej (server 0096) — v Štatistikách jeden riadok s dátumom a časom
     ...darcoviaPre(idZbierky).map((r): [string, string, string] => r.omsa
@@ -229,7 +229,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   // farnosť pred spustením: namiesto QR karta „ešte nebeží" + Spustiť (bez Z-čísla a odkazu)
   const spustit = () => { const n = { ...d, spustena: new Date().toISOString() }; zmenene.current = false; setD(n); void ulozCentralnuZbierku(strankaId, n); setUlozene(true); };
   // KARTA 56D §5: kontrola pred spustením — ťuk na chýbajúce posunie na pole
-  const kontrola: [string, string, boolean][] = [["nazov", "Názov", !!d.nazov?.trim()], ["text", "Text pre darcov", !!cistyText(d.popis)], ["foto", "Titulná fotka", d.media.some((m) => m.typ === "foto")]];
+  const kontrola: [string, string, boolean][] = [...(farnost ? [["nazov", "Názov", !!d.nazov?.trim()] as [string, string, boolean]] : []), ["text", "Text pre darcov", !!cistyText(d.popis)], ["foto", "Titulná fotka", d.media.some((m) => m.typ === "foto")]];
   const mozeSpustit = kontrola.every((k) => k[2]);
   const idiNa = (pole: string) => {
     const el = document.querySelector<HTMLElement>(`[data-pole="${pole}"]`);
@@ -245,7 +245,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const spPusti = () => { window.clearTimeout(spTm.current); setSpDrz(false); };
   const nebezi = (
     <section key="spustit" style={{ ...kartaK, border: "2px solid var(--green)" }}>
-      <b style={{ fontSize: 18 }}>Spustiť hlavnú zbierku</b>
+      <b style={{ fontSize: 18 }}>{farnost ? "Spustiť hlavnú zbierku" : "Spustiť centrálnu zbierku"}</b>
       <span style={textK}>Pred spustením musí byť vyplnené:</span>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {kontrola.map(([p, t, hot]) => (

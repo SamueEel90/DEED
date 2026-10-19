@@ -57,7 +57,7 @@ export function PiratCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, h
       <div style={{ position: "absolute", left: pc ? 48 : 20, right: pc ? 48 : 20, bottom: pc ? 56 : 24, display: "flex", alignItems: "flex-end", gap: pc ? 28 : 12 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: pc ? 18 : 14, flex: 1, minWidth: 0 }}>
           <span style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
-            <span style={{ width: pc ? 104 : 80, height: pc ? 104 : 80, borderRadius: pc ? 26 : 22, background: "#fff", color: "#3F6E2A", fontSize: pc ? 38 : 30, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{profil.iniciala}</span>
+            <span style={{ width: pc ? 104 : 80, height: pc ? 104 : 80, borderRadius: pc ? 26 : 22, background: profil.logo ? `#fff url('${profil.logo}') center/contain no-repeat` : "#fff", color: "#3F6E2A", fontSize: pc ? 38 : 30, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{profil.logo ? null : profil.iniciala}</span>
             {mob && stitEl(86, 104)}
           </span>
           <b style={{ fontSize: pc ? 112 : 60, lineHeight: 0.92, letterSpacing: "-.045em", color: "#fff" }}>{meno}</b>
@@ -98,7 +98,7 @@ export function PiratCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, h
   })();
 
   // ---- 3 · Kam poslať (4 sektory, modul hneď vedľa / pod) ----
-  const sektory: TestSektor[] = [profil.centralna, ...profil.sektory].slice(0, 4);
+  const sektory: TestSektor[] = [...(profil.bezCentralnej ? [] : [profil.centralna]), ...profil.sektory].slice(0, 4); // OPRAVY 414: centrálna nevzniká sama
   const stS = (s: TestSektor, i: number) => s.stitok ?? (i ? `SEKTOR ${i}` : "CELÁ ČINNOSŤ");
   const nS = (s: TestSektor, i: number) => (!i && !farnost ? "Kam treba najviac" : s.nazov);
   const sumaS = (s: TestSektor) => s.dlazdicaText ?? (s.mesiac != null ? `${eur(s.mesiac)} tento mesiac` : eur(s.vyzbierane));
@@ -215,7 +215,7 @@ export function PiratCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, h
     </section>);
 
   const okno = stitOtv && <StitOkno p={profil} v6 mobil={mob} onClose={() => setStitOtv(false)} />;
-  const obsah: ReactNode = <>{titulka}{hore}{teraz}{kamPoslat}{odFarnikov}{cesta}{dalsie}{iskry}{pata}{mob && <div style={{ height: DOK + 24, flex: "none" }} />}</>;
+  const obsah: ReactNode = <>{titulka}{hore}{teraz}{sektory.length > 0 && kamPoslat}{odFarnikov}{cesta}{dalsie}{iskry}{pata}{mob && <div style={{ height: DOK + 24, flex: "none" }} />}</>;
   return (
     <div className="vp sc-tokeny" data-stit={stit} style={{ position: "relative", height: "100%", overflowY: "auto", WebkitOverflowScrolling: "touch" } as CSSProperties}>
       {obsah}{okno}

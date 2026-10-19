@@ -58,7 +58,7 @@ export function VykladCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, 
     <button type="button" onClick={() => setStitOtv(true)} aria-label={`Štít DEED+ CARE · ${nazovStitu(profil.stit)} · podrobnosti a overenie`} style={{ flex: "none", width: w, height: h, padding: 0, border: "none", background: "transparent", boxShadow: "none", cursor: "pointer" }}>
       <StitCare stit={profil.stit} w={w} h={h} lesk />
     </button>);
-  const logo = (s: number, r: number, fs: number) => <span style={{ flex: "none", width: s, height: s, borderRadius: r, background: "#fff", color: "#3F6E2A", fontSize: fs, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{profil.iniciala}</span>;
+  const logo = (s: number, r: number, fs: number) => <span style={{ flex: "none", width: s, height: s, borderRadius: r, background: profil.logo ? `#fff url('${profil.logo}') center/contain no-repeat` : "#fff", color: "#3F6E2A", fontSize: fs, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{profil.logo ? null : profil.iniciala}</span>;
   const fotoTitulky = (
     <div style={{ position: "relative", flex: pc ? 1.6 : undefined, height: pc ? undefined : 360, background: bgF(profil.titulka) }}>
       <span style={{ position: "absolute", inset: 0, background: `linear-gradient(180deg,rgba(10,8,5,${pc ? ".45" : ".5"}) 0%,rgba(10,8,5,0) 30%,rgba(10,8,5,.9) 100%)` }} />
@@ -172,7 +172,7 @@ export function VykladCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, 
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>{bodka}<b style={{ fontSize: 12, letterSpacing: ".1em", color: "var(--green)" }}>NAŽIVO</b><span style={{ flex: 1 }} /><b style={{ fontSize: 15, fontVariantNumeric: "tabular-nums" }}>Dnes {eur(d.dnes)} od {tvar(d.darcovia.length, ["človeka", "ľudí", "ľudí"])}</b></div>
       <span style={{ fontSize: 14, color: "var(--ink3)" }}><b style={{ color: "var(--acc)", letterSpacing: ".08em", fontSize: 12 }}>OD ZAČIATKU · {profil.odRoku}</b>{"  "}{profil.cisla.map(([v, t], i) => <span key={t}>{i ? " · " : ""}<b style={{ color: "var(--ink)" }}>{v}</b> {t}</span>)}</span>
     </div>);
-  const sektory: TestSektor[] = [profil.centralna, ...profil.sektory].slice(0, 4);
+  const sektory: TestSektor[] = [...(profil.bezCentralnej ? [] : [profil.centralna]), ...profil.sektory].slice(0, 4); // OPRAVY 414: centrálna nevzniká sama
   const dlazdice = (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>
       {sektory.map((s, i) => { const on = sel === i; return (
@@ -256,7 +256,7 @@ export function VykladCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, 
         {pribehTyzdna && <>{kicker("PRÍBEH TÝŽDŇA", { fontSize: 13, letterSpacing: ".14em" })}{pribehTyzdna}</>}
         {dalsie.length > 0 && <><b style={{ fontSize: 32, letterSpacing: "-.02em" }}>Ďalšie príbehy</b>{dalsie.map(dalsiPribeh)}</>}
       </div>
-      <aside style={{ width: 420, flex: "none", display: "flex", flexDirection: "column", gap: 14, position: "sticky", top: 20 }}>{hore}{nazivo}{podporit}</aside>
+      <aside style={{ width: 420, flex: "none", display: "flex", flexDirection: "column", gap: 14, position: "sticky", top: 20 }}>{hore}{nazivo}{sektory.length > 0 && podporit}</aside>
     </div>
     {odFarnikov}{hladame}{dokazali}{iskry}{pata}
   </>);
@@ -267,7 +267,7 @@ export function VykladCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, 
       {hore}
       {tentoTyzden}
       {pribehTyzdna && <>{kicker("PRÍBEH TÝŽDŇA", { letterSpacing: ".14em", paddingTop: 16 })}{pribehTyzdna}</>}
-      {podporit}
+      {sektory.length > 0 && podporit}
       {dalsie.length > 0 && <><b style={{ fontSize: 26, letterSpacing: "-.02em", paddingTop: 18 }}>Ďalšie príbehy</b>{dalsie.map(dalsiPribeh)}</>}
     </div>
     {odFarnikov}{hladame}{dokazali}{iskry}{pata}

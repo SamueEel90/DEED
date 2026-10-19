@@ -69,6 +69,7 @@ const ludiaNom = (n: number) => n === 1 ? "1 človek" : n >= 2 && n <= 4 ? `${n}
 /** „38 ľudí a 1 organizácia pomohli“ (organizácia = partner, nie vlastné peniaze) */
 const ludiaAOrg = (n: number, o: number) => !o ? ludiaPomohli(n) : !n ? `${organizacie(o)} ${o === 1 ? "pomohla" : o <= 4 ? "pomohli" : "pomohlo"}` : `${ludiaNom(n)} a ${organizacie(o)} pomohli`;
 function Ludia({ pocet, fanusikov, org = 0 }: { pocet: number; fanusikov?: boolean; org?: number }) {
+  if (pocet + org <= 0) return null; // OPRAVY 415: bez darov ani „0 ľudí pomohlo“, ani „rastie naživo“
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12, fontSize: 13, color: "var(--ink3)" }}>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg>

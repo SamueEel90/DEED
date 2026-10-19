@@ -11,7 +11,7 @@ import { supabase } from "./supabase";
 import { ukazChybuPriTuku } from "./chybaPriTuku";
 
 export type PoleReakcieF = "ucast" | "sustrast" | "blaho" | "spomin";
-export interface ReakcieF { ucast?: string[]; sustrast?: string[]; blaho?: string[]; /** Spomínam (pohrebná zbierka) */ spomin?: string[]; /** kľúč účtu → meno (Kto sa prihlásil) */ mena?: Record<string, string> }
+export interface ReakcieF { ucast?: string[]; sustrast?: string[]; blaho?: string[]; /** Spomínam (pohrebná zbierka) */ spomin?: string[]; /** kľúč účtu → meno (Kto sa prihlásil) */ mena?: Record<string, string> ; /** OPRAVY 397 (0128): kľúč účtu → kedy sa prihlásil (ms) */ kedy?: Record<string, number> }
 type Mapa = Record<string, ReakcieF>;
 
 let verzia = 0;
@@ -32,7 +32,8 @@ export function prepniReakciuF(id: string, ref: string, pole: PoleReakcieF, kto:
   const f = (m: Mapa): Mapa => {
     const r = m[ref] ?? {};
     const z = (r[pole] ?? []).filter((k) => k !== kto);
-    return { ...m, [ref]: { ...r, [pole]: chce ? [...z, kto] : z, ...(meno && chce ? { mena: { ...r.mena, [kto]: meno } } : {}) } };
+    const kedy = pole === "ucast" ? (() => { const k = { ...r.kedy }; delete k[kto]; if (chce) k[kto] = Date.now(); return { kedy: k }; })() : {}; // OPRAVY 397
+    return { ...m, [ref]: { ...r, [pole]: chce ? [...z, kto] : z, ...(meno && chce ? { mena: { ...r.mena, [kto]: meno } } : {}), ...kedy } };
   };
   if (supabase) { // OPRAVY 372: na serveri len cez reakcia_f (kľúč účtu dosadí server)
     ulozStavLokalne("reakcie", id, f(mapa(id))); zmena();

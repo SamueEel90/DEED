@@ -30,7 +30,8 @@ insert into t select 'osobne nič', not exists (select 1 from n97 where odkaz = 
 -- opätovný zápis toho istého poľa nič nepošle; nahlásenie áno (raz)
 update public.naboz_stav set data = data where oblast = 'odfarnikov' and id = 't97-far';
 insert into t select 'opätovný zápis nič', (select count(*) from n97) = 6;
-update public.naboz_stav set data = jsonb_set(data, '{1,nahlasili}', '["x"]') where oblast = 'odfarnikov' and id = 't97-far';
+-- čakajúce (0099) a úmysly (0116) sa z poľa presunú inam → nahlasuje sa príspevok podľa id, nie podľa poradia
+update public.naboz_stav set data = (select jsonb_agg(case when e->>'id' = 'p4' then e || '{"nahlasili":["x"]}' else e end) from jsonb_array_elements(data) e) where oblast = 'odfarnikov' and id = 't97-far';
 update public.naboz_stav set data = data where oblast = 'odfarnikov' and id = 't97-far';
 insert into t select 'nahlásený raz pre každého', (select count(*) from n97 where titul = 'Nahlásený príspevok ›') = 2;
 

@@ -76,6 +76,8 @@ export interface TestZbierka {
   d?: string; m?: string; rok?: number;
   /** KARTA 55 · príbeh: krátky text (feed, max 3 riadky), citát, kategória, diel firmy v pruhu, Príbeh týždňa */
   kratky?: string; citat?: { text: string; kto: string }; kategoria?: string; zFirmy?: number; pribehTyzdna?: boolean;
+  /** OPRAVY 415: zbierka charity z databázy — sumy a darcovia len z ledgera, pravidelná a EURC podľa nastavenia zbierky */
+  zDb?: boolean; prav?: boolean; eurc?: boolean;
 }
 
 export interface TestSkutok {
@@ -196,6 +198,10 @@ export interface TestProfil {
   b2b?: B2BData;
   /** KARTA 50 · nadpis sekcie práce („HĽADÁME ĽUDÍ" · farnosť „OMŠE A SLUŽBA") */
   pracaNadpis?: string;
+  /** OPRAVY 414: logo z Upraviť profil (inak iniciály) */
+  logo?: string;
+  /** OPRAVY 414 (4, 8): skutočná charita — centrálna zbierka nevzniká sama; dlaždice a blok len zo zbierok v databáze */
+  bezCentralnej?: boolean;
 }
 /** KARTA 50 · farnosť: bez štítu, bez dokladov a „doložené", bez dorovnania firmy */
 export const jeFarnost = (p: Pick<TestProfil, "typ">) => p.typ === "farnost";
@@ -622,7 +628,8 @@ export function prazdnaCharita(k: string, meno = "Nová charita"): TestProfil {
   const ini = meno.replace(/,?\s*(o\.\s?z\.|n\.\s?o\.)\s*$/i, "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("") || "?";
   return { ...e, k, meno, iniciala: ini, menoGen: undefined, menoDat: undefined, podporit: undefined, veta: "", stit: "Bronze", odRoku: new Date().getFullYear(),
     stitky: [], ico: "", ucet: "", sidlo: "", kontakt: "", cisla: [], stitCisla: [["0 %", "doložené"], ["0", "skutkov"], ["0", "sledujúcich"]],
-    centralna: { ...e.centralna, id: `c-${k}`, nazov: "Celá činnosť", vyzbierane: 0, darcovia: 0, mesiac: 0, mesacne: 0, galeria: [], kam: undefined, tipy: undefined }, titulka: "", onas: undefined, dorovnaniePas: undefined };
+    centralna: { ...e.centralna, id: `c-${k}`, nazov: "Celá činnosť", vyzbierane: 0, darcovia: 0, mesiac: 0, mesacne: 0, galeria: [], kam: undefined, tipy: undefined }, titulka: "", onas: undefined, dorovnaniePas: undefined,
+    sektory: [], zbierky: [], bezCentralnej: true };
 }
 export const najdiTestProfil = (k: string): TestProfil | undefined => TEST_PROFILY.find((p) => p.k === k);
 /** verejný odkaz na zdieľanie: /p/svetlo · /p/pekaren · /p/martin → kľúč profilu */

@@ -16,6 +16,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { useSession, setSession } from "@/lib/session";
 import { createPortal } from "react-dom";
 import { UDALOST_ZALOZ_CHARITU } from "@/lib/aktivnaCharita";
+import { zalozTestovaciuCharitu } from "@/lib/testovaciaCharita";
 import { resolveSession, subscribeAuth, zaistiSession } from "@/lib/auth";
 import { USE_SUPABASE } from "@/lib/supabase";
 import type { TypUctu } from "@/types";
@@ -274,7 +275,17 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   useVrstva(!!aktivacia, () => setAktivacia(false));
   useVrstva(orgReg, () => { setOrgReg(false); cakajRegistraciuOrg(false); });
   // OPRAVY 402: testovacie „+ Založiť charitu (test)“ — ten istý formulár registrácie charity
-  useEffect(() => { const f = () => { cakajRegistraciuOrg(true); setOrgReg(true); }; window.addEventListener(UDALOST_ZALOZ_CHARITU, f); return () => window.removeEventListener(UDALOST_ZALOZ_CHARITU, f); }, []);
+  // OPRAVY 402 (zjednodušené): testovacie tlačidlo jedným ťukom založí charitu s testovacími údajmi a otvorí jej Správu
+  useEffect(() => {
+    const f = () => {
+      toast("Zakladám testovaciu charitu…");
+      void zalozTestovaciuCharitu().then(() => {
+        toast("Charita je založená ✓ · údaje zmeníte v Správe");
+        pushModul("profil"); setModul("profil"); setProfilKluc((k) => k + 1);
+      }, (e: unknown) => toast("Charitu sa nepodarilo založiť · " + ((e as { message?: string })?.message ?? "skúste znova")));
+    };
+    window.addEventListener(UDALOST_ZALOZ_CHARITU, f); return () => window.removeEventListener(UDALOST_ZALOZ_CHARITU, f);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useVrstva(!!badgeSheet, () => setBadgeSheet(null));
   useVrstva(!!splitSheet, () => setSplitSheet(null));
   useVrstva(!!chainSheet, () => setChainSheet(null));
