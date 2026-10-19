@@ -71,9 +71,9 @@ export function TabBar({ taby, aktivny, onModul, wide }: {
   wide?: boolean;
 }) {
   return (
-    <nav aria-label="Hlavné moduly" className="sc-tokeny" style={{ position: "absolute", left: 0, right: 0, bottom: "calc(10px + env(safe-area-inset-bottom, 0px))", zIndex: 40, display: "flex", justifyContent: "center", padding: `0 ${SPACE.sm}px` }}>
+    <nav aria-label="Hlavné moduly" className="sc-tokeny" style={{ position: "absolute", left: 0, right: 0, bottom: "calc(10px + env(safe-area-inset-bottom, 0px))", zIndex: 40, display: "flex", justifyContent: "center", padding: `0 ${SPACE.sm}px`, pointerEvents: "none" /* OPRAVY 394: okraje vedľa lišty nezachytia ťuk — patrí obsahu pod nimi */ }}>
       <div style={{
-        width: "100%", maxWidth: wide ? 620 : "none",
+        width: "100%", maxWidth: wide ? 620 : "none", pointerEvents: "auto",
         display: "flex", alignItems: "stretch", borderRadius: RADIUS.xl, padding: `${SPACE.xs}px ${SPACE.xxs}px`,
         ...glassTmavy(24, .62),
         boxShadow: "0 16px 44px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.07)",
