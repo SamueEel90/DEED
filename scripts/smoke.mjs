@@ -32,7 +32,8 @@ const MODULY = [
 
 /** Moduly s feedom, kde vieme otvoriť detail a skontrolovať platobný modul. */
 // TODO: vrátiť pri nasadení Farnosť v3 — "nabozenstvo" (stránka farnosti sa celá mení, Martin 6. 10. 2026).
-const S_DETAILOM = ["good", "help", "charita"];
+// TODO: vrátiť, keď smoke pobeží proti seedovanej DB — "charita" (OPRAVY 403: feed charity je len z DB, mock karty zmazané).
+const S_DETAILOM = ["good", "help"];
 
 /** Časti, ktoré musí vykresliť <PlatobnyModul> v každom detaile. */
 const CASTI_PLATBY = [
