@@ -99,8 +99,9 @@ type Krok = "suma" | "sposob" | "zhrnutie" | "spracovanie" | "hotovo" | /** OPRA
 /** stav zbierky tesne pred darom — pre poďakovanie a hlášku (karta 09) */
 export type PredDarom = { vyzbierane: number; ciel: number | null; pocetDarov: number; darovDnes: number };
 
-export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonus, firma, pred, onHotovo, onClose }: {
+export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonus, firma, pred, onHotovo, onClose, bezMilnikov }: {
   pred: PredDarom;
+  /** OPRAVY 388: zvončeková — po dare bez pruhu a míľnika */ bezMilnikov?: boolean;
   kanal: KanalPlatby; suma?: number; nazov: string; registrovany: boolean;
   bonus?: (eur: number) => number;   // dorovnanie firmy k daru (len €)
   firma?: string;
@@ -341,7 +342,7 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
       <PodakovaniePoDare meno={ja.meno} registrovany={registrovany} eur={eurHodnota} sumaTxt={vSume(suma, kanal)}
         dorovnanieTxt={dorovna > 0 ? eK(dorovna) : undefined} firma={firma}
         predPct={G ? Math.min(1, pred.vyzbierane / G) : pred.vyzbierane / m0.dalsi} poPct={G ? Math.min(1, po / G) : Math.min(1, po / m1.dalsi)}
-        poTxt={G ? `${eK(po)} z ${eK(G)}` : `Vyzbierané ${eK(po)}`} poPctTxt={G ? `${Math.floor((po / G) * 100)} %` : `ďalší míľnik ${eK(m1.dalsi)}`}
+        poTxt={G ? `${eK(po)} z ${eK(G)}` : `Vyzbierané ${eK(po)}`} poPctTxt={G ? `${Math.floor((po / G) * 100)} %` : bezMilnikov ? "" : `ďalší míľnik ${eK(m1.dalsi)}`} bezPruhu={!G && bezMilnikov}
         hlaska={hlaskaPoDare({ vyzbierane: pred.vyzbierane, ciel: G, pocetDarov: pred.pocetDarov, darovDnes: pred.darovDnes }, { eur: eurHodnota, dorovnanie: dorovna, registrovany })}
         onRegistrovat={registrovat} onHotovo={registrovany ? zatvor : () => setKrok("lakacka")}
         podNadpisom="Tvoj dar odišiel priamo príjemcovi."

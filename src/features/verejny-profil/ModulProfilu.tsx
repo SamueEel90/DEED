@@ -141,7 +141,7 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, 
 
   return (
     <div ref={rootRef} style={{ position: "relative", display: "flex", flexDirection: "column", color: "var(--ink)" }}>
-      <KartaStavu refId={refId} zaklad={zaklad} ciel={ciel} ludiaZaklad={sektor.darcovia} koniecPruhu={koniecPruhu} />
+      <KartaStavu refId={refId} zaklad={zaklad} ciel={ciel} ludiaZaklad={sektor.darcovia} koniecPruhu={koniecPruhu} bezMilnikov={bezObjektu && !ciel} /* OPRAVY 388: zvonček */ />
       {dorovnanie && <div style={{ marginTop: 12 }}>
         <KartaDorovnava d={dorovnanie} />
         {k20 > 0 && <div style={{ margin: "-4px 0 0", textAlign: "center", fontSize: 13.5, fontWeight: 700, color: "var(--gold)", fontVariantNumeric: "tabular-nums" }}>daruješ 20 € → do {kam} ide {eurT(20 + k20)}</div>}
@@ -165,7 +165,7 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, 
       </div>}
       {!bezDarcov && <div style={{ marginTop: 14 }}><Darcovia refId={refId} bezDorovnania={!sDorovnanim} /></div>}
 
-      {platba && <PlatobneOkno kanal={platba.kanal} suma={platba.suma} nazov={nazov} registrovany={registrovany} pred={pred}
+      {platba && <PlatobneOkno kanal={platba.kanal} suma={platba.suma} nazov={nazov} registrovany={registrovany} pred={pred} bezMilnikov={bezObjektu && !ciel}
         bonus={dorovnanie ? (s) => dorovnanieKDaru(dorovnanie, s) : undefined} firma={dorovnanie?.firma}
         onClose={() => setPlatba(null)}
         onHotovo={zapisDar} />}

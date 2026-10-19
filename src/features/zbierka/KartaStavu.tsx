@@ -81,7 +81,9 @@ function Ludia({ pocet, fanusikov, org = 0 }: { pocet: number; fanusikov?: boole
   );
 }
 
-export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, koniecPruhu, cezTvorcu, skryta }: {
+export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, koniecPruhu, cezTvorcu, skryta, bezMilnikov }: {
+  /** OPRAVY 388: zvončeková zbierka — nemá cieľ ani míľniky, len suma */
+  bezMilnikov?: boolean;
   /** KARTA 57C §4 · OPRAVY 181: pohrebná zbierka — len rozmazaná suma a „suma sa ukáže po vašom dare“; bez míľnika a Posledného daru */
   skryta?: boolean;
   /** karta 13 — karta stavu „cez tvorcu": len dary cez neho, jeho suma je vždy vlastná */
@@ -179,12 +181,13 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, ko
       <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink3)" }}>{nadpisVyzbierane}</div>
       <div style={{ ...velka, marginTop: 2 }} data-zb-suma={refId}>{eur(zobrazena)}</div>
       {dnes > 0 && <div style={{ fontSize: 13, fontWeight: 700, color: "var(--green)", marginTop: 4 }}>dnes +{eur(dnes)}</div>}
+      {bezMilnikov ? <div ref={koniecPruhu} style={{ height: 0 }} /> : <>
       <div style={{ marginTop: 12 }}><Pruh podiel={zakladMilnika} vyska={6} blik={oslava || undefined} koniec={koniecPruhu}
         useky={cezTvorcu || oslava ? [] : ret.useky.map((u) => ({ w: u.suma / dalsi, farba: u.farba })).filter((u) => u.w > 0)} /></div>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 8, fontSize: 12.5, fontWeight: 700, color: "var(--ink3)" }}>
         <span>{dosiahnuty ? `míľnik ${eur(dosiahnuty)} dosiahnutý` : "prvý míľnik"}</span>
         <span>ďalší míľnik <span style={{ color: "var(--green)" }}>{eur(dalsi)}</span></span>
-      </div>
+      </div></>}
       {posledny && (
         <div key={posledny.id} className="zb-novy" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, background: "var(--bg)", border: "1px solid var(--cardBd)", borderRadius: 12, padding: "8px 12px" }}>
           <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)", flex: "none" }}>POSLEDNÝ DAR</span>
