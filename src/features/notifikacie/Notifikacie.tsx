@@ -30,6 +30,7 @@ import { mojeCakajuce, obnovMojeCakajuce, odFarnikov, useOdFarnikov, obnovCakaju
 import { nazovFarnosti } from "@/lib/mojeFarnosti";
 import { otvorSpravuNa } from "@/lib/mojeStranky";
 import { otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
+import { otvorPozvanku } from "@/lib/pozvankaSpravy";
 
 export { NOTIFY } from "./mock";
 
@@ -126,7 +127,7 @@ export function Zvoncek({ color = "var(--c-textSec)", toast }: { color?: string;
   const [um, setUm] = useState<{ stranka: string; id: string; text: string } | null>(null);
   const umX = um ? odFarnikov(um.stranka).find((x) => x.id === um.id && x.k === "umysel") : undefined;
   const naOdkaz = (n: Notifikacia) => {
-    const m = /^(odv|prisp|nezv|vz|ovp|str|um):([^:]+):(.+)$/.exec(n.odkaz ?? "");
+    const m = /^(odv|prisp|nezv|vz|ovp|str|um|poz):([^:]+):(.+)$/.exec(n.odkaz ?? "");
     oznac(n); setOtvor(false);
     if (!m) return;
     const [, druh, stranka, pid] = m;
@@ -135,6 +136,7 @@ export function Zvoncek({ color = "var(--c-textSec)", toast }: { color?: string;
     else if (druh === "ovp") otvorOverenie(pid); // OPRAVY 338: kód od farára → overenie príjemcu (napíše kód, potvrdí rozdelenie)
     else if (druh === "vz") otvorVerejnyProfil(stranka, { doVecnej: pid }); // OPRAVY 320: poďakovanie darcom vecnej zbierky → detail zbierky
     else if (druh === "str") otvorVerejnyProfil(stranka); // OPRAVY 349: poďakovanie od farnosti → stránka farnosti
+    else if (druh === "poz") otvorPozvanku(stranka, pid); // OPRAVY 392: pozvánka do Správy → Prijať · Odmietnuť
     else if (druh === "um") { setUm({ stranka, id: pid, text: n.text }); void obnovCakajuce(stranka); } // OPRAVY 375
     else setNezv({ stranka, t: mojeCakajuce().find((c) => c.id === pid)?.t ?? n.text });
   };

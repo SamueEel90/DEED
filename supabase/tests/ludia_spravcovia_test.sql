@@ -18,7 +18,7 @@ grant all on t to public;
 -- farár pridá kaplána a kostolníka (ako appka: nastavenia_stranky, kľúč „ludia“)
 set role authenticated;
 select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-000000120f01', false);
-insert into public.nastavenia_stranky (stranka, data) values ('t120-far', '{"ludia":[{"id":1,"n":"","k":"kaplan@test.sk","r":"Kaplán / zástupca","caka":true},{"id":2,"n":"","k":"kostolnik@test.sk","r":"Kostolník / pomocník","caka":true}]}');
+insert into public.nastavenia_stranky (stranka, data) values ('t120-far', '{"ludia":[{"id":1,"n":"","k":"kaplan@test.sk","r":"Kaplán / zástupca","caka":false},{"id":2,"n":"","k":"kostolnik@test.sk","r":"Kostolník / pomocník","caka":false}]}');
 
 select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-000000120a01', false);
 insert into t select 'kaplán je správca', public.spravujem_stranku('t120-far');
@@ -31,7 +31,7 @@ insert into t select 'cudzí nie je správca', not public.spravujem_stranku('t12
 
 -- farár kaplána odoberie
 select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-000000120f01', false);
-update public.nastavenia_stranky set data = '{"ludia":[{"id":2,"n":"","k":"kostolnik@test.sk","r":"Kostolník / pomocník","caka":true}]}' where stranka = 't120-far';
+update public.nastavenia_stranky set data = '{"ludia":[{"id":2,"n":"","k":"kostolnik@test.sk","r":"Kostolník / pomocník","caka":false}]}' where stranka = 't120-far';
 insert into t select 'farár ostáva správca', public.spravujem_stranku('t120-far');
 select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-000000120a01', false);
 insert into t select 'odobratý kaplán práva stratil', not public.spravujem_stranku('t120-far');

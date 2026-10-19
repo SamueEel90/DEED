@@ -37,6 +37,7 @@ import { IskryHost } from "@/features/iskry/Iskry";
 import { zavriIskry, startIskry } from "@/features/iskry/otvor";
 import { PridatIskruHost } from "@/features/iskry/PridatIskru";
 import { VerejnyProfilHost } from "@/features/verejny-profil/VerejnyProfil";
+import { PozvankaHost } from "@/features/rola/PozvankaDoSpravy";
 import { useVrstvaProfiluOtvorena, useVerejnyProfilOtvoreny, prisloZQr, qrAdresa } from "@/features/verejny-profil/otvor";
 import { AkciaHost } from "@/features/skutok/Akcia";
 import { PomocHost } from "@/features/profil/Pomoc";
@@ -423,6 +424,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
 
         {/* KARTA 43: verejný profil — vrstva v obsahu appky (ľavé menu a dok ostávajú nad ňou) */}
         <VerejnyProfilHost />
+        <PozvankaHost />{/* OPRAVY 392 */}
         <AdresarHost />
 
         {/* plávajúci glass dock — moduly (len mobil/tablet; desktop má bočný panel) */}
