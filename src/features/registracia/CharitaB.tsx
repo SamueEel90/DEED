@@ -6,7 +6,7 @@
 import { useRef, useState } from "react";
 import * as db from "@/lib/db";
 import { nastavAko, otvorSpravuPoRegistracii, cakajRegistraciuOrg, nacitajStrankyUctu, ulozNovuStranku, strankaCharity } from "@/lib/mojeStranky";
-import { nastavAktivnuCharitu, noveIdCharity, pridajLokalnuStranku } from "@/lib/aktivnaCharita";
+import { nastavAktivnuCharitu, noveIdCharity, pridajLokalnuStranku, zapisCasRegistracie } from "@/lib/aktivnaCharita";
 import { ulozIbanOrg, ulozTypStranky } from "@/features/rola/stav";
 import { overIban } from "@/features/rola/segmenty";
 import type { RegistrIcoVysledok } from "@/types";
@@ -111,6 +111,7 @@ export function CharitaB({ prihlaseny, onSpat, onPrihlasit, onBezUctu, onHotovo,
     const id = strankaId ?? noveIdCharity();
     if (!naServeri || !prihlaseny?.ucetId) pridajLokalnuStranku({ k: id, n: nazov || "Nová charita", typ: "charita" });
     else void nacitajStrankyUctu();
+    zapisCasRegistracie(id); // OPRAVY 398: od registrácie sa počítajú 2 mesiace P3 pre pozvané
     nastavAko(id);
     ulozNovuStranku(strankaCharity(id, nazov || "Nová charita"));
     cakajRegistraciuOrg(false);

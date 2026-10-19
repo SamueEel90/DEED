@@ -38,7 +38,9 @@ function prelozChybu(message?: string, inak = "Nepodarilo sa · skúste znova.")
 
 export async function signUp(email: string, heslo: string): Promise<AuthVysledok> {
   if (!supabase) return { ok: false, chyba: "Supabase nie je nakonfigurovaný." };
-  const { data, error } = await supabase.auth.signUp({ email: email.trim(), password: heslo });
+  // odkaz v potvrdzovacom e-maile vedie späť tam, kde sa človek registroval (doména aj locale), nie na Site URL z Supabase
+  const navrat = typeof window !== "undefined" ? `${window.location.origin}/` : undefined;
+  const { data, error } = await supabase.auth.signUp({ email: email.trim(), password: heslo, options: navrat ? { emailRedirectTo: navrat } : undefined });
   if (error) return { ok: false, chyba: prelozChybu(error.message, "Účet sa nepodarilo založiť · Skúsiť znova.") };
   const authId = data.user?.id;
   if (!authId) return { ok: false, chyba: "Účet sa nepodarilo založiť · Skúsiť znova." };

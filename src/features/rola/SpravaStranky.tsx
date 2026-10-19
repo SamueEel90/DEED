@@ -44,7 +44,8 @@ import { potvrditTuknutim, nastavPotvrditTuknutim } from "@/features/zbierka/Pla
 import { TESTOVACIA } from "@/lib/testovacia";
 import { VzhladStranky } from "./VzhladStranky";
 import { useRegistra } from "@/lib/udajeRegistra";
-import { nastavAktivnuCharitu } from "@/lib/aktivnaCharita";
+import { nastavAktivnuCharitu, casRegistracieLokalne } from "@/lib/aktivnaCharita";
+import { supabase } from "@/lib/supabase";
 import { SpravaFarnosti } from "./SpravaFarnosti";
 import { useTestStav, zmenTestStav } from "@/lib/testStav";
 import { PrepinacPodania, TestVolba } from "@/features/verejny-profil/casti";
@@ -308,7 +309,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   const setTier = (t: Tier) => { const n = { ...nacitajTiery(), [poz]: t }; setTiery(n); ulozTiery(n); };
   const [stit, setStit] = useState<StitCharity>(nacitajStitCharity);
   const [nova, setNova] = useState<boolean>(nacitajCharituNovu);
-  // OPRAVY 109: testovacia lišta — Nová · pozvaná (prvých 50, P3 zadarmo) / Nová · zadarmo / Bežná
+  // OPRAVY 109: testovacia lišta — Nová · pozvaná (prvých 50, P3 zadarmo) / Nová · zadarmo / Bežná (OPRAVY 398: charita bez Bežnej)
   const [pozvana, setPozvana] = useState<boolean>(() => { try { return localStorage.getItem("deed.dev.pozvana") === "1"; } catch { return false; } });
   const [piny, setPiny] = useState<PolozkaSpravy[]>(() => pinyZPamate(strankaId));
   useEffect(() => { let ziva = true; void nacitajPiny(strankaId).then((p) => { if (ziva) setPiny(p); }); return () => { ziva = false; }; }, [strankaId]);
@@ -378,7 +379,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   const spolocne = { strankaId, entita: poz as string, tier, piny: pinyTypu, prepniPin, otvorPolozku, otvor, nova: bezUkazok, stit, sada, menu, mobil: !desktop, tablet, zbal, prepniZbal, uvod, krok1, pozvana, vlastne, rozpisana, spravuj: (z: ZbierkaNaSpravu) => { setSpravZb(z); otvor("x:Správa zbierky"); } };
   // KARTA 42 · telefón: karta charity v jednom riadku + 6 dlaždíc správy hneď pod ňou (bez nadpisu, nezbaľuje sa)
   const hornaCast = telefon ? <>
-    <KartaRiadok nazov={nazov} inicialy={inicialy} profil={profil} pct={uplnost.pct} stit={stit} sada={sada} glow={glowUp} onClick={() => otvor("profil")} />
+    <KartaRiadok nazov={nazov} inicialy={inicialy} profil={profil} pct={uplnost.pct} chyba={uplnost.chyba} stit={stit} sada={sada} glow={glowUp} onClick={() => otvor("profil")} />
     <DlazdiceSpravy otvor={otvor} nav={navZobr} glowZb={glowZb} />
   </> : null;
   let obsah: React.ReactNode;
@@ -427,14 +428,14 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
         <TestVolba pas={!desktop} nazov="Typ" volby={TYPY_STRANOK.filter((t) => !TYP_SKRYTY[t]).map((t) => [t, TYP_NAZOV[t]] as [TypStranky, string])} hodnota={typ} onVolba={setTyp} />
         <TestVolba pas={!desktop} nazov="Rola" volby={[["hlavny", "Hlavný správca"], ["spravca", "Správca"], ["pomocnik", "Pomocník"], ["organizator", "Organizátor"]] as [RolaStranky, string][]} hodnota={rola} onVolba={(r) => zmenTestStav({ rola: r })} />
       </>}>
-      <DevSprava pas={!desktop} tier={tier} stit={stit} stav={!nova ? "bezna" : pozvana ? "pozv" : "free"}
+      <DevSprava pas={!desktop} tier={tier} stit={stit} charita={typ === "charita"} stav={!nova && typ !== "charita" ? "bezna" : pozvana ? "pozv" : "free"}
         onTier={setTier}
         onStit={(s) => { setStit(s); ulozStitCharity(s); }}
         onStav={(k) => {
-          const n = k !== "bezna", pz = k === "pozv";
+          const n = k !== "bezna", pz = k === "pozv"; // OPRAVY 398: charita Bežnú nemá — tvorí sa od nuly
           setNova(n); ulozCharituNovu(n); setPozvana(pz);
           try { localStorage.setItem("deed.dev.pozvana", pz ? "1" : "0"); } catch { /* LS nedostupné */ }
-          setTier(k === "pozv" ? 3 : k === "free" ? 0 : 1);
+          setTier(pz ? 3 : n ? 0 : 1);
         }} />
     </PrepinacPodania>
   );
@@ -452,7 +453,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
     {verejny && <VerejnyProfilOkno pozicia={poz} sektor={typ} tier={tier} strankaId={strankaId} stit={stit} mobil={!desktop} onZavri={() => setVerejny(false)}
       lista={<><span style={{ flex: !desktop ? "1 1 100%" : 1, minWidth: 0, fontSize: 15, fontWeight: 800, color: "var(--ink)" }}>Takto vidí váš profil každý návštevník</span>
         <button type="button" onClick={() => setVerejny(false)} style={{ height: 42, padding: "0 16px", border: "none", borderRadius: 13, background: "var(--btn)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>Zavrieť</button>
-        <button type="button" onClick={() => { setVerejny(false); otvor("profil"); }} style={{ height: 42, padding: "0 16px", border: "none", borderRadius: 13, background: "var(--btn)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>Upraviť</button></>} />}</>;
+        <button type="button" onClick={() => { setVerejny(false); otvor("profil"); }} style={{ height: 42, padding: "0 16px", border: "none", borderRadius: 13, background: "var(--btn)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>Upraviť profil</button></>} />}</>;
 
   const hlavicka = <Hlavicka titul={sub === "vsetko" ? <>Všetko, čo <DeedZnacka /> vie</> : titulok(sub, typ)} onSpat={spat} spatT={sub === null ? "Domov" : "Späť"} otvor={otvor} mobil={!desktop} glowNova={glowZb} telefon={telefon} onPridat={() => setPridat(true)} />;
 
@@ -460,12 +461,13 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
     <div ref={korenRef} className="sprava-charity" data-stit={stit} style={{ minHeight: "100dvh", boxSizing: "border-box", padding: "20px 32px", display: "flex", gap: 24, alignItems: "flex-start" }}>
       <aside style={{ width: 244, flex: "none", display: "flex", flexDirection: "column", gap: 12, paddingRight: 16, borderRight: "2px solid", borderImage: "var(--metal) 1", position: "sticky", top: 20, alignSelf: "flex-start" }}>
         <KartaCharity nazov={nazov} inicialy={inicialy} typ={typ} otvor={otvor} uplnost={uplnost} profil={profil} glow={glowUp} />
-        <button onClick={() => otvor("x:Verejný profil")} className="sc-bdh" style={{ flex: "none", height: 56, padding: "0 14px", borderRadius: 18, background: "var(--tBg)", border: "1px solid var(--tBd)", cursor: "pointer", display: "flex", alignItems: "center", gap: 11, textAlign: "left" }}>
-          <OkoIk />
+        {/* OPRAVY 399: Verejný profil a Nastavenia ako vo Viere — farby nezávislé od štítu */}
+        <button type="button" data-stit="silver" onClick={() => otvor("x:Verejný profil")} style={{ flex: "none", height: 56, padding: "0 14px", borderRadius: 18, background: "var(--tBg)", border: "1px solid var(--tBd)", cursor: "pointer", display: "flex", alignItems: "center", gap: 11, textAlign: "left", fontFamily: "inherit", boxShadow: "none" }}>
+          <Ik d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" c="var(--tInk)" />
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 15, fontWeight: 800, color: "var(--tInk)" }}>Verejný profil</span><span style={{ fontSize: 12, color: "var(--tInk2)" }}>ako ho vidia darcovia</span></span>
-          <Ik d={IK.sipkaP} s={18} c="var(--tInk)" w={2.4} />
+          <span aria-hidden="true" style={{ fontSize: 18, color: "var(--tInk)" }}>›</span>
         </button>
-        <TlacidloNastavenia on={aktivnaSkupina === "nast"} onClick={() => otvor("nast")} />
+        <TlacidloNastavenia modre on={aktivnaSkupina === "nast"} onClick={() => otvor("nast")} />
         <button onClick={() => { hist.current = [...hist.current, sub]; setSub(null); }} style={{ flex: "none", height: 56, padding: "0 14px", borderRadius: 18, background: sub === null ? "var(--accSoft)" : "var(--card)", border: `1px solid ${sub === null ? "var(--cuBd)" : "var(--cardBd)"}`, cursor: "pointer", display: "flex", alignItems: "center", gap: 11, textAlign: "left" }}>
           <Ik d={IK.prehlad} />
           <span style={{ flex: 1, fontSize: 15, fontWeight: sub === null ? 800 : 700, color: sub === null ? "var(--acc)" : "var(--ink)" }}>Prehľad</span>
@@ -558,45 +560,25 @@ const upravitTl = (glow: boolean): React.CSSProperties => glow
   ? { background: "var(--green)", color: "#fff", boxShadow: "0 0 0 3px var(--green), 0 0 18px rgba(78,125,55,.55)" }
   : { background: "var(--btn)", color: "var(--ink)", boxShadow: "none" };
 
-function KartaCharity({ nazov, inicialy, typ, otvor, mobil, tablet, uplnost, profil, glow }: { nazov: string; inicialy: string; typ: TypStranky; otvor: (s: Sub) => void; mobil?: boolean; tablet?: boolean; uplnost: { pct: number; chyba: string }; profil: ProfilStranky | null; glow: boolean }) {
-  const [otv, setOtv] = useState(true);
-  const pct = uplnost.pct; // OPRAVY 112: počas úpravy z konceptu, inak z konceptu alebo uloženého profilu
-  // OPRAVY 111: „Charita / OZ · 50 %" — jeden riadok, nikdy sa nezalamuje (PC aj tablet)
-  const riadok = <span style={{ display: "block", fontSize: 12.5, color: "var(--cuInk2)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{TYP_NAZOV[typ]} · {pct} %</span>;
-  // OPRAVY 100: tablet — 1 riadok (logo 44 · názov + percento + pruh pod textom · Upraviť vpravo), výšku určuje karta štítu
-  if (tablet) return (
-    <div style={{ height: "100%", boxSizing: "border-box", borderRadius: 18, background: "var(--cuBg)", border: "1.5px solid var(--cuBd)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.45)", padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-      <LogoKarty profil={profil} inicialy={inicialy} size={44} />
-      <span style={{ flex: "0 1 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
-        <span><b style={{ display: "block", fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nazov}</b>{riadok}</span>
-        <Pruh sc={pct / 100} h={6} bg="rgba(168,116,80,.25)" />
-      </span>
-      <span style={{ flex: 1 }} />
-      <button onClick={() => otvor("profil")} style={{ ...zeleneTl, ...upravitTl(glow) }}>Upraviť</button>
-    </div>);
-  if (mobil) return (
-    <div style={{ height: "100%", boxSizing: "border-box", borderRadius: 18, background: "var(--cuBg)", border: "1.5px solid var(--cuBd)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.45)", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-      <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-        <LogoKarty profil={profil} inicialy={inicialy} size={40} />
-        <span style={{ minWidth: 0 }}><b style={{ display: "block", fontSize: 14.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nazov}</b><span style={{ display: "block", fontSize: 12, color: "var(--cuInk2)" }}>{TYP_NAZOV[typ]} · profil hotový na {pct} %</span></span>
-      </span>
-      <Pruh sc={pct / 100} h={6} bg="rgba(168,116,80,.25)" />
-      <span style={{ flex: 1 }} />
-      <button onClick={() => otvor("profil")} style={{ ...zeleneTl, width: "100%", padding: 0, ...upravitTl(glow) }}>Upraviť profil</button>
-    </div>);
+// OPRAVY 399: karta charity = ako karta profilu vo Viere (SpravaFarnosti kartaProfilu), pozadie a rám ostávajú bronzové (štít).
+// Hotový profil: logo · názov · „Upraviť profil ›", celá karta je jeden ťuk. Nehotový: percento, pás, čo chýba, Dokončiť profil. Bez zbaľovania.
+function KartaCharity({ nazov, inicialy, otvor, mobil, tablet, uplnost, profil, glow }: { nazov: string; inicialy: string; typ: TypStranky; otvor: (s: Sub) => void; mobil?: boolean; tablet?: boolean; uplnost: { pct: number; chyba: string }; profil: ProfilStranky | null; glow: boolean }) {
+  const m = !!(mobil || tablet), ls = m ? 56 : 44, fs = m ? 17 : 14.5;
+  const ram: React.CSSProperties = { flex: "none", boxSizing: "border-box", width: "100%", height: m ? "100%" : undefined, borderRadius: m ? 20 : 18, background: "var(--cuBg)", border: "1.5px solid var(--cuBd)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.45)", padding: m ? "14px 16px" : 12 };
+  const hlava = (sub2: React.ReactNode) => <>
+    <LogoKarty profil={profil} inicialy={inicialy} size={ls} />
+    <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}><b style={{ fontSize: fs, lineHeight: 1.25, color: "var(--ink)", overflowWrap: "anywhere" }}>{nazov}</b>{sub2}</span>
+  </>;
+  if (uplnost.pct >= 100) return (
+    <button type="button" onClick={() => otvor("profil")} style={{ ...ram, display: "flex", alignItems: "center", gap: m ? 14 : 10, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
+      {hlava(<span style={{ fontSize: m ? 14.5 : 13, fontWeight: 800, color: "var(--cuInk)" }}>Upraviť profil ›</span>)}
+    </button>);
   return (
-    <div style={{ flex: "none", borderRadius: 18, background: "var(--cuBg)", border: "1.5px solid var(--cuBd)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.45)" }}>
-      <button onClick={() => setOtv((o) => !o)} aria-expanded={otv} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: 12, border: "none", background: "transparent", cursor: "pointer", textAlign: "left", color: "var(--ink)" }}>
-        <LogoKarty profil={profil} inicialy={inicialy} size={40} />
-        {/* OPRAVY 111: názov najviac 2 riadky, pod ním 1 riadok „Charita / OZ · 50 %" */}
-        <span style={{ flex: 1, minWidth: 0 }}><span title={nazov} style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", fontSize: 14.5, fontWeight: 800, lineHeight: 1.25 }}>{nazov}</span>{riadok}</span>
-        <Ik d={IK.dole} s={18} w={2.4} style={{ flex: "none", transform: `rotate(${otv ? 180 : 0}deg)`, transition: "transform .2s ease" }} />
-      </button>
-      {otv && <div style={{ padding: "4px 12px 12px", display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid var(--accLine)" }}>
-        <span style={{ marginTop: 8 }}><Pruh sc={pct / 100} h={6} bg="rgba(168,116,80,.25)" /></span>
-        <span style={{ fontSize: 13, color: "var(--cuInk)" }}>{uplnost.chyba}</span>
-        <button onClick={() => otvor("profil")} style={{ height: 44, borderRadius: 12, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, ...upravitTl(glow) }}>Upraviť</button>
-      </div>}
+    <div style={{ ...ram, display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: m ? 14 : 10 }}>{hlava(<span style={{ fontSize: m ? 14 : 12.5, color: "var(--cuInk2)" }}>Profil · {uplnost.pct} %</span>)}</div>
+      <Pruh sc={uplnost.pct / 100} h={6} bg="rgba(168,116,80,.25)" />
+      {uplnost.chyba && <span style={{ fontSize: 13, lineHeight: 1.4, color: "var(--cuInk)" }}>{uplnost.chyba}</span>}
+      <button type="button" onClick={() => otvor("profil")} style={{ minHeight: 44, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, ...(glow ? upravitTl(true) : { background: "#4B7A35", color: "#fff", boxShadow: "none" }) }}>Dokončiť profil</button>
     </div>);
 }
 
@@ -642,7 +624,7 @@ function MenuDlazdice({ vsetko, otvor, nav, tablet, zbal, prepniZbal, glowZb }: 
     ...nav.map((n) => ({ k: n.k as Sub, t: n.t, d: n.d, n: n.n })),
   ];
   return (<Sekcia id="menu" nazov="Správa stránky" suhrn={pocet(dl.length, ["položka", "položky", "položiek"])} zbal={zbal} prepni={prepniZbal}>
-    <TlacidloNastavenia on={false} onClick={() => otvor("nast")} />
+    <TlacidloNastavenia modre on={false} onClick={() => otvor("nast")} />
     <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 8 }}>
       {dl.map((x) => (
         <button key={String(x.k)} onClick={() => otvor(x.k)} style={{ position: "relative", boxShadow: glowZb && x.k === "g_zbierky" ? "0 0 0 3px var(--green), 0 0 18px rgba(78,125,55,.55)" : "none", minHeight: tablet ? 72 : 84, padding: "10px 6px", borderRadius: 16, background: x.teal ? "var(--tBg)" : "var(--card)", border: `1px solid ${x.teal ? "var(--tBd)" : "var(--cardBd)"}`, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 13.5, fontWeight: 800, color: x.teal ? "var(--tInk)" : "var(--ink)", lineHeight: 1.25, textAlign: "center" }}>
@@ -703,20 +685,31 @@ function HarokPridat({ stit, tier, typ, onClose, onVolba }: { stit: StitCharity;
     </SpodnyHarok>);
 }
 
-/** karta charity v jednom riadku: logo 44 · meno · „Profil hotový na X % · Upraviť ›" · pruh · štít 42 × 52 (odlesk) */
-function KartaRiadok({ nazov, inicialy, profil, pct, stit, sada, glow, onClick }: { nazov: string; inicialy: string; profil: ProfilStranky | null; pct: number; stit: StitCharity; sada: StitSada; glow: boolean; onClick: () => void }) {
+/** karta charity v jednom riadku: logo 44 · meno · štít 42 × 52 (odlesk).
+ *  OPRAVY 399 (ako Viera): hotový profil = „Upraviť profil ›", celá karta jeden ťuk; nehotový = percento, pás, čo chýba, Dokončiť profil. */
+function KartaRiadok({ nazov, inicialy, profil, pct, chyba, stit, sada, glow, onClick }: { nazov: string; inicialy: string; profil: ProfilStranky | null; pct: number; chyba: string; stit: StitCharity; sada: StitSada; glow: boolean; onClick: () => void }) {
   const [, , en] = STITY[stit];
-  return (
-    <button onClick={onClick} aria-label={`${nazov} · profil hotový na ${pct} % · Upraviť profil`} style={{ flex: "none", position: "relative", overflow: "hidden", minHeight: 64, borderRadius: 18, background: "var(--cuBg)", border: "1.5px solid var(--cuBd)", boxShadow: glow ? "0 0 0 3px var(--green), 0 0 18px rgba(78,125,55,.55)" : "inset 0 1px 0 rgba(255,255,255,.45)", padding: "10px 12px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", textAlign: "left", color: "var(--ink)", width: "100%", boxSizing: "border-box" }}>
+  const hotovy = pct >= 100;
+  const vnutro = <>
+    <span style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
       <LogoKarty profil={profil} inicialy={inicialy} size={44} />
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 5 }}>
         <b style={{ fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{nazov}</b>
-        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--cuInk2)" }}>Profil hotový na {pct} % · Upraviť ›</span>
-        <Pruh sc={pct / 100} h={6} bg="rgba(168,116,80,.25)" />
+        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--cuInk2)" }}>{hotovy ? "Upraviť profil ›" : `Profil · ${pct} %`}</span>
+        {!hotovy && <Pruh sc={pct / 100} h={6} bg="rgba(168,116,80,.25)" />}
       </span>
       <img src={stitImg(stit, true, sada)} alt={`Štít DEED+ ${SADA_NAZOV[sada]} ${en}`} width={42} height={52} style={{ flex: "none", objectFit: "contain", filter: "drop-shadow(0 3px 5px rgba(90,50,20,.3))" }} />
-      <span key={stit} className="sc-lesk" aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none", borderRadius: "inherit", background: "linear-gradient(105deg,transparent 35%,rgba(255,255,255,.6) 50%,transparent 65%)", transform: "translateX(-130%)", animation: "leskStit 1.6s ease-in-out 1.2s 1 both" }} />
-    </button>);
+    </span>
+    <span key={stit} className="sc-lesk" aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none", borderRadius: "inherit", background: "linear-gradient(105deg,transparent 35%,rgba(255,255,255,.6) 50%,transparent 65%)", transform: "translateX(-130%)", animation: "leskStit 1.6s ease-in-out 1.2s 1 both" }} />
+  </>;
+  const st: React.CSSProperties = { flex: "none", position: "relative", overflow: "hidden", minHeight: 64, borderRadius: 18, background: "var(--cuBg)", border: "1.5px solid var(--cuBd)", boxShadow: glow ? "0 0 0 3px var(--green), 0 0 18px rgba(78,125,55,.55)" : "inset 0 1px 0 rgba(255,255,255,.45)", padding: "10px 12px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", textAlign: "left", color: "var(--ink)", width: "100%", boxSizing: "border-box" };
+  if (hotovy) return <button onClick={onClick} aria-label={`${nazov} · Upraviť profil`} style={{ ...st, boxShadow: "inset 0 1px 0 rgba(255,255,255,.45)", flexDirection: "column", alignItems: "stretch" }}>{vnutro}</button>;
+  return (
+    <div style={{ ...st, boxShadow: "inset 0 1px 0 rgba(255,255,255,.45)", cursor: "default", flexDirection: "column", alignItems: "stretch", gap: 8 }}>
+      {vnutro}
+      {chyba && <span style={{ fontSize: 13, lineHeight: 1.4, color: "var(--cuInk)" }}>{chyba}</span>}
+      <button type="button" onClick={onClick} style={{ position: "relative", minHeight: 44, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, ...(glow ? upravitTl(true) : { background: "#4B7A35", color: "#fff", boxShadow: "none" }) }}>Dokončiť profil</button>
+    </div>);
 }
 
 /** 6 dlaždíc správy 3 × 2 (výška 76, ikona 22, text 12,5/800, medzera 8) — bez nadpisu, nezbaľuje sa */
@@ -847,7 +840,8 @@ function StitZoom({ stit, sada, onClose }: { stit: StitCharity; sada: StitSada; 
     </div>, document.body);
 }
 
-function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit, sada, menu, mobil, tablet, zbal, prepniZbal, onZoom, uvod, krok1, pozvana, vlastne, hornaCast }: Spolocne & { onZoom: () => void; hornaCast?: React.ReactNode }) {
+function Prehlad({ strankaId, tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit, sada, menu, mobil, tablet, zbal, prepniZbal, onZoom, uvod, krok1, pozvana, vlastne, hornaCast }: Spolocne & { onZoom: () => void; hornaCast?: React.ReactNode }) {
+  const p3Do = usePozvanaDo(strankaId); // OPRAVY 398: dátum registrácie + 2 mesiace (nie napevno)
   const PHZ: PhZbierka[] = [...vlastne.filter(bezi).map(naPh), ...(nova ? [] : PH_ZBIERKY)]; // OPRAVY 114: spustené zbierky navrchu
   const VSE = menu.vse; // KARTA 36: na pripnutie len položky, ktoré typ má
   const ph = mobil && !tablet; // telefón (OPRAVY 96: tablet má časti ako PC)
@@ -943,7 +937,7 @@ function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit
       </div>
       <section style={{ flex: "none", borderRadius: 20, background: pozvana ? "var(--gSoft)" : "var(--card)", border: pozvana ? "1.5px solid var(--gBd)" : "1px solid var(--cardBd)", padding: "16px 20px", display: "flex", flexDirection: ph ? "column" : "row", alignItems: ph ? "flex-start" : "center", gap: ph ? 8 : 16 }}>
         <span style={{ flex: 1, minWidth: 0 }}>
-          <b style={{ display: "block", fontSize: 16, color: pozvana ? "var(--gInk)" : "var(--ink)" }}>{pozvana ? "Ste medzi prvými 50. Program P3 máte zadarmo do 31. 10. 2026." : "Máte program Zadarmo."}</b>
+          <b style={{ display: "block", fontSize: 16, color: pozvana ? "var(--gInk)" : "var(--ink)" }}>{pozvana ? `Ste medzi prvými 50. Program P3 máte zadarmo 2 mesiace od registrácie, do ${p3Do}.` : "Máte program Zadarmo."}</b>
           <span style={{ display: "block", marginTop: 4, fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>{pozvana ? "Potom si vyberiete program. Ak žiadny nevyberiete, zbierky pre ľudí dobehnú do konca. Centrálna a sektorové zbierky sa z profilu stiahnu." : "Jedna zbierka naraz, QR a prehľad darcov. Čo pridajú vyššie programy, vidíte v menu so štítkom."}</span>
         </span>
         <button onClick={() => otvor("n:program")} style={{ flex: "none", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: pozvana ? "var(--gInk)" : "var(--green)", whiteSpace: "nowrap" }}>{pozvana ? "Čo je v P3 ›" : "Porovnať programy ›"}</button>
@@ -1492,11 +1486,26 @@ function Zamknute({ program }: { program: string }) {
 
 // ---------- DEV (len testovacia verzia) ----------
 type StavDev = "pozv" | "free" | "bezna";
-function DevSprava({ pas, tier, stit, stav, onTier, onStit, onStav }: { pas: boolean; tier: Tier; stit: StitCharity; stav: StavDev; onTier: (t: Tier) => void; onStit: (s: StitCharity) => void; onStav: (s: StavDev) => void }) {
+/** OPRAVY 398: koniec P3 zadarmo pre pozvané charity = registrácia + 2 mesiace */
+function usePozvanaDo(strankaId: string): string {
+  const [od, setOd] = useState<string | null>(() => casRegistracieLokalne(strankaId));
+  useEffect(() => {
+    let ziva = true;
+    if (supabase && strankaId) void supabase.from("stranka").select("vytvorene").eq("id", strankaId).maybeSingle()
+      .then(({ data }) => { if (ziva && data?.vytvorene) setOd(data.vytvorene as string); }, () => { /* sieť: ostane lokálny čas */ });
+    return () => { ziva = false; };
+  }, [strankaId]);
+  const d = od ? new Date(od) : new Date();
+  const den = d.getDate();
+  d.setMonth(d.getMonth() + 2);
+  if (d.getDate() !== den) d.setDate(0); // 31. 12. + 2 mesiace → posledný deň februára
+  return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`;
+}
+function DevSprava({ pas, tier, stit, stav, onTier, onStit, onStav, charita }: { /** OPRAVY 398: charita len Nová · pozvaná / Nová · zadarmo */ charita: boolean; pas: boolean; tier: Tier; stit: StitCharity; stav: StavDev; onTier: (t: Tier) => void; onStit: (s: StitCharity) => void; onStav: (s: StavDev) => void }) {
   return (<>
     {/* OPRAVY 153: Typ a Rola sú pod „Ďalšie testovacie ›" */}
     <TestVolba pas={pas} nazov="Program" volby={([0, 1, 2, 3, 4] as Tier[]).map((t) => [t, PROGRAM_NAZOV[t]] as [Tier, string])} hodnota={tier} onVolba={onTier} />
     <StitVolba pas={pas} stit={stit} onStit={onStit} />
-    <TestVolba pas={pas} nazov="Stav" volby={[["pozv", "Nová · pozvaná"], ["free", "Nová · zadarmo"], ["bezna", "Bežná"]] as [StavDev, string][]} hodnota={stav} onVolba={onStav} />
+    <TestVolba pas={pas} nazov="Stav" volby={([["pozv", "Nová · pozvaná"], ["free", "Nová · zadarmo"], ...(charita ? [] : [["bezna", "Bežná"]])]) as [StavDev, string][]} hodnota={stav} onVolba={onStav} />
   </>);
 }
