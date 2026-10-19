@@ -163,7 +163,7 @@ function navrhZoStarych(x: VieraFeedItem): PayloadEditora | undefined {
   return undefined;
 }
 
-export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, toast, hore, onUsporiadat }: { strankaId: string; meno: string; /** uložený profil (Farský úrad, logo) — náhľad verejnej stránky */ profil: ProfilStranky | null; mobil: boolean;
+export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, toast, hore, onUsporiadat, noveOd, jaUcet }: { /** OPRAVY 398: posledná návšteva sekcie · účet farára (jeho vlastné nie sú nové) */ noveOd?: number; jaUcet?: string; strankaId: string; meno: string; /** uložený profil (Farský úrad, logo) — náhľad verejnej stránky */ profil: ProfilStranky | null; mobil: boolean;
   /** KARTA 57 C.6: telefón — po výbere druhu ponuka zmizne, náhľad prilepený hore */ tel?: boolean; toast: (m: string) => void;
   /** + Pridať oznam (hlavička PC, zelené + na mobile) — otvorí formulár */ hore?: number;
   /** OPRAVY 341: Premenovať › / Ukázať na stránke › — Nástroje → Usporiadať stránku */ onUsporiadat?: () => void }) {
@@ -574,7 +574,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
         <button type="button" onClick={() => { if (hv.zap) { hv.prepni(x.id); return; } setOtv(o ? null : x.id); setPozri(null); }} aria-expanded={hv.zap ? undefined : o} aria-pressed={hv.zap ? on : undefined} style={{ width: "100%", minHeight: 60, padding: "8px 0", border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" }}>
           {hv.zap && <PolickoVyberu on={on} />}
           <span style={{ flex: "none", padding: "3px 9px", borderRadius: 8, ...farbaStitku(st === "PARTE" ? "parte" : zm || st === "SVADBA" || st === "JUBILEUM" ? "zlata" : "zelena"), fontSize: 11.5, fontWeight: 800, whiteSpace: "nowrap" }}>{st}</span>
-          <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 14.5 }}>{x.nazov}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{meta(x)}</span></span>
+          <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><b style={{ fontSize: 14.5 }}>{x.nazov}</b>{noveOd != null && (x.vytvorene ?? 0) > noveOd && (!x.af?.ucet || x.af.ucet !== jaUcet) && <span style={{ flex: "none", padding: "2px 8px", borderRadius: 7, background: "#4B7A35", color: "#fff", fontSize: 11, fontWeight: 800, letterSpacing: ".06em" }}>NOVÉ</span>}</span><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{meta(x)}</span></span>
           {!hv.zap && <span aria-hidden="true" style={{ flex: "none", fontSize: 18, color: "var(--ink3)" }}>{o ? "⌃" : "⌄"}</span>}
         </button>
         {o && <div style={{ padding: "0 0 14px", display: "flex", flexDirection: "column", gap: 10 }}>

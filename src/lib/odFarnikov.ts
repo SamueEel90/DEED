@@ -6,6 +6,7 @@
 // ============================================================
 import { useEffect, useSyncExternalStore } from "react";
 import { nacitajStav, ulozStav, ulozStavIsto, ulozStavLokalne, obnovOblast } from "@/features/viera/stav";
+import { videneOdV } from "./odVeriacichVidene";
 import { zaregistrujKluc, zmenene } from "./mojeData";
 import { ukazChybuPriTuku } from "./chybaPriTuku";
 import { supabase } from "./supabase";
@@ -258,7 +259,7 @@ export function ulozNastavenieOdVeriacich(id: string, n: Partial<NastavenieOdVer
 export async function ulozNastavenieOdVeriacichIsto(id: string, n: Partial<NastavenieOdVeriacich>): Promise<string | null> { const e = await ulozStavIsto("odfnast", id, { ...nastavenieOdVeriacich(id), ...n }); zmena(); return e; }
 /** Treba vybaviť: nové príspevky, nahlásené, nové úmysly */
 export function pocetyOdVeriacich(id: string) {
-  const l = odFarnikov(id), v = nastavenieOdVeriacich(id).videne;
+  const l = odFarnikov(id), v = videneOdV(id); // OPRAVY 398: kedy farár naposledy videl Od veriacich (k účtu)
   return {
     nove: l.filter((x) => x.k !== "umysel" && x.cas > v).length,
     caka: l.filter((x) => x.stav === "caka").length, // OPRAVY 310

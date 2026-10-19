@@ -8,7 +8,7 @@ import { KartaNastavenia, NADPIS_SEKCIE, farbaStitku } from "./KartaNastavenia";
 import { TlZbalit } from "@/features/verejny-profil/zbalit";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
-import { DRUHY_FARNIKA, CEZ_EDITOR, KAM_DRUHU, nacitajSmie, ulozSmieIsto, stupen, rozhodniOdFarnikov, type Stupen, type SmieFarnika, odFarnikov, upravOdFarnika, ponechajOdFarnika, zmazOdFarnika, zmazOdFarnikov, nastavenieOdVeriacich, ulozNastavenieOdVeriacich, ulozNastavenieOdVeriacichIsto, useOdFarnikov, useCerstveOdFarnikov, pocetNahl, pocetSus, vyprsal, type DruhFarnika, type PolozkaFarnika } from "@/lib/odFarnikov";
+import { DRUHY_FARNIKA, CEZ_EDITOR, KAM_DRUHU, nacitajSmie, ulozSmieIsto, stupen, rozhodniOdFarnikov, type Stupen, type SmieFarnika, odFarnikov, upravOdFarnika, ponechajOdFarnika, zmazOdFarnika, zmazOdFarnikov, nastavenieOdVeriacich, ulozNastavenieOdVeriacichIsto, useOdFarnikov, useCerstveOdFarnikov, pocetNahl, pocetSus, vyprsal, type DruhFarnika, type PolozkaFarnika } from "@/lib/odFarnikov";
 import { TextOznamu } from "./OznamyFarnosti";
 import { PodrzZmaz, useHromadnyVyber, TlacidloVyberu, ListaVyberu, OznacitSkupinu, PolickoVyberu, PasVyberu } from "@/components/HromadnyVyber";
 import { cistyText } from "./obsahZbierky";
@@ -150,17 +150,19 @@ function Oprava({ x, strankaId, pred }: { x: PolozkaFarnika; strankaId: string; 
 
 /** OPRAVY 344: dlaždice Od veriacich — každá časť zvlášť (detail na celú obrazovku) */
 export type CastOdVeriacich = "umysly" | "caka" | "pridali" | "nahlasene" | "smie";
-export function OdVeriacich({ strankaId, meno, mobil, toast, cast, onSpat }: { strankaId: string; /** názov farnosti (podpis správy veriacemu) */ meno: string; mobil: boolean; toast: (m: string) => void;
-  /** OPRAVY 344: len jedna časť (dlaždica); bez = celé ako doteraz */ cast?: CastOdVeriacich; /** z „Čo môžu veriaci pridávať“ späť na dlaždice */ onSpat?: () => void }) {
+export function OdVeriacich({ strankaId, meno, mobil, toast, cast, onSpat, noveOd, otvorId }: { strankaId: string; /** názov farnosti (podpis správy veriacemu) */ meno: string; mobil: boolean; toast: (m: string) => void;
+  /** OPRAVY 344: len jedna časť (dlaždica); bez = celé ako doteraz */ cast?: CastOdVeriacich; /** z „Čo môžu veriaci pridávať“ späť na dlaždice */ onSpat?: () => void;
+  /** OPRAVY 398: čas poslednej návštevy sekcie — novšie príspevky majú štítok NOVÉ */ noveOd?: number; /** OPRAVY 398: príspevok z karty Nové (otvorí sa) */ otvorId?: string }) {
   useOdFarnikov(); useCerstveOdFarnikov(strankaId);
   const vsetko = odFarnikov(strankaId);
   const L = vsetko.filter((x) => x.k !== "umysel" && !x.stav); // OPRAVY 310: čakajúce a nezverejnené zvlášť
   const C = vsetko.filter((x) => x.stav === "caka").sort((a, b) => a.cas - b.cas);
   const nast = nastavenieOdVeriacich(strankaId);
-  // D.5: farár otvoril Od veriacich → nové príspevky a úmysly sú videné
-  useEffect(() => { ulozNastavenieOdVeriacich(strankaId, { videne: terazMs() }); }, [strankaId]);
+  // OPRAVY 398: videné sa zapíše až pri odchode zo sekcie Od veriacich (SpravaFarnosti, lib/odVeriacichVidene)
+  const nove = (x: PolozkaFarnika) => noveOd != null && x.k !== "umysel" && x.cas > noveOd;
+  const NOVE = <span style={{ flex: "none", alignSelf: "flex-start", padding: "2px 8px", borderRadius: 7, background: "#4B7A35", color: "#fff", fontSize: 11, fontWeight: 800, letterSpacing: ".06em" }}>NOVÉ</span>;
   // OPRAVY 315: z upozornenia v zvončeku — príspevok zvýraznený (nahlásený v Pridali veriaci sa rozbalí)
-  const [zv] = useState(() => cielSpravyPre(strankaId)?.zvyrazni ?? null);
+  const [zv] = useState(() => cielSpravyPre(strankaId)?.zvyrazni ?? otvorId ?? null);
   const [otv, setOtv] = useState<string | null>(() => (zv && odFarnikov(strankaId).some((x) => x.id === zv && x.k !== "umysel" && !x.stav) ? zv : null));
   useEffect(() => { zrusCielSpravy(); if (zv) return zvyrazniOznam(zv); }, [zv]);
   // OPRAVY 263: ten istý hromadný výber ako v Správe oznamov
@@ -170,7 +172,7 @@ export function OdVeriacich({ strankaId, meno, mobil, toast, cast, onSpat }: { s
   const st = DRUHY_FARNIKA.map((d) => stupen(smieF, d.k)); // OPRAVY 381: len „Čo môžu veriaci pridávať“ (starý vypínač zmazaný)
   const prepniVyb = hv.prepni;
   // OPRAVY 310: Čaká na vaše schválenie — Pozrieť · Zamietnuť · Zverejniť, Vybrať viac
-  const [pozriC, setPozriC] = useState<string | null>(null);
+  const [pozriC, setPozriC] = useState<string | null>(() => (otvorId && odFarnikov(strankaId).some((x) => x.id === otvorId && x.stav === "caka") ? otvorId : null));
   const [vybC, setVybC] = useState<Set<string> | null>(null);
   const rozhodni = (ids: string[], zverejnit: boolean) => { rozhodniOdFarnikov(strankaId, ids, zverejnit); setVybC(null); toast(zverejnit ? (ids.length === 1 ? "Zverejnené ✓ Veriaci dostane správu." : `Zverejnené ${ids.length} ✓`) : (ids.length === 1 ? "Nezverejnené. Veriaci dostane správu." : `Nezverejnené ${ids.length}`)); };
   if (nastOtv) return <NastavitPravidla strankaId={strankaId} mobil={mobil} toast={toast} onSpat={() => setNastOtv(false)} fokus={nastOtv === true ? undefined : nastOtv} />;
@@ -184,7 +186,7 @@ export function OdVeriacich({ strankaId, meno, mobil, toast, cast, onSpat }: { s
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
         {vybC && <button type="button" role="checkbox" aria-checked={v} onClick={() => setVybC((s0) => { const n = new Set(s0); if (n.has(x.id)) n.delete(x.id); else n.add(x.id); return n; })} style={{ flex: "none", width: 44, height: 44, border: "none", background: "transparent", padding: 0, cursor: "pointer" }}><PolickoVyberu on={v} /></button>}
         <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-          <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>{druhT(x.k)} · {x.kto} · {relCas(x.cas)}</span>
+          <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>{druhT(x.k)} · {x.kto} · {relCas(x.cas)}</span>{nove(x) && NOVE}</span>
           <b style={{ fontSize: 15.5 }}>{x.t || DRUHY_FARNIKA.find((d) => d.k === x.k)?.t}</b>
         </span>
       </div>
@@ -212,7 +214,7 @@ export function OdVeriacich({ strankaId, meno, mobil, toast, cast, onSpat }: { s
           {selM && <PolickoVyberu on={on} />}
           <span style={{ flex: "none", padding: "3px 9px", borderRadius: 8, ...farbaStitku(x.k === "parte" ? "parte" : x.k === "svadba" || x.k === "ine" ? "zlata" : "zelena"), fontSize: 11, fontWeight: 800, whiteSpace: "nowrap", maxWidth: mobil ? 110 : undefined, overflow: "hidden", textOverflow: "ellipsis" }}>{druhT(x.k)}</span>
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-            <b style={{ fontSize: 14.5 }}>{x.t}</b>
+            <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><b style={{ fontSize: 14.5 }}>{x.t}</b>{nove(x) && NOVE}</span>
             <span style={{ fontSize: 12.5, color: "var(--ink3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{[x.s, x.kto, kedy(x.cas), x.upravil ? "upravil farár" : "", vyprsal(x, terazMs()) ? "platnosť skončila" /* OPRAVY 350 */ : ""].filter(Boolean).join(" · ")}</span>
             {pocetNahl(x) > 0 && <span style={{ alignSelf: "flex-start", marginTop: 2, padding: "2px 8px", borderRadius: 7, background: "var(--cRedBg)", color: "#fff", fontSize: 11, fontWeight: 800, letterSpacing: ".06em" }}>NAHLÁSENÉ · {pocetNahl(x)}×</span>}
             {x.k === "parte" && pocetSus(x) > 0 && <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink2)" }}>sústrasť prejavilo {pocetSus(x)} · rodine ide súhrn raz denne</span>}
