@@ -16,6 +16,7 @@ import { toast } from "@/components/toast";
 import { spracujLogo, spracujFotku, rozmeryFotky, LOGO_CFG, COVER_CFG, type LogoRezim, type LogoPozadie } from "@/lib/obrazok";
 import { cistyNazov, nacitajProfil, profilZPamate, ulozKoncept, zverejniProfil, type ProfilStranky, type VyrezFotky, type RamFotky } from "@/lib/profilStranky";
 import { NastenkaFarnosti } from "@/features/verejny-profil/NastenkaFarnosti";
+import { VerejnyProfilVSprave } from "@/features/verejny-profil/VerejnyProfil";
 import { RiadkyRegistra } from "./RiadkyRegistra";
 import { registra, useRegistra, useStatutar, ulozStatutara, mesiacRok } from "@/lib/udajeRegistra";
 import { nacitajKontakt, SIETE, MAX_TEL, MAX_EMAIL, MAX_PREVADZOK, prevadzkyZ, chybaSiete, chybaWebu, chybaEmailu, chybaTel, normalizujSiet, type Kontakt, type Siet } from "./kontakt";
@@ -82,7 +83,8 @@ const Pridat = ({ onClick, children }: { onClick: () => void; children: ReactNod
 const cas = (iso: string) => new Date(iso).toLocaleTimeString("sk-SK", { hour: "2-digit", minute: "2-digit" });
 
 // ============================================================
-export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy, mobil, tablet, stit, onZrusit, onHotovo, onUlozene, onZmena, vzhlad, farnost }: {
+export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy, mobil, tablet, stit, onZrusit, onHotovo, onUlozene, onZmena, vzhlad, farnost, charita }: {
+  /** OPRAVY 421: charita — Náhľad aj Profil uložený = verejný profil vo vzhľade z Nastavení (Kronika · Výklad · Pirát) */ charita?: boolean;
   /** KARTA 50: blok Vzhľad stránky — prvý pod nadpisom */ vzhlad?: ReactNode;
   /** KARTA 56D §4: farnosť — názov sa dá zmeniť, Mám / Nemám logo, titulka bez štítu, Náhľad = vybraný vzhľad len s vyplneným */
   farnost?: boolean;
@@ -201,6 +203,21 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
     </div>);
 
   // ---------- NÁHĽAD / PROFIL ULOŽENÝ = skutočný verejný profil s lištou (OPRAVY 107) ----------
+  if (pohlad !== "uprava" && charita) return (
+    <VerejnyProfilVSprave kluc={strankaId} profilNahlad={p}
+      onZavri={() => (pohlad === "nahlad" ? setPohlad("uprava") : onHotovo())}
+      lista={<div className="sprava-charity" data-stit={stit} style={{ flex: "none", padding: mobil ? "10px 12px" : "12px 24px", background: "#2A2E26" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", padding: "10px 14px", borderRadius: 14,
+          background: pohlad === "nahlad" ? "var(--goldBg)" : "var(--gSoft)", border: pohlad === "nahlad" ? "1.5px dashed var(--goldBd)" : "1.5px solid var(--gBd)" }}>
+          {pohlad === "nahlad"
+            ? <><b style={{ flex: mobil ? "1 1 100%" : 1, minWidth: 0, fontSize: 14.5, color: "#5E4A12" }}>Náhľad. Zatiaľ nič nie je uložené.</b>
+                <button type="button" onClick={() => setPohlad("uprava")} style={tl("sive", 44)}>Späť na úpravu</button>
+                <button type="button" onClick={() => void uloz()} style={tl("zelene", 44)}>Uložiť profil</button></>
+            : <><b style={{ flex: mobil ? "1 1 100%" : 1, minWidth: 0, fontSize: 14.5, color: "var(--gInk)" }}>Profil uložený. Takto ho vidia ľudia.</b>
+                <button type="button" onClick={() => setPohlad("uprava")} style={{ ...tl("obrys", 44), border: "none", color: "var(--gInk)", padding: "0 10px" }}>Upraviť</button>
+                <button type="button" onClick={onHotovo} style={tl("zelene", 44)}>Hotovo</button></>}
+        </div></div>} />
+  );
   if (pohlad !== "uprava") return (
     <VerejnyProfilOkno pozicia={pozicia} tier={tier} strankaId={strankaId} stit={stit} mobil={mobil}
       profil={pohlad === "nahlad" ? p : undefined} ulozene={pohlad === "nahlad" ? "nie" : "ano"}
