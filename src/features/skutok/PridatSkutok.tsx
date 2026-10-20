@@ -548,8 +548,8 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
           <button type="button" onClick={pokracujKoncept} style={{ flex: "none", height: 44, padding: "0 14px", borderRadius: 12, border: "none", background: "var(--ink)", color: "var(--bg)", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>Pokračovať</button>
         </div>)}
       {k1 === "typ" && <>
-        {volbaKarta("Sám", o("Urobil som niečo dobré, pre niekoho alebo pre seba.", "Urobili ste niečo dobré pre niekoho."), IK.sam, () => { setCesta("s"); if (org) setKr(2); else setK1("dar"); })}
-        {volbaKarta("So skupinou", o("Spoločná akcia, brigáda alebo zbierka. Pridáš aj ostatných.", "Spoločná akcia, brigáda alebo zbierka. Pridáte aj ostatných."), IK.skupina, () => setK1("skupina"))}
+        {/* OPRAVY 437: za charitu slovami charity */}{volbaKarta(org ? "Pomohli sme" : "Sám", o("Urobil som niečo dobré, pre niekoho alebo pre seba.", "Charita alebo jej pracovníci."), IK.sam, () => { setCesta("s"); if (org) setKr(2); else setK1("dar"); })}
+        {volbaKarta(org ? "Pomohli sme s ďalšími ľuďmi" : "So skupinou", o("Spoločná akcia, brigáda alebo zbierka. Pridáš aj ostatných.", "Pridáte, kto s vami pomáhal, skenom alebo pozvánkou."), IK.skupina, () => setK1("skupina"))}
       </>}
       {k1 === "skupina" && <>
         <div style={{ fontSize: 14.5, color: "var(--ink2)", lineHeight: 1.5 }}>Ako ste to robili?</div>
