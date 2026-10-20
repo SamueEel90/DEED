@@ -90,7 +90,10 @@ export interface DaryZbierky { dary: DarZLedgera[]; skryte: boolean; pocet: numb
 
 export async function nacitajDaryZbierky(id: string): Promise<DaryZbierky> {
   if (!supabase) return { dary: [], skryte: false, pocet: 0 };
-  const { data, error } = await supabase.rpc("zbierka_dary", { p_zbierka: id, p_limit: 200 });
+  // OPRAVY 442 doplnok (0142): skutok usera (príspevok) — dary z ledgera podľa príspevku
+  const pr = id.match(/^prispevok:(.+)$/);
+  const { data, error } = pr ? await supabase.rpc("prispevok_dary", { p_prispevok: pr[1], p_limit: 200 })
+    : await supabase.rpc("zbierka_dary", { p_zbierka: id, p_limit: 200 });
   if (error) throw error;
   const odp = (data ?? {}) as { dary?: unknown[]; skryte?: boolean; pocet?: number };
   const dary = (odp.dary ?? []) as { id: string; cas: string; mena: string; kanal: string; meno: string | null; registrovany: boolean; moj: boolean; suma: number; omsa?: boolean; skutok_nazov?: string | null }[];

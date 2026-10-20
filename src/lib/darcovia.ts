@@ -118,7 +118,13 @@ const CERSTVE_DARY_MS = 20_000;
 /** zbierky rodiny, ktorých sumu server nepošle (0075b · KARTA 57 A.7): refId → počet darov */
 const skrytaSuma = new Map<string, number>();
 /** id zbierky v ledgeri, ak má appka databázu a dar patrí zbierke stránky */
-function ledgerId(refId: string): string | null { return supabase ? idZbierkyDB(refId) : null; }
+// OPRAVY 442 doplnok: skutok vo feede Domov („good-<uuid príspevku>“) — dary z ledgera (0142), nie z tohto zariadenia
+const PRISPEVOK_REF = /^good-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
+function ledgerId(refId: string): string | null {
+  if (!supabase) return null;
+  const p = refId.match(PRISPEVOK_REF);
+  return p ? `prispevok:${p[1]}` : idZbierkyDB(refId);
+}
 function obnovZLedgera(refId: string, id: string) {
   if (ledgerBezi.has(refId)) return;
   ledgerBezi.add(refId); zLedgera.set(refId, Date.now());
@@ -216,7 +222,11 @@ export function pridajDar(vstup: {
     ...(vstup.cezTvorcu ? { cezTvorcu: vstup.cezTvorcu } : {}),
     ...(zdrojDaru(vstup.refId) ? { zdroj: zdrojDaru(vstup.refId) } : {}),
   };
-  if (lid && !vstup.firma) {
+  if (lid?.startsWith("prispevok:")) {
+    // dar na skutok zapisuje platba_create (zaznamenajPodporu → pridajPodporuDB); zoznam sa obnoví z ledgera, keď tam je
+    window.setTimeout(() => obnovZLedgera(vstup.refId, lid), 2500);
+    window.setTimeout(() => obnovZLedgera(vstup.refId, lid), 8000);
+  } else if (lid && !vstup.firma) {
     // 0066/0067: dar sa ukáže až keď vznikne v ledgeri
     void zapisDarZbierky(vstup.refId, vstup.suma, vstup.kanal, vstup.objekt, reg && volba.verzia !== 4 ? vstup.menoDarcu : undefined)
       .then(() => obnovZLedgera(vstup.refId, lid))
