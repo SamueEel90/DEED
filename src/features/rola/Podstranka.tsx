@@ -662,7 +662,7 @@ export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack
             background: tint(akcent, ponuka ? .12 : .07), border: `1px solid ${tint(akcent, ponuka ? .45 : .28)}`, borderRadius: RADIUS.sm, padding: SPACE.sm }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={akcent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "none" }}><path d={ponuka ? "M9 7V4h6v3M4 7h16v13H4z" : "M4 10v4h3l6 4V6L7 10zM16 9a4 4 0 0 1 0 6"} /></svg>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".04em", color: ponuka ? akcent : C.textTer }}>{ponuka ? "PRACOVNÁ PONUKA" : noveMapa.get(o.id)?.druh === "vyzva" ? "SÚRNA POMOC" : noveMapa.get(o.id)?.druh === "verejny" ? "OZNAM VO VEREJNOM ZÁUJME" : "OZNAM"}</div>
+            <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".04em", color: ponuka ? akcent : C.textTer }}>{ponuka ? "PRACOVNÁ PONUKA" : noveMapa.get(o.id)?.druh === "vyzva" ? "VÝZVA" : noveMapa.get(o.id)?.druh === "verejny" ? "OZNAM VO VEREJNOM ZÁUJME" : "OZNAM"}</div>
             <div style={{ fontSize: ponuka ? 14.5 : 13.5, fontWeight: ponuka ? 800 : 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.nadpis}</div>
           </div>
           <span style={{ flex: "none", fontSize: 12, fontWeight: 800, color: akcent }}>{ponuka ? "Mám záujem ›" : "Čítať ›"}</span>

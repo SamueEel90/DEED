@@ -41,8 +41,8 @@ export function KartaBadge({ pos, color = "#fff", strong, children, style }: {
 // ============================================================
 // KARTA 55 · F (2a): typ = DRUH (Zbierka · Žiadosť · Skutok · Ponuka · Akcia · Hľadáme), farby v styles/druhy.css.
 // Kľúč „charita" ostáva kvôli volajúcim, zobrazí sa ako Zbierka.
-export type TypKluc = "skutok" | "ziadost" | "ponuka" | "charita" | "akcia" | "hladame";
-const TYP_DRUH: Record<TypKluc, Druh> = { skutok: "skutok", ziadost: "ziadost", ponuka: "ponuka", charita: "zbierka", akcia: "akcia", hladame: "hladame" };
+export type TypKluc = "skutok" | "ziadost" | "ponuka" | "charita" | "akcia" | "hladame" | "vyzva";
+const TYP_DRUH: Record<TypKluc, Druh> = { skutok: "skutok", ziadost: "ziadost", ponuka: "ponuka", charita: "zbierka", akcia: "akcia", hladame: "hladame", vyzva: "vyzva" };
 export const druhTypu = (t: TypKluc): Druh => TYP_DRUH[t];
 export const TYP_PRISPEVKU: Record<TypKluc, { label: string; bg: string; fg: string }> = Object.fromEntries(
   (Object.keys(TYP_DRUH) as TypKluc[]).map((k) => [k, { label: DRUH_NAZOV[TYP_DRUH[k]], bg: druhF(TYP_DRUH[k]), fg: "#fff" }])) as Record<TypKluc, { label: string; bg: string; fg: string }>;

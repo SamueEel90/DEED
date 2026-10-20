@@ -23,6 +23,11 @@ import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import { CisloVHlavicke, nazovCisla } from "@/components/CisloObjektu";
 import { typPrispevku } from "@/lib/cisloObjektu";
+import { useQuery } from "@tanstack/react-query";
+import { vyzvyDomov, type VyzvaVoFeede } from "@/data/vyzvy.supabase";
+import { OznamDetail, VyzvaKarta } from "@/features/rola/OznamDetail";
+import { nacitajUcasti } from "@/lib/oznamUcast";
+import { otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
 import { TitulSoSledovat } from "@/features/zbierka/Vrch";
 import type { GoodPolozka, Subjekt, Udalost, OkruhKod, Oblubeny, MojaZbierka, MojDoklad } from "@/types";
 import { useGoodFeed, useGoodUdalosti, useTopPrispevky } from "@/data";
@@ -74,6 +79,7 @@ export default function ModulDomov({ wide, otvorModul, otvorId, onOtvorene }: { 
   const { okruh: radius, nastavOkruh: setRadius } = useLokalita();
   const [aktId, setAktId] = useState<string | number | null>(null);
   const [aktEvent, setAktEvent] = useState<string | null>(null);
+  const [aktVyzva, setAktVyzva] = useState<VyzvaVoFeede | null>(null); // OPRAVY 431
   const [aktSubjekt, setAktSubjekt] = useState<Subjekt | null>(null); // cudzí profil (§6)
   const [predtym, setPredtym] = useState("home");     // kam sa vrátiť z cudzieho profilu
   const [verifyMode, setVerifyMode] = useState("ok");
@@ -110,12 +116,18 @@ export default function ModulDomov({ wide, otvorModul, otvorId, onOtvorene }: { 
         <Home wide={wide} toast={toast} otvorModul={otvorModul}
           pohlad={pohlad} setPohlad={setPohlad} radius={radius} setRadius={setRadius}
           onDetail={(id) => { setAktId(id); setScreen("detail"); }}
+          onVyzva={(v) => { setAktVyzva(v); setScreen("vyzva"); }}
           onHladaj={() => setHladaj(true)}
           onBoard={() => setScreen("board")}
           onAdd={() => setPridatVyber(true)} />
       )}
       {screen === "cudzi" && aktSubjekt && obal(
         <CudziProfil subjekt={aktSubjekt as any} toast={toast} onBack={() => setScreen(predtym)} />
+      )}
+      {screen === "vyzva" && aktVyzva && obal(
+        <SwipeBack onBack={() => setScreen("home")}>
+          <OznamDetail o={aktVyzva.o} org={aktVyzva.org} toast={toast} onBack={() => setScreen("home")} onProfil={() => otvorVerejnyProfil(aktVyzva.o.stranka)} />
+        </SwipeBack>
       )}
       {screen === "board" && (
         <DomovBoard onBack={() => setScreen("home")} onEvent={(id) => { setAktEvent(id); setScreen("event"); }} />
@@ -171,6 +183,7 @@ export default function ModulDomov({ wide, otvorModul, otvorId, onOtvorene }: { 
 
 type HomeProps = {
   wide?: boolean;
+  /** OPRAVY 431: ťuk na výzvu charity vo feede */ onVyzva: (v: VyzvaVoFeede) => void;
   toast: (m: string) => void;
   otvorModul?: (m: string) => void;
   pohlad: "okolie" | "mojdeed";
@@ -184,7 +197,7 @@ type HomeProps = {
 };
 
 // ===================== HOME / FEED =====================
-function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, onDetail, onHladaj, onBoard, onAdd }: HomeProps) {
+function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, onDetail, onVyzva, onHladaj, onBoard, onAdd }: HomeProps) {
   const { data: POLOZKY = [], isLoading, isError, refetch, maDalsie, nacitajDalsie } = useGoodFeed();
   // Zadanie 5 · 5.4: ďalšia stránka feedu (najviac 50) sa načíta, keď sa koniec zoznamu priblíži k obrazovke
   const koniecFeedu = useRef<HTMLDivElement | null>(null);
@@ -212,6 +225,12 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
   // Lacné: pracuje len s uloženým skóre, žiadne AI. (Neskôr: GET /feed na backende.)
   const feed = pripravFeed(POLOZKY as any, user).map((it: any) => ({ ...it, velkost: zobrazVelkost(it) })) as GoodPolozka[];
   const karta = (it: GoodPolozka) => <DomovKarta key={it.id} it={it} wide={wide} onDetail={() => onDetail(it.id)} />;
+  // OPRAVY 431: výzvy charít na súrnu pomoc — hore vo feede, v meste charity (Celá SR = všetky) a tým, čo charitu sledujú
+  const { data: VYZVY = [] } = useQuery({ queryKey: ["vyzvy-domov"], queryFn: vyzvyDomov, staleTime: 60_000 });
+  useEffect(() => { void nacitajUcasti(VYZVY.map((v) => v.o.id)); }, [VYZVY]);
+  const mesto = (s?: string) => (s ?? "").trim().toLocaleLowerCase("sk-SK");
+  const vyzvy = VYZVY.filter((v) => radius === "krajina" || !v.org.mesto || mesto(v.org.mesto) === mesto(lok.mesto) || sledovaniMena.has(v.org.nazov));
+  const vyzvaKarty = vyzvy.map((v) => <VyzvaKarta key={`vyzva-${v.o.id}`} o={v.o} org={v.org} wide={wide} onClick={() => onVyzva(v)} onProfil={() => otvorVerejnyProfil(v.o.stranka)} />);
 
   // kontextové akcie stránky → plávajúce „+ Pridať" dole + sekcia „Na tejto stránke" v menu (☰)
   useStrankaAkcie(() => ({
@@ -237,16 +256,16 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
     <ErrorState onRetry={() => refetch()} />
   ) : isLoading ? (
     <FeedSkeleton count={4} />
-  ) : feed.length === 0 ? (
+  ) : feed.length === 0 && !vyzvaKarty.length ? (
     <EmptyState emoji="🤝" title="Vo zvolenom okruhu zatiaľ nie sú skutky" text="Skús väčší okruh alebo sa vráť neskôr." />
   ) : desktop ? (
-    <FeedGrid cols={3} cards={feed.map(karta)} />
+    <FeedGrid cols={3} cards={[...vyzvaKarty, ...feed.map(karta)]} />
   ) : (
     <FeedStlpce wide={wide}
       labelSkutky="Skutky" labelZiadosti="Žiadosti & charita"
-      jednoStlpec={feed.map(karta)}
+      jednoStlpec={[...vyzvaKarty, ...feed.map(karta)]}
       skutky={feed.filter((it) => it.typ === "skutok").map(karta)}
-      ziadosti={feed.filter((it) => it.typ !== "skutok").map(karta)}
+      ziadosti={[...vyzvaKarty, ...feed.filter((it) => it.typ !== "skutok").map(karta)]}
     />
   );
   const feedSDalsimi = <>{okolieFeed}{maDalsie && <div ref={koniecFeedu} aria-hidden="true" style={{ height: 1 }} />}</>;

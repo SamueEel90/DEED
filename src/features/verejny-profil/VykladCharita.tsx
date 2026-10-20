@@ -30,9 +30,9 @@ const pruh = (zLudi: number, zFirmy: number, h: number) => (
 const stavZb = (z: TestZbierka) => z.stav === "dlhodoba" ? "DLHODOBÁ" : z.konciDni != null ? `KONČÍ O ${tvar(z.konciDni, ["DEŇ", "DNI", "DNÍ"])}` : null;
 const kdeZb = (z: TestZbierka) => [z.mesto, z.stav === "dlhodoba" ? "dlhodobá" : z.cast, z.kategoria].filter(Boolean).join(" · ").toLocaleUpperCase("sk-SK");
 // oznam „Tento týždeň u nás": dátum vo farbe druhu, súrne #8E3B2F
-const OZ_FARBA = { vyzva: ["#8E3B2F", "var(--red)"], akcia: [druhF("akcia"), druhT("akcia")], oznam: ["#3A342A", "var(--ink2)"] } as const;
+const OZ_FARBA = { vyzva: [druhF("vyzva"), druhT("vyzva")], akcia: [druhF("akcia"), druhT("akcia")], oznam: ["#3A342A", "var(--ink2)"] } as const;
 
-export function VykladCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, hore, pata }: { /** OPRAVY 400 */ pata?: ReactNode; /** KARTA 56I: sekcia Od veriacich (farnosť) */ odFarnikov?: ReactNode; /** KARTA 57 C.7–C.8 */ hore?: ReactNode; profil: TestProfil; onDetail: (z: TestZbierka) => void; onZaznam: (p: PolCh) => void; onBack: () => void }) {
+export function VykladCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, hore, pata, onOznam }: { /** OPRAVY 431 */ onOznam?: (id: string) => void; /** OPRAVY 400 */ pata?: ReactNode; /** KARTA 56I: sekcia Od veriacich (farnosť) */ odFarnikov?: ReactNode; /** KARTA 57 C.7–C.8 */ hore?: ReactNode; profil: TestProfil; onDetail: (z: TestZbierka) => void; onZaznam: (p: PolCh) => void; onBack: () => void }) {
   const pc = usePc();
   const mob = !pc;
   const domace = useDomaceMesto(profil);
@@ -83,13 +83,15 @@ export function VykladCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, 
   const oznamKarta = (o: typeof oznamy[number]) => {
     const [bg, c] = OZ_FARBA[o.druh ?? "oznam"];
     return (
-      <div key={o.id} style={{ display: "flex", gap: mob ? 12 : 14, alignItems: "center", padding: mob ? 8 : 10, borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)" }}>
-        <span style={{ width: mob ? 54 : 62, height: mob ? 60 : 70, flex: "none", borderRadius: mob ? 12 : 14, background: bg, color: "#fff", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}><b style={{ fontSize: mob ? 21 : 24, lineHeight: 1 }}>{o.den}</b><span style={{ fontSize: mob ? 10.5 : 11.5, fontWeight: 800, letterSpacing: ".08em" }}>{o.mes}</span></span>
+      <div key={o.id} {...(onOznam ? { role: "button", tabIndex: 0, "aria-label": `Otvoriť: ${o.n}`, onClick: () => onOznam(o.id), onKeyDown: (e: { key: string; preventDefault: () => void }) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOznam(o.id); } } } : {})}
+        style={{ display: "flex", gap: mob ? 12 : 14, alignItems: "center", padding: mob ? 8 : 10, borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", cursor: onOznam ? "pointer" : undefined }}>
+        <span style={{ width: mob ? 54 : 62, height: mob ? 60 : 70, flex: "none", borderRadius: mob ? 12 : 14, background: bg, color: "#fff", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>{o.pred && <span style={{ fontSize: 10.5, fontWeight: 800, lineHeight: 1.1 }}>{o.pred}</span>}<b style={{ fontSize: mob ? 21 : 24, lineHeight: 1 }}>{o.den}</b><span style={{ fontSize: mob ? 10.5 : 11.5, fontWeight: 800, letterSpacing: ".08em" }}>{o.mes}</span></span>
         <div style={{ display: "flex", flexDirection: "column", gap: mob ? 2 : 3, minWidth: 0 }}>
           <span style={{ fontSize: mob ? 10.5 : 11, fontWeight: 800, letterSpacing: ".08em", color: c }}>{o.st}</span>
           <b style={{ fontSize: mob ? 15 : 16, lineHeight: 1.25 }}>{o.n}</b>
-          <span style={{ fontSize: mob ? 12 : 12.5, color: "var(--ink3)" }}>{o.s} · {o.pocet}</span>
+          <span style={{ fontSize: mob ? 12 : 12.5, color: "var(--ink3)" }}>{[o.s, o.pocet].filter(Boolean).join(" · ")}</span>
         </div>
+        {o.foto && <span aria-hidden="true" style={{ marginLeft: "auto", flex: "none", width: mob ? 64 : 84, height: mob ? 60 : 70, borderRadius: 12, background: `center/cover no-repeat url(${JSON.stringify(o.foto)})` }} />}
       </div>);
   };
   const tentoTyzden = oznamy.length > 0 && <>

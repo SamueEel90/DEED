@@ -18,14 +18,14 @@ function usePc() {
   useEffect(() => { const q = window.matchMedia(PC), f = () => setP(q.matches); q.addEventListener("change", f); return () => q.removeEventListener("change", f); }, []);
   return p;
 }
-const DRUH_TXT: Record<Druh, string> = { zbierka: "ZBIERKA", ziadost: "ŽIADOSŤ", skutok: "SKUTOK", ponuka: "PONUKA", akcia: "AKCIA", hladame: "HĽADÁME" };
+const DRUH_TXT: Record<Druh, string> = { zbierka: "ZBIERKA", ziadost: "ŽIADOSŤ", skutok: "SKUTOK", ponuka: "PONUKA", akcia: "AKCIA", hladame: "HĽADÁME", vyzva: "VÝZVA" };
 const stitok = (t: string, bg: string, s: CSSProperties, h = 26) => <span style={{ position: "absolute", height: h, padding: "0 10px", borderRadius: 9, background: bg, color: "#fff", fontSize: h > 28 ? 13 : 11.5, fontWeight: 800, letterSpacing: ".06em", display: "flex", alignItems: "center", whiteSpace: "nowrap", ...s }}>{t}</span>;
 /** krivka cez body (vodorovne / zvislo) — ako v prototype */
 const krivka = (pts: [number, number][]) => pts.reduce((a, [x, y], i) => { if (!i) return `M${x} ${y}`; const [px, py] = pts[i - 1]; const mx = (px + x) / 2; return `${a} C${mx} ${py} ${mx} ${y} ${x} ${y}`; }, "");
 const krivkaV = (pts: [number, number][]) => pts.reduce((a, [x, y], i) => { if (!i) return `M${x} ${y}`; const [px, py] = pts[i - 1]; const my = (py + y) / 2; return `${a} C${px} ${my} ${x} ${my} ${x} ${y}`; }, "");
 const Y_PC = [380, 170, 360, 150, 340, 110];
 
-export function PiratCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, hore, pata }: { /** OPRAVY 400 */ pata?: ReactNode; /** KARTA 56I: sekcia Od veriacich (farnosť) */ odFarnikov?: ReactNode; /** KARTA 57 C.7–C.8 */ hore?: ReactNode; profil: TestProfil; onDetail: (z: TestZbierka) => void; onZaznam?: (p: PolCh) => void; onBack: () => void; onKronika?: () => void }) {
+export function PiratCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, hore, pata, onOznam }: { /** OPRAVY 431 */ onOznam?: (id: string) => void; /** OPRAVY 400 */ pata?: ReactNode; /** KARTA 56I: sekcia Od veriacich (farnosť) */ odFarnikov?: ReactNode; /** KARTA 57 C.7–C.8 */ hore?: ReactNode; profil: TestProfil; onDetail: (z: TestZbierka) => void; onZaznam?: (p: PolCh) => void; onBack: () => void; onKronika?: () => void }) {
   const pc = usePc();
   const mob = !pc;
   const domace = useDomaceMesto(profil);
@@ -185,7 +185,10 @@ export function PiratCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, h
   type Karta = { id: string; druh: Druh; t: string; meta: string; foto?: string; stav?: [string, string]; suma?: { v: number; ciel?: number }; tap?: () => void; /** OPRAVY 156/2: pracovná ponuka = modrá PracaKarta */ praca?: TestPraca };
   const karty: Karta[] = [
     ...d.bezice.filter((z) => z !== hlavna).map((z): Karta => ({ id: z.id, druh: "zbierka", t: z.nazov, meta: [z.mesto, z.stav === "dlhodoba" ? "dlhodobá" : z.kategoria ? z.kategoria.charAt(0) + z.kategoria.slice(1).toLocaleLowerCase("sk-SK") : z.cast].filter(Boolean).join(" · "), foto: z.foto, suma: { v: z.vyzbierane, ciel: z.ciel }, tap: () => onDetail(z) })),
-    ...profil.oznamy.filter((o) => o.mesto === lok || lok === "Celé Slovensko").filter((o) => o.druh !== "oznam").map((o): Karta => ({ id: o.id, druh: o.druh === "vyzva" ? "hladame" : "akcia", t: o.nadpis, meta: `${o.text.split(" · ")[0]} · ${o.pod}`, foto: o.druh === "vyzva" ? profil.sektory[2]?.foto : profil.centralna.foto, stav: o.druh === "vyzva" ? ["SÚRNE", "var(--dr-surne)"] : undefined })),
+    ...profil.oznamy.filter((o) => o.mesto === lok || lok === "Celé Slovensko").filter((o) => o.druh !== "oznam").map((o): Karta => ({ id: o.id, druh: o.druh === "vyzva" ? "vyzva" : "akcia", t: o.nadpis,
+      // OPRAVY 431: vlastná fotka oznamu (bez nej bez fotky, nie cudzia), výzva „do 21. 10.“, ťuk = detail
+      meta: [o.predDnom ? `do ${o.den} ${o.mesiac.toLocaleLowerCase("sk-SK")}` : "", o.text.split(" · ")[0], o.pod].filter(Boolean).join(" · "),
+      foto: o.foto, tap: onOznam ? () => onOznam(o.id) : undefined })),
     ...profil.praca.map((j): Karta => ({ id: j.id, druh: "hladame", t: j.nazov, meta: "", praca: j })),
   ].slice(0, 5);
   const karta = (k: Karta) => k.praca ? <PracaKarta key={k.id} j={k.praca} style={{ flex: mob ? "none" : undefined, width: mob ? 280 : undefined }} /> : (

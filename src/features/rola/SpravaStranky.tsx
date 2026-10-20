@@ -48,6 +48,7 @@ import { potvrditTuknutim, nastavPotvrditTuknutim } from "@/features/zbierka/Pla
 import { TESTOVACIA } from "@/lib/testovacia";
 import { VzhladStranky } from "./VzhladStranky";
 import { useRegistra } from "@/lib/udajeRegistra";
+import { mestoZoSidla } from "@/data/charita.supabase";
 import { nastavAktivnuCharitu, casRegistracieLokalne } from "@/lib/aktivnaCharita";
 import { supabase } from "@/lib/supabase";
 import { useMojePrava, smie, NEMATE_POVOLENE, type Pravo } from "@/lib/pravaPracovnika";
@@ -295,7 +296,9 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   if (typ === "charita") nastavAktivnuCharitu(strankaId);
   const mojePrava = useMojePrava(); // OPRAVY 404: pracovník charity — len to, čo povolil štatutár (null = plné práva)
   // OPRAVY 400: charita sa volá podľa registra (keď je vyplnený), nie napevno
-  const regNazov = useRegistra(strankaId).nazov.trim();
+  const regV = useRegistra(strankaId), regNazov = regV.nazov.trim();
+  /** OPRAVY 431: mesto charity zo sídla v registri (výzva ide do feedu Domov v tomto meste) */
+  const mestoCh = mestoZoSidla(regV.sidlo) ?? "";
   const nazov = (typ === "charita" && regNazov) || nazov0;
   const inicialy = typ === "charita" && regNazov ? regNazov.replace(/,?\s*(o\.\s?z\.|n\.\s?o\.|s\.\s?r\.\s?o\.)$/i, "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("") : inicialy0;
   const { desktop, wide } = useLayout();
@@ -430,7 +433,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
     onZbierka={(z) => { setSpravZb(naSpravu(naRiadok(z))); otvor("x:Správa zbierky"); }} />;
   else if (sub.startsWith("x:")) obsah = <Pripravujeme />;
   // KARTA 40: Oznamy — v Zadarmo výzva na súrnu pomoc a dva zamknuté druhy (nie „Pripravujeme" ani zámok celej položky)
-  else if (sub === "oznamy" && typPovoli("oznamy", typ)) obsah = <OznamySprava strankaId={strankaId} tier={tier} nazov={nazov} inicialy={inicialy} mesto={SUBJEKTY[poz]?.lok ?? "Trenčín"} logo={profil?.logo ?? null} mobil={!desktop} tablet={tablet} toast={toast} onProfil={() => otvor("x:Verejný profil")} start={oznamStart} upravitId={oznamUprav} />;
+  else if (sub === "oznamy" && typPovoli("oznamy", typ)) obsah = <OznamySprava strankaId={strankaId} tier={tier} nazov={nazov} inicialy={inicialy} mesto={typ === "charita" ? mestoCh : SUBJEKTY[poz]?.lok ?? "Trenčín"} logo={profil?.logo ?? null} mobil={!desktop} tablet={tablet} toast={toast} onProfil={() => otvor("x:Verejný profil")} start={oznamStart} upravitId={oznamUprav} />;
   // Obsah → Skutky: zoznam skutkov charity + Pridať skutok (ten istý ako v Nástrojoch)
   else if (sub === "skutky" && typPovoli("skutky", typ) && maPovolenie("skutky", tier)) obsah = <SkutkyCharity strankaId={strankaId} mobil={!desktop} onPridat={() => otvor("pridatSkutok")} />;
   // KARTA 49: Dorovnanie daru (pohľad charity)

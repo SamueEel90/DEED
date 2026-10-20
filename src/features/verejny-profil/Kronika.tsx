@@ -27,7 +27,10 @@ const TAB = "(min-width: 760px) and (max-width: 1199px)";
 /** záznam časovej osi kroniky */
 interface Pol { id: string; typ: "zb" | "sk" | "is" | "oz"; d: string; m: string; rok: number; nazov: string; s: string; q?: string; dok?: string; foto: string; zbierka?: TestZbierka; bezDokladov?: boolean }
 /** oznam alebo ponuka práce v „Aktuálne" */
-interface Ozn { id: string; typ: "oz" | "pr"; den: string; mes: string; dBg: string; st: string; stc: string; n: string; s: string; btn: string; pocet: string }
+/** OPRAVY 431: celá karta oznamu je ťukateľná (myš, Enter, medzerník) */
+const klikOznam = (f: () => void, n: string) => ({ role: "button", tabIndex: 0, "aria-label": `Otvoriť: ${n}`, onClick: f,
+  onKeyDown: (e: { key: string; preventDefault: () => void }) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); f(); } } });
+interface Ozn { id: string; typ: "oz" | "pr"; den: string; mes: string; dBg: string; st: string; stc: string; n: string; s: string; btn: string; pocet: string; /** OPRAVY 431 */ foto?: string; pred?: string }
 
 /** pamäť stránky: kam bol človek posunutý a čo mal rozbalené (Späť z detailu / Iskier vráti presne sem) */
 const PAMAT = new Map<string, { a: number; m: number; otv: Record<string, boolean>; f: number; q: string; isk: number; zivo: boolean }>();
@@ -38,7 +41,7 @@ function useTablet() {
   return t;
 }
 
-export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnikov, hore, pata }: { /** OPRAVY 400: Kontakt a Údaje organizácie (charita) */ pata?: ReactNode; /** KARTA 56I: sekcia Od veriacich (farnosť) */ odFarnikov?: ReactNode; /** KARTA 57 C.7–C.8: NAŽIVO a Príhovor farára (farnosť) */ hore?: ReactNode; profil: TestProfil; onDetail: (z: TestZbierka) => void; /** doplnky 4. 10.: ťuk na záznam v rokoch (skutok, ukončená zbierka, Iskra, akcia) — bez platobného modulu */ onZaznam: (p: Pol) => void; onBack: () => void; /** KARTA 45: testovací prepínač podania */ prepinac?: ReactNode }) {
+export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnikov, hore, pata, onOznam }: { /** OPRAVY 431: ťuk na oznam = detail */ onOznam?: (id: string) => void; /** OPRAVY 400: Kontakt a Údaje organizácie (charita) */ pata?: ReactNode; /** KARTA 56I: sekcia Od veriacich (farnosť) */ odFarnikov?: ReactNode; /** KARTA 57 C.7–C.8: NAŽIVO a Príhovor farára (farnosť) */ hore?: ReactNode; profil: TestProfil; onDetail: (z: TestZbierka) => void; /** doplnky 4. 10.: ťuk na záznam v rokoch (skutok, ukončená zbierka, Iskra, akcia) — bez platobného modulu */ onZaznam: (p: Pol) => void; onBack: () => void; /** KARTA 45: testovací prepínač podania */ prepinac?: ReactNode }) {
   useZmenyIskier();
   const mobil = useMobil();
   const tablet = useTablet();
@@ -103,9 +106,9 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
   const aktOz: Ozn[] = [
     ...oznamy.map((o): Ozn & { k: number } => ({
       id: o.id, typ: "oz", den: o.den, mes: o.mesiac, k: poradieDatumu(o.mesiac, o.den),
-      dBg: o.druh === "vyzva" ? "#8E3B2F" : o.druh === "akcia" ? "#2F5E3A" : "#876712",
-      st: o.stitok, stc: o.druh === "vyzva" ? "var(--red)" : o.druh === "akcia" ? "var(--green)" : "var(--gold)",
-      n: o.nadpis, s: o.text, btn: o.tlacidlo, pocet: o.pod,
+      dBg: o.druh === "vyzva" ? "var(--dr-vyzva)" : o.druh === "akcia" ? "#2F5E3A" : "#876712",
+      st: o.stitok, stc: o.druh === "vyzva" ? "var(--dr-vyzva-t)" : o.druh === "akcia" ? "var(--green)" : "var(--gold)",
+      n: o.nadpis, s: o.text, btn: o.tlacidlo, pocet: o.pod, foto: o.foto, pred: o.predDnom,
     })),
   ].sort((a, b) => a.k - b.k).filter((o) => ok(o.typ, `${o.n} ${o.s} ${o.st}`, "akt"));
 
@@ -353,10 +356,11 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
     <div style={{ display: rez === "mob" ? "flex" : "grid", flexDirection: "column", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: rez === "pc" ? 14 : 12 }}>
       {aktOz.map((o) => {
         const [dw, dh, df] = rez === "pc" ? [68, 78, 28] : rez === "tab" ? [58, 68, 24] : [54, 62, 22];
-        const tlac = <button type="button" style={{ alignSelf: "flex-start", marginTop: rez === "pc" ? 0 : 4, minHeight: 44, padding: rez === "pc" ? "0 16px" : "0 14px", borderRadius: 12, border: "1.5px solid var(--green)", background: "transparent", cursor: "pointer", whiteSpace: "nowrap", fontSize: rez === "pc" ? 13.5 : 13, fontWeight: 800, color: "var(--green)" }}>{o.btn}</button>;
+        const tlac = o.btn && <button type="button" tabIndex={-1} style={{ alignSelf: "flex-start", marginTop: rez === "pc" ? 0 : 4, minHeight: 44, padding: rez === "pc" ? "0 16px" : "0 14px", borderRadius: 12, border: "1.5px solid var(--green)", background: "transparent", cursor: "pointer", whiteSpace: "nowrap", fontSize: rez === "pc" ? 13.5 : 13, fontWeight: 800, color: "var(--green)" }}>{o.btn}</button>;
         return (
-          <article key={o.id} style={{ display: "flex", gap: rez === "pc" ? 16 : 12, padding: rez === "pc" ? 18 : rez === "tab" ? 14 : 12, borderRadius: rez === "pc" ? 22 : rez === "tab" ? 20 : 18, background: "var(--card)", border: "1px solid var(--cardBd)" }}>
+          <article key={o.id} {...(onOznam ? klikOznam(() => onOznam(o.id), o.n) : {})} style={{ display: "flex", gap: rez === "pc" ? 16 : 12, padding: rez === "pc" ? 18 : rez === "tab" ? 14 : 12, borderRadius: rez === "pc" ? 22 : rez === "tab" ? 20 : 18, background: "var(--card)", border: "1px solid var(--cardBd)", cursor: onOznam ? "pointer" : undefined }}>
             <span style={{ flex: "none", width: dw, height: dh, borderRadius: rez === "pc" ? 16 : 14, background: o.dBg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#fff" }}>
+              {o.pred && <span style={{ fontSize: 11, fontWeight: 800, lineHeight: 1.1 }}>{o.pred}</span>}
               <b style={{ fontSize: df, lineHeight: 1 }}>{o.den}</b><span style={{ fontSize: rez === "pc" ? 12 : 11, fontWeight: 800, letterSpacing: ".06em" }}>{o.mes}</span>
             </span>
             <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: rez === "pc" ? 5 : rez === "tab" ? 4 : 3 }}>
@@ -365,8 +369,9 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
               <span style={{ fontSize: rez === "pc" ? 13 : 12.5, lineHeight: 1.4, color: "var(--ink3)" }}>{o.s}</span>
               {rez === "pc"
                 ? <span style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", paddingTop: 6 }}>{tlac}<span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{o.pocet}</span></span>
-                : tlac}
+                : <>{o.pocet && <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{o.pocet}</span>}{tlac}</>}
             </span>
+            {o.foto && <span aria-hidden="true" style={{ flex: "none", width: rez === "pc" ? 96 : 76, height: rez === "pc" ? 80 : 76, borderRadius: 14, background: `center/cover no-repeat url(${JSON.stringify(o.foto)})` }} />}
           </article>);
       })}
     </div>

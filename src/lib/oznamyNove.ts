@@ -1,7 +1,8 @@
 // ============================================================
 // KARTA 40 · Oznamy charity (nový oznam — jeden pre celú appku, nahrádza starý rola/Oznamy.tsx).
 // Tri druhy: Oznam (od P1, profil + sledujúci o 5 min) · Oznam vo verejnom záujme (od P1, nástenka mesta
-// hneď, akcia najviac 2 mesiace dopredu) · Výzva na súrnu pomoc (všetky programy, nástenka hneď, najviac 10 dní).
+// hneď, akcia najviac 2 mesiace dopredu) · Výzva na súrnu pomoc (všetky programy, OPRAVY 431: feed Domov v meste
+// charity + sledujúcim, do dátumu „Pomoc treba do“, najviac 10 dní; nie nástenka, nie feed Charity).
 // Forma: text a fotky (textové polia + galéria) alebo vlastný plagát. Pozvať ľudí: bez · nezáväzne · záväzne.
 // DB: oznam_charity (migrácia 0033). Bez DB drží appka oznamy v pamäti relácie.
 // TODO (server): oznámenie sledujúcim po 5 min, správy prihláseným (zmena, zrušenie, pripomienka),
@@ -65,6 +66,8 @@ const posluchaci = new Set<() => void>();
 const zmena = () => { verzia++; posluchaci.forEach((f) => f()); };
 export const useZmenyOznamovCharity = () => useSyncExternalStore((f) => { posluchaci.add(f); return () => posluchaci.delete(f); }, () => verzia);
 
+/** OPRAVY 431: všetky oznamy v pamäti (feed Domov bez DB) */
+export const vsetkyOznamyZPamate = (): OznamCharity[] => [...pamat.values()].flat();
 export const oznamyStranky = (stranka: string): OznamCharity[] => [...(pamat.get(stranka) ?? [])].sort((a, b) => b.zverejnene.localeCompare(a.zverejnene));
 export const nastaveniaOznamov = (stranka: string): NastaveniaOznamov => nast.get(stranka) ?? { pripomienka: true, spravaPriZmene: true };
 export function ulozNastaveniaOznamov(stranka: string, n: NastaveniaOznamov) { nast.set(stranka, n); zmena(); }

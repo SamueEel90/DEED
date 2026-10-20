@@ -109,6 +109,8 @@ export interface TestOznam {
   mesiac: string;             // „OKT"
   tlacidlo: string;           // „Prihlásiť sa"
   pod: string;                // „23 ľudí už pomáha"
+  /** OPRAVY 431: prvá fotka oznamu (náhľad na karte) */ foto?: string;
+  /** OPRAVY 431: nad dňom v dlaždici — výzva „do“ (Pomoc treba do), nie deň udalosti */ predDnom?: string;
 }
 
 export interface TestPraca {

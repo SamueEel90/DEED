@@ -14,7 +14,7 @@ const poradieDatumu = (m: string, d: string) => MESIACE.indexOf(m) * 100 + (pars
 const dokladov = (n: number) => tvar(n, ["DOKLAD", "DOKLADY", "DOKLADOV"]);
 
 export interface PolCh { id: string; typ: "zb" | "sk" | "is" | "oz"; d: string; m: string; rok: number; nazov: string; s: string; q?: string; dok?: string; foto: string; zbierka?: TestZbierka; /** KARTA 50 · farnosť nedokladá */ bezDokladov?: boolean }
-export interface OznCh { id: string; den: string; mes: string; dBg: string; st: string; stc: string; n: string; s: string; btn: string; pocet: string; druh?: "vyzva" | "akcia" | "oznam" }
+export interface OznCh { id: string; den: string; mes: string; dBg: string; st: string; stc: string; n: string; s: string; btn: string; pocet: string; druh?: "vyzva" | "akcia" | "oznam"; /** OPRAVY 431 */ foto?: string; pred?: string }
 
 /** dáta charity v meste človeka — rovnaké pre Výklad aj Pirát */
 export function useCharitaData(profil: TestProfil, lok: Lokalita, domace: Mesto) {
@@ -35,9 +35,9 @@ export function useCharitaData(profil: TestProfil, lok: Lokalita, domace: Mesto)
   const ld = darcovia.length ? darcovia[live % darcovia.length] : null;
   const oznamy: OznCh[] = vLokalite(profil.oznamy, lok, domace).map((o) => ({
     id: o.id, den: o.den, mes: o.mesiac, druh: o.druh,
-    dBg: o.druh === "vyzva" ? "#8E3B2F" : o.druh === "akcia" ? "#2F5E3A" : "#876712",
-    st: o.stitok, stc: o.druh === "vyzva" ? "var(--red)" : o.druh === "akcia" ? "var(--green)" : "var(--gold)",
-    n: o.nadpis, s: o.text, btn: o.tlacidlo, pocet: o.pod,
+    dBg: o.druh === "vyzva" ? "var(--dr-vyzva)" : o.druh === "akcia" ? "#2F5E3A" : "#876712",
+    st: o.stitok, stc: o.druh === "vyzva" ? "var(--dr-vyzva-t)" : o.druh === "akcia" ? "var(--green)" : "var(--gold)",
+    n: o.nadpis, s: o.text, btn: o.tlacidlo, pocet: o.pod, foto: o.foto, pred: o.predDnom,
   })).sort((a, b) => poradieDatumu(a.mes, a.den) - poradieDatumu(b.mes, b.den));
   const pol: PolCh[] = [
     ...vLokalite(profil.skutky, lok, domace).filter((s) => s.rok).map((s): PolCh => ({ id: s.id, typ: "sk", d: s.d!, m: s.m!, rok: s.rok!, nazov: s.nazov, s: `${s.popis}${s.dobrovolnici ? ` · ${s.dobrovolnici} dobrovoľníkov` : ""}`, foto: s.foto })),
