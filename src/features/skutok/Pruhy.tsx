@@ -1,7 +1,6 @@
 // Tmavé pruhy nad tlačidlom Pridať skutok (Moje skutky aj Domov):
 // „Akcia beží · 1:12:04 · 8 účastníkov" (karta 22) a ohlásený skutok „Pripravuje sa / Práve prebieha" (karta 21 bod 12).
 import { useEffect, useState, type ReactNode } from "react";
-import { toast } from "@/components/toast";
 import { useAkcia, otvorAkciu, cas } from "@/lib/akcia";
 import { ohlasenie, nastavOhlasenie, useZmenySkutkov } from "@/lib/mojeSkutky";
 import { otvorPridatSkutok } from "./otvor";
@@ -18,12 +17,16 @@ export function PruhySkutkov() {
   const ak = useAkcia();
   const ohl = ohlasenie();
   const [, tik] = useState(0);
+  // OPRAVY 446 (6): odpoveď na mieste tlačidla, nie malý toast dole
+  const [hlaska, setHlaska] = useState<string | null>(null);
   useEffect(() => { if (ak?.stav !== "bezi" || ak.otvorena) return; const t = setInterval(() => tik((x) => x + 1), 1000); return () => clearInterval(t); }, [ak?.stav, ak?.otvorena]);
   const zacinam = () => {
     if (!ohl) return;
     if (ohl.sk) { otvorAkciu(ohl.dar); return; }
-    if (!navigator.geolocation) { toast("Bez polohy akciu nespustíš. Zapni ju v nastaveniach telefónu."); return; }
-    navigator.geolocation.getCurrentPosition(() => nastavOhlasenie({ ...ohl, stav: "bezi" }), () => toast("Bez polohy akciu nespustíš. Zapni ju v nastaveniach telefónu."), { timeout: 10000 });
+    const bez = "Zapni polohu · bez nej akcia nezačne. Ak appka polohu nemá povolenú: Nastavenia telefónu → Súkromie → Polohové služby → prehliadač alebo DEED+ → Pri používaní.";
+    if (!navigator.geolocation) { setHlaska("Tento prehliadač polohu nevie zistiť. Otvor DEED+ v Safari alebo Chrome."); return; }
+    setHlaska(null);
+    navigator.geolocation.getCurrentPosition(() => nastavOhlasenie({ ...ohl, stav: "bezi" }), () => setHlaska(bez), { timeout: 10000 });
   };
   const bod = (c: string) => <span aria-hidden="true" style={{ width: 10, height: 10, borderRadius: "50%", background: c, flex: "none" }} />;
   return <>
@@ -42,5 +45,6 @@ export function PruhySkutkov() {
         <span style={{ display: "block", fontSize: 13, color: "rgba(241,236,225,.72)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ohl.stav === "bezi" ? "Keď skončíš, pridaj dôkazy" : ohl.nazov}</span></span>
       <button type="button" onClick={ohl.stav === "bezi" ? () => otvorPridatSkutok({ dokoncit: true, start: ohl.sk ? "skupina" : "solo" }) : zacinam} style={{ flex: "none", height: 44, padding: "0 14px", borderRadius: 13, border: "none", background: "linear-gradient(90deg,#4B7A35,#8DB866)", color: "#fff", fontSize: 14.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>{ohl.stav === "bezi" ? "Dokončiť" : "Začínam"}</button>
     </Pruh>}
+    {ohl && !ak && hlaska && <div role="alert" style={{ pointerEvents: "auto", padding: "12px 14px", borderRadius: 14, background: "color-mix(in srgb, #A34A2A 14%, var(--card))", border: "1.5px solid #C8664A", fontSize: 14.5, fontWeight: 700, lineHeight: 1.45, color: "var(--ink)" }}>{hlaska}</div>}
   </>;
 }

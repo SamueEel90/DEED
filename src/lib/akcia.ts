@@ -57,7 +57,7 @@ export function useAkcia(): Akcia | null {
 /** Môj QR „Organizujem akciu" alebo Pridať skutok → So skupinou → Akcia práve začína */
 export function otvorAkciu(dar?: Akcia["dar"], org?: Akcia["org"]) {
   const a = akcia();
-  nastavAkciu(a ? { ...a, otvorena: true } : { stav: "sken", uc: [], okno: 30, start: null, miesto: "", otvorena: true, dar, ...(org ? { org, id: `ak${Date.now().toString(36)}`, zaznam: [] } : {}) });
+  nastavAkciu(a ? { ...a, otvorena: true } : { stav: "sken", uc: [], okno: 30, start: null, miesto: "", otvorena: true, dar, ...(org ? { org, id: crypto.randomUUID() /* OPRAVY 446: uuid — server (event_secret) inak kód akcie nevydá */, zaznam: [] } : {}) });
 }
 export const cas = (sek: number) => `${Math.floor(sek / 3600)}:${String(Math.floor((sek % 3600) / 60)).padStart(2, "0")}:${String(sek % 60).padStart(2, "0")}`;
 

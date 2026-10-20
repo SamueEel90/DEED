@@ -11,6 +11,7 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { profilOsoby, useOtvorenaOsoba, zavriOsobu, type ProfilOsoby } from "@/lib/odkazOsoby";
 import { usePozvanka, infoPozvanky, prijmiPozvanku, zavriPozvanku, type InfoPozvanky } from "@/lib/pozvankaSkutku";
+import { usePripojenie, infoAkcie, pripojSaKAkcii, zavriPripojenie, usePoloha, type InfoAkcie } from "@/lib/akciaCharity";
 
 const tlO: CSSProperties = { minHeight: 52, padding: "0 20px", borderRadius: 14, border: "1.5px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "var(--ink)" };
 const tlZ: CSSProperties = { ...tlO, border: "none", background: "var(--green)", color: "#fff" };
@@ -102,4 +103,64 @@ export function PozvankaSkutkuVrstva({ onPrihlasit, onRegistrovat }: { onPrihlas
   const ja = usePouzivatel();
   if (!st || typeof document === "undefined") return null;
   return createPortal(<PozvankaSkutkuHost prihlaseny={!ja.demo && !!ja.ucetId} onPrihlasit={onPrihlasit} onRegistrovat={onRegistrovat} />, document.body);
+}
+
+// ---------------- OPRAVY 446 (2): pripojenie k akcii charity (sken rotujúceho QR charity) ----------------
+export function PripojenieAkcieHost({ prihlaseny, onPrihlasit, onRegistrovat }: { prihlaseny: boolean; onPrihlasit?: () => void; onRegistrovat?: () => void }) {
+  const token = usePripojenie();
+  const [i, setI] = useState<InfoAkcie | null | "nacitava">("nacitava");
+  const [chyba, setChyba] = useState<string | null>(null);
+  const [hotovo, setHotovo] = useState(false);
+  const [posiela, setPosiela] = useState(false);
+  const poloha = usePoloha(!!token && prihlaseny);
+  useEffect(() => { if (!token) return; let z = true; void infoAkcie(token).then((x) => { if (z) { setI(x); if (x?.som) setHotovo(true); } }); return () => { z = false; }; }, [token, prihlaseny]);
+  if (!token) return null;
+  const pripoj = async () => {
+    if (posiela) return;
+    setPosiela(true); setChyba(null);
+    const e = await pripojSaKAkcii(token, poloha.poz);
+    setPosiela(false);
+    if (e) setChyba(e); else setHotovo(true);
+  };
+  const nazov = i && i !== "nacitava" ? i.nazov ?? "charity" : "";
+  const karta: CSSProperties = { display: "flex", flexDirection: "column", gap: 12, padding: 18, borderRadius: 20, background: "var(--card)", border: "1px solid var(--cardBd)" };
+  const sedy = { fontSize: 14.5, lineHeight: 1.5, color: "var(--ink3)" } as const;
+  return (
+    <Ram onZavri={zavriPripojenie} label="Pripojiť sa k akcii">
+      {i === "nacitava" ? <span style={{ fontSize: 15, color: "var(--ink3)" }}>Načítava sa…</span>
+        : hotovo ? <section style={karta}>
+            <div role="status" style={{ display: "flex", flexDirection: "column", gap: 6, padding: "14px 16px", borderRadius: 16, background: "var(--gSoft)", border: "1px solid var(--gBd)" }}>
+              <b style={{ fontSize: 19, color: "var(--gInk)" }}>Si na akcii {nazov} ✓</b>
+              <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Keď organizátor akciu ukončí, skutok ti príde do denníka.</span>
+            </div>
+            <button type="button" onClick={zavriPripojenie} style={tlO}>Hotovo</button>
+          </section>
+        : !i || !i.plati ? <section style={karta}>
+            <b style={{ fontSize: 18 }}>{i?.skoncila ? "Akcia už skončila" : "Kód už neplatí"}</b>
+            <span style={sedy}>{i?.skoncila ? "K tejto akcii sa už nedá pripojiť." : "QR charity sa mení každých 15 s a platí najviac minútu. Naskenujte ho znova."}</span>
+          </section>
+        : <section style={karta}>
+            <span style={{ fontSize: 15, color: "var(--ink2)" }}>Pripojiť sa k akcii</span>
+            <b style={{ fontSize: 22, lineHeight: 1.25 }}>{nazov}?</b>
+            {i.organizator ? <span style={sedy}>Túto akciu vediete vy. Účastníci tento QR naskenujú vo svojej appke.</span>
+              : !prihlaseny ? <>
+                  <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Aby sme vedeli, že ste to vy, prihláste sa. Kto ešte nemá účet, zaregistruje sa a hneď sa vráti sem.</span>
+                  <button type="button" onClick={onRegistrovat} style={tlZ}>Zaregistrovať sa</button>
+                  <button type="button" onClick={onPrihlasit} style={tlO}>Prihlásiť sa</button>
+                </>
+              : <>
+                  {poloha.stav === "ok" ? <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--gInk)" }}>Poloha zapnutá ✓</span>
+                    : poloha.stav !== "zistuje" && <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>Poloha je vypnutá. Ak ju akcia vyžaduje, zapnite ju v nastaveniach telefónu.</span>}
+                  <PodrzTlacidlo label={posiela ? "Pripája sa…" : "Podržte a pripojte sa"} trvanie={1500} disabled={posiela} onConfirm={() => void pripoj()} />
+                  {chyba && <span role="alert" style={{ fontSize: 14.5, fontWeight: 700, color: "var(--cRed, #A34A2A)" }}>{chyba}</span>}
+                </>}
+          </section>}
+    </Ram>);
+}
+/** po prihlásení: vrstva nad appkou, kým je okno pripojenia otvorené */
+export function PripojenieAkcieVrstva({ onPrihlasit, onRegistrovat }: { onPrihlasit: () => void; onRegistrovat: () => void }) {
+  const t = usePripojenie();
+  const ja = usePouzivatel();
+  if (!t || typeof document === "undefined") return null;
+  return createPortal(<PripojenieAkcieHost prihlaseny={!ja.demo && !!ja.ucetId} onPrihlasit={onPrihlasit} onRegistrovat={onRegistrovat} />, document.body);
 }

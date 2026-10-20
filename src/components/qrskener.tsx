@@ -7,6 +7,7 @@ import { tint } from "@/lib/ui";
 import { useScan } from "@/data";
 import { Sheet } from "@/components/sheet";
 import { Lupa, IkonaFajka, IkonaKriz } from "@/components/icons";
+import { kodAkcieZQr, otvorPripojenie } from "@/lib/akciaCharity";
 
 // ============================================================
 // QR SKENER (Fáza 3) — proof-of-presence: naskenuj rotujúci TOTP token
@@ -36,6 +37,9 @@ export function QrSkener({ onClose, toast }: { onClose?: () => void; toast?: (t:
 
   async function over(raw: string) {
     if (hotovoRef.current) return;
+    // OPRAVY 446 (2): QR charity (…/akcia/DEED1…) → rovno okno „Pripojiť sa k akcii …? · Podržte a pripojte sa“
+    const ak = kodAkcieZQr(raw);
+    if (ak) { hotovoRef.current = true; stopCam(); otvorPripojenie(ak); onClose?.(); return; }
     const t = raw.trim();
     if (!t.startsWith("DEED1.")) { toast?.("To nie je DEED+ akčný QR"); return; }
     hotovoRef.current = true;
