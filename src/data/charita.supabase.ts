@@ -64,7 +64,7 @@ export const charitaSupabase = {
     if (st.error) throw st.error;
     if (nas.error) throw nas.error;
     const charity = new Set((st.data ?? []).filter((s: any) => s.typ === "charita" && !s.testovacia).map((s: any) => s.id as string));
-    const nastavenie = new Map<string, { popis?: string; media?: Media; typ?: string; mesiace?: number; komu?: { oblast: string; pod: string[] } }>((nas.data ?? []).map((n: any) => [n.id as string, n.nastavenie ?? {}] as const));
+    const nastavenie = new Map<string, { popis?: string; media?: Media; typ?: string; mesiace?: number; komu?: { oblast: string; pod: string[] }; prav?: boolean }>((nas.data ?? []).map((n: any) => [n.id as string, n.nastavenie ?? {}] as const));
     const vsZbierok = new Map<string, string>((nas.data ?? []).map((n: any) => [n.id as string, n.vs as string] as const));
     const karty: CharitaFeedItem[] = zbierky.filter((z: any) => charity.has(z.stranka)).map((z: any) => {
       const n = nastavenie.get(z.id) ?? {};
@@ -81,6 +81,7 @@ export const charitaSupabase = {
         vyzbierane: Number(z.vyzbierane) || 0, ciel: ciel > 0 ? ciel : undefined, darov: Number(z.darov) || 0,
         konciDni: Math.max(0, Math.ceil((koniec.getTime() - Date.now()) / DEN)), vs: vsZbierok.get(z.id) || undefined, komu: n.komu?.oblast ? { oblast: n.komu.oblast, pod: Array.isArray(n.komu.pod) ? n.komu.pod.slice(0, 2) : [] } : undefined,
         orgNazov: meno, stranka: z.stranka, casVytvorenia: z.vytvorene,
+        pravidelna: n.prav === true, // OPRAVY 440 (3): pravidelná len keď ju zbierka má (Zadarmo nikdy)
         org: { logo: pr.bezLoga ? undefined : pr.logo || undefined, ini: pr.bezLoga && pr.inicialy ? pr.inicialy : iniZ(meno), mesto: mestoZoSidla(reg.sidlo), stit: stitZ(v.stit), ico: reg.ico || undefined, sidlo: reg.sidlo || undefined },
       } as CharitaFeedItem;
     });

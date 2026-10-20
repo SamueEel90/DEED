@@ -300,6 +300,7 @@ export type CharitaComp = "urgent" | "top" | "mala" | "zapoj" | "material" | "da
 /** Metadáta karty Charita feedu (FEED_ITEMS). */
 export interface CharitaFeedItem extends FeedEngineMeta, Partial<GeoBod> {
   id: string;
+  /** OPRAVY 440 (3): zbierka má pravidelnú podporu (od P1) */ pravidelna?: boolean;
   comp: CharitaComp;
   typ: EngineTyp;
   modul: Modul;
