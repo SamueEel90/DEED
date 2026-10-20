@@ -9,7 +9,10 @@ import { TESTOVACIA } from "@/lib/testovacia";
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { charitaSupabase } from "@/data/charita.supabase";
+import { zbierkyStrankyZPamate, useZmenyZbierok } from "@/lib/novaZbierka";
+import { cisloObjektu } from "@/lib/cisloObjektu";
 import { useLayout } from "@/components/context";
 import { RichTextInput } from "@/components/richtext";
 import { sanitizujHtml } from "@/lib/richtext";
@@ -173,8 +176,14 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   const [chybaMed, setChybaMed] = useState("");
   const [aiChyba, setAiChyba] = useState<string | null>(null); // OPRAVY 127
   // OPRAVY 122 (2): pred zverejnením charita vyberie, kam pôjdu peniaze — po zverejnení zapečatené
-  const [kam, setKam] = useState<null | "centralna" | "ina" | "bez">(null);
+  const [kam, setKam] = useState<null | "nasa" | "centralna" | "ina" | "bez">(null);
   const [inaZ, setInaZ] = useState<ZbierkaVolba | null>(null);
+  // OPRAVY 438: vlastné bežiace zbierky charity (Na našu zbierku) a skutočné zbierky iných skutočných charít (ten istý zdroj ako feed Charity)
+  const [nasaZ, setNasaZ] = useState<ZbierkaVolba | null>(null);
+  useZmenyZbierok();
+  const nase: ZbierkaVolba[] = org ? zbierkyStrankyZPamate(stranka).filter((z) => (z.stav ?? "aktivna") === "aktivna").map((z) => ({ id: z.id, nazov: z.nazov || "Zbierka", org: pr.autor || "", cislo: cisloObjektu("Z", z.id, z.vs) })) : [];
+  const { data: ineFeed = [] } = useQuery({ queryKey: ["charita-zbierky-vyber"], queryFn: () => charitaSupabase.feed(), enabled: !!org, staleTime: 60_000 });
+  const ine: ZbierkaVolba[] = ineFeed.filter((z) => z.typ === "charita" && z.stranka !== stranka).map((z) => ({ id: String(z.id), nazov: z.nazov || "Zbierka", org: z.orgNazov ?? "", cislo: cisloObjektu("Z", String(z.id), z.vs) }));
   const [kamQ, setKamQ] = useState("");
   const [otv, setOtv] = useState(false);
   useEffect(() => { const r = requestAnimationFrame(() => setOtv(true)); return () => cancelAnimationFrame(r); }, []);
@@ -421,7 +430,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   const doFeedu = !plan && pasmo >= 1 && dokaz;
   const karma = karmaZoSkore(odpAi?.skore);
   const caka = vysl?.verdikt === "caka" && !plan;
-  const kamOk = kam === "bez" || (kam === "centralna" && !!pr.centralna) || (kam === "ina" && !!inaZ);
+  const kamOk = kam === "bez" || (kam === "nasa" && !!nasaZ) || (kam === "centralna" && !!pr.centralna) || (kam === "ina" && !!inaZ);
   const zverejni = () => {
     if (!pravda) return;
     if (org) {
@@ -429,7 +438,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       // OPRAVY 121: navonok autor charita, vnútri meno organizátora; bez karmy; ide ľuďom v lokalite charity a na jej profil
       const fotky = media.filter((m) => !m.video).map((m) => m.src);
       const popisHtml = po + (cistyText(po2Org) ? po2Org : "");
-      const kamZ = kam === "centralna" ? pr.centralna ?? null : kam === "ina" ? inaZ : null;
+      const kamZ = kam === "nasa" ? nasaZ : kam === "centralna" ? pr.centralna ?? null : kam === "ina" ? inaZ : null;
       const feedId = teraz();
       pridajSkutokOrg(stranka, {
         id, feedId, nazov: nz, popis: popisHtml, oblast: oblast ?? "Pomoc", miesto: kde, datum: teraz(), stav: "ok", karma: null,
@@ -834,24 +843,31 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       <div style={{ ...P.karta, borderRadius: 18, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
         <span style={{ fontSize: 13.5, lineHeight: 1.45, color: "var(--ink2)" }}>Pri zbierke ide 100 % na ňu, vaša charita si nenechá nič. QR skutku vedie na ten istý platobný modul. Po zverejnení je voľba zapečatená.</span>
         <div role="radiogroup" aria-label="Kam pôjdu peniaze" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {([["centralna", "Na našu centrálnu zbierku · celá organizácia", pr.centralna ? pr.centralna.nazov : "Centrálnu zbierku zatiaľ nemáte."], ["ina", "Na zbierku inej charity", inaZ ? `${inaZ.nazov} · ${inaZ.org}` : "Vyberiete zbierku podľa názvu alebo čísla."], ["bez", "Bez platobného modulu", "Skutok len ukazuje, čo ste urobili. Peniaze sa pri ňom nezbierajú."]] as const).map(([k, t, x]) => {
-            const c = kam === k, vyp = k === "centralna" && !pr.centralna; return (
+          {([["nasa", "Na našu zbierku", nase.length ? (nasaZ ? `${nasaZ.nazov} · ${nasaZ.cislo}` : "Vyberiete z vašich bežiacich zbierok.") : "Zatiaľ nemáte bežiacu zbierku."], ["centralna", "Na našu centrálnu zbierku · celá organizácia", pr.centralna ? pr.centralna.nazov : "Centrálnu zbierku zatiaľ nemáte."], ["ina", "Na zbierku inej charity", inaZ ? `${inaZ.nazov} · ${inaZ.org}` : "Vyberiete zbierku podľa názvu alebo čísla."], ["bez", "Bez platobného modulu", "Skutok len ukazuje, čo ste urobili. Peniaze sa pri ňom nezbierajú."]] as const).map(([k, t, x]) => {
+            const c = kam === k, vyp = (k === "centralna" && !pr.centralna) || (k === "nasa" && !nase.length); return (
             <button type="button" role="radio" aria-checked={c} aria-disabled={vyp} key={k} onClick={() => { if (!vyp) setKam(k); }} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 56, padding: "8px 12px", borderRadius: 13, cursor: vyp ? "default" : "pointer", opacity: vyp ? 0.55 : 1, background: c ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${c ? "var(--gBd)" : "var(--cardBd)"}`, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", ...kartaVolby(c), paddingRight: 36 }}>
               <FajkaVolby on={c} />
               <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 15, fontWeight: 800 }}>{t}</span><span style={{ display: "block", fontSize: 12.5, lineHeight: 1.4, color: "var(--ink3)" }}>{x}</span></span>
             </button>); })}
         </div>
+        {kam === "nasa" && <div className="pf-rise" role="radiogroup" aria-label="Naše bežiace zbierky" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {nase.map((z) => { const c = nasaZ?.id === z.id; return (
+            <button type="button" role="radio" aria-checked={c} key={z.id} onClick={() => setNasaZ(z)} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 52, padding: "6px 12px", borderRadius: 13, cursor: "pointer", background: c ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${c ? "var(--gBd)" : "var(--fieldBd)"}`, textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
+              <FajkaVolby on={c} />
+              <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 14.5, fontWeight: 700 }}>{z.nazov}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{z.cislo}</span></span>
+            </button>); })}
+        </div>}
         {kam === "ina" && <div className="pf-rise" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <label style={{ display: "flex", alignItems: "center", gap: 8, height: 48, padding: "0 12px", borderRadius: 13, background: "var(--field)", border: "1.5px solid var(--fieldBd)", color: "var(--ink3)" }}>
             <Ik d={IK.lupa} s={18} />
             <input value={kamQ} onChange={(e) => setKamQ(e.target.value)} placeholder="Názov alebo číslo zbierky" aria-label="Hľadať zbierku inej charity" style={{ flex: 1, minWidth: 0, height: 44, border: "none", background: "transparent", fontSize: 16, color: "var(--ink)", outline: "none", fontFamily: "inherit" }} />
           </label>
-          {(() => { const qq = normalizuj(kamQ); const l = vsetkyZ.filter((z) => z.org !== pr.autor && (!qq || normalizuj(z.nazov).includes(qq) || normalizuj(z.org).includes(qq) || normalizuj(z.cislo).includes(qq))).slice(0, qq ? 8 : 3);
+          {(() => { const qq = normalizuj(kamQ); const qc = kamQ.replace(/\D/g, ""); const l = ine.filter((z) => !qq || normalizuj(z.nazov).includes(qq) || normalizuj(z.org).includes(qq) || (!!qc && z.cislo.replace(/\D/g, "").includes(qc))).slice(0, qq ? 8 : 3);
             return l.length ? l.map((z) => { const c = inaZ?.id === z.id; return (
               <button type="button" role="radio" aria-checked={c} key={z.id} onClick={() => setInaZ(z)} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 52, padding: "6px 12px", borderRadius: 13, cursor: "pointer", background: c ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${c ? "var(--gBd)" : "var(--cardBd)"}`, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", ...kartaVolby(c), paddingRight: 36 }}>
                 <FajkaVolby on={c} />
                 <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 14.5, fontWeight: 700 }}>{z.nazov}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}><span style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{z.cislo}</span> · {z.org}</span></span>
-              </button>); }) : <div style={{ padding: "8px 2px", fontSize: 13, color: "var(--ink3)" }}>Nič sme nenašli. Skúste iný názov alebo číslo, napr. 47 821.</div>; })()}
+              </button>); }) : <div style={{ padding: "8px 2px", fontSize: 13, color: "var(--ink3)" }}>{ine.length ? "Nič sme nenašli. Skúste iný názov alebo číslo zbierky." : "Zatiaľ tu nie je žiadna zbierka inej charity."}</div>; })()}
         </div>}
       </div>
     </>, <>
@@ -874,7 +890,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
           <span style={{ flex: 1, minWidth: 0 }}><b style={{ display: "block", fontSize: 15 }}>{pr.autor || "Charita"}</b><span style={{ display: "block", fontSize: 13, color: "var(--ink3)" }}>{kde} · teraz</span></span>
           <span style={{ padding: "4px 10px", borderRadius: 9, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 12.5, fontWeight: 800, color: "var(--gInk)", whiteSpace: "nowrap" }}>{oblast ?? "Pomoc"}</span>
         </div>
-        {(kam === "centralna" && pr.centralna || kam === "ina" && inaZ) && <div style={{ margin: "-2px 16px 10px", display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 12, background: "var(--goldBg)", border: "1px solid var(--goldBd)", fontSize: 13, fontWeight: 700 }}><span style={{ color: "var(--gold)", display: "flex" }}><Ik d={IK.dar} s={16} /></span>Príspevky idú na zbierku · {(kam === "centralna" ? pr.centralna : inaZ)?.nazov}</div>}
+        {(kam === "nasa" && nasaZ || kam === "centralna" && pr.centralna || kam === "ina" && inaZ) && <div style={{ margin: "-2px 16px 10px", display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 12, background: "var(--goldBg)", border: "1px solid var(--goldBd)", fontSize: 13, fontWeight: 700 }}><span style={{ color: "var(--gold)", display: "flex" }}><Ik d={IK.dar} s={16} /></span>Príspevky idú na zbierku · {(kam === "nasa" ? nasaZ : kam === "centralna" ? pr.centralna : inaZ)?.nazov}</div>}
         <span role="img" aria-label={foto ? "Hlavná fotka" : "Logo charity"} style={{ display: "flex", alignItems: "center", justifyContent: "center", aspectRatio: "16 / 9", background: foto ? `center/cover no-repeat url(${foto})` : "var(--gSoft)" }}>{!foto && logoEl(120, 30)}</span>
         <div style={{ padding: "14px 16px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
           <b style={{ fontSize: 18, lineHeight: 1.3 }}>{nz}</b>
@@ -902,7 +918,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       <Svetlusik size={84} />
       <div style={{ fontSize: 24, fontWeight: 800 }}>Skutok je zverejnený</div>
       <div style={{ fontSize: 15.5, lineHeight: 1.55, color: "var(--ink2)" }}>Skutok „{nz}“ teraz uvidia ľudia vo vašej lokalite aj na vašom profile.</div>
-      {(() => { const z = kam === "centralna" ? pr.centralna : kam === "ina" ? inaZ : null; const url = `${ADRESA}/s/${id}`; return <>
+      {(() => { const z = kam === "nasa" ? nasaZ : kam === "centralna" ? pr.centralna : kam === "ina" ? inaZ : null; const url = `${ADRESA}/s/${id}`; return <>
         {z && <div style={{ alignSelf: "stretch", textAlign: "left", borderRadius: 18, background: "var(--goldBg)", border: "1px solid var(--goldBd)", padding: 14, fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}><b style={{ color: "var(--ink)" }}>{(kam === "centralna" ? `100 % príspevkov ide na centrálnu zbierku ${pr.autor ?? ""}`.trimEnd() : `100 % príspevkov ide na zbierku „${z.nazov}“`).replace(/\.?$/, ".")}</b> Zapečatené, nedá sa zmeniť.</div>}
         <div style={{ alignSelf: "stretch", textAlign: "left", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", padding: 14, display: "flex", gap: 14, alignItems: "center" }}>
           <span style={{ flex: "none" }}><DeedQr data={url} size={132} /></span>
