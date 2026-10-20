@@ -12,7 +12,7 @@ import { C, SPACE, RADIUS } from "@/theme";
 import { Switch } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { jeNeregistrovany, nastavNeregistrovany, darujemAkoFirma, nastavDarcuFirmu, sledujDarcu } from "@/lib/devDarca";
-import { pridajDar, darcoviaPre, SumyDarcovKontext } from "@/lib/darcovia";
+import { pridajDar, darcoviaPre, SumyDarcovKontext, zakladMimoRiadkov } from "@/lib/darcovia";
 import { dorovnanieNaDar, dorovnanieKDaru, useZmenyDorovnani } from "@/lib/dorovnanie";
 import { MIESTA, POLOZKY, pripojene, type Miesto, type Kontext, type Kluc } from "./nastavenie";
 import { KamIdeDar, CelaZbierka, type TvorcaData } from "./Tvorca";
@@ -152,7 +152,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
   // stav zbierky tesne pred darom (pre poďakovanie a hlášku) — zachytí sa pri otvorení okna
   const stavPredDarom = () => {
     const dary = darcoviaPre(zbierka.id), dnes = new Date(); dnes.setHours(0, 0, 0, 0);
-    return { vyzbierane: (zbierka.vyzbierane ?? 0) + dary.reduce((a, r) => a + r.suma, 0), ciel, pocetDarov: (zbierka.ludia ?? 0) + dary.length, darovDnes: dary.filter((r) => r.cas >= dnes.getTime()).length };
+    return { vyzbierane: zakladMimoRiadkov(zbierka.id, zbierka.vyzbierane ?? 0) + dary.reduce((a, r) => a + r.suma, 0), ciel, pocetDarov: zakladMimoRiadkov(zbierka.id, zbierka.ludia ?? 0) + dary.length, darovDnes: dary.filter((r) => r.cas >= dnes.getTime()).length };
   };
   const [predDarom, setPredDarom] = useState(stavPredDarom);
   // hárky z karty 12 (zatiaľ pôvodné hárky appky — nový vzhľad príde s ich kartami)
@@ -181,7 +181,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
     if (p.kluc === "kartaStavu" && (p.hodnota === "cela" || p.hodnota === "skryta")) {
       return (
         <div key={p.kluc} className="zb-pol" style={{ padding: "0 16px" }}>
-          <KartaStavu refId={zbierka.id} zaklad={zbierka.vyzbierane ?? 0} ciel={p.hodnota === "skryta" ? null : ciel} ludiaZaklad={zbierka.ludia ?? 0} tempo={tempoRezim} koniecPruhu={koniecPruhu} skryta={p.hodnota === "skryta"} />
+          <KartaStavu refId={zbierka.id} zaklad={zakladMimoRiadkov(zbierka.id, zbierka.vyzbierane ?? 0)} ciel={p.hodnota === "skryta" ? null : ciel} ludiaZaklad={zakladMimoRiadkov(zbierka.id, zbierka.ludia ?? 0)} tempo={tempoRezim} koniecPruhu={koniecPruhu} skryta={p.hodnota === "skryta"} />
         </div>
       );
     }
@@ -191,7 +191,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
         <div key={p.kluc} className="zb-pol" style={{ padding: "0 16px" }}>
           <KartaStavu refId={zbierka.id} zaklad={0} ciel={null} ludiaZaklad={0} tempo={tempoRezim} koniecPruhu={koniecPruhu}
             cezTvorcu={{ id: tvorca.id, menoAkuzativ: tvorca.menoAkuzativ }} />
-          <CelaZbierka refId={zbierka.id} zaklad={zbierka.vyzbierane ?? 0} ciel={ciel} ludiaZaklad={zbierka.ludia ?? 0} />
+          <CelaZbierka refId={zbierka.id} zaklad={zakladMimoRiadkov(zbierka.id, zbierka.vyzbierane ?? 0)} ciel={ciel} ludiaZaklad={zakladMimoRiadkov(zbierka.id, zbierka.ludia ?? 0)} />
         </div>
       );
     }

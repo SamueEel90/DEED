@@ -19,6 +19,7 @@ import { usePersonalizacia } from "@/lib/personalizacia";
 import { oblastKluc } from "@/lib/personalizaciaStore";
 import { pribehZbierky, useZmenyPribehov } from "@/lib/pribehZbierky";
 import { otvorPribeh, otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
+import { useZmenyDarov, sucetDarov, zLedgeraNacitane } from "@/lib/darcovia";
 import { casOd } from "@/components/feedcard";
 import { StitOkno } from "@/features/verejny-profil/casti";
 import { prazdnaCharita } from "@/lib/testProfily";
@@ -199,7 +200,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard }: Feed
     // KARTA 55 · E: zverejnený príbeh → pod fotkou krátky text (max 3 riadky) a odkaz na stránku Príbeh
     const pr = it.pribehZbierky ? pribehZbierky(it.pribehZbierky) : null;
     return (
-      <CharitaKarta key={it.id} wide={wide} onClick={() => onDetail(zd)}
+      <CharitaKarta key={it.id} refId={it.typ === "charita" ? String(it.id) : undefined} wide={wide} onClick={() => onDetail(zd)}
         fotky={it.fotky} accent={K.gold}
         typ={it.typ === "skutok" ? "skutok" : "charita"} stav={it.konciDni != null ? { konciDni: it.konciDni } : undefined}
         doplnky={it.dorovnanie ? <DoplnokDorovnanie ini={it.dorovnanie.ini} text={it.dorovnanie.text} /> : undefined} zFirmy={it.zFirmy}
@@ -294,7 +295,13 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard }: Feed
 // memo: re-render len pri zmene dát karty (oblubena/vyzbierane/…); inline onClick sa ignoruje
 const CharitaKarta = memo(CharitaKartaBase, rovnakeOkremFunkcii);
 // KARTA 55 · F (2a): druh = štítok na fotke + ľavý okraj, stav vpravo hore, doplnky pod názvom. Kategória nie je štítok.
-function CharitaKartaBase({ wide, onClick, fotky, emoji, typ, stav, doplnky, zFirmy, nazov, popis, vyzbierane, ciel, darov, oblubena, pribehOdkaz, tvorca, cas, cipy }: any) {
+function CharitaKartaBase({ refId, wide, onClick, fotky, emoji, typ, stav, doplnky, zFirmy, nazov, popis, vyzbierane: vyz0, ciel, darov: darov0, oblubena, pribehOdkaz, tvorca, cas, cipy }: any) {
+  // OPRAVY 440 (2): jeden zdroj s detailom — keď sú dary zbierky z ledgera načítané, karta berie ich súčet
+  // (ten istý ako detail, aj s darmi v DeeD); po dare sa obnoví sama. Kým nie sú, číslo zo servera.
+  useZmenyDarov();
+  const s = refId ? sucetDarov(refId) : null;
+  const zL = !!refId && zLedgeraNacitane(refId);
+  const vyzbierane = zL && s ? s.suma : vyz0, darov = zL && s ? s.pocet : darov0;
   // OPRAVY 426: rozloženie 1b — tvorca pod fotkou so štítom (obrázok), bez modrej fajky; text bez HTML, 2 riadky
   return (
     <FeedCard wide={wide} onClick={onClick} label={nazov} typ={typ} stav={stav} doplnky={doplnky} tvorca={tvorca} cas={cas} cipy={cipy}

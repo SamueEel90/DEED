@@ -206,6 +206,12 @@ function riadkyPre(refId: string): DarRiadok[] {
 /** kľúče zbierok so skutočnými darmi podľa začiatku (omšové okná farnosti) */
 export function refIdySDarmi(zaciatok: string): string[] { return [...sklad.keys()].filter((k) => k.startsWith(zaciatok) && (sklad.get(k)?.length ?? 0) > 0); }
 
+/** OPRAVY 440 (2): dary zbierky už prišli z ledgera — vtedy sú riadky CELÝ súčet a „základ“ zo zbierky
+ *  (pohľad v_zbierky_na_pripnutie, ten istý ledger) sa k nim už nepripočíta. Inak sa sumy zdvojili (40 € + 40,10 €). */
+export function zLedgeraNacitane(refId: string): boolean { return ledgerId(refId) != null && sklad.has(refId); }
+/** základ zbierky mimo živých riadkov: 0, keď riadky prišli z ledgera */
+export const zakladMimoRiadkov = (refId: string, zaklad: number) => (zLedgeraNacitane(refId) ? 0 : zaklad);
+
 /** súčet a počet darov zbierky (eurá; EURC 1 : 1) — jeden zdroj pre ukazovateľ aj hlavičku.
  *  `skryta` = zbierka rodiny, sumu server neposlal (0075b · KARTA 57 A.7): suma je 0, počet zo servera. */
 export function sucetDarov(refId: string): { suma: number; pocet: number; skryta?: true } {
