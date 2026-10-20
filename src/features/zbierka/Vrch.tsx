@@ -29,7 +29,7 @@ export function Hlavicka({ cisloZbierky, overena, onBack, onZavriet, onMoznosti 
         <button type="button" onClick={async () => { const ok = await kopiruj(cisloZbierky.replace(/^[A-Z]-/, "").replace(/\s/g, "")); toast(ok ? "Číslo zbierky je skopírované" : "Číslo sa nepodarilo skopírovať"); }} aria-label={`Číslo zbierky ${cisloZbierky}, skopírovať`}
           style={{ minHeight: 44, padding: "0 10px", borderRadius: 10, background: "var(--bSoft)", border: "1px solid var(--bBd)", color: "var(--blue)", fontFamily: "inherit", fontSize: 13.5, fontWeight: 700, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", cursor: "pointer", boxShadow: "none" }}>{cisloZbierky}</button>
       )}
-      {overena && <span style={{ color: "var(--blue)", fontSize: 13.5, fontWeight: 700 }}>Overená</span>}
+      {/* OPRAVY 426: „Overená“ preč — neoverenú organizáciu nezaregistrujeme */}
       <button type="button" aria-label="Ďalšie možnosti" onClick={onMoznosti} style={{ marginLeft: "auto", minWidth: 44, height: 44, border: "none", background: "transparent", fontSize: 18, color: "var(--ink3)", letterSpacing: 1, cursor: "pointer", padding: "0 4px", fontFamily: "inherit" }}>···</button>
       {onZavriet && <ZavrietTlacidlo onClick={onZavriet} />}
     </div>

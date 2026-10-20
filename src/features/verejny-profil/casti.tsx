@@ -124,11 +124,11 @@ export function StitOkno({ p, onClose, v6, mobil }: { p: TestProfil; onClose: ()
         </div>
         {v6 && <>
           <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 6 }}>
-            {[[...new Set(p.zbierky.map((z) => z.mesto))].join(" · "), `od ${p.odRoku}`, p.typ === "charita" ? "Overená organizácia" : p.typ === "firma" ? "Overená firma" : "Overený tvorca"].map((c) => (
+            {[[...new Set(p.zbierky.map((z) => z.mesto))].join(" · "), `od ${p.odRoku}`, p.typ === "charita" ? "Overená organizácia" : p.typ === "firma" ? "Overená firma" : "Overený tvorca"].filter(Boolean).map((c) => ( /* OPRAVY 426: prázdne nie */
               <span key={c} style={{ height: mobil ? 28 : 30, padding: mobil ? "0 11px" : "0 12px", borderRadius: 15, border: "1px solid var(--cuBd)", display: "flex", alignItems: "center", fontSize: mobil ? 12.5 : 13, fontWeight: 800, color: "var(--cuInk)" }}>{c}</span>))}
           </div>
           <div style={{ alignSelf: "stretch", display: "flex", flexDirection: "column", textAlign: "left" }}>
-            {([["Sídlo", p.sidlo], ["IČO", p.ico], ["Transparentný účet", p.ucet], ["Kontakt", p.kontakt]] as [string, string][]).map(([k, v]) => (
+            {([["Sídlo", p.sidlo], ["IČO", p.ico], ["Transparentný účet", p.ucet], ["Kontakt", p.kontakt]] as [string, string][]).filter(([, v]) => v).map(([k, v]) => ( /* OPRAVY 426: prázdne riadky nie */
               <div key={k} style={mobil ? { display: "flex", flexDirection: "column", gap: 1, padding: "6px 0", borderTop: "1px solid rgba(0,0,0,.12)" } : { display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0", borderTop: "1px solid rgba(0,0,0,.12)" }}>
                 <span style={{ fontSize: mobil ? 11.5 : 12.5, fontWeight: 700, color: "var(--cuInk2)" }}>{k}</span>
                 <span style={{ fontSize: 13, fontWeight: 800, color: "var(--cuInk)", textAlign: mobil ? "left" : "right" }}>{v}</span>

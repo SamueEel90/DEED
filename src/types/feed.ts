@@ -325,6 +325,9 @@ export interface CharitaFeedItem extends FeedEngineMeta, Partial<GeoBod> {
   stranka?: string;
   /** ISO čas vytvorenia (zoradenie od najnovšieho) */
   casVytvorenia?: string;
+  /** OPRAVY 426 · 1b: tvorca na karte (logo, mesto, štít z databázy) a počet darcov */
+  org?: { logo?: string; ini?: string; mesto?: string; stit?: "Bronze" | "Silver" | "Gold" | "Platinum" | "Legend"; ico?: string; sidlo?: string };
+  darov?: number;
 }
 
 /** OPRAVY 403: Adresár charít & OZ — len skutočne zaregistrované organizácie (stránky z databázy) */

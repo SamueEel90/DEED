@@ -359,7 +359,7 @@ function AktCardBase({ it, wide, onOpen, onPerson }: any) {
     <FeedCard wide={wide} onClick={() => onOpen(it.id)} label={it.title} typ={AKT_TYP[it.type as keyof typeof AKT_TYP]}
       accent={jeHelp ? A.red : undefined}
       autor={{
-        meno: it.author, pfp: it.pfp, ini: it.ini, lok: it.loc || a.label, karma: it.karma, cas: it.time, glow: accent,
+        meno: it.author, pfp: it.pfp, ini: it.ini, lok: it.loc || a.label, cas: it.time, /* OPRAVY 426: štít nie ako text (uložená karma pri príspevku nie je skutočný štít) */ glow: accent,
         onClick: () => onPerson(it.author),
         chips: it.verified ? <Overene size={15} label="Overené komunitou" /> : undefined,
       }}
@@ -551,7 +551,7 @@ function WorkshopDetail({ it, toast, celebrate, home, openPerson }: any) {
           <div style={{ width: 44, height: 44, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 16, color: "#fff", flex: "none", background: it.pfp }}>{it.ini}</div>
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: SPACE.xs }}>{it.author} {it.profi && <Wb bg={A.purpleBg} c={A.purple}>PROFI</Wb>}</div>
-            <div style={{ fontSize: 12, color: A.txt3 }}>{it.karma || "lektor"} · ★ {it.rating} hodnotenie · otvoriť profil</div>
+            <div style={{ fontSize: 12, color: A.txt3 }}>★ {it.rating} hodnotenie · otvoriť profil</div>
           </div>
           <span style={{ color: C.textTer }}>›</span>
         </div>

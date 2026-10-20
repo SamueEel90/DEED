@@ -347,7 +347,7 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
         <Avatar src={z.avatar} emoji="👤" size={46} border={`1px solid rgba(127,203,160,.5)`} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 16, fontWeight: "bold", display: "flex", alignItems: "center", gap: 6 }}>{z.nazov} {z.overeny && <Overene size={15} label="Overená žiadosť" />}</div>
-          <div style={{ marginTop: SPACE.xxs }}><span style={{ fontSize: 9, fontWeight: 700, background: "rgba(240,199,90,.12)", border: "1px solid rgba(240,199,90,.3)", color: C.gold, borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.xs}px` }}>⭐ {z.karma}</span> <span style={{ fontSize: 11, color: C.textTer }}>📍 {z.lok} · 1 deň</span></div>
+          <div style={{ marginTop: SPACE.xxs }}><span style={{ fontSize: 11, color: C.textTer }}>📍 {z.lok} · 1 deň</span></div>
         </div>
         <span style={{ color: C.textTer, fontSize: 18, flex: "none" }}>›</span>
       </div>

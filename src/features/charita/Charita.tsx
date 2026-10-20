@@ -17,6 +17,10 @@ import { otvorPridatSkutok } from "@/features/skutok/otvor";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { pribehZbierky, useZmenyPribehov } from "@/lib/pribehZbierky";
 import { otvorPribeh, otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
+import { casOd } from "@/components/feedcard";
+import { StitOkno } from "@/features/verejny-profil/casti";
+import { prazdnaCharita } from "@/lib/testProfily";
+import { icoText } from "@/lib/udajeRegistra";
 
 /*
   ============================================================
@@ -180,6 +184,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard }: Feed
   const [radius, setRadius] = useState("stvrt");
   const [vyberOkruh, setVyberOkruh] = useState(false);
   const { gate } = useTvorbaGate(); // pasívny nesmie tvoriť (talent)
+  const [stitOkno, setStitOkno] = useState<CharitaFeedItem | null>(null); // OPRAVY 426: ťuk na štít = okno štítu
 
   const karta = (it: CharitaFeedItem) => {
     const zd = zoItem(it);
@@ -190,7 +195,9 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard }: Feed
         fotky={it.fotky} accent={K.gold}
         typ={it.typ === "skutok" ? "skutok" : "charita"} stav={it.konciDni != null ? { konciDni: it.konciDni } : undefined}
         doplnky={it.dorovnanie ? <DoplnokDorovnanie ini={it.dorovnanie.ini} text={it.dorovnanie.text} /> : undefined} zFirmy={it.zFirmy}
-        nazov={it.nazov} overena={it.overena}
+        nazov={it.nazov} darov={it.darov} cas={casOd(it.casVytvorenia)}
+        tvorca={it.stranka ? { meno: it.orgNazov ?? "Organizácia", logo: it.org?.logo, ini: it.org?.ini, mesto: it.org?.mesto, stit: it.org?.stit ?? "Bronze",
+          onProfil: () => otvorVerejnyProfil(it.stranka!), onStit: () => setStitOkno(it) } : undefined}
         popis={pr ? <span style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{pr.kratky}</span> : it.popis}
         pribehOdkaz={pr ? { text: `Celý príbeh na stránke ${it.orgNazov ?? "organizácie"} ›`, onClick: () => otvorPribeh(it.pribehZbierky!) } : undefined}
         vyzbierane={it.vyzbierane} ciel={it.ciel} oblubena={oblubenyZo(zd)} />
@@ -264,6 +271,8 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard }: Feed
         />
       )}
 
+      {stitOkno && <StitOkno v6 mobil={!desktop} onClose={() => setStitOkno(null)}
+        p={{ ...prazdnaCharita(stitOkno.stranka!, stitOkno.orgNazov), stit: stitOkno.org?.stit ?? "Bronze", sidlo: stitOkno.org?.sidlo ?? "", ico: stitOkno.org?.ico ? icoText(stitOkno.org.ico) : "" }} />}
       {vyberOkruh && <OkruhVyber radius={radius} akcent="var(--a-info)"
         onPick={(r: string) => { setRadius(r); setVyberOkruh(false); }}
         onClose={() => setVyberOkruh(false)} />}
@@ -277,26 +286,23 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard }: Feed
 // memo: re-render len pri zmene dát karty (oblubena/vyzbierane/…); inline onClick sa ignoruje
 const CharitaKarta = memo(CharitaKartaBase, rovnakeOkremFunkcii);
 // KARTA 55 · F (2a): druh = štítok na fotke + ľavý okraj, stav vpravo hore, doplnky pod názvom. Kategória nie je štítok.
-function CharitaKartaBase({ wide, onClick, fotky, emoji, typ, stav, doplnky, zFirmy, nazov, overena, popis, vyzbierane, ciel, oblubena, pribehOdkaz }: any) {
+function CharitaKartaBase({ wide, onClick, fotky, emoji, typ, stav, doplnky, zFirmy, nazov, popis, vyzbierane, ciel, darov, oblubena, pribehOdkaz, tvorca, cas }: any) {
+  // OPRAVY 426: rozloženie 1b — tvorca pod fotkou so štítom (obrázok), bez modrej fajky; text bez HTML, 2 riadky
   return (
-    <FeedCard wide={wide} onClick={onClick} label={nazov} typ={typ} stav={stav} doplnky={doplnky}
+    <FeedCard wide={wide} onClick={onClick} label={nazov} typ={typ} stav={stav} doplnky={doplnky} tvorca={tvorca} cas={cas}
       media={{
         fotky, emoji,
         overlay: oblubena ? <OblubeneHviezda polozka={oblubena} style={{ top: "auto", bottom: 10 }} /> : undefined,
       }}
       title={nazov}
-      titleChips={overena ? <Overena /> : undefined}
       text={popis}
-      progress={ciel ? { vyzbierane, ciel, zFirmy } : undefined}
+      progress={ciel ? { vyzbierane, ciel, zFirmy, darcov: darov ?? 0 } : undefined}
       footer={pribehOdkaz ? (
         <button type="button" onClick={(e) => { e.stopPropagation(); pribehOdkaz.onClick(); }}
           style={{ display: "flex", alignItems: "center", minHeight: 44, marginTop: 6, padding: 0, border: "none", background: "transparent", color: "var(--gInk)", fontSize: 14, fontWeight: 800, fontFamily: "inherit", cursor: "pointer", textAlign: "left", boxShadow: "none" }}>{pribehOdkaz.text}</button>
       ) : undefined}
     />
   );
-}
-function Overena() {
-  return <Overene size={15} label="Overená zbierka" />;
 }
 
 // ===================== SHEETY =====================
