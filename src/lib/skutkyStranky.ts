@@ -33,3 +33,13 @@ export async function zapisSkutokStranky(stranka: string, s: MojSkutok): Promise
   const data = await bezDataUrl(s, "stranky").catch(() => s);
   await supabase.from("skutok_stranky").upsert({ id: s.id, stranka, data, stiahnuty: s.stiahnuty ?? null, upravene: new Date().toISOString() }, { onConflict: "id" });
 }
+
+// OPRAVY 436 · skutok charity vo feede Domov (prispevok, zapísaný pri zverejnení) — úprava a zmazanie aj na serveri
+export async function upravSkutokVoFeede(prispevokId: string | undefined, z: { titul: string; popis: string }): Promise<void> {
+  if (!supabase || !prispevokId) return;
+  await supabase.from("prispevok").update({ titul: z.titul, popis: z.popis }).eq("id", prispevokId);
+}
+export async function zmazSkutokZFeedu(prispevokId: string | undefined): Promise<void> {
+  if (!supabase || !prispevokId) return;
+  await supabase.from("prispevok").delete().eq("id", prispevokId);
+}

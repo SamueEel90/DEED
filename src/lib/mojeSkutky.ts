@@ -50,6 +50,8 @@ export interface MojSkutok {
   upraveny?: string;
   /** id položky vo feede (skutok za charitu) — úprava a stiahnutie ju zmenia aj tam */
   feedId?: number;
+  /** OPRAVY 436: id príspevku vo feede Domov na serveri (prispevok) — úprava a zmazanie skutku ho zmenia aj tam */
+  prispevokId?: string;
   /** uložený bez hodnotenia (AI nedostupná) — podklady na dodatočné ohodnotenie (features/skutok/dohodnotenie.ts) */
   caka?: { opis: string; text: string; miesto: string; maVideo: boolean; dokaz: boolean; autor: string; ucetId: string | null; lat?: number; lng?: number };
 }

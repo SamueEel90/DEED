@@ -7,6 +7,7 @@
 // Funkcie za tlačidlami NIE SÚ — každé tlačidlo otvorí obrazovku „Pripravujeme".
 // ============================================================
 import { useZmenyDarov, darcoviaPre, sucetDarov } from "@/lib/darcovia";
+import { skutkyOrg, useZmenySkutkov } from "@/lib/mojeSkutky";
 import { naviazObjekt } from "@/lib/darZbierky";
 import { UKAZKOVE_STRANKY } from "@/lib/mojeStranky";
 import { TlZbalit } from "@/features/verejny-profil/zbalit";
@@ -1283,6 +1284,12 @@ function PopisOznamov({ strankaId, popis }: { strankaId: string; popis: string }
   const n = aktivnychOznamov(strankaId);
   return <>{n > 0 ? aktivneOznamyText(n) : popis}</>;
 }
+/** OPRAVY 436: dlaždica Skutky — „1 zverejnený skutok“ · „3 zverejnené skutky“ · „5 zverejnených skutkov“; keď nič, popis */
+function PopisSkutkov({ strankaId, popis }: { strankaId: string; popis: string }) {
+  useZmenySkutkov();
+  const n = skutkyOrg(strankaId).filter((x) => !x.stiahnuty).length;
+  return <>{n === 1 ? "1 zverejnený skutok" : n >= 2 && n <= 4 ? `${n} zverejnené skutky` : n > 4 ? `${n} zverejnených skutkov` : popis}</>;
+}
 function KartaPolozky({ k, tier, piny, prepniPin, otvorPolozku, strankaId }: { k: Karta } & Pick<Spolocne, "tier" | "piny" | "prepniPin" | "otvorPolozku" | "strankaId">) {
   // KARTA 40: Oznamy majú v Zadarmo výzvu na súrnu pomoc — karta bez štítka „od P1"
   const zamok = !maPovolenie(k.id, tier) && k.id !== "oznamy";
@@ -1295,7 +1302,7 @@ function KartaPolozky({ k, tier, piny, prepniPin, otvorPolozku, strankaId }: { k
         <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><b style={{ fontSize: 15.5, color: "var(--ink)" }}>{k.t}</b>
           {zamok && <span style={{ flex: "none", whiteSpace: "nowrap", height: 22, padding: "0 8px", borderRadius: 11, border: "1px solid var(--cardBd)", fontSize: 11.5, fontWeight: 800, color: "var(--ink3)", display: "flex", alignItems: "center" }}>od {odProgramu(k.id)}</span>}
         </span>
-        <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink3)" }}>{k.id === "oznamy" ? <PopisOznamov strankaId={strankaId} popis={k.s} /> : k.s}</span>
+        <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink3)" }}>{k.id === "oznamy" ? <PopisOznamov strankaId={strankaId} popis={k.s} /> : k.id === "skutky" ? <PopisSkutkov strankaId={strankaId} popis={k.s} /> : k.s}</span>
       </span>
       <button onClick={(e) => { e.stopPropagation(); prepniPin(k.id); }} aria-label={pn ? "Odopnúť z lišty" : "Pripnúť na lištu"} aria-pressed={pn} title={pn ? "Odopnúť z lišty" : "Pripnúť na lištu"}
         style={{ flex: "none", width: 44, height: 44, borderRadius: 12, border: `1px solid ${pn ? "var(--cuBd)" : "transparent"}`, background: pn ? "var(--accSoft)" : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>

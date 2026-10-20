@@ -59,7 +59,8 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
   const [zivo, setZivo] = useState(p0?.zivo ?? false);
   const [isk, setIsk] = useState(p0?.isk ?? 0);
   const rokyData = profil.roky ?? [];
-  const [otv, setOtv] = useState<Record<string, boolean>>(p0?.otv ?? (rokyData[0] ? { [String(rokyData[0].rok)]: true } : {}));
+  // OPRAVY 436: najnovší rok kroniky rozbalený (aj pri skutočnej charite, kde sa roky skladajú zo skutkov a zbierok)
+  const [otv, setOtv] = useState<Record<string, boolean>>(p0?.otv ?? (rokyData[0] ? { [String(rokyData[0].rok)]: true } : { [String(new Date().getFullYear())]: true }));
   const aRef = useRef<HTMLElement | null>(null);       // PC: vizitka (vlastný posun)
   const scRef = useRef<HTMLDivElement | null>(null);   // PC: kronika · tablet / mobil: celá stránka
   const barRef = useRef<HTMLDivElement | null>(null);

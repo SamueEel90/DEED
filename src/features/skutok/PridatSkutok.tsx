@@ -28,7 +28,7 @@ import { profilZPamate, nacitajProfil, uvodZPamate, nacitajUvod, potvrdUvod } fr
 import { VERIME_VAM, PRAVIDLA_ORG, PRAVIDLA_NADPIS, PRAVIDLA_UVOD, SUHLAS_FOTKY, SUHLAS_POZNAMKA, PRED_ZVEREJNENIM } from "@/lib/pravidlaObsahu";
 import { OBLASTI, normalizuj, pridajSkutok, upravSkutok, koncept as nacitajKoncept, ulozKoncept, nastavOhlasenie, ohlasenie as aktOhlasenie,
   konceptOrg, ulozKonceptOrg, pridajSkutokOrg,
-  type Oblast, type ZbierkaVolba, type Ucastnik, type MojSkutok } from "@/lib/mojeSkutky";
+  type Oblast, type ZbierkaVolba, type Ucastnik, type MojSkutok, upravSkutokOrg } from "@/lib/mojeSkutky";
 import { otvorAkciu } from "@/lib/akcia";
 import { useVazbyOsoby } from "@/lib/zamestnanci";
 import { useNastaveniaAppky } from "@/lib/nastaveniaAppky";
@@ -441,7 +441,8 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
         fotky: fotky.length ? fotky : orgLogo ? [orgLogo] : [], titul: nz, popis: cistyText(popisHtml), lok: kde, overene: true, skore: 0, typSituacie: "normal", modul: "good", dni: 0, podpora: 0, lat: lok.lat, lng: lok.lng,
       } as GoodPolozka;
       qc.setQueriesData<GoodPolozka[]>({ queryKey: qk.good.feed }, (old = []) => [it, ...old]);
-      repo.good.vytvor(it, ja.ucetId).then((nid) => { if (nid) qc.invalidateQueries({ queryKey: qk.good.feed }); }).catch(() => {});
+      // OPRAVY 436: id príspevku vo feede sa uloží ku skutku — zmazanie / úprava skutku ho zmení aj vo feede
+      repo.good.vytvor(it, ja.ucetId).then((nid) => { if (nid) { upravSkutokOrg(stranka, id, { prispevokId: nid }); qc.invalidateQueries({ queryKey: qk.good.feed }); } }).catch(() => {});
       vibruj([10, 40, 10]);
       setKr(6); return;
     }
