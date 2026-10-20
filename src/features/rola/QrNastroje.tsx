@@ -3,6 +3,7 @@
 // TRVALÉ (QR farnosti, QR zvončeka) a ZBIERKY (každá bežiaca: farnosti, vecná, rodiny).
 // PDF: vektorový QR v ráme DEED (lib/qrPdf), nálepky so značkami na strihanie, plagát z rozloženia vecnej zbierky.
 // ============================================================
+import { QrCelaObrazovka } from "@/components/qrNaUkazanie";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { DeedQr, type DeedQrVariant } from "@/components/deedqr";
@@ -68,12 +69,7 @@ const FMT: [FormatQr, string, string][] = [["n5", "Nálepky 5 × 5 cm", "15 kuso
 
 /** QR na celú obrazovku (biele pozadie, dá sa skenovať priamo z obrazovky) */
 function CelyQr({ p, onZavri }: { p: PolozkaQr; onZavri: () => void }) {
-  return createPortal(<div role="dialog" aria-modal="true" aria-label={p.t} style={{ position: "fixed", inset: 0, zIndex: 1300, background: "#FFFFFF", color: "#1D211B", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18, padding: 20, fontFamily: "inherit" }}>
-    <b style={{ fontSize: 20, textAlign: "center" }}>{p.t}</b>
-    <DeedQr data={p.odkaz} odznak="D++" variant="svetly" size={Math.min(420, Math.round(window.innerWidth * 0.78), Math.round(window.innerHeight * 0.6))} />
-    <span style={{ fontSize: 15, fontWeight: 700 }}>{adresaQr(p.odkaz)}</span>
-    <button type="button" autoFocus onClick={onZavri} style={{ minHeight: 52, padding: "0 24px", border: "1.5px solid #D9D3C7", borderRadius: 14, background: "#EFEAE1", color: "#1D211B", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800 }}>× Zavrieť</button>
-  </div>, document.body);
+  return <QrCelaObrazovka qr={{ data: p.odkaz, odznak: "D++" }} popis={`${p.t} · ${adresaQr(p.odkaz)}`} onZavri={onZavri} />; // OPRAVY 457: spoločný komponent
 }
 
 /** OPRAVY 347 (4): Nástroje → QR nástroje */

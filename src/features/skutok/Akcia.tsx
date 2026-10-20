@@ -1,6 +1,7 @@
 // KARTA 22 · Organizovaná akcia (celá obrazovka sprava): skener účastníkov → Začať akciu (čas + GPS)
 // → Akcia beží (okno pre meškajúcich, odstránenie krížikom) → Ukončiť akciu → Pridať skutok krok 2.
 // Vstupy: Pridať skutok → So skupinou → Akcia práve začína · Môj QR → Organizujem akciu.
+import { QrNaUkazanie } from "@/components/qrNaUkazanie";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { IScannerControls } from "@zxing/browser";
@@ -12,7 +13,6 @@ import { useLokalita } from "@/lib/lokalita";
 import { useAkcia, nastavAkciu, zmenAkciu, cas, type Akcia } from "@/lib/akcia";
 import { vibruj } from "@/features/zbierka/animacie";
 import { otvorPridatSkutok } from "./otvor";
-import { DeedQr } from "@/components/deedqr";
 import { repo } from "@/data";
 import { profilZPamate } from "@/lib/profilStranky";
 import "@/styles/platba.css";
@@ -193,7 +193,7 @@ function AkciaObrazovka({ a, onZavrete }: { a: Akcia; onZavrete: () => void }) {
                 : <span aria-hidden="true" style={{ width: 40, height: 40, borderRadius: 12, background: "var(--gSoft)", border: "1px solid var(--gBd)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "var(--gInk)", flex: "none" }}>{ini(org.nazov)}</span>}
               <span style={{ flex: 1, minWidth: 0, textAlign: "left" }}><b style={{ display: "block", fontSize: 15.5 }}>{org.nazov}</b><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>Alebo pre veľa ľudí naraz · QR charity</span></span>
             </div>
-            {qrData ? <div style={{ background: "#fff", borderRadius: 18, padding: 8, lineHeight: 0 }}><DeedQr data={qrData} bezOdznaku size={a.stav === "sken" ? 220 : 180} /></div>
+            {qrData ? <QrNaUkazanie qr={{ data: qrData, bezOdznaku: true }} size={a.stav === "sken" ? 220 : 180} popis={`Akcia ${org.nazov} · naskenujte v appke DEED+`} rotacia={{ sek }} ram={{ background: "#fff", borderRadius: 18, padding: 8 }} />
               : <div style={{ width: a.stav === "sken" ? 236 : 196, height: a.stav === "sken" ? 236 : 196, borderRadius: 18, background: "var(--field)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "var(--ink3)" }}>Pripravuje sa kód…</div>}
             {qrData && <div style={{ display: "flex", flexDirection: "column", gap: 6, width: 236, maxWidth: "100%" }}>
               <div style={{ height: 5, borderRadius: 3, background: "var(--track)", overflow: "hidden" }}>

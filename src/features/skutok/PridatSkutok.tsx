@@ -2,6 +2,7 @@
 // Aktivity, Charita, Môj QR, detail zbierky, oznam „AI sa pýta"). Otvára sa cez otvorPridatSkutok().
 // 6 krokov: Sám / So skupinou (→ bežný / skutok ako dar) · Opíš · AI kontroluje · Ešte pár otázok · Náhľad · Hotovo.
 // AI = existujúce ohodnot() (POST /api/score, verdikt ok / doplnit / zamietnut) — backend sa nemení.
+import { QrNaUkazanie } from "@/components/qrNaUkazanie";
 import { ADRESA } from "@/lib/adresa";
 import { zapisCin } from "@/lib/vyzvy";
 import { kartaVolby, FajkaVolby, cipFiltra } from "@/components/Volby";
@@ -21,7 +22,7 @@ import { cisloObjektu } from "@/lib/cisloObjektu";
 import { useLayout } from "@/components/context";
 import { RichTextInput } from "@/components/richtext";
 import { sanitizujHtml } from "@/lib/richtext";
-import { DeedQr, stiahniDeedQr } from "@/components/deedqr";
+import { stiahniDeedQr } from "@/components/deedqr";
 import { toast } from "@/components/toast";
 import { Svetlusik } from "@/features/zbierka/Svetlusik";
 import { vibruj } from "@/features/zbierka/animacie";
@@ -907,7 +908,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       {(() => { const z = kam === "nasa" ? nasaZ : kam === "centralna" ? pr.centralna : kam === "ina" ? inaZ : null; const url = `${ADRESA}/s/${id}`; return <>
         {z && <div style={{ alignSelf: "stretch", textAlign: "left", borderRadius: 18, background: "var(--goldBg)", border: "1px solid var(--goldBd)", padding: 14, fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}><b style={{ color: "var(--ink)" }}>{(kam === "centralna" ? `100 % príspevkov ide na centrálnu zbierku ${pr.autor ?? ""}`.trimEnd() : `100 % príspevkov ide na zbierku „${z.nazov}“`).replace(/\.?$/, ".")}</b> Zapečatené, nedá sa zmeniť.</div>}
         <div style={{ alignSelf: "stretch", textAlign: "left", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", padding: 14, display: "flex", gap: 14, alignItems: "center" }}>
-          <span style={{ flex: "none" }}><DeedQr data={url} size={132} /></span>
+          <QrNaUkazanie qr={{ data: url }} size={132} popis={`Skutok ${nz} · naskenujte fotoaparátom alebo v appke DEED+`} />
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
             <span style={{ fontSize: 15.5, fontWeight: 800 }}>QR tohto skutku</span>
             <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>{z ? "Kto ho naskenuje, pošle príspevok rovno na zbierku." : "Kto ho naskenuje, otvorí skutok vašej charity."}</span>
@@ -1008,7 +1009,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
           {rz.hot && rz.z && <div role="status" style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 14.5, fontWeight: 700, color: "var(--gInk)" }}><Ik d={IK.fajka} s={18} w={2.6} />Reťaz zapečatená · {rz.v}&nbsp;% z odmien ide na {rz.z.nazov}</div>}
         </div>)}
       {qrPripraveny && <div style={{ alignSelf: "stretch", textAlign: "left", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", padding: 14, display: "flex", gap: 14, alignItems: "center" }}>
-        <span style={{ flex: "none" }}><DeedQr data={url} size={132} retaz={!!zapec} delenie={delenie} /></span>
+        <QrNaUkazanie qr={{ data: url, retaz: !!zapec, delenie: delenie ?? undefined }} size={132} popis="Skutok · naskenujte fotoaparátom alebo v appke DEED+" />
         <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
           <span style={{ fontSize: 15.5, fontWeight: 800 }}>QR tohto skutku</span>
           <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>{qrText}</span>

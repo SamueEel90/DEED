@@ -9,6 +9,7 @@
 // Názov pri človeku (kaplán, sestra Mária, dobrovoľník …) si farár napíše sám, je to len popis („p“). Server dá práva podľa
 // e-mailu v zozname, kým tam človek je. Pomocník tu zoznam len vidí.
 // ============================================================
+import { QrNaUkazanie } from "@/components/qrNaUkazanie";
 import { odkazPozvanky } from "@/lib/pozvankaSpravy";
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { kartaVolby, FajkaVolby } from "@/components/Volby";
@@ -17,7 +18,6 @@ import { citajNastavenie, maNastavenie, zapisNastavenie, useZmenyNastaveni } fro
 import { useSlovaFarnosti } from "@/lib/mojeFarnosti";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { zdielaj, kopiruj } from "@/lib/zdielanie";
-import { DeedQr } from "@/components/deedqr";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
 import { nacitajProfil, zapisDuchovneho } from "@/lib/profilStranky";
 import { obnovFarara } from "@/lib/farnostPrispela";
@@ -154,7 +154,7 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children, 
           <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>Appka vytvorí QR a odkaz pre jedného človeka s rolou, ktorú ste vybrali. Platí 48 hodín.</span>
         </> : <div style={{ ...karta, padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
-            <span style={{ flex: "none", borderRadius: 14, overflow: "hidden", border: "1px solid var(--cardBd)", lineHeight: 0 }}><DeedQr data={odkaz} size={112} /></span>
+            <QrNaUkazanie qr={{ data: odkaz }} size={112} popis={`Pozvánka do správy stránky · ${poz.r}`} ram={{ border: "1px solid var(--cardBd)", overflow: "hidden" }} />
             <span style={{ flex: 1, minWidth: 160, display: "flex", flexDirection: "column", gap: 4 }}><b style={{ fontSize: 15.5 }}>Pozvánka · {poz.r}</b><span style={{ fontSize: 13.5, color: "var(--ink3)" }}>Platí do {poz.do}. Naskenuje QR alebo ťukne na odkaz.</span></span>
           </div>
           <span style={kick}>TAKTO PRÍDE SPRÁVA</span>

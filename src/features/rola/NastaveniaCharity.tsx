@@ -4,6 +4,7 @@
 // Uložiť / Odoslať / Pridať sú sivé, kým nie je čo uložiť. Žiadne SMS.
 // Stav obrazoviek sa ukladá do účtu stránky (nastavenia_stranky, migrácia 0050) — lib/nastaveniaStranky.
 // ============================================================
+import { QrNaUkazanie } from "@/components/qrNaUkazanie";
 import { aktivnaCharita } from "@/lib/aktivnaCharita";
 import { zbierkyStrankyZPamate, useZmenyZbierok } from "@/lib/novaZbierka";
 import { TlZbalit } from "@/features/verejny-profil/zbalit";
@@ -13,7 +14,6 @@ import { cistyText } from "@/lib/richtext";
 import { useEffect, useState } from "react";
 import { toast } from "@/components/toast";
 import { DeedZnacka, sZnackou } from "@/components/DeedZnacka";
-import { DeedQr } from "@/components/deedqr";
 import { zdielaj, kopiruj } from "@/lib/zdielanie";
 import { SADY_EURC, SADY_EUR, type SadaEurc, type SadaEur } from "@/lib/sadyDarov";
 import { useFakturyOrg, otvorFakturu, type FakturaOrg } from "@/lib/fakturyOrg";
@@ -336,7 +336,7 @@ export function ObrSpravcovia({ mobil }: { mobil: boolean }) {
           </>}
           {cesta === 1 && poz && <>
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              <span style={{ flex: "none", borderRadius: 14, overflow: "hidden", border: "1px solid var(--cardBd)", lineHeight: 0 }}><DeedQr data={poz.url} size={112} variant={document.documentElement.classList.contains("dark") ? "inverzny" : "svetly"} /></span>
+              <QrNaUkazanie qr={{ data: poz.url }} size={112} popis={`Pozvánka do správy stránky · ${ROLY[poz.r][0]}`} ram={{ border: "1px solid var(--cardBd)", overflow: "hidden" }} />
               <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}><b style={{ fontSize: 14.5 }}>Pozvánka · {ROLY[poz.r][0]}</b><span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>Platí do {poz.do}. Naskenuje QR alebo ťukne na odkaz.</span></span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
