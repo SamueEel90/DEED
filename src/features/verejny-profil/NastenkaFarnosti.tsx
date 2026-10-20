@@ -1197,7 +1197,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   </>;
   // --- obsah blokov (spoločný pre PC a mobil) ---
   const mOznRiadok = (x: Oz) => { const o = ozOtv === x.id, kde = kdeOznamu(x); return (
-    <Videne key={x.id} id={x.id} podpis={psOz(x)} styl={{ flex: "none", scrollSnapAlign: "start" }} kratke={(ot) => ozRiadok(x, ot)}>
+    <Videne key={x.id} id={x.id} podpis={psOz(x)} styl={{ flex: "none", scrollSnapAlign: "start" }} kratke={(ot) => ozRiadok(x, ot)} zbalitTukom>
     <div data-oz={x.id} style={{ display: "flex", gap: mob ? 14 : 18, alignItems: "center", padding: "13px 16px", borderRadius: 20, background: KARTA }}>
       <KDatum d={new Date(x.ms || cas.getTime())} />
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
@@ -1210,7 +1210,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
     </div></Videne>); };
   /** zoznam dole v bloku: vo dvojici vyplní výšku suseda, inak najviac 460 (mobil 340) px */
   const zoznamY = (ref: RefObject<HTMLDivElement>, deti: ReactNode, vo2: boolean) => (
-    <div ref={ref} className="md-pas" style={{ ...(vo2 && !mob ? { flex: "1 1 0", minHeight: 220 } : { maxHeight: mob ? 340 : 460 }), display: "flex", flexDirection: "column", gap: 8, overflowY: "auto", scrollSnapType: "y mandatory", scrollbarWidth: "none", overscrollBehaviorY: "contain" }}>{deti}</div>);
+    <div ref={ref} className="md-pas" style={{ ...(vo2 && !mob ? { flex: "1 1 0", minHeight: 220 } : { maxHeight: mob ? 340 : 460 }), display: "flex", flexDirection: "column", gap: 8, overflowY: "auto", scrollSnapType: "y proximity", scrollbarWidth: "none", overscrollBehaviorY: "contain" }}>{deti}{/* OPRAVY 460 (1): proximity — mandatory vracal dlhý rozbalený oznam na začiatok */}</div>);
   const mVyp = <>
     {p && <PrihovorVelky p={p} onPrehraj={setPrihOn} vedla={!mob} />}
     <StarsiePrihovory l={PL.slice(1)} onPrehraj={setPrihOn} />

@@ -92,8 +92,9 @@ function pridajCss() {
 }
 
 /** karta, ktorá sa po videní zbalí. Bez `kratke` sa zbalí tá istá karta (časti s class „vid-skry“ sa skryjú). */
-export function Videne({ id, podpis: p, kratke, children, styl }: { id: string; podpis: string; children: ReactNode;
-  /** iný vzhľad zbalenej (riadok oznamu); `otvor` ju rozbalí na mieste */ kratke?: (otvor: () => void) => ReactNode; styl?: CSSProperties }) {
+export function Videne({ id, podpis: p, kratke, children, styl, zbalitTukom }: { id: string; podpis: string; children: ReactNode;
+  /** iný vzhľad zbalenej (riadok oznamu); `otvor` ju rozbalí na mieste */ kratke?: (otvor: () => void) => ReactNode; styl?: CSSProperties;
+  /** OPRAVY 460: rozbalená z riadka sa ťukom (alebo „Zbaliť ⌃“ na konci) znova zbalí; pri rozbalení sa pás posunie na jej začiatok */ zbalitTukom?: boolean }) {
   const v = useContext(VideneKontext);
   const stav = v ? v.stav(id, p) : "plne";
   const [otv, setOtv] = useState(false);
@@ -114,16 +115,29 @@ export function Videne({ id, podpis: p, kratke, children, styl }: { id: string; 
     return () => { io.disconnect(); if (t) window.clearTimeout(t); };
   }, [v, id, p, stav]);
   const otvor = () => { setOtv(true); v?.oznac(id, p); };
+  const zRiadka = otv && stav === "videne" && !!zbalitTukom;
+  useEffect(() => { // OPRAVY 460 (3): začiatok rozbaleného oznamu hore v páse (scrollTo na pás, nie scrollIntoView)
+    if (!zRiadka) return;
+    const el = ref.current, pas = el?.closest(".md-pas") as HTMLElement | null;
+    if (!el || !pas) return;
+    const r = requestAnimationFrame(() => pas.scrollTo({ top: pas.scrollTop + el.getBoundingClientRect().top - pas.getBoundingClientRect().top, behavior: "smooth" }));
+    return () => cancelAnimationFrame(r);
+  }, [zRiadka]);
   if (zbalena && kratke) return <>{kratke(otvor)}</>;
   const stitok = stav === "nove" ? "NOVÉ" : stav === "zmenene" ? "ZMENENÉ" : null;
   return (
     <div ref={ref} className={zbalena ? "vid-kratko" : undefined} style={{ position: "relative", minWidth: 0, display: "grid", ...styl }}
       onClickCapture={(e) => {
-        if (!zbalena) { v?.oznac(id, p); return; }
+        if (!zbalena) {
+          v?.oznac(id, p);
+          if (zRiadka && !(e.target as HTMLElement).closest("button,a,input,select,textarea,video")) setOtv(false); // OPRAVY 460 (2)
+          return;
+        }
         if ((e.target as HTMLElement).closest("button,a,input,select,textarea")) return; // Prídem, fotka … fungujú aj na zbalenej
         e.preventDefault(); otvor();
       }}>
       {children}
+      {zRiadka && <button type="button" onClick={() => setOtv(false)} style={{ justifySelf: "start", minHeight: 44, padding: "0 16px", border: "none", background: "transparent", color: "var(--nf-gInk, var(--green))", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>Zbaliť ⌃</button>}
       {stitok && <span style={{ position: "absolute", top: 10, right: 10, zIndex: 2, height: 24, padding: "0 10px", borderRadius: 12, background: stav === "nove" ? "#4B7A35" : "#B8862B", color: "#fff", fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", display: "flex", alignItems: "center", pointerEvents: "none" }}>{stitok}</span>}
     </div>);
 }
