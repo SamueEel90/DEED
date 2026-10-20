@@ -157,6 +157,13 @@ export function SledovatTlacidlo({ polozka }: { polozka: Oblubeny }) {
     </button>);
 }
 
+/** OPRAVY 429: nadpis detailu so Sledovať (PC a tablet vpravo na riadku nadpisu, mobil pod nadpisom vľavo) */
+export function TitulSoSledovat({ titul, polozka, wide, style }: { titul: ReactNode; polozka: Oblubeny; wide: boolean; style?: CSSProperties }) {
+  return wide
+    ? <div style={{ display: "flex", alignItems: "flex-start", gap: 16, ...style }}><div style={{ flex: 1, minWidth: 0 }}>{titul}</div><SledovatTlacidlo polozka={polozka} /></div>
+    : <div style={style}>{titul}<div style={{ marginTop: 8 }}><SledovatTlacidlo polozka={polozka} /></div></div>;
+}
+
 export function NadpisText({ nazov, text, otvoreny: otvorenyZvonka, onOtvoreny, sledovat }: { nazov: string; text?: string; otvoreny?: boolean; onOtvoreny?: (v: boolean) => void;
   /** OPRAVY 429: Sledovať vedľa nadpisu (PC/tablet vpravo hore, mobil pod nadpisom vľavo) */ sledovat?: Oblubeny }) {
   const { wide, desktop } = useLayout();

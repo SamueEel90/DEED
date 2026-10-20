@@ -29,5 +29,8 @@ export function testovacieVs(id: string): string {
 export function verejneCislo(typ: TypObjektu, vs: string): string {
   return `${typ}-${vs.slice(0, 3)} ${vs.slice(3, 6)} ${vs.slice(6, 9)} ${vs.slice(9)}`;
 }
+/** OPRAVY 428: typ čísla podľa druhu príspevku — skutok/talent S · žiadosť H · ponuka/workshop O · zbierka Z */
+export const typPrispevku = (t?: string): TypObjektu =>
+  t === "ziadost" || t === "help" ? "H" : t === "ponuka" || t === "workshop" ? "O" : t === "charita" || t === "case" || t === "zbierka" ? "Z" : "S";
 /** číslo objektu podľa id (server ho raz pošle v objekte; dovtedy testovacie) */
 export const cisloObjektu = (typ: TypObjektu, id: string, vs?: string | null) => verejneCislo(typ, vs && platnyVs(vs) ? vs : testovacieVs(id));

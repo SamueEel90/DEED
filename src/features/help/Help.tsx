@@ -11,6 +11,9 @@ import { cistyText } from "@/lib/richtext";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { MEDIA_AR } from "@/lib/cardSize";
+import { CisloVHlavicke, nazovCisla } from "@/components/CisloObjektu";
+import { cisloObjektu, typPrispevku } from "@/lib/cisloObjektu";
+import { TitulSoSledovat } from "@/features/zbierka/Vrch";
 import type { HelpFeedItem, Subjekt, Oblubeny, QrSplitRow } from "@/types";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import { DomovBoard, DomovEvent } from "@/features/domov/Domov";
@@ -328,8 +331,8 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
   return (
     <div style={{ paddingBottom: SPACE.xl }}>
       <BackHeader onBack={onBack} right={<span {...pressable(() => setMenu(true), "Ďalšie možnosti")} style={{ display: "flex", cursor: "pointer" }}><IkonaMoznosti size={18} color={C.textTer} /></span>}>
-        <span style={{ fontSize: 13, fontWeight: "bold", color: C.blueL, background: tint("var(--a-info)", .12), border: `1px solid ${tint("var(--a-info)", .3)}`, borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.sm}px` }}>#47 821</span>
-        <span style={{ fontSize: 11, fontWeight: "bold", color: z.sponzor ? C.gold : C.blueL }}>{z.sponzor ? "Sponzorovaná" : "Overená"}</span>
+        {/* OPRAVY 428: číslo + dátum zverejnenia (namiesto pevného „#47 821“), ten istý komponent ako detail zbierky */}
+        <CisloVHlavicke cislo={cisloObjektu(typPrispevku(z.typ), String(z.id ?? z.nazov), z.vs)} zverejnene={z.vytvorene} nazov={nazovCisla(typPrispevku(z.typ))} />
       </BackHeader>
 
       {/* hero foto — LEN ak prípad má fotku (bez placeholdera; inak čisto textový detail) */}
@@ -343,14 +346,16 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
       <MiniFotky fotky={z.fotky} />
 
       {/* meta — klik otvorí cudzí profil (§6) */}
-      <div onClick={() => onAutor({ typ: "osoba", meno: z.nazov, level: z.karma || "Silver", lok: z.lok })} style={{ padding: `${SPACE.sm}px ${SPACE.gutter}px`, borderBottom: `1px solid ${C.line2}`, display: "flex", gap: SPACE.sm, alignItems: "center", cursor: "pointer" }}>
+      {/* OPRAVY 429: Sledovať pri nadpise (žiadosť/ponuka nemá titulok — nadpisom je meno) */}
+      <TitulSoSledovat wide={wide} polozka={oblubenyZHelp(z)} style={{ padding: `${SPACE.sm}px ${SPACE.gutter}px`, borderBottom: `1px solid ${C.line2}`, alignItems: "center" }} titul={
+      <div onClick={() => onAutor({ typ: "osoba", meno: z.nazov, level: z.karma || "Silver", lok: z.lok })} style={{ display: "flex", gap: SPACE.sm, alignItems: "center", cursor: "pointer" }}>
         <Avatar src={z.avatar} emoji="👤" size={46} border={`1px solid rgba(127,203,160,.5)`} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 16, fontWeight: "bold", display: "flex", alignItems: "center", gap: 6 }}>{z.nazov} {z.overeny && <Overene size={15} label="Overená žiadosť" />}</div>
           <div style={{ marginTop: SPACE.xxs }}><span style={{ fontSize: 11, color: C.textTer }}>📍 {z.lok} · 1 deň</span></div>
         </div>
         <span style={{ color: C.textTer, fontSize: 18, flex: "none" }}>›</span>
-      </div>
+      </div>} />
 
       {/* pribeh — FormatovanyText: odseky/formátovanie prežijú (staré texty = pre-wrap) */}
       <FormatovanyText text={z.pribeh} style={{ padding: `${SPACE.gutter}px ${SPACE.md}px ${SPACE.sm}px`, fontSize: 14, lineHeight: 1.5, color: C.text }} />

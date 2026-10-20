@@ -26,6 +26,7 @@ function naHelpItem(r: any): HelpFeedItem {
   const fotky: string[] | undefined = Array.isArray(m.fotky) && m.fotky.length ? m.fotky : undefined;
   return {
     id: Number(d.id),               // pôvodné numerické id (kľúč + detail/search lookup)
+    vs: r.vs ?? undefined, vytvorene: r.vytvorene ?? undefined,   // OPRAVY 428
     typ: d.typ,                     // pôvodný Help typ (ziadost/ponuka/charity) — feed + render
     nazov: r.autor_nazov,
     pribeh: r.popis,

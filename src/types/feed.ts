@@ -183,6 +183,7 @@ export interface KategoriaKonfig {
 export interface GoodPolozka extends FeedKartaZaklad {
   /** čas vzniku zo servera — kurzor stránkovania feedu (5.4) */
   vytvorene?: string;
+  /** OPRAVY 428: číslo objektu (vs zo servera) */ vs?: string;
   id: number | string;   // mock = number; Supabase = uuid
   /** Zadanie 3 · 3.1: run_id behu AI (/api/score) — skóre, overené a karmu z neho doplní server */
   scoreRunId?: string;
@@ -247,6 +248,7 @@ export interface Sponzor {
 /** Položka Help feedu (MOCK_FEED). */
 export interface HelpFeedItem extends FeedEngineMeta, Partial<GeoBod> {
   id: number;
+  /** OPRAVY 428: číslo objektu (vs) + čas zverejnenia zo servera */ vs?: string; vytvorene?: string;
   /** OPRAVY 156/2: pracovná ponuka / dobrovoľník cez inzerát → modrá PracaKarta */
   praca?: import("@/components/PracaKarta").PracaUdaje;
   typ: HelpTyp;
@@ -382,6 +384,7 @@ export interface DomenaKonfig {
 /** Položka modulu Aktivity (SEED_ITEMS). EN slovník. */
 export interface AktivitaItem {
   id: number;
+  /** OPRAVY 428: číslo objektu (vs) + čas zverejnenia zo servera */ vs?: string; vytvorene?: string;
   dom: Domena;
   type: AktivitaTyp;
   size: VelkostAktivita;

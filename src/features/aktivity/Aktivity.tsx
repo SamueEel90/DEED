@@ -1,5 +1,7 @@
 import { Emo } from "@/components/icons";
-import { cisloObjektu } from "@/lib/cisloObjektu";
+import { cisloObjektu, typPrispevku } from "@/lib/cisloObjektu";
+import { CisloVHlavicke, nazovCisla } from "@/components/CisloObjektu";
+import { TitulSoSledovat } from "@/features/zbierka/Vrch";
 import { StityRad, type StitLevel as StitLv } from "@/components/stit";
 import { stityOblastiSubjektu } from "@/lib/stityOblasti";
 const naStitLevelOpt = (k: string): StitLv | null => ((["Bronze", "Silver", "Gold", "Platinum", "Legend"] as string[]).includes(k) ? (k as StitLv) : null);
@@ -402,6 +404,11 @@ function BackBar({ title, onBack }: { title: string; onBack: () => void }) {
 // `children` = len TAGY (doména/cena/„hľadám pomoc"). Placeholder (emoji/gradient) sa
 // pri chýbajúcej fotke NEzobrazuje — príspevok je čisto textový (tenká lišta + tagy v toku).
 // ⋯ = kontextové menu príspevku (zdieľať / kopírovať odkaz / nahlásiť) — jednotné v celej appke.
+/** OPRAVY 429: nadpis detailu + Sledovať (uloží do Obľúbených) */
+function TitulAkt({ it, typ, titul, style }: { it: AktItem; typ: string; titul: React.ReactNode; style?: React.CSSProperties }) {
+  const { wide } = useLayout();
+  return <TitulSoSledovat wide={wide} style={style} titul={titul} polozka={{ refId: it.id, typ, modul: "aktivity", nazov: it.title, lok: it.loc }} />;
+}
 function DetailHero({ it, onBack, children }: { it: AktItem; onBack: () => void; children?: React.ReactNode }) {
   const { wide } = useLayout();
   const [menu, setMenu] = useState(false);
@@ -414,6 +421,8 @@ function DetailHero({ it, onBack, children }: { it: AktItem; onBack: () => void;
       <IkonaMoznosti size={18} color={hero ? "#fff" : A.txt2} />
     </div>
   );
+  /** OPRAVY 428: číslo + dátum zverejnenia na stred lišty, ten istý komponent ako detail zbierky */
+  const cislo = <CisloVHlavicke cislo={cisloObjektu(typPrispevku(it.type), String(it.id), it.vs)} zverejnene={it.vytvorene} nazov={nazovCisla(typPrispevku(it.type))} />;
   const overlaye = (
     <>
       {menu && (
@@ -429,8 +438,9 @@ function DetailHero({ it, onBack, children }: { it: AktItem; onBack: () => void;
   if (!maFoto) {
     return (
       <>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
           <BackChip onBack={onBack} />
+          {cislo}
           {menuBtn(false)}
         </div>
         {children && <div style={{ display: "flex", flexWrap: "wrap", gap: SPACE.xs, padding: `0 ${SPACE.md}px ${SPACE.xs}px` }}>{children}</div>}
@@ -441,8 +451,9 @@ function DetailHero({ it, onBack, children }: { it: AktItem; onBack: () => void;
   return (
     <>
       {/* lišta nad fotkou — Späť a možnosti rovnako ako všade (nie na fotke) */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
         <BackChip onBack={onBack} />
+        {cislo}
         {menuBtn(false)}
       </div>
       <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: heroGrad(it.dom), ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : { height: 150 }) }}>
@@ -489,7 +500,7 @@ export function DeedDetail({ it, support, votes, vote, toast, home, openPerson, 
           </div>
           {it.verified && <span style={{ marginLeft: "auto", display: "inline-flex" }}><Overene size={15} label="Overené komunitou" /></span>}
         </div>
-        <div style={{ ...titleS, marginTop: SPACE.sm, fontSize: 14 }}>{it.title}</div>
+        <TitulAkt it={it} typ={isCase ? "ziadost" : isTalent ? "talent" : "skutok"} style={{ marginTop: SPACE.sm }} titul={<div style={{ ...titleS, fontSize: 14 }}>{it.title}</div>} />
         <FormatovanyText text={it.desc} style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs, color: A.txt2 }} />
         {it.pomahali && <div style={{ fontSize: 13.5, marginTop: SPACE.xs, color: A.txt2 }}>Pomáhali: <b style={{ color: A.txt }}>{it.pomahali}</b></div>}
         {it.split?.length > 0 && <div style={{ fontSize: 13.5, lineHeight: 1.5, marginTop: SPACE.xs, color: A.txt2 }}>Podpora išla: <b style={{ color: A.txt }}>{it.split.map((s: { komu: string; pct: number }) => `${s.komu} ${s.pct} %`).join(" · ")}</b></div>}
@@ -544,7 +555,7 @@ function WorkshopDetail({ it, toast, celebrate, home, openPerson }: any) {
         {it.b2b && <Wb bg={A.blueBg} c={A.blue}>B2B · audit S1</Wb>}
       </DetailHero>
       <div style={{ padding: `${SPACE.gutter}px ${SPACE.md}px` }}>
-        <div style={{ ...titleS, fontSize: 15 }}>{it.title}</div>
+        <TitulAkt it={it} typ="ponuka" titul={<div style={{ ...titleS, fontSize: 15 }}>{it.title}</div>} />
         <FormatovanyText text={it.desc} style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs, color: A.txt2 }} />
 
         <div onClick={() => openPerson(it.author)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: A.surface2, border: `1px solid ${A.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginTop: SPACE.gutter, cursor: "pointer" }}>
@@ -593,9 +604,9 @@ function HelpDetail({ it, toast, celebrate, home, openPerson }: any) {
       <div style={{ padding: `${SPACE.gutter}px ${SPACE.md}px` }}>
         <div onClick={() => openPerson(it.author)} style={{ ...rowTopS, cursor: "pointer" }}>
           <div style={pfpS(it.pfp)}>{it.ini}</div>
-          <div><div style={{ ...nameS, display: "flex", alignItems: "center", gap: SPACE.xs }}>{it.author} <span style={{ color: C.textTer, fontSize: 13 }}>›</span></div><div style={{ fontSize: 12, color: A.txt3 }}>{it.loc} · {cisloObjektu("S", String(it.id))}</div></div>
+          <div><div style={{ ...nameS, display: "flex", alignItems: "center", gap: SPACE.xs }}>{it.author} <span style={{ color: C.textTer, fontSize: 13 }}>›</span></div><div style={{ fontSize: 12, color: A.txt3 }}>{it.loc}</div></div>
         </div>
-        <div style={{ ...titleS, marginTop: SPACE.sm, fontSize: 14 }}>{it.title}</div>
+        <TitulAkt it={it} typ="ziadost" style={{ marginTop: SPACE.sm }} titul={<div style={{ ...titleS, fontSize: 14 }}>{it.title}</div>} />
         <FormatovanyText text={it.desc} style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs, color: A.txt2 }} />
         <InfoBox>{it.helpers} ľudí sa už zapojilo. Po prijatí sa otvorí chat, dohodnete sa. Po dokončení: hodnotenie + tip + reťaz dobra.</InfoBox>
         <Btn green onClick={gate(() => { celebrate("Ozval si sa!", `Otvorili sme chat s ${it.author}. Dohodnite si detaily.`); setTimeout(home, 1700); })}>✋ Môžem pomôcť</Btn>

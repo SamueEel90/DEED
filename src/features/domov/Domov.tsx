@@ -21,6 +21,9 @@ import { useLokalita } from "@/lib/lokalita";
 import { zobrazVelkost, MEDIA_AR } from "@/lib/cardSize";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
+import { CisloVHlavicke, nazovCisla } from "@/components/CisloObjektu";
+import { typPrispevku } from "@/lib/cisloObjektu";
+import { TitulSoSledovat } from "@/features/zbierka/Vrch";
 import type { GoodPolozka, Subjekt, Udalost, OkruhKod, Oblubeny, MojaZbierka, MojDoklad } from "@/types";
 import { useGoodFeed, useGoodUdalosti, useTopPrispevky } from "@/data";
 import { usePersonalizacia } from "@/lib/personalizacia";
@@ -781,8 +784,10 @@ export function DomovDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: G
     <div style={{ paddingBottom: SPACE.lg }}>
       {/* hero — desktop/tablet: 16:9; mobil: pôvodné výšky (video 220 / foto 150) */}
       {/* lišta so Späť a možnosťami — vždy nad fotkou, rovnako ako všade */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
           <BackChip onBack={onBack} />
+          {/* OPRAVY 428: číslo + dátum zverejnenia na stred, tým istým komponentom ako detail zbierky */}
+          <CisloVHlavicke cislo={cisloObjektu(typPrispevku(it.typ), String(it.id), it.vs)} zverejnene={it.vytvorene} nazov={nazovCisla(typPrispevku(it.typ))} />
           <button type="button" aria-label="Ďalšie možnosti" onClick={() => setMoznosti(true)} style={{ width: 44, height: 44, margin: -5, padding: 5, border: "none", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><span style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.textSec }}><IkonaMoznosti size={18} color={C.textSec} /></span></button>
         </div>
       {maHero && (
@@ -805,7 +810,8 @@ export function DomovDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: G
           </div>
           {it.overene && <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--a-green)", background: "rgba(61,214,140,.13)", padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.xs }}>overené</span>}
         </div>
-        <div style={{ marginTop: SPACE.sm, fontSize: 17, fontWeight: 700, lineHeight: 1.4 }}>{it.titul}</div>
+        {/* OPRAVY 429: Sledovať pri nadpise (uloží do Obľúbených) */}
+        <TitulSoSledovat wide={wide} polozka={oblubenyZGood(it)} style={{ marginTop: SPACE.sm }} titul={<div style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.4 }}>{it.titul}</div>} />
         <FormatovanyText text={it.popis} style={{ color: C.textSec, fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs }} />
 
         {maProgres && it.ciel && (

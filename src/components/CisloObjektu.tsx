@@ -41,3 +41,10 @@ export function CisloObjektu({ cislo, zverejnene, hlavicka, nazov = "číslo" }:
       {hlavicka && kedy && <span style={{ fontSize: 13, whiteSpace: "nowrap", color: "var(--ink3, var(--c-textTer))" }}>Zverejnené {kedy}</span>}
     </button>);
 }
+
+/** OPRAVY 428: stred hlavičky detailu (medzi ‹ Späť a ··· ×) — skutok, žiadosť, ponuka, zbierka */
+export function CisloVHlavicke({ cislo, zverejnene, nazov }: { cislo: string; zverejnene?: string; nazov?: string }) {
+  return <span style={{ flex: 1, minWidth: 0, display: "flex", justifyContent: "center" }}><CisloObjektu cislo={cislo} zverejnene={zverejnene} hlavicka nazov={nazov} /></span>;
+}
+/** „číslo skutku“ · „číslo žiadosti“ · „číslo ponuky“ · „číslo zbierky“ */
+export const nazovCisla = (t: string) => ({ S: "číslo skutku", H: "číslo žiadosti", O: "číslo ponuky", Z: "číslo zbierky" } as Record<string, string>)[t] ?? "číslo";
