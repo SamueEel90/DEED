@@ -136,11 +136,9 @@ function zbierky(): ZbierkaVolba[] {
 type Media = { src: string; video: boolean; sek?: number };
 
 // OPRAVY 121 · skutok za charitu: limity ako pri zbierke (karta 37)
-const ORG_RIADKY = 12, ORG_ZNAKY = 1500, ORG_NAZOV = 80, ORG_FOTIEK = 8, ORG_VIDEO_S = 45;
+const ORG_RIADKY = 12, ORG_ZNAKY = 1500, ORG_NAZOV = 80, ORG_FOTIEK = 8;
 const ORG_NASTROJE = ["bold", "italic", "insertUnorderedList", "diktovat"];
 // Pravidlá obsahu, „Veríme vám“, súhlas a „Pred zverejnením“ — jeden zdroj so Zbierkou: @/lib/pravidlaObsahu
-const dlzkaVidea = (src: string) => new Promise<number>((ok) => { const v = document.createElement("video"); v.preload = "metadata"; v.onloadedmetadata = () => ok(v.duration || 0); v.onerror = () => ok(-1); v.src = src; });
-const fmtSek = (x: number) => `${Math.floor(x / 60)}:${String(Math.round(x % 60)).padStart(2, "0")}`;
 /** caka = AI nedostupná — skutok sa uloží a ohodnotí dodatočne (dohodnotenie.ts) */
 type Vysledok = { verdikt: "ok"; odp: ScoreOdpoved } | { verdikt: "zamietnut" } | { verdikt: "caka" } | null;
 
@@ -178,7 +176,6 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   const [zn1, setZn1] = useState(0);
   const [zn2, setZn2] = useState(0);
   const [prvOrg, setPrvOrg] = useState(false);
-  const [chybaMed, setChybaMed] = useState("");
   // OPRAVY 439 (4): galéria skutku za charitu = GaleriaEditor; `media` (zdroj zverejnenia) sa z nej odvodí
   const [mediaG, setMediaG] = useState<MediumZbierky[]>([]);
   const [vyrezId, setVyrezId] = useState<number | null>(null);
@@ -255,7 +252,6 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   const predRef = useRef<HTMLInputElement>(null);
   const poRef = useRef<HTMLInputElement>(null);
   const dokRef = useRef<HTMLInputElement>(null);
-  const vidRef = useRef<HTMLInputElement>(null);
   const liveT = useRef<number>(0);
 
   const text = useMemo(() => cistyText(po), [po]);
@@ -311,27 +307,6 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       try { const m = await nacitajObr(f); setMedia((s) => [...s, m].slice(0, 7)); } catch (e) { toast(e instanceof Error ? e.message : "Súbor sa nepodarilo načítať."); }
     }
   };
-  // OPRAVY 121: skutok za charitu — najviac 8 fotiek a 1 video do 45 s (ako pri zbierke)
-  const pridajMediaOrg = async (files: FileList | null) => {
-    if (!files) return;
-    setChybaMed("");
-    let fot = media.filter((m) => !m.video).length, vid = media.some((m) => m.video);
-    const nove: Media[] = [];
-    for (const f of Array.from(files)) {
-      if (f.type.startsWith("video/")) {
-        if (vid) { setChybaMed("Video môže byť len jedno. Najprv odstráňte to, ktoré tam je."); continue; }
-        const src = URL.createObjectURL(f); const d = await dlzkaVidea(src);
-        if (d < 0) { setChybaMed("Toto video sa nedá otvoriť. Skúste iný súbor."); continue; }
-        if (d > ORG_VIDEO_S + 0.5) { setChybaMed(`Video má ${fmtSek(d)}. Najviac je 45 sekúnd, skráťte ho v telefóne a skúste znova.`); continue; }
-        nove.push({ src, video: true, sek: d }); vid = true;
-      } else {
-        if (fot >= ORG_FOTIEK) { setChybaMed(`Pridali sme ${ORG_FOTIEK - media.filter((m) => !m.video).length}. Najviac je 8 fotiek.`); break; }
-        try { nove.push({ src: await spracujFotku(f, { pomer: null, maxSirka: 1568 }), video: false }); fot++; } catch (e) { setChybaMed(e instanceof Error ? e.message : "Súbor sa nepodarilo načítať."); }
-      }
-    }
-    if (nove.length) setMedia((m) => [...m, ...nove]);
-  };
-  const posunMedia = (i: number, kam: -1 | 1) => setMedia((m) => { const j = i + kam; if (j < 0 || j >= m.length) return m; const n = [...m]; [n[i], n[j]] = [n[j], n[i]]; return n; });
   const pridajPP = async (k: "pred" | "po", files: FileList | null) => {
     const f = files?.[0]; if (!f) return;
     try { const m = await spracujFotku(f, { pomer: null, maxSirka: 1568 }); (k === "pred" ? setPred : setPoF)(m); } catch (e) { toast(e instanceof Error ? e.message : "Fotku sa nepodarilo načítať."); }
@@ -716,7 +691,6 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 6 }}><span style={{ fontSize: 21, fontWeight: 800 }}>Fotky a video</span><span style={{ fontSize: 14, color: "var(--ink3)" }}>Skutočné fotky človeka alebo miesta, komu pomáhate. Tvár a hlas presvedčia viac než text.</span></div>
         {/* OPRAVY 439 (4): ten istý GaleriaEditor ako všade (popis fotky, výrez, poradie potiahnutím, hlavná prvá) */}
         <GaleriaEditor media={mediaG} onMedia={zmenGal} ph={!wide} onVyrez={setVyrezId} nadpis="Fotky a video skutku" dovetok="" max={ORG_FOTIEK} />
-        {chybaMed && <div role="alert" style={{ fontSize: 13.5, fontWeight: 700, color: "#A34A2A", lineHeight: 1.45 }}>{chybaMed}</div>}
         <div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}><b style={{ color: "var(--ink)" }}>Fotka nie je povinná.</b> Niekedy je lepšie nefotiť, napríklad človeka v ťažkej chvíli. Ak žiadnu nepridáte, pri skutku sa ukáže vaše logo.</div>
         {maMedia && <>
           <Zaskrt on={su} onClick={() => setSu(!su)} zarovnaj="flex-start">{SUHLAS_FOTKY}</Zaskrt>
@@ -865,10 +839,6 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
     // OPRAVY 121 · Náhľad skutku za charitu: autor = charita (logo, názov), Kam pôjde, Pred zverejnením si overte
     const foto = media.find((m) => !m.video)?.src;
     const ini = (pr.autor || "Charita").split(/\s+/).map((x) => x[0]).join("").slice(0, 2).toUpperCase();
-    const logoEl = (sz: number, r: number) => orgLogo
-      ? <img src={orgLogo} alt="" style={{ width: sz, height: sz, borderRadius: r, objectFit: "cover", background: "#fff", border: "1px solid var(--gBd)", flex: "none" }} />
-      : <span aria-hidden="true" style={{ width: sz, height: sz, borderRadius: r, background: sz > 60 ? "#fff" : "var(--gSoft)", border: "1px solid var(--gBd)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: sz * 0.33, fontWeight: 800, color: "var(--gInk)", flex: "none" }}>{ini}</span>;
-    const viac = !!cistyText(po2Org);
     obsah = telo(<>
       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}><span style={{ fontSize: 21, fontWeight: 800 }}>Náhľad</span><span style={{ fontSize: 14, color: "var(--ink3)" }}>Takto skutok uvidia ľudia na vašom profile a vo feede.</span></div>
       {/* OPRAVY 439 (5): náhľad = karta feedu podľa 426 (fotka alebo logo, SKUTOK, teraz, tvorca so štítom, čipy, nadpis, 2 riadky) */}
@@ -896,10 +866,9 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       {/* OPRAVY 439 (7): Zahodiť len s otázkou */}
       {zahodit ? <div role="alertdialog" aria-label="Zahodiť rozpísaný skutok?" style={{ display: "flex", flexDirection: "column", gap: 8, padding: "12px 14px", borderRadius: 14, background: "var(--field)", border: "1px solid var(--cardBd)" }}>
         <b style={{ fontSize: 15 }}>Zahodiť rozpísaný skutok? Text a fotky sa stratia.</b>
-        <div style={{ display: "flex", gap: 10 }}>
-          <button type="button" onClick={() => { setZahodit(false); zavri(); }} style={{ flex: 1, height: 46, borderRadius: 13, border: "1.5px solid #D9B4AE", background: "transparent", color: "#8E3B2F", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>Zahodiť</button>
-          <button type="button" onClick={() => setZahodit(false)} style={{ flex: 1, height: 46, borderRadius: 13, border: "none", background: "var(--green)", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>Nechať</button>
-        </div>
+        {/* OPRAVY 439 doplnok: zahodenie len podržaním, pustiť skôr = nič sa nestane */}
+        <PodrzTlacidlo label="Podržte a zahoďte skutok" farba="cervena" trvanie={1500} onConfirm={() => { setZahodit(false); zavri(); }} />
+        <button type="button" onClick={() => setZahodit(false)} style={{ height: 46, borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--btn)", color: "var(--ink)", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: "none" }}>Nechať</button>
       </div>
       : <button type="button" onClick={() => setZahodit(true)} style={{ height: 44, border: "none", background: "transparent", color: "var(--ink3)", fontSize: 14.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", boxShadow: "none" }}>Zahodiť</button>}
     </>);
