@@ -7,7 +7,8 @@ import { eur, pct, tvar, jeFarnost, type TestProfil, type TestZbierka } from "@/
 import { cisloObjektu } from "@/lib/cisloObjektu";
 import { druhF } from "@/lib/druhy";
 import { jePribehTyzdna, type Pribeh } from "@/lib/pribehZbierky";
-import { FormatovanyText } from "@/components/formattext";
+import { FormatovanyText, RozbalitelnyText } from "@/components/formattext";
+import { Galeria } from "@/features/zbierka/Vrch";
 import { ZbalitASpat, ZmensenyModul } from "@/features/zbierka/ZmensenyModul";
 import { ModulPlatby } from "./ModulProfilu";
 import { zbierkaAkoSektor } from "./PodporaProfilu";
@@ -37,7 +38,7 @@ export function PribehZbierky({ profil, z, p, spatText = "Späť do feedu", onBa
 
   const fotoT = p.media.filter((m) => m.typ === "foto");
   const titulka = (
-    <div style={{ position: "relative", height: pc ? 520 : 440, background: bgF(p.media.find((m) => m.typ === "foto")?.src ?? z.foto) }}>
+    <div style={{ position: "relative", height: pc ? 520 : 440, background: bgF(z.foto || p.media.find((m) => m.typ === "foto")?.src || "") }}>{/* OPRAVY 455 (4): hlavná = titulná fotka zbierky */}
       <span style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(10,8,5,.45) 0%,rgba(10,8,5,0) 30%,rgba(10,8,5,.92) 100%)" }} />
       {/* OPRAVY 317: ťuk na titulnú fotku = prehliadač fotiek, pri nej „1 / N“ */}
       {fotoT.length > 0 && <button type="button" onClick={() => setCela(0)} aria-label={fotoT.length > 1 ? `Fotky zbierky, ${fotoT.length}` : "Zväčšiť fotku"} style={{ position: "absolute", inset: 0, border: "none", padding: 0, background: "transparent", cursor: "zoom-in", boxShadow: "none" }} />}
@@ -101,13 +102,15 @@ export function PribehZbierky({ profil, z, p, spatText = "Späť do feedu", onBa
             <span style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", color: i === 0 ? "var(--gold)" : "var(--acc)" }}>{datumZ(r.datum)}</span>
               <b style={{ fontSize: 17 }}>{r.nadpis}</b>
-              <span style={{ fontSize: 15, lineHeight: 1.55, color: "var(--ink2)" }}>{r.text}</span>
+              {/* OPRAVY 455 (3): celý text zápisu (formátovaný), dlhý so … viac, a fotky zápisu */}
+              {r.text && <RozbalitelnyText text={r.text} riadky={4} style={{ fontSize: 15, lineHeight: 1.55, color: "var(--ink2)" }} />}
+              {!!r.media?.length && <Galeria okraj="0" radius={14} vyska={pc ? 260 : 200} media={r.media.map((m) => ({ typ: m.typ, src: m.src, popis: m.popis || undefined }))} />}
             </span>
           </div>))}
       </div>
     </div>);
   const obsah = <>
-    <b style={{ fontSize: pc ? 22 : 18, lineHeight: 1.5 }}>{p.kratky}</b>
+    <b style={{ fontSize: pc ? 22 : 18, lineHeight: 1.5, whiteSpace: "pre-line" }}>{p.kratky}</b>{/* OPRAVY 455 (1): nový riadok ostane */}
     <FormatovanyText text={hlavny} style={textSt} />
     {citat}{galeria}
     {zaver && <FormatovanyText text={zaver} style={textSt} />}

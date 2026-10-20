@@ -1,4 +1,4 @@
-import { useState, memo } from "react";
+import { useState, useEffect, memo } from "react";
 import { SegTabs } from "@/components/segtabs";
 import { useLokalita } from "@/lib/lokalita";
 import { TESTOVACIA } from "@/lib/testovacia";
@@ -19,7 +19,7 @@ import { otvorPridatSkutok } from "@/features/skutok/otvor";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { usePersonalizacia } from "@/lib/personalizacia";
 import { oblastKluc } from "@/lib/personalizaciaStore";
-import { pribehZbierky, useZmenyPribehov } from "@/lib/pribehZbierky";
+import { pribehZbierky, useZmenyPribehov, nacitajPribehy } from "@/lib/pribehZbierky";
 import { otvorPribeh, otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
 import { useZmenyDarov, sucetDarov, zLedgeraNacitane } from "@/lib/darcovia";
 import { casOd } from "@/components/feedcard";
@@ -190,6 +190,8 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard }: Feed
   const { desktop } = useLayout();
   // OPRAVY 403: feed = len zbierky a skutky z databázy, od najnovšieho (všetko je zatiaľ v jednom meste)
   const { data: feed0 = [], isLoading, isError, refetch } = useCharitaFeed();
+  const idFeedu = feed0.filter((x) => x.typ === "charita").map((x) => String(x.id)).join(",");
+  useEffect(() => { if (idFeedu) void nacitajPribehy(idFeedu.split(",")); }, [idFeedu]);
   // OPRAVY 430: najprv zbierky, ktorých oblasť alebo podpoložka sedí so záujmami prihláseného (v rámci okruhu), potom ostatné; bez záujmov od najnovšieho
   const { zaujmy } = usePersonalizacia();
   const sedi = (it: CharitaFeedItem) => !!it.komu && zaujmy.some((z) => oblastKluc(z.oblast) === it.komu!.oblast || it.komu!.pod.includes(z.pod_polozka));
@@ -202,7 +204,9 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard }: Feed
   const karta = (it: CharitaFeedItem) => {
     const zd = zoItem(it);
     // KARTA 55 · E: zverejnený príbeh → pod fotkou krátky text (max 3 riadky) a odkaz na stránku Príbeh
-    const pr = it.pribehZbierky ? pribehZbierky(it.pribehZbierky) : null;
+    // OPRAVY 455 (8): príbeh patrí každej zbierke (id zbierky); feed ho doteraz nemal nastavený, preto sa krátky text neukázal
+    const idPr = it.pribehZbierky ?? (it.typ === "charita" ? String(it.id) : undefined);
+    const pr = idPr ? pribehZbierky(idPr) : null;
     return (
       <CharitaKarta key={it.id} refId={it.typ === "charita" ? String(it.id) : undefined} wide={wide} onClick={() => onDetail(zd)}
         fotky={it.fotky} accent={K.gold}
@@ -211,8 +215,8 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard }: Feed
         nazov={it.nazov} darov={it.darov} cas={casOd(it.casVytvorenia)} cipy={it.komu?.pod}
         tvorca={it.stranka ? { meno: it.orgNazov ?? "Organizácia", logo: it.org?.logo, ini: it.org?.ini, mesto: it.org?.mesto, stit: it.org?.stit ?? "Bronze",
           onProfil: () => otvorVerejnyProfil(it.stranka!), onStit: () => setStitOkno(it) } : undefined}
-        popis={pr ? <span style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{pr.kratky}</span> : it.popis}
-        pribehOdkaz={pr ? { text: `Celý príbeh na stránke ${it.orgNazov ?? "organizácie"} ›`, onClick: () => otvorPribeh(it.pribehZbierky!) } : undefined}
+        popis={pr ? <span style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden", whiteSpace: "pre-line" }}>{pr.kratky}</span> : it.popis}
+        pribehOdkaz={pr ? { text: `Celý príbeh na stránke ${it.orgNazov ?? "organizácie"} ›`, onClick: () => otvorPribeh(idPr!) } : undefined}
         vyzbierane={it.vyzbierane} ciel={it.ciel} oblubena={oblubenyZo(zd)} />
     );
   };

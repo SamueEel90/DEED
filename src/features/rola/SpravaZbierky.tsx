@@ -430,6 +430,7 @@ export interface ZbierkaNaSpravu {
   /** KARTA 48: obsah zo spustenia (text, galéria, sumy), účet, odkaz, verejné číslo (VS) a organizácia */
   popis?: string; popis2?: string; media?: MediumZbierky[]; sada?: number; eurc?: boolean; sadaE?: number;
   ucet?: string; slug?: string; vs?: string; organizacia?: string; mesto?: string;
+  /** OPRAVY 455 (0): stránka charity — príbeh sa ukladá k nej (bez nej ho server odmietol) */ stranka?: string;
   /** uloží zmenený obsah späť do spustenej zbierky */
   onObsah?: (o: ObsahZbierky) => void;
 }

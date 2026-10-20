@@ -39,7 +39,7 @@ import { DetailSkutku, DetailUkoncenej } from "./DetailyKroniky";
 import type { PolCh } from "./charitaCasti";
 import { otvorIskry } from "@/features/iskry/otvor";
 import { iskryVsetky } from "@/lib/iskry";
-import { pribehZbierky, orgPribehu, useZmenyPribehov } from "@/lib/pribehZbierky";
+import { pribehZbierky, orgPribehu, useZmenyPribehov, nacitajPribehy } from "@/lib/pribehZbierky";
 import { PribehZbierky } from "./PribehZbierky";
 import { SektorDarcuKontext, sucetDarov, useZmenyDarov } from "@/lib/darcovia";
 import { jeCharitaUctu } from "@/lib/mojeStranky";
@@ -157,6 +157,9 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad }: { kluc: string; onBa
     return () => window.removeEventListener("popstate", f);
   }, [stream]);
   useZmenyPribehov();
+  // OPRAVY 455 (0, 8): zverejnené príbehy zo servera (doteraz len z pamäte prehliadača — po obnovení zmizli)
+  const idZbierok = [...(profil0?.zbierky ?? []).map((x) => x.id), ...(zPribehu ? [zPribehu] : [])].join(",");
+  useEffect(() => { if (idZbierok) void nacitajPribehy(idZbierok.split(",")); }, [idZbierok]);
   const ts = useTestStav(); // OPRAVY 147: testovací prázdny profil
   // KARTA 50 · §1: vzhľad vyberá správca v Správe → Upraviť profil (Zadarmo = vzhľad z configu); návštevník ho neprepína.
   // „Celá kronika" v Pirátovi otvorí Kroniku len pre tohto návštevníka (nič sa neukladá).

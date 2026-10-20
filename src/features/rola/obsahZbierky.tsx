@@ -131,10 +131,11 @@ export function TextovePolia({ popis, popis2, onPopis, onPopis2, ph, pecat, onRi
 /** GALÉRIA — fotky (najviac 8) a jedno video do 45 s, poradie, výrez, pretiahnutie, popis fotky. Výrez rieši volajúci (onVyrez, bez neho sa tlačidlo neukáže).
  *  5. 10.: pod každou fotkou pole Popis (nepovinné, najviac 80 znakov) — darca ho vidí pod fotkou na celej obrazovke, čítačka ako alt.
  *  popisNapoveda = placeholder poľa (pri dokladoch „Napríklad: Pred opravou, Po oprave"). Jedna galéria všade, bez PRED / PO. */
-export function GaleriaEditor({ media, onMedia, ph, onVyrez, nadpis = "Galéria zbierky", dovetok = " Fotky a video môžete pridávať aj po spustení zbierky.", popisNapoveda = "Popis fotky (nepovinné)", children, max = MAX_FOTIEK_ZB, bezVidea, bezVerejnych }: {
+export function GaleriaEditor({ media, onMedia, ph, onVyrez, nadpis = "Galéria zbierky", dovetok = " Fotky a video môžete pridávať aj po spustení zbierky.", popisNapoveda = "Popis fotky (nepovinné)", children, max = MAX_FOTIEK_ZB, bezVidea, bezVerejnych, bezHlavnej }: {
   media: MediumZbierky[]; onMedia: (m: MediumZbierky[]) => void; ph: boolean; onVyrez?: (id: number) => void; nadpis?: string; dovetok?: string; popisNapoveda?: string; children?: ReactNode;
   /** KARTA 56I: najviac fotiek (predvolene 8) */ max?: number; /** KARTA 56I: len fotky, bez videa */ bezVidea?: boolean;
   /** Martin 20. 10.: skutok (usera aj charity) = len vlastné fotky, AI ich posudzuje; zbierky môžu mať verejnú knižnicu */ bezVerejnych?: boolean;
+  /** OPRAVY 455 (4): doplnkové fotky — bez štítku a tlačidla „Hlavné“ (hlavná je titulná fotka zbierky) */ bezHlavnej?: boolean;
 }) {
   const [chybaMed, setChybaMed] = useState("");
   /** BLOK B 232: galéria farnosti (Správa) alebo moje fotky (veriaci) — zdroj z kontextu */
@@ -191,9 +192,9 @@ export function GaleriaEditor({ media, onMedia, ph, onVyrez, nadpis = "Galéria 
             <div key={m.id} draggable onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; setDrag(i); }} onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => { e.preventDefault(); e.stopPropagation(); if (e.dataTransfer.files?.length) { setDrag(null); void pridajSubory(Array.from(e.dataTransfer.files)); return; } if (drag != null) presun(drag, i); setDrag(null); }} onDragEnd={() => setDrag(null)}
               style={{ display: "flex", flexDirection: "column", gap: 8, opacity: drag === i ? 0.4 : 1 }}>
-              <span style={{ position: "relative", display: "block", aspectRatio: "16 / 10", borderRadius: 14, overflow: "hidden", background: "#1D211B", boxShadow: i === 0 ? "0 0 0 3px var(--green)" : "none", cursor: "grab" }}>
+              <span style={{ position: "relative", display: "block", aspectRatio: "16 / 10", borderRadius: 14, overflow: "hidden", background: "#1D211B", boxShadow: i === 0 && !bezHlavnej ? "0 0 0 3px var(--green)" : "none", cursor: "grab" }}>
                 <Media m={m} />
-                {i === 0 && <span style={{ position: "absolute", left: 8, top: 8, height: 22, padding: "0 8px", borderRadius: 11, background: "var(--green)", color: "#fff", fontSize: 11.5, fontWeight: 800, letterSpacing: ".05em", display: "flex", alignItems: "center" }}>HLAVNÉ</span>}
+                {i === 0 && !bezHlavnej && <span style={{ position: "absolute", left: 8, top: 8, height: 22, padding: "0 8px", borderRadius: 11, background: "var(--green)", color: "#fff", fontSize: 11.5, fontWeight: 800, letterSpacing: ".05em", display: "flex", alignItems: "center" }}>HLAVNÉ</span>}
                 {m.typ === "video" && <span style={{ position: "absolute", right: 8, top: 8, height: 22, padding: "0 8px", borderRadius: 11, background: "rgba(20,18,14,.7)", color: "#fff", fontSize: 11.5, fontWeight: 800, display: "flex", alignItems: "center" }}>VIDEO · {fmtSek(m.sek ?? 0)}</span>}
                 <span style={{ position: "absolute", left: 8, bottom: 8, width: 26, height: 26, borderRadius: "50%", background: "#fff", color: "#1D211B", fontSize: 12.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{i + 1}</span>
               </span>
@@ -205,7 +206,7 @@ export function GaleriaEditor({ media, onMedia, ph, onVyrez, nadpis = "Galéria 
                 <button type="button" onClick={() => presun(i, i - 1)} aria-label="Posunúť dopredu" disabled={i === 0} style={{ ...tl, opacity: i === 0 ? 0.35 : 1 }}><Ik d={I.vlavo} s={15} w={2.4} /></button>
                 <button type="button" onClick={() => presun(i, i + 1)} aria-label="Posunúť dozadu" disabled={i === media.length - 1} style={{ ...tl, opacity: i === media.length - 1 ? 0.35 : 1 }}><Ik d={I.vpravo} s={15} w={2.4} /></button>
                 {m.typ === "foto" && onVyrez && <button type="button" onClick={() => onVyrez(m.id)} style={tl}><Ik d={I.vyrez} s={14} />Výrez</button>}
-                {i > 0 && <button type="button" onClick={() => presun(i, 0)} style={{ ...tl, background: "var(--gSoft)", color: "var(--gInk)" }}>Hlavné</button>}
+                {i > 0 && !bezHlavnej && <button type="button" onClick={() => presun(i, 0)} style={{ ...tl, background: "var(--gSoft)", color: "var(--gInk)" }}>Hlavné</button>}
                 <span style={{ flex: 1 }} />
                 <button type="button" onClick={() => onMedia(media.filter((x) => x.id !== m.id))} aria-label={`Odstrániť ${m.typ === "video" ? "video" : "fotku"} ${i + 1}`} style={{ ...tl, background: "transparent", color: "var(--ink3)" }}><Ik d={I.kos} s={16} /></button>
               </div>
@@ -216,7 +217,7 @@ export function GaleriaEditor({ media, onMedia, ph, onVyrez, nadpis = "Galéria 
         <input ref={fotoRef} type="file" accept="image/*" multiple hidden onChange={(e) => { const f = Array.from(e.target.files ?? []); e.target.value = ""; void pridajSubory(f); }} />
         <input ref={vidRef} type="file" accept="video/*" hidden onChange={(e) => { const f = Array.from(e.target.files ?? []); e.target.value = ""; void pridajSubory(f); }} />
         {chybaMed && <span role="alert" style={{ fontSize: 13.5, fontWeight: 700, color: "#A34A2A" }}>{chybaMed}</span>}
-        {!ph && <div style={{ display: "flex", gap: 12, padding: "14px 16px", borderRadius: 14, background: "var(--field)", fontSize: 13.5, lineHeight: 1.55, color: "var(--ink2)" }}>
+        {!ph && !bezHlavnej && <div style={{ display: "flex", gap: 12, padding: "14px 16px", borderRadius: 14, background: "var(--field)", fontSize: 13.5, lineHeight: 1.55, color: "var(--ink2)" }}>
           <span style={{ width: 24, height: 24, flex: "none", borderRadius: "50%", background: "var(--gSoft)", color: "var(--gInk)", fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>i</span>
           <span><b style={{ color: "var(--ink)" }}>Prvé je hlavné.</b> To ľudia uvidia ako prvé vo feede aj na vašom profile. Viac fotiek naraz pretiahnete z počítača rovno sem, alebo ich v okne vyberiete s podržaným Ctrl (na Macu Cmd). Poradie zmeníte potiahnutím alebo šípkami. Tlačidlom Výrez nastavíte, ktorá časť fotky bude vidno.{dovetok}</span>
         </div>}
