@@ -45,6 +45,10 @@ export interface MojSkutok {
   zaznam?: { cas: number; kto: string; co: string }[];
   /** OPRAVY 122 (2): kam pôjdu peniaze zo skutku charity — zapečatené pri zverejnení (100 % na zbierku) */
   peniaze?: "nasa" | "centralna" | "ina" | "bez";
+  /** OPRAVY 443 doplnok: skutok charity ešte nie je na serveri (výpadok) — len v tomto zariadení; appka ho skúsi nahrať znova */
+  nezverejnene?: boolean;
+  /** položka feedu Domov, ktorá sa zverejní až po úspešnom zápise skutku (len v zariadení) */
+  feedCaka?: unknown;
   /** OPRAVY 447 (3): skutok z akcie za charitu — pomocníci s časom na akcii (ms) a účtom (od P1 na stránke) */
   pomocnici?: { meno: string; ms: number; ucet?: string }[];
   /** Obsah → Skutky (charita): stiahnutý z profilu a feedu, ISO; upravený po zverejnení, ISO */
@@ -210,7 +214,26 @@ export const ulozKonceptOrg = (stranka: string, k: Koncept | null) => {
   uloz({ konceptOrg: m });
 };
 export const skutkyOrg = (stranka: string): MojSkutok[] => nacitaj().skutkyOrg?.[stranka] ?? [];
-export const pridajSkutokOrg = (stranka: string, x: MojSkutok) => { uloz({ skutkyOrg: { ...(nacitaj().skutkyOrg ?? {}), [stranka]: [x, ...skutkyOrg(stranka)] } }); void zapisSkutokStranky(stranka, x); }; // OPRAVY 418: aj na verejný profil
+// OPRAVY 443 doplnok: zverejnenie skutku za charitu čaká na server — pri chybe ostane v zariadení ako „nezverejnený“ a vráti chybu
+const naServer = (s: MojSkutok): MojSkutok => { const { nezverejnene: _n, feedCaka: _f, ...r } = s; return r; };
+export const pridajSkutokOrg = async (stranka: string, x: MojSkutok): Promise<string | null> => {
+  uloz({ skutkyOrg: { ...(nacitaj().skutkyOrg ?? {}), [stranka]: [{ ...x, nezverejnene: true }, ...skutkyOrg(stranka).filter((y) => y.id !== x.id)] } });
+  const e = await zapisSkutokStranky(stranka, naServer(x)); // OPRAVY 418: aj na verejný profil
+  if (!e) uloz({ skutkyOrg: { ...(nacitaj().skutkyOrg ?? {}), [stranka]: skutkyOrg(stranka).map((y) => (y.id === x.id ? { ...y, nezverejnene: undefined } : y)) } });
+  return e;
+};
+/** skúsi znova nahrať jeden nezverejnený skutok; null = je na serveri */
+export const zverejnitZnova = async (stranka: string, id: string): Promise<string | null> => {
+  const s = skutkyOrg(stranka).find((y) => y.id === id);
+  if (!s) return "Skutok sa nenašiel.";
+  const e = await zapisSkutokStranky(stranka, naServer(s));
+  if (!e) uloz({ skutkyOrg: { ...(nacitaj().skutkyOrg ?? {}), [stranka]: skutkyOrg(stranka).map((y) => (y.id === id ? { ...y, nezverejnene: undefined } : y)) } });
+  return e;
+};
+/** skutky charity, ktoré ešte nie sú na serveri (čakajú na zverejnenie) */
+export const nezverejneneOrg = (stranka: string): MojSkutok[] => skutkyOrg(stranka).filter((y) => y.nezverejnene && !y.stiahnuty);
+/** všetky stránky so skutkami, ktoré čakajú na zverejnenie */
+export const strankySCakajucimi = (): string[] => Object.entries(nacitaj().skutkyOrg ?? {}).filter(([, l]) => l.some((y) => y.nezverejnene && !y.stiahnuty)).map(([k]) => k);
 /** Obsah → Skutky: úprava zverejneného skutku charity (text) alebo stiahnutie */
 // OPRAVY 443 (1): zdroj pravdy je server (skutok_stranky) — úprava vychádza zo serverovej kópie, keď ju zariadenie nemá
 // (skutok zverejnený z iného počítača); vráti chybu zápisu alebo null
@@ -220,7 +243,10 @@ export const upravSkutokOrg = (stranka: string, id: string, z: Partial<MojSkutok
   if (!zaklad) return Promise.resolve("Skutok sa nenašiel.");
   const n: MojSkutok = { ...zaklad, ...z };
   uloz({ skutkyOrg: { ...(nacitaj().skutkyOrg ?? {}), [stranka]: lok.some((x) => x.id === id) ? lok.map((x) => (x.id === id ? n : x)) : [n, ...lok] } });
-  return zapisSkutokStranky(stranka, n); // OPRAVY 418
+  return zapisSkutokStranky(stranka, naServer(n)).then((e) => { // OPRAVY 418
+    if (!e && n.nezverejnene) uloz({ skutkyOrg: { ...(nacitaj().skutkyOrg ?? {}), [stranka]: skutkyOrg(stranka).map((y) => (y.id === id ? { ...y, nezverejnene: undefined } : y)) } });
+    return e;
+  });
 };
 /** OPRAVY 443 (1): skutky charity v Správe = tie isté ako na stránke (server); bez servera zo zariadenia */
 export const skutkyOrgSpravy = (stranka: string): MojSkutok[] => skutkyStrankyZPamate(stranka) ?? skutkyOrg(stranka).filter((x) => !x.stiahnuty);

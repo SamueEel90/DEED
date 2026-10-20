@@ -35,14 +35,15 @@ import { verejneBeziace } from "@/lib/retaz";
 import { profilZPamate, nacitajProfil, uvodZPamate, nacitajUvod, potvrdUvod } from "@/lib/profilStranky";
 import { VERIME_VAM, PRAVIDLA_ORG, PRAVIDLA_NADPIS, PRAVIDLA_UVOD, SUHLAS_FOTKY, SUHLAS_POZNAMKA, PRED_ZVEREJNENIM } from "@/lib/pravidlaObsahu";
 import { OBLASTI, normalizuj, pridajSkutok, upravSkutok, koncept as nacitajKoncept, ulozKoncept, nastavOhlasenie, ohlasenie as aktOhlasenie,
-  konceptOrg, ulozKonceptOrg, pridajSkutokOrg,
-  type Oblast, type ZbierkaVolba, type Ucastnik, type MojSkutok, upravSkutokOrg } from "@/lib/mojeSkutky";
+  konceptOrg, ulozKonceptOrg,
+  type Oblast, type ZbierkaVolba, type Ucastnik, type MojSkutok } from "@/lib/mojeSkutky";
 import { otvorAkciu } from "@/lib/akcia";
 import { useVazbyOsoby } from "@/lib/zamestnanci";
 import { useNastaveniaAppky } from "@/lib/nastaveniaAppky";
 import { navrhniAkciu, VOLBA_VETA, type FirmaVolba } from "@/lib/mojaFirma";
 import { VolbaFirma } from "@/features/profil/Zamestnavatel";
 import { qk, repo } from "@/data";
+import { zverejnitSkutokOrg, skusitZnova, TEXT_NEZVEREJNENY } from "./zverejnenieSkutku";
 import type { GoodPolozka } from "@/types";
 import { usePridatSkutok, zavriPridatSkutok, type PridatParams } from "./otvor";
 import { zastavDiktovanie } from "@/lib/diktovanie";
@@ -181,6 +182,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   const [vyrezId, setVyrezId] = useState<number | null>(null);
   const zmenGal = (m: MediumZbierky[]) => { setMediaG(m); setMedia(m.map((x) => ({ src: x.src, video: x.typ === "video", sek: x.sek }))); };
   const [zahodit, setZahodit] = useState(false); // OPRAVY 439 (7)
+  const [posiela, setPosiela] = useState(false), [chybaZ, setChybaZ] = useState<string | null>(null); // OPRAVY 443 doplnok
   const [aiChyba, setAiChyba] = useState<string | null>(null); // OPRAVY 127
   // OPRAVY 122 (2): pred zverejnením charita vyberie, kam pôjdu peniaze — po zverejnení zapečatené
   const [kam, setKam] = useState<null | "nasa" | "centralna" | "ina" | "bez">(null);
@@ -425,22 +427,26 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       const popisHtml = po + (cistyText(po2Org) ? po2Org : "");
       const kamZ = kam === "nasa" ? nasaZ : kam === "centralna" ? pr.centralna ?? null : kam === "ina" ? inaZ : null;
       const feedId = teraz();
-      pridajSkutokOrg(stranka, {
+      const novy: MojSkutok = {
         id, feedId, nazov: nz, popis: popisHtml, oblast: oblast ?? "Pomoc", miesto: kde, datum: teraz(), stav: "ok", karma: null,
         det: "Ľuďom vo vašej lokalite a na váš profil.", fotky, ucastnici: sk ? uc.filter((u) => u.overeny).map((u) => u.meno) : undefined,
         dar: kamZ ? [kamZ] : undefined, peniaze: kam ?? "bez", za: pr.autor, vytvoril: ja.celeMeno || undefined, zaznam: pr.zAkcie?.zaznam, seria: prav ? pvF : undefined,
         // OPRAVY 447 (3): pomocníci z akcie s časom — len tí, ktorí ostali v zozname
         pomocnici: pr.zAkcie?.pomocnici?.filter((p) => uc.some((u) => u.overeny && u.meno === p.meno)),
-      });
+      };
       const it: GoodPolozka = {
         id: feedId, typ: "skutok", velkost: "med", kat: KAT[oblast ?? "Pomoc"] ?? "Komunita", autor: pr.autor || "Charita", num: 0, emoji: "",
         fotky: fotky.length ? fotky : orgLogo ? [orgLogo] : [], titul: nz, popis: cistyText(popisHtml), lok: kde, overene: true, skore: 0, typSituacie: "normal", modul: "good", dni: 0, podpora: 0, lat: lok.lat, lng: lok.lng,
       } as GoodPolozka;
-      qc.setQueriesData<GoodPolozka[]>({ queryKey: qk.good.feed }, (old = []) => [it, ...old]);
-      // OPRAVY 436: id príspevku vo feede sa uloží ku skutku — zmazanie / úprava skutku ho zmení aj vo feede
-      repo.good.vytvor(it, ja.ucetId).then((nid) => { if (nid) { upravSkutokOrg(stranka, id, { prispevokId: nid }); qc.invalidateQueries({ queryKey: qk.good.feed }); } }).catch(() => {});
-      vibruj([10, 40, 10]);
-      setKr(6); return;
+      // OPRAVY 443 doplnok: čaká na server — „zverejnený“ len keď sa naozaj zapísal; inak hláška a Skúsiť znova (skutok ostane v zariadení)
+      // OPRAVY 436: príspevok do feedu až po zápise skutku, jeho id sa uloží ku skutku
+      setPosiela(true);
+      void zverejnitSkutokOrg(stranka, novy, it, () => qc.invalidateQueries({ queryKey: qk.good.feed })).then((e) => {
+        setPosiela(false); setChybaZ(e);
+        if (!e) { qc.setQueriesData<GoodPolozka[]>({ queryKey: qk.good.feed }, (old = []) => [it, ...old]); vibruj([10, 40, 10]); }
+        setKr(6);
+      });
+      return;
     }
     if (plan) {
       nastavOhlasenie({ id, nazov: nz, popis: po2, kedy: planKedy, odkaz: planLink, stav: "plan", dar: dar ? darZ : [], sk });
@@ -865,7 +871,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
     </>, <>
       {!pravda && <div role="status" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 13.5, fontWeight: 700, color: "var(--gold)" }}><span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--gold)" }} />Potvrďte, že skutok je pravdivý</div>}
       {/* OPRAVY 439 (6): zverejnenie podržaním 1,5 s */}
-      <PodrzTlacidlo label="Podržte a zverejnite skutok" trvanie={1500} disabled={!pravda || !kamOk} onConfirm={zverejni} />
+      <PodrzTlacidlo label="Podržte a zverejnite skutok" trvanie={1500} disabled={!pravda || !kamOk || posiela} onConfirm={zverejni} />
       {/* OPRAVY 439 (7): Zahodiť len s otázkou */}
       {zahodit ? <div role="alertdialog" aria-label="Zahodiť rozpísaný skutok?" style={{ display: "flex", flexDirection: "column", gap: 8, padding: "12px 14px", borderRadius: 14, background: "var(--field)", border: "1px solid var(--cardBd)" }}>
         <b style={{ fontSize: 15 }}>Zahodiť rozpísaný skutok? Text a fotky sa stratia.</b>
@@ -877,12 +883,18 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
     </>);
   } else if (kr === 6 && org) {
     obsah = telo(<div className="pf-rise" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, padding: "10px 12px", textAlign: "center" }}>
-      {/* OPRAVY 439 (6): zelená karta na tom istom mieste */}
-      <div role="status" style={{ alignSelf: "stretch", display: "flex", flexDirection: "column", gap: 10, padding: "16px 18px", borderRadius: 18, background: "var(--gSoft)", border: "1px solid var(--gBd)", textAlign: "left" }}>
+      {/* OPRAVY 443 doplnok: výpadok servera — na tom istom mieste hláška a Skúsiť znova, skutok je v zariadení */}
+      {chybaZ ? <div role="alert" style={{ alignSelf: "stretch", display: "flex", flexDirection: "column", gap: 10, padding: "16px 18px", borderRadius: 18, background: "var(--goldBg)", border: "1px solid var(--goldBd)", textAlign: "left" }}>
+        <b style={{ fontSize: 18, color: "var(--ink)" }}>Skutok zatiaľ nie je zverejnený</b>
+        <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>{TEXT_NEZVEREJNENY} Skúsime ho nahrať znova sami, keď bude spojenie, alebo ťuknite na Skúsiť znova.</span>
+        <button type="button" disabled={posiela} onClick={() => { setPosiela(true); void skusitZnova(stranka, id, () => qc.invalidateQueries({ queryKey: qk.good.feed })).then((e) => { setPosiela(false); setChybaZ(e); if (!e) vibruj([10, 40, 10]); }); }}
+          style={{ alignSelf: "flex-start", minHeight: 46, padding: "0 18px", borderRadius: 13, border: "none", background: "var(--green)", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", opacity: posiela ? 0.6 : 1 }}>{posiela ? "Nahráva sa…" : "Skúsiť znova"}</button>
+      </div>
+      : <div role="status" style={{ alignSelf: "stretch", display: "flex", flexDirection: "column", gap: 10, padding: "16px 18px", borderRadius: 18, background: "var(--gSoft)", border: "1px solid var(--gBd)", textAlign: "left" }}>
         <b style={{ fontSize: 19, color: "var(--gInk)" }}>Skutok je zverejnený ✓</b>
         <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>„{nz}“ je na vašej stránke.</span>
         <button type="button" onClick={() => { zavri(); otvorVerejnyProfil(stranka); }} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "none", boxShadow: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--green)" }}>Pozrieť na profile ›</button>
-      </div>
+      </div>}
       {(() => { const z = kam === "nasa" ? nasaZ : kam === "centralna" ? pr.centralna : kam === "ina" ? inaZ : null; const url = `${ADRESA}/s/${id}`; return <>
         {z && <div style={{ alignSelf: "stretch", textAlign: "left", borderRadius: 18, background: "var(--goldBg)", border: "1px solid var(--goldBd)", padding: 14, fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}><b style={{ color: "var(--ink)" }}>{(kam === "centralna" ? `100 % príspevkov ide na centrálnu zbierku ${pr.autor ?? ""}`.trimEnd() : `100 % príspevkov ide na zbierku „${z.nazov}“`).replace(/\.?$/, ".")}</b> Zapečatené, nedá sa zmeniť.</div>}
         <div style={{ alignSelf: "stretch", textAlign: "left", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", padding: 14, display: "flex", gap: 14, alignItems: "center" }}>

@@ -9,7 +9,8 @@ import { qk } from "@/data";
 import type { GoodPolozka } from "@/types";
 import { RichTextInput } from "@/components/richtext";
 import { cistyText } from "@/lib/richtext";
-import { skutkyOrgSpravy, upravSkutokOrg, useZmenySkutkov, type MojSkutok } from "@/lib/mojeSkutky";
+import { skutkyOrgSpravy, upravSkutokOrg, useZmenySkutkov, nezverejneneOrg, type MojSkutok } from "@/lib/mojeSkutky";
+import { dopisCakajuce, skusitZnova, sledujSiet } from "@/features/skutok/zverejnenieSkutku";
 import { upravSkutokVoFeede, zmazSkutokZFeedu, nacitajSkutkyStranky, useZmenySkutkovStranky } from "@/lib/skutkyStranky";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 
@@ -23,10 +24,14 @@ const plus = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke=
 export function SkutkyCharity({ strankaId, mobil, onPridat }: { strankaId: string; mobil: boolean; onPridat: () => void }) {
   useZmenySkutkov(); useZmenySkutkovStranky();
   // OPRAVY 443 (1): ten istý zoznam ako na stránke charity (server), nie len z tohto zariadenia
-  useEffect(() => { void nacitajSkutkyStranky(strankaId); }, [strankaId]);
+  // OPRAVY 443 doplnok: skutky, ktoré sa pre výpadok nezverejnili, sa pri otvorení skúsia nahrať znova (aj keď sa vráti sieť)
+  const qc0 = useQueryClient();
+  useEffect(() => { void nacitajSkutkyStranky(strankaId).then(() => dopisCakajuce(strankaId, () => qc0.invalidateQueries({ queryKey: qk.good.feed }))); sledujSiet(); }, [strankaId]); // eslint-disable-line react-hooks/exhaustive-deps
   // OPRAVY 436: zmazaný skutok ostane na mieste ako zelená hláška „Skutok je zmazaný“ (do odchodu z obrazovky)
   const [zmazane, setZmazane] = useState<Map<string, MojSkutok>>(() => new Map());
-  const zoznam = [...skutkyOrgSpravy(strankaId).filter((x) => !zmazane.has(x.id)), ...zmazane.values()].sort((a, b) => b.datum - a.datum);
+  const naServeri = skutkyOrgSpravy(strankaId);
+  const cakaju = nezverejneneOrg(strankaId).filter((x) => !naServeri.some((y) => y.id === x.id));
+  const zoznam = [...naServeri.filter((x) => !zmazane.has(x.id)), ...cakaju, ...zmazane.values()].sort((a, b) => b.datum - a.datum);
   const pridat = <button type="button" onClick={onPridat} style={tlZ}>{plus}Pridať skutok</button>;
 
   if (!zoznam.length) return (
@@ -37,7 +42,7 @@ export function SkutkyCharity({ strankaId, mobil, onPridat }: { strankaId: strin
 
   return (<>
     <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-      <span style={{ flex: 1, fontSize: 14, color: "var(--ink3)" }}>Zverejnené · {zoznam.filter((x) => !x.stiahnuty).length}</span>
+      <span style={{ flex: 1, fontSize: 14, color: "var(--ink3)" }}>Zverejnené · {zoznam.filter((x) => !x.stiahnuty && !x.nezverejnene).length}</span>
       {pridat}
     </div>
     {zoznam.map((s) => s.stiahnuty
@@ -49,6 +54,7 @@ export function SkutkyCharity({ strankaId, mobil, onPridat }: { strankaId: strin
 function Riadok({ s, strankaId, mobil, onZmazany }: { s: MojSkutok; strankaId: string; mobil: boolean; onZmazany: () => void }) {
   const [uprava, setUprava] = useState(false);
   const [uklada, setUklada] = useState(false), [chyba, setChyba] = useState<string | null>(null); // OPRAVY 443 (1)
+  const [nahrava, setNahrava] = useState(false); // OPRAVY 443 doplnok
   const [nazov, setNazov] = useState(s.nazov);
   const [popis, setPopis] = useState(s.popis);
   const foto = s.fotky[0];
@@ -70,6 +76,13 @@ function Riadok({ s, strankaId, mobil, onZmazany }: { s: MojSkutok; strankaId: s
           <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{cistyText(s.popis)}</span>
         </span>
       </div>
+      {/* OPRAVY 443 doplnok: skutok ešte nie je na serveri — žltý štítok a Skúsiť znova */}
+      {s.nezverejnene && <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", padding: "8px 12px", borderRadius: 12, background: "var(--goldBg)", border: "1px solid var(--goldBd)" }}>
+        <b style={{ flex: 1, minWidth: 160, fontSize: 13.5, color: "var(--ink)" }}>Čaká na zverejnenie · zatiaľ len v tomto zariadení</b>
+        <button type="button" disabled={nahrava} onClick={() => { setNahrava(true); void skusitZnova(strankaId, s.id, () => qc.invalidateQueries({ queryKey: qk.good.feed })).then((e) => { setNahrava(false); setChyba(e); if (!e) void nacitajSkutkyStranky(strankaId); }); }}
+          style={{ minHeight: 40, padding: "0 14px", borderRadius: 11, border: "none", background: "var(--green)", color: "#fff", fontSize: 13.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", opacity: nahrava ? 0.6 : 1 }}>{nahrava ? "Nahráva sa…" : "Skúsiť znova"}</button>
+      </div>}
+      {s.nezverejnene && chyba && !uprava && <span role="alert" style={{ fontSize: 13.5, fontWeight: 700, color: "var(--cRed, #A34A2A)" }}>{chyba}</span>}
   </>);
   if (uprava) return (
     <section style={karta}>
