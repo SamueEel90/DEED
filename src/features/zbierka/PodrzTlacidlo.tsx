@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 
 // „Podrž a zaplať" — potvrdenie podržaním 0,9 s. Ťuknutie len ukáže nápovedu.
 // Plnenie = transform:scaleX (žiadny layout). Vibrácie fungujú len na Androide.
-type Props = { label: string; onConfirm: () => void; farba?: 'zelena' | 'zlata'; disabled?: boolean; onHint?: () => void; trvanie?: number };
+type Props = { label: string; onConfirm: () => void; /** OPRAVY 434: červená = zrušenie / zmazanie */ farba?: 'zelena' | 'zlata' | 'cervena'; disabled?: boolean; onHint?: () => void; trvanie?: number };
 
 const buzz = (p: number | number[]) => { try { navigator.vibrate?.(p); } catch {} };
 
@@ -28,9 +28,9 @@ export default function PodrzTlacidlo({ label, onConfirm, farba = 'zelena', disa
       onContextMenu={(e) => e.preventDefault()}
       disabled={disabled}
       style={{ position: 'relative', overflow: 'hidden', width: '100%', minHeight: 56, borderRadius: 16, border: 'none', color: '#fff', fontSize: 16.5, fontWeight: 800,
-        background: farba === 'zlata' ? 'var(--goldGrad)' : 'var(--gGrad)', fontVariantNumeric: 'tabular-nums', touchAction: 'none', userSelect: 'none',
+        background: farba === 'zlata' ? 'var(--goldGrad)' : farba === 'cervena' ? 'linear-gradient(90deg,#A34A2A,#C8664A)' : 'var(--gGrad)', fontVariantNumeric: 'tabular-nums', touchAction: 'none', userSelect: 'none',
         transform: `scale(${pressed ? 0.98 : 1})`, transition: 'transform .15s ease', opacity: disabled ? 0.45 : 1 }}>
-      <span ref={fill} style={{ position: 'absolute', inset: 0, background: farba === 'zlata' ? '#6B5214' : '#2F5620', transformOrigin: '0 50%', transform: 'scaleX(0)' }} />
+      <span ref={fill} style={{ position: 'absolute', inset: 0, background: farba === 'zlata' ? '#6B5214' : farba === 'cervena' ? '#6E2A14' : '#2F5620', transformOrigin: '0 50%', transform: 'scaleX(0)' }} />
       <span style={{ position: 'relative' }}>{label}</span>
     </button>
   );
