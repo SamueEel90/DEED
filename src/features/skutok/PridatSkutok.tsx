@@ -707,7 +707,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       </div> : <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <div style={P.lbl}>DÔKAZY</div>
         {/* OPRAVY 441: jeden komponent na nahrávanie v celej appke (bez dlaždíc PRED / PO — pred a po napíšete do popisu fotky) */}
-        <GaleriaEditor media={mediaG} onMedia={zmenGal} ph={!wide} onVyrez={setVyrezId} nadpis="Fotky a video" dovetok="" popisNapoveda="Napríklad: Pred, Po" max={7} bezVerejnych />
+        <GaleriaEditor media={mediaG} onMedia={zmenGal} ph={!wide} onVyrez={setVyrezId} nadpis="Fotky a video" dovetok="" popisNapoveda="Napríklad: Pred, Po" max={7} />
         <div style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 12px", borderRadius: 13, background: "var(--bSoft)", border: "1px solid var(--bBd)", fontSize: 13, lineHeight: 1.5, color: "var(--ink2)" }}>
           <span style={{ color: "var(--blue)", display: "flex", flex: "none", marginTop: 1 }}><Ik d={IK.poloha} /></span><span>Foť a natáčaj <b style={{ color: "var(--ink)" }}>so zapnutou polohou</b>. AI tak overí, že fotky sú z miesta skutku, a skutok má väčšiu šancu na feed.</span></div>
         {maMedia && <>

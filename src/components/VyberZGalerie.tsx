@@ -33,24 +33,26 @@ export const zdrojMoje = (fotky: () => string[]): ZdrojFotiek => ({
 const fotiek = (n: number) => (n === 1 ? "1 fotku" : n >= 2 && n <= 4 ? `${n} fotky` : `${n} fotiek`);
 
 /** tlačidlo vedľa „Pridať fotky" — otvorí okno s mriežkou (Moje fotky · Verejné fotky) */
-export function TlacidloGalerie({ zdroj, vybrane, zostava, onVyber, style, zZariadenia }: {
+export function TlacidloGalerie({ zdroj, vybrane, zostava, onVyber, style, zZariadenia, bezVerejnych }: {
   zdroj: ZdrojFotiek | null; /** čo už je pridané (ukáže sa ako pridané) */ vybrane: string[];
   /** koľko sa ešte zmestí */ zostava: number; onVyber: (src: string[]) => void; style?: CSSProperties;
   /** OPRAVY 313: jedno okno Vybrať fotku — prvá záložka Z telefónu / Z počítača (viac fotiek naraz) */ zZariadenia?: (f: File[]) => void;
+  /** Martin 20. 10.: zbierky a skutky = len vlastné fotky (AI ich posudzuje), bez Verejných fotiek */ bezVerejnych?: boolean;
 }) {
   const [otv, setOtv] = useState(false);
+  if (bezVerejnych && !zdroj) return null;
   return <>
     <button type="button" onClick={() => setOtv(true)} disabled={zostava <= 0} style={{ minHeight: 48, padding: "0 16px", borderRadius: 14, border: "1.5px solid var(--gBd)", background: "var(--gSoft)", color: "var(--gInk)", cursor: zostava > 0 ? "pointer" : "default", opacity: zostava > 0 ? 1 : 0.45, fontFamily: "inherit", fontSize: 15, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, ...style }}>
       <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "none" }}><path d="M4 5h16v14H4zM8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3M20 15l-5-5L5 19" /></svg>
       {zdroj ? zdroj.tlacidlo : "Vybrať z verejných fotiek ›"}
     </button>
-    {otv && <OknoGalerie zdroj={zdroj} vybrane={vybrane} zostava={zostava} onZavri={() => setOtv(false)} onVyber={(l) => { setOtv(false); if (l.length) onVyber(l); }}
+    {otv && <OknoGalerie zdroj={zdroj} bezVerejnych={bezVerejnych} vybrane={vybrane} zostava={zostava} onZavri={() => setOtv(false)} onVyber={(l) => { setOtv(false); if (l.length) onVyber(l); }}
       zZariadenia={zZariadenia ? (f) => { setOtv(false); zZariadenia(f); } : undefined} />}
   </>;
 }
 
 /** okno Vybrať fotku · OPRAVY 258: aj Editor oznámení (jedna fotka) */
-export function OknoGalerie({ zdroj, vybrane, zostava, onZavri, onVyber, zTelefonu, zZariadenia }: { zdroj: ZdrojFotiek | null; vybrane: string[]; zostava: number; onZavri: () => void; onVyber: (l: string[]) => void;
+export function OknoGalerie({ zdroj, vybrane, zostava, onZavri, onVyber, zTelefonu, zZariadenia, bezVerejnych }: { zdroj: ZdrojFotiek | null; vybrane: string[]; zostava: number; onZavri: () => void; onVyber: (l: string[]) => void; bezVerejnych?: boolean;
   /** Editor A: prvá záložka Z telefónu (fotka zo zariadenia) — jedno okno Z telefónu · Moje fotky · Verejné fotky */ zTelefonu?: (f: File) => void;
   /** OPRAVY 313: to isté pre galériu (Správa) — viac fotiek naraz */ zZariadenia?: (f: File[]) => void }) {
   const zTel = !!(zTelefonu || zZariadenia);
@@ -107,7 +109,7 @@ export function OknoGalerie({ zdroj, vybrane, zostava, onZavri, onVyber, zTelefo
           <button type="button" onClick={onZavri} aria-label="Zavrieť" style={{ flex: "none", width: 44, height: 44, borderRadius: "50%", border: "none", background: "var(--btn)", color: "var(--ink)", cursor: "pointer", fontSize: 22, lineHeight: 1 }}>×</button>
         </div>
         <div role="tablist" aria-label="Odkiaľ fotky" style={{ display: "flex", gap: 4, margin: "4px 20px 8px", padding: 4, borderRadius: 14, background: "var(--btn)" }}>
-          {([...(zTel ? [["tel", uzke ? "Z telefónu" : "Z počítača"]] : []), ...(zdroj ? [["moje", "Moje fotky"]] : []), ["verejne", "Verejné fotky"]] as [("tel" | "moje" | "verejne"), string][]).map(([k, t]) => (
+          {([...(zTel ? [["tel", uzke ? "Z telefónu" : "Z počítača"]] : []), ...(zdroj ? [["moje", "Moje fotky"]] : []), ...(bezVerejnych ? [] : [["verejne", "Verejné fotky"]])] as [("tel" | "moje" | "verejne"), string][]).map(([k, t]) => (
             <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => { setTab(k); if (k === "tel") subor.current?.click(); }} style={{ flex: 1, minHeight: 44, border: "none", borderRadius: 11, background: tab === k ? "var(--card)" : "transparent", color: tab === k ? "var(--ink)" : "var(--ink3)", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer", boxShadow: "none" }}>{t}</button>))}
         </div>
         <div style={{ flex: 1, overflowY: "auto", padding: "6px 20px 16px" }}>
