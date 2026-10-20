@@ -6,7 +6,7 @@ import { NahlasitSheet } from "@/components/nahlasit";
 import { useState, useEffect, useRef, memo } from "react";
 import { SIRKA, C, inp, btn, GRAD, SPACE, RADIUS } from "@/theme";
 import { HostPruh } from "./HostPruh";
-import { Foto, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PlatobnyModul, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, Oslava, useGaleria, useScrollPamat, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackChip, ProgresBox, SwipeBack, obalSiroky, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, SplitQrSheet, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, FormatovanyText, RozbalitelnyText, ZoznamDarcov } from "@/shared";
+import { ModulHlavicka, Hlavicka, AvatarUroven, PlatobnyModul, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, Oslava, useScrollPamat, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackChip, ProgresBox, SwipeBack, obalSiroky, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, SplitQrSheet, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, FormatovanyText, RozbalitelnyText, ZoznamDarcov } from "@/shared";
 import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { pripravFeed, FEED_CFG, type FeedUser } from "@/lib/feed";
 import { tint, tagChip, jeHrdina, HRDINA_COL, rovnakeOkremFunkcii } from "@/lib/ui";
@@ -18,7 +18,7 @@ import { nahrajSubory } from "@/lib/uploadFoto";
 import { Tip } from "@/components/tooltip";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { useLokalita } from "@/lib/lokalita";
-import { zobrazVelkost, MEDIA_AR } from "@/lib/cardSize";
+import { zobrazVelkost } from "@/lib/cardSize";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import { CisloVHlavicke, nazovCisla } from "@/components/CisloObjektu";
@@ -29,7 +29,7 @@ import { OznamDetail, VyzvaKarta } from "@/features/rola/OznamDetail";
 import { nacitajUcasti } from "@/lib/oznamUcast";
 import { otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
 import { casOd } from "@/components/feedcard";
-import { TitulSoSledovat } from "@/features/zbierka/Vrch";
+import { TitulSoSledovat, Galeria } from "@/features/zbierka/Vrch";
 import type { GoodPolozka, Subjekt, Udalost, OkruhKod, Oblubeny, MojaZbierka, MojDoklad } from "@/types";
 import { useGoodFeed, useGoodUdalosti } from "@/data";
 import { usePersonalizacia } from "@/lib/personalizacia";
@@ -764,7 +764,6 @@ export function DomovDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: G
   const [split, setSplit] = useState(false);  // split QR — reťaz dobra §10 × §9
   const [moznosti, setMoznosti] = useState(false); // „⋯" menu — zdieľať/kopírovať/uložiť/QR/nahlásiť
   const [nahlasit, setNahlasit] = useState(false); // OPRAVY 51
-  const otvorGaleriu = useGaleria();
   const { wide } = useLayout();
   const ja = usePouzivatel();
   const { pridajPodporu, jeOblubene, toggleOblubene } = usePersonalizacia(); // podpora → „Čo podporujem" v Môj DEED
@@ -795,16 +794,9 @@ export function DomovDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: G
           <CisloVHlavicke cislo={cisloObjektu(typPrispevku(it.typ), String(it.id), it.vs)} zverejnene={it.vytvorene} nazov={nazovCisla(typPrispevku(it.typ))} />
           <button type="button" aria-label="Ďalšie možnosti" onClick={() => setMoznosti(true)} style={{ width: 44, height: 44, margin: -5, padding: 5, border: "none", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><span style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.textSec }}><IkonaMoznosti size={18} color={C.textSec} /></span></button>
         </div>
-      {maHero && (
-        <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: heroGrad(it.kat), ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : (it.video ? {} : { height: 150 })) }}>
-          {it.video
-            ? <Video src={it.video} poster={it.fotky?.[0]} h={wide ? "100%" : 220} badge={false} />
-            : <Foto src={it.fotky![0]} emoji={it.emoji} h={wide ? "100%" : 150} w={wide ? "100%" : undefined} style={{ position: "absolute", inset: 0 }} onClick={() => otvorGaleriu(it.fotky ?? [], 0)} prednost alt={it.titul} />}
-          <span style={{ position: "absolute", bottom: 12, left: 14, pointerEvents: "none" }}><ZdrojTag it={it} /></span>
-          {(it.fotky?.length ?? 0) > 1 && <span style={{ position: "absolute", bottom: 12, right: 14, background: "rgba(0,0,0,.6)", borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.xs}px`, fontSize: 10, color: "#fff", pointerEvents: "none" }}>⧉ {it.fotky?.length} · klikni na foto</span>}
-        </div>
-      )}
-      <MiniFotky fotky={it.fotky} />
+      {/* OPRAVY 441: jedna galéria všade (bodky, 1 / N, šípky, potiahnutie, zväčšenie, náhľady) */}
+      {maHero && <Galeria media={[...(it.video ? [{ typ: "video" as const, src: it.video }] : []), ...(it.fotky ?? []).map((src) => ({ typ: "foto" as const, src }))]}
+        okraj="0" radius={0} nahlady prekrytie={<span style={{ position: "absolute", top: 12, left: 14 }}><ZdrojTag it={it} /></span>} />}
 
       <div style={{ padding: `${SPACE.gutter}px ${SPACE.md}px` }}>
         <div onClick={onAutor} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, cursor: "pointer" }}>

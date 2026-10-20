@@ -91,6 +91,7 @@ export interface TestSkutok {
   mesto: Mesto;
   kedy: string;               // „Včera", „29. 9."
   foto: string;
+  /** OPRAVY 441: všetky fotky skutku (detail = jedna galéria) */ fotky?: string[];
   dobrovolnici?: number;
   /** 5. 10. · komu išla podpora (split), bez splitu sa riadok „Podpora išla" neukáže */
   split?: { komu: string; pct: number }[];

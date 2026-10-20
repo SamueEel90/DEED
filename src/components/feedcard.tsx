@@ -6,6 +6,7 @@
 //   [progres (MoniBar)] → [pätička podľa typu]
 // Moduly dodávajú len OBSAH (sloty), nie layout.
 // ============================================================
+import { Galeria } from "@/features/zbierka/Vrch";
 import type { CSSProperties, ReactNode } from "react";
 import { C, SPACE, RADIUS, FW } from "@/theme";
 import { tint } from "@/lib/ui";
@@ -269,6 +270,9 @@ export function FeedCard({ wide, onClick, label, typ, stav, doplnky, accent, rin
         <div style={{ position: "relative", ...mediaBox, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: media.grad }}>
           {media.video
             ? <Video src={media.video} poster={media.fotky?.[0]} h={wide ? "100%" : mobileH} badge={false} />
+            : (media.fotky?.length ?? 0) > 1
+              // OPRAVY 441: viac fotiek → tá istá galéria ako v detaile, prepínajú sa hneď na karte (ťuk otvorí detail)
+              ? <div style={{ position: "absolute", inset: 0 }}><Galeria media={media.fotky!.map((src) => ({ typ: "foto" as const, src }))} vyska="100%" radius={0} okraj="0" bezCelej bezBodiek /></div>
             : media.fotky?.length
               ? <div style={{ position: "absolute", inset: 0 }}><FotoPrispevku fotky={media.fotky} emoji={media.emoji} h="100%" disableGaleria alt={typeof title === "string" ? title : label} /></div>
               : null}

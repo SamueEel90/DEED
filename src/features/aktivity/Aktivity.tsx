@@ -1,17 +1,17 @@
 import { Emo } from "@/components/icons";
 import { cisloObjektu, typPrispevku } from "@/lib/cisloObjektu";
 import { CisloVHlavicke, nazovCisla } from "@/components/CisloObjektu";
-import { TitulSoSledovat } from "@/features/zbierka/Vrch";
+import { TitulSoSledovat, Galeria } from "@/features/zbierka/Vrch";
 import { StityRad, type StitLevel as StitLv } from "@/components/stit";
 import { stityOblastiSubjektu } from "@/lib/stityOblasti";
 const naStitLevelOpt = (k: string): StitLv | null => ((["Bronze", "Silver", "Gold", "Platinum", "Legend"] as string[]).includes(k) ? (k as StitLv) : null);
 import { useState, useMemo, useEffect, memo } from "react";
 import { FormatovanyText, RichTextInput, RozbalitelnyText } from "@/shared";
-import { ModulHlavicka, Hlavicka, PlatobnyModul, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, TypBadge, BackChip, SwipeBack, obalSiroky, OkruhVyber, Lupa, IkonaMoznosti, Zdielanie, IkonaPlay, IkonaDoska, IkonaPin, IkonaObalka, FotoPrispevku, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, EntityHero, BtnAkcia, Overene, KontextMenu, IkonaOdkaz, IkonaVlajka, FotoProfiluSheet } from "@/shared";
+import { ModulHlavicka, Hlavicka, PlatobnyModul, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, TypBadge, BackChip, SwipeBack, obalSiroky, OkruhVyber, Lupa, IkonaMoznosti, Zdielanie, IkonaPlay, IkonaDoska, IkonaPin, IkonaObalka, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, EntityHero, BtnAkcia, Overene, KontextMenu, IkonaOdkaz, IkonaVlajka, FotoProfiluSheet } from "@/shared";
 import { FOTO_TEST_REZIM, klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { SIRKA, C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
-import { MEDIA_AR } from "@/lib/cardSize";
+
 import type { AktivitaItem, OkruhKod } from "@/types";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { A, DOM, ORDER, tint } from "./domeny";
@@ -67,10 +67,6 @@ const secLbl: React.CSSProperties = { fontSize: 11.5, letterSpacing: ".4px", col
 
 function Chip({ bg, c, children }: { bg: string; c: string; children: React.ReactNode }) {
   return <span style={{ display: "inline-flex", alignItems: "center", fontSize: 10, fontWeight: 600, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.xs, background: bg, color: c }}>{children}</span>;
-}
-function Play({ big }: { big?: boolean }) {
-  const s = big ? 58 : 54;
-  return <span style={{ width: s, height: s, borderRadius: "50%", background: "rgba(255,255,255,.16)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)", border: "1px solid rgba(255,255,255,.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: "#fff", paddingLeft: SPACE.xxs }}>▶</span>;
 }
 
 // ===================== MODUL =====================
@@ -410,7 +406,6 @@ function TitulAkt({ it, typ, titul, style }: { it: AktItem; typ: string; titul: 
   return <TitulSoSledovat wide={wide} style={style} titul={titul} polozka={{ refId: it.id, typ, modul: "aktivity", nazov: it.title, lok: it.loc }} />;
 }
 function DetailHero({ it, onBack, children }: { it: AktItem; onBack: () => void; children?: React.ReactNode }) {
-  const { wide } = useLayout();
   const [menu, setMenu] = useState(false);
   const [nahlasit, setNahlasit] = useState(false);
   const maFoto = !!(it.fotky && it.fotky.length);
@@ -456,12 +451,9 @@ function DetailHero({ it, onBack, children }: { it: AktItem; onBack: () => void;
         {cislo}
         {menuBtn(false)}
       </div>
-      <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: heroGrad(it.dom), ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : { height: 150 }) }}>
-        <div style={{ position: "absolute", inset: 0 }}><FotoPrispevku fotky={it.fotky} h="100%" disableGaleria prednost alt={it.title} /></div>
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(0,0,0,.42), transparent 46%)", pointerEvents: "none" }} />
-        {it.media === "video" && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}><Play big /></div>}
-        {children && <div style={{ position: "absolute", bottom: 12, left: 14, right: 14, zIndex: 2, display: "flex", flexWrap: "wrap", gap: SPACE.xs }}>{children}</div>}
-      </div>
+      {/* OPRAVY 441: jedna galéria všade — doteraz sa ďalšie fotky nedali otvoriť */}
+      <Galeria media={(it.fotky ?? []).map((src: string) => ({ typ: "foto" as const, src }))} okraj="0" radius={0} nahlady
+        prekrytie={children ? <div style={{ position: "absolute", top: 12, left: 14, right: 14, display: "flex", flexWrap: "wrap", gap: SPACE.xs }}>{children}</div> : undefined} />
       {overlaye}
     </>
   );

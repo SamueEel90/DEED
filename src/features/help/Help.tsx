@@ -5,15 +5,15 @@ import { useQueryClient } from "@tanstack/react-query";
 import { SIRKA, C, inp, infoBox, btn, SPACE, RADIUS } from "@/theme";
 import { pasmo, POZNAMKA_DAVKY, tagLabels, CHARITA_SEGMENTY, segmentLabel, OVERENIA_POTREBNE, ESCROW } from "./konstanty";
 import { TagTemy, prepniTag, ZranitelniBlok, PrisnyBadge, AiPoznamka, GuardFuzzy } from "./HelpKit";
-import { Foto, Avatar, MiniFotky, Hlavicka, ModulHlavicka, PlatobnyModul, PlatbaModal, HladanieModal, OblubeneHviezda, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, toast, Oslava, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackHeader, ProgresBox, obalSiroky, OkruhVyber, Lupa, Zdielanie, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaPin, IkonaOsoba, IkonaCharita, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, KontextMenu, Overene, IkonaMoznosti, IkonaOdkaz, SwipeBack, ZoznamDarcov, FormatovanyText, RichTextInput } from "@/shared";
+import { Avatar, Hlavicka, ModulHlavicka, PlatobnyModul, PlatbaModal, HladanieModal, OblubeneHviezda, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, toast, Oslava, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackHeader, ProgresBox, obalSiroky, OkruhVyber, Lupa, Zdielanie, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaPin, IkonaOsoba, IkonaCharita, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, KontextMenu, Overene, IkonaMoznosti, IkonaOdkaz, SwipeBack, ZoznamDarcov, FormatovanyText, RichTextInput } from "@/shared";
 import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { cistyText } from "@/lib/richtext";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
-import { MEDIA_AR } from "@/lib/cardSize";
+
 import { CisloVHlavicke, nazovCisla } from "@/components/CisloObjektu";
 import { cisloObjektu, typPrispevku } from "@/lib/cisloObjektu";
-import { TitulSoSledovat } from "@/features/zbierka/Vrch";
+import { TitulSoSledovat, Galeria } from "@/features/zbierka/Vrch";
 import type { HelpFeedItem, Subjekt, Oblubeny, QrSplitRow } from "@/types";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import { DomovBoard, DomovEvent } from "@/features/domov/Domov";
@@ -305,7 +305,6 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
   const [menu, setMenu] = useState(false); // ⋯ kontextové menu
   const [qr, setQr] = useState(false); // žiadosť: donačný QR · ponuka: QR na mieste
   const [splitQr, setSplitQr] = useState(false); // influencer: rozdeliť platbu (Split QR)
-  const otvorGaleriu = useGaleria();
   const { wide } = useLayout();
   const ja = usePouzivatel(); // registrovaný vs pasívny — určuje zápis do zoznamu darcov
   const darRef = `help-${z.id ?? z.nazov}`; // kľúč žiadosti v zozname darcov
@@ -336,14 +335,8 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
       </BackHeader>
 
       {/* hero foto — LEN ak prípad má fotku (bez placeholdera; inak čisto textový detail) */}
-      {z.fotky?.length ? (
-        <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : {}) }}>
-          <Foto src={z.fotky[0]} emoji="🖼" h={wide ? "100%" : 175} w={wide ? "100%" : undefined} onClick={() => otvorGaleriu(z.fotky!, 0)} prednost alt={z.nazov} />
-          <span style={{ position: "absolute", top: 10, right: 10, background: "rgba(0,0,0,.55)", borderRadius: RADIUS.lg, padding: `${SPACE.xxs}px ${SPACE.sm}px`, fontSize: 10, color: "var(--a-green)", pointerEvents: "none", display: "inline-flex", alignItems: "center", gap: SPACE.xxs }}><IkonaFoto size={12} color="var(--a-green)" /> foto z prípadu</span>
-          {z.fotky.length > 1 && <span style={{ position: "absolute", bottom: 10, right: 10, background: "rgba(0,0,0,.6)", borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.xs}px`, fontSize: 10, color: "#fff", pointerEvents: "none" }}>⧉ {z.fotky.length} · klikni na foto</span>}
-        </div>
-      ) : null}
-      <MiniFotky fotky={z.fotky} />
+      {/* OPRAVY 441: jedna galéria všade */}
+      {z.fotky?.length ? <Galeria media={z.fotky.map((src) => ({ typ: "foto" as const, src }))} okraj="0" radius={0} nahlady prekrytie={<span style={{ position: "absolute", top: 10, right: 10, background: "rgba(0,0,0,.55)", borderRadius: RADIUS.lg, padding: `${SPACE.xxs}px ${SPACE.sm}px`, fontSize: 10, color: "var(--a-green)", pointerEvents: "none", display: "inline-flex", alignItems: "center", gap: SPACE.xxs }}><IkonaFoto size={12} color="var(--a-green)" /> foto z prípadu</span>} /> : null}
 
       {/* meta — klik otvorí cudzí profil (§6) */}
       {/* OPRAVY 429: Sledovať pri nadpise (žiadosť/ponuka nemá titulok — nadpisom je meno) */}
