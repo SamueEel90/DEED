@@ -337,6 +337,11 @@ function IskryPrud() {
           })}
         </div>
 
+        {/* OPRAVY 444: bez skutočných Iskier v tomto druhu prázdny stav (nič ukážkové) */}
+        {list.length === 0 && <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, padding: 24, textAlign: "center", color: "#fff", pointerEvents: "none" }}>
+          <b style={{ fontSize: 18 }}>Zatiaľ žiadne Iskry</b>
+          <span style={{ fontSize: 14, opacity: 0.85, maxWidth: 280, lineHeight: 1.5 }}>Keď niekto pridá video, ukáže sa tu.</span>
+        </div>}
         {/* OPRAVY 444: ikona pauza / prehrať v strede (1 s) a posuvník s časom */}
         {ikona && <span key={ikona.k} aria-hidden="true" className="isk-dva" style={{ position: "absolute", left: "50%", top: "46%", width: 84, height: 84, margin: "-42px 0 0 -42px", zIndex: 5, borderRadius: "50%", background: "rgba(0,0,0,.45)", display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
           {ikona.hraj ? <Ik d={IK.hraj} s={36} fill="#fff" w={0} /> : <Ik d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" s={34} fill="#fff" w={0} />}</span>}
