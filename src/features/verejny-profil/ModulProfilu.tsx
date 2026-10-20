@@ -8,7 +8,7 @@ import { PrispietZaFarnost } from "@/features/zbierka/FarnostPrispela";
 import { SpatNaZbierky, ZbalitASpat, ZmensenyModul } from "@/features/zbierka/ZmensenyModul";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { jeNeregistrovany, sledujDarcu } from "@/lib/devDarca";
-import { pridajDar, darcoviaPre } from "@/lib/darcovia";
+import { pridajDar, darcoviaPre, zakladMimoRiadkov } from "@/lib/darcovia";
 import { naviazObjekt } from "@/lib/darZbierky";
 import { dorovnanieNaDar, dorovnanieKDaru, useZmenyDorovnani } from "@/lib/dorovnanie";
 import type { TestProfil, TestSektor } from "@/lib/testProfily";
@@ -117,14 +117,15 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, 
   useEffect(() => sledujDarcu(() => setRegistrovany(!jeNeregistrovany())), []);
   useZmenyDorovnani();
   const dorovnanie = sDorovnanim ? dorovnanieNaDar(refId) : null;
-  const zaklad = sektor.mesiac ?? sektor.vyzbierane;
+  // OPRAVY 445 (2): keď sú dary z ledgera načítané, sú celým súčtom — základ zo zbierky sa nepripočíta druhýkrát
+  const zaklad = zakladMimoRiadkov(refId, sektor.mesiac ?? sektor.vyzbierane), ludiaZ = zakladMimoRiadkov(refId, sektor.darcovia);
   const kam = sektor.druh === "centralna" ? "celej činnosti" : `sektora ${sektor.nazov}`;
   const nazov = nazovPlatby ?? `${sektor.nazov} · ${profil.meno}`;
 
   const [platba, setPlatba] = useState<{ kanal: KanalPlatby; suma?: number } | null>(null);
   const stav = () => {
     const dary = darcoviaPre(refId), dnes = new Date(); dnes.setHours(0, 0, 0, 0);
-    return { vyzbierane: zaklad + dary.reduce((a, r) => a + r.suma, 0), ciel, pocetDarov: sektor.darcovia + dary.length, darovDnes: dary.filter((r) => r.cas >= dnes.getTime()).length };
+    return { vyzbierane: zaklad + dary.reduce((a, r) => a + r.suma, 0), ciel, pocetDarov: ludiaZ + dary.length, darovDnes: dary.filter((r) => r.cas >= dnes.getTime()).length };
   };
   const [pred, setPred] = useState(stav);
   const [harok, setHarok0] = useState<null | "pravidelna" | "zdielat" | "podporit" | "retaz">(null);
@@ -143,7 +144,7 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, 
 
   return (
     <div ref={rootRef} style={{ position: "relative", display: "flex", flexDirection: "column", color: "var(--ink)" }}>
-      <KartaStavu refId={refId} zaklad={zaklad} ciel={ciel} ludiaZaklad={sektor.darcovia} koniecPruhu={koniecPruhu} bezMilnikov={bezObjektu && !ciel} /* OPRAVY 388: zvonček */ />
+      <KartaStavu refId={refId} zaklad={zaklad} ciel={ciel} ludiaZaklad={ludiaZ} koniecPruhu={koniecPruhu} bezMilnikov={bezObjektu && !ciel} /* OPRAVY 388: zvonček */ />
       {dorovnanie && <div style={{ marginTop: 12 }}>
         <KartaDorovnava d={dorovnanie} />
         {k20 > 0 && <div style={{ margin: "-4px 0 0", textAlign: "center", fontSize: 13.5, fontWeight: 700, color: "var(--gold)", fontVariantNumeric: "tabular-nums" }}>daruješ 20 € → do {kam} ide {eurT(20 + k20)}</div>}

@@ -10,6 +10,7 @@
 // náhľad = skutočná karta modulu z profilu, Spustiť = kontrola Názov · Text · Titulná fotka + podržať 1,5 s,
 // po spustení na tom istom mieste „Hlavná zbierka beží" a ďalší krok (QR plagát).
 // ============================================================
+import { naviazObjekt } from "@/lib/darZbierky";
 import { SumyPriDarcoch } from "./SumyPriDarcoch";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -77,6 +78,8 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const h = sek ? String(typ) : "0";
   const kluc = sek ? sek.id : "centralna";
   const idZbierky = `${strankaId}-${kluc}`;
+  // OPRAVY 445 (2): centrálna charity = dary z ledgera (stranka:hlavna), ten istý zdroj ako profil a zoznam v Správe
+  if (!farnost && !sek) naviazObjekt(idZbierky, { stranka: strankaId, hlavna: true, nazov: "Celá činnosť" });
   const [tab, setTab] = useState(startQr && farnost ? 5 : 0);
   // OPRAVY 347: plagát hlavnej = jeden plagát pre všetky QR (QR farnosti)
   const qrFar = usePolozkyQr(strankaId, nazov).find((x) => x.id === "farnost");
