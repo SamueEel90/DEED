@@ -85,13 +85,16 @@ function zbierkaProfilu(z: SpustenaZbierka, p: TestProfil): TestZbierka {
 }
 /** OPRAVY 418: skutok a oznam zo Správy charity → položky verejného profilu (nič vymyslené) */
 const MES = ["JAN", "FEB", "MAR", "APR", "MÁJ", "JÚN", "JÚL", "AUG", "SEP", "OKT", "NOV", "DEC"];
-function skutokProfilu(s: MojSkutok, p: TestProfil): TestSkutok {
+const casAkcie = (ms: number) => { const min = Math.max(1, Math.round(ms / 60000)); return min >= 60 ? `${Math.floor(min / 60)} h${min % 60 ? ` ${min % 60} min` : ""}` : `${min} min`; };
+function skutokProfilu(s: MojSkutok, p: TestProfil, tier = 0): TestSkutok {
   const d = new Date(s.datum || Date.now());
   return { id: s.id, nazov: s.nazov, popis: cistyText(s.popis), mesto: p.mesto, kedy: `${d.getDate()}. ${d.getMonth() + 1}.`, foto: s.fotky[0] ?? "",
     dobrovolnici: s.ucastnici?.length || undefined, d: `${d.getDate()}.`, m: MES[d.getMonth()], rok: d.getFullYear(),
     // OPRAVY 438 (3): kam idú peniaze zo skutku (zapečatené pri zverejnení) — platobný modul v detaile skutku
     podpora: s.peniaze === "centralna" ? { na: "centralna" } : (s.peniaze === "nasa" || s.peniaze === "ina") && s.dar?.[0]
-      ? { na: "zbierka", zbierkaId: s.dar[0].id, nazov: s.dar[0].nazov, org: s.dar[0].org, cislo: s.dar[0].cislo } : undefined };
+      ? { na: "zbierka", zbierkaId: s.dar[0].id, nazov: s.dar[0].nazov, org: s.dar[0].org, cislo: s.dar[0].cislo } : undefined,
+    // OPRAVY 447 (3): Zadarmo len „Pomáhali: … · N dobrovoľníkov“, od P1 aj zoznam pomocníkov s časom
+    pomocnici: tier >= 1 && s.pomocnici?.length ? s.pomocnici.map((u) => ({ meno: u.meno, cas: casAkcie(u.ms), ucet: u.ucet })) : undefined };
 }
 /** OPRAVY 408: pracovná ponuka zo Správy → plagát Hľadáme ľudí */
 function pracaProfilu(o: Oznam, p: TestProfil): TestPraca {
@@ -117,7 +120,7 @@ function sUdajmiCharity(p: TestProfil, prof: ProfilStranky | null, tier = 0): Te
   const c = centralnaZPamate(p.k), foto = c?.media.find((m) => m.typ === "foto")?.src;
   const centralna = c?.spustena ? { ...p.centralna, popis: cistyText(c.popis) || undefined, popisHtml: [c.popis, c.popis2].filter((x) => x && cistyText(x)).join("") || undefined, foto: foto ?? p.centralna.foto, galeria: c.media.map((m) => ({ typ: m.typ, src: m.src, popis: m.popis })) } : p.centralna;
   // OPRAVY 418: skutky a oznamy zo Správy (server; bez neho zo správy na tomto zariadení)
-  const sk = (skutkyStrankyZPamate(p.k) ?? skutkyOrg(p.k).filter((x) => !x.stiahnuty)).map((s) => skutokProfilu(s, p));
+  const sk = (skutkyStrankyZPamate(p.k) ?? skutkyOrg(p.k).filter((x) => !x.stiahnuty)).map((s) => skutokProfilu(s, p, tier));
   const oz = oznamyStranky(p.k).filter((o) => oznamBezi(o)).map((o) => oznamProfilu(o, p));
   // OPRAVY 432: Zadarmo nemá centrálnu zbierku, pravidelnú podporu ani pracovné ponuky (všetko od P1)
   const praca = tier < 1 ? [] : verejneOznamy(`stranka:${p.k}`, "inzerat").map((o) => pracaProfilu(o, p)); // OPRAVY 408

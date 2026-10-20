@@ -11,6 +11,8 @@ export interface UcastnikAkcie {
   meno: string; neskor: boolean;
   /** čas príchodu (sken QR charity) a dobrovoľného odchodu — potvrdenie od–do */
   prichod?: number; odchod?: number;
+  /** OPRAVY 447 (3): účet účastníka (z overeného skenu) — ťuk na meno v skutku otvorí jeho profil */
+  ucet?: string;
 }
 /** záznam zmien (odobratie účastníka, oprava času) — vnútri charity, s menom organizátora */
 export interface ZmenaAkcie { cas: number; kto: string; co: string; dovod?: string }

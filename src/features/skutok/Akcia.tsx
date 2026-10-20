@@ -97,7 +97,10 @@ function AkciaObrazovka({ a, onZavrete }: { a: Akcia; onZavrete: () => void }) {
     nastavAkciu(null);
     if (x.org && x.id) void repo.qr.eventUkonci(x.id).catch(() => undefined);   // splnenie podľa prahu počíta server (4.5)
     if (x.org) { // koniec ukončí organizátor pre všetkých naraz (odchod skenovať netreba)
-      otvorPridatSkutok({ start: "skupina", organizacia: true, strankaId: x.org.stranka, autor: x.org.nazov, zAkcie: { ucastnici: x.uc.map((u) => u.meno), miesto: x.miesto || lok.mesto, trvanie, dar: x.dar, zaznam: x.zaznam } });
+      // OPRAVY 447 (3): čas každého na akcii = od príchodu (najskôr od začiatku) po odchod alebo koniec akcie
+      const koniec = Date.now(), zac = x.start ?? koniec;
+      const pomocnici = x.uc.map((u) => ({ meno: u.meno, ms: Math.max(0, (u.odchod ?? koniec) - Math.max(u.prichod ?? zac, zac)), ...(u.ucet ? { ucet: u.ucet } : {}) }));
+      otvorPridatSkutok({ start: "skupina", organizacia: true, strankaId: x.org.stranka, autor: x.org.nazov, zAkcie: { ucastnici: x.uc.map((u) => u.meno), miesto: x.miesto || lok.mesto, trvanie, dar: x.dar, zaznam: x.zaznam, pomocnici } });
       return;
     }
     otvorPridatSkutok({ start: "skupina", zAkcie: { ucastnici: x.uc.map((u) => u.meno), miesto: x.miesto || lok.mesto, trvanie, dar: x.dar } });

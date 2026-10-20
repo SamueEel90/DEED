@@ -96,6 +96,8 @@ export interface TestSkutok {
   split?: { komu: string; pct: number }[];
   /** bod 150 / 122 · platobný modul pri skutku: na centrálnu, na zbierku (100 % tam) alebo bez modulu (chýba) */
   podpora?: { na: "centralna" } | { na: "zbierka"; zbierkaId: string; /** OPRAVY 438 (3): zbierka uložená pri skutku (aj zbierka inej charity) */ nazov?: string; org?: string; cislo?: string };
+  /** OPRAVY 447 (3): od P1 pomocníci z akcie — meno a čas na akcii („1 h 20 min“), účet na profil */
+  pomocnici?: { meno: string; cas?: string; ucet?: string }[];
   /** dátum v kronike: „29." · „SEP" · 2026 */
   d?: string; m?: string; rok?: number;
   /** KARTA 55 · 1 – 2 vety, čo sa stalo (Čo sme dokázali) */

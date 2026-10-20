@@ -12,6 +12,11 @@ import { eur, jeFarnost } from "@/lib/testProfily";
 import { toast } from "@/shared";
 import { Darcovia } from "@/features/zbierka/Riadky";
 import { DeedDetail } from "@/features/aktivity/Aktivity";
+import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
+import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
+import { useQuery } from "@tanstack/react-query";
+import { charitaSupabase } from "@/data/charita.supabase";
+import { otvorVerejnyProfil } from "./otvor";
 import { PRUH, type PolCh } from "./charitaCasti";
 
 const sekcia: CSSProperties = { fontSize: 12, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)", paddingTop: 6 };
@@ -58,18 +63,35 @@ export function DetailSkutku({ profil, p, onBack }: { pc: boolean; profil: TestP
     title: p.nazov, desc: sk?.popis ?? p.s, fotky: [p.foto],
     pomahali: sk?.dobrovolnici ? `${profil.meno} · ${sk.dobrovolnici} dobrovoľníkov` : profil.meno,
     split: sk?.split,
+    logo: profil.logo, pomocnici: sk?.pomocnici, // OPRAVY 447 (2, 3)
   };
+  const [osoba, setOsoba] = useState<string | null>(null);
+  // odchýlka 438: zbierka inej charity — ťuk na riadok otvorí jej detail s platobným modulom (dar ide stále cez skutok)
+  const [cudziaOtv, setCudziaOtv] = useState(false);
+  const { data: feedCh = [] } = useQuery({ queryKey: ["charita-zbierky-vyber"], queryFn: () => charitaSupabase.feed(), enabled: cudzia, staleTime: 60_000 });
+  if (osoba) return <CudziProfil subjekt={{ typ: "osoba", meno: osoba }} toast={toast} onBack={() => setOsoba(null)} />;
+  if (cudziaOtv && zb && pz) {
+    const f = feedCh.find((x) => String(x.id) === pz.zbierkaId);
+    return <ZbierkaModul zbierka={{ id: pz.zbierkaId, nazov: f?.nazov ?? zb.nazov, popis: f?.popis ?? "", overena: f?.overena,
+      media: (f?.fotky ?? []).map((src) => ({ typ: "foto" as const, src })), vyzbierane: f?.vyzbierane, ciel: f?.ciel, ludia: f?.podpora, vs: f?.vs, zverejnene: f?.casVytvorenia }}
+      onBack={() => setCudziaOtv(false)} spatNazov={p.nazov} onZavriet={() => setCudziaOtv(false)}
+      onOtvorOrg={f?.stranka ? () => otvorVerejnyProfil(f.stranka!) : undefined} />;
+  }
   return (
     <div style={{ height: "100%", overflowY: "auto", background: "var(--c-bg)", WebkitOverflowScrolling: "touch" } as CSSProperties}>
       <div style={{ maxWidth: 760, margin: "0 auto", paddingBottom: 120 }}>
-        <DeedDetail it={it} bezPodpory support={() => {}} votes={hlasy} vote={(id: number, v: string) => setHlasy((h) => ({ ...h, [id]: v }))}
+        <DeedDetail it={it} bezPodpory charita={profil.typ === "charita"} onPomocnik={(u: { meno: string }) => setOsoba(u.meno)} support={() => {}} votes={hlasy} vote={(id: number, v: string) => setHlasy((h) => ({ ...h, [id]: v }))}
           toast={toast} home={onBack} openPerson={() => {}} />
         {/* bod 150 · skutok s platobným modulom (bod 122): na centrálnu / na zbierku (100 % tam) / bez modulu */}
         <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: 12 }}>
           {modul && <>
             <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)", paddingTop: 8 }}>{modul.nadpis}</span>
             {/* OPRAVY 438 (3): kam idú peniaze a koľko už prišlo cez tento skutok */}
-            <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Peniaze idú na <b style={{ color: "var(--ink)" }}>{modul.kam}</b>{pz?.cislo ? <span style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}> · {pz.cislo}</span> : null}.
+            {cudzia && <button type="button" onClick={() => setCudziaOtv(true)} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 52, padding: "8px 12px", borderRadius: 14, border: "1px solid var(--cardBd)", background: "var(--card)", boxShadow: "none", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
+              <span style={{ flex: 1, minWidth: 0 }}><b style={{ display: "block", fontSize: 15 }}>{zb?.nazov}</b><span style={{ display: "block", fontSize: 13, color: "var(--ink3)" }}>{[pz?.org, pz?.cislo].filter(Boolean).join(" · ")}</span></span>
+              <span aria-hidden="true" style={{ fontSize: 18, color: "var(--ink3)" }}>›</span>
+            </button>}
+            <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>{!cudzia && <>Peniaze idú na <b style={{ color: "var(--ink)" }}>{modul.kam}</b>{pz?.cislo ? <span style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}> · {pz.cislo}</span> : null}.</>}
               {cez && cez.eur > 0 ? <> Cez tento skutok prišlo <b style={{ color: "var(--ink)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{eur(cez.eur)}</b> od {cez.pocet} {cez.pocet === 1 ? "darcu" : "darcov"}.</> : null}</span>
             <ZmensenyModul><ModulPlatby profil={profil} sektor={modul.sektor} nazov={modul.nazov} dorovnanie={!jeFarnost(profil)} /></ZmensenyModul>
           </>}

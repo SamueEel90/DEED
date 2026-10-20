@@ -475,16 +475,16 @@ function Detail({ it, liked, like, support, votes, vote, toast, celebrate, home,
 /** detail skutku — ten istý vo feede Aktivít aj na verejných profiloch (kronika, roky).
  *  5. 10.: bezPodpory = staré roky (bez drobnej podpory a darov, ostane Zdieľať a Páči sa mi);
  *  it.split = komu išla podpora („Podpora išla: …"), bez splitu sa riadok neukáže; it.pomahali = kto pomáhal (profil charity). */
-export function DeedDetail({ it, support, votes, vote, toast, home, openPerson, bezPodpory = false }: any) {
+export function DeedDetail({ it, support, votes, vote, toast, home, openPerson, bezPodpory = false, charita = false, onPomocnik }: any) {
   const a = DOM[it.dom];
   const [platba, setPlatba] = useState<string | null>(null); // "EUR" | "DEED"
   const isTalent = it.type === "talent", isCase = it.type === "case";
   const pct = isCase ? Math.min(100, Math.round(it.raised / it.goal * 100)) : 0;
   const supLabel = isTalent ? "OCEŇ TVORCU — klik a hneď odíde" : isCase ? "PRIDAJ SA K MAREKOVI" : "DROBNÁ PODPORA — klik a hneď odíde";
-  // overovanie skutku — základ + tvoj hlas
+  // overovanie skutku — OPRAVY 447 (1): len skutočné hlasy (vymyslený základ z id preč); pri skutku charity vôbec nie (442 bod 3)
   const myVote = votes[it.id];
-  const okCount = (it.mine ? 0 : 4 + ((it.id * 3) % 9)) + (myVote === "ok" ? 1 : 0);
-  const noCount = (it.mine ? 0 : (it.id * 2) % 3) + (myVote === "no" ? 1 : 0);
+  const okCount = myVote === "ok" ? 1 : 0;
+  const noCount = myVote === "no" ? 1 : 0;
 
   return (
     <div style={{ paddingBottom: SPACE.lg }}>
@@ -493,7 +493,8 @@ export function DeedDetail({ it, support, votes, vote, toast, home, openPerson, 
       </DetailHero>
       <div style={{ padding: `${SPACE.gutter}px ${SPACE.md}px` }}>
         <div onClick={() => openPerson(it.author)} style={{ ...rowTopS, cursor: "pointer" }}>
-          <div style={pfpS(it.pfp)}>{it.ini}</div>
+          {/* OPRAVY 447 (2): logo z profilu, iniciály len bez loga */}
+          {it.logo ? <img src={it.logo} alt="" style={{ ...pfpS("#fff"), objectFit: "cover", border: "1px solid var(--cardBd)" }} /> : <div style={pfpS(it.pfp)}>{it.ini}</div>}
           <div>
             <div style={{ ...nameS, display: "flex", alignItems: "center", gap: SPACE.xs }}>{it.author} <span style={{ color: C.textTer, fontSize: 13 }}>›</span></div>
             <div style={{ display: "flex", alignItems: "center", gap: SPACE.xxs, fontSize: 12, color: A.txt2, marginTop: 1 }}><IkonaPin size={12} color={A.txt2} />{it.loc}</div>
@@ -503,6 +504,15 @@ export function DeedDetail({ it, support, votes, vote, toast, home, openPerson, 
         <TitulAkt it={it} typ={isCase ? "ziadost" : isTalent ? "talent" : "skutok"} style={{ marginTop: SPACE.sm }} titul={<div style={{ ...titleS, fontSize: 14 }}>{it.title}</div>} />
         <div style={{ marginTop: SPACE.xs }}><RozbalitelnyText text={it.desc} style={{ fontSize: 14.5, lineHeight: 1.6, color: A.txt2 }} /></div>
         {it.pomahali && <div style={{ fontSize: 13.5, marginTop: SPACE.xs, color: A.txt2 }}>Pomáhali: <b style={{ color: A.txt }}>{it.pomahali}</b></div>}
+        {/* OPRAVY 447 (3): od P1 zoznam pomocníkov — meno, ako si ho nastavil, a čas na akcii; ťuk = profil */}
+        {it.pomocnici?.length > 0 && <div style={{ display: "flex", flexDirection: "column", marginTop: SPACE.xs }}>
+          {it.pomocnici.map((u: { meno: string; cas?: string; ucet?: string }, i: number) => {
+            const obsah = <><b style={{ color: A.txt, fontWeight: 700 }}>{u.meno}</b>{u.cas ? <span style={{ color: A.txt2 }}> · {u.cas}</span> : null}</>;
+            return u.ucet && onPomocnik
+              ? <button key={i} type="button" onClick={() => onPomocnik(u)} style={{ minHeight: 40, padding: 0, border: "none", background: "none", boxShadow: "none", textAlign: "left", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5 }}>{obsah} <span style={{ color: C.textTer }}>›</span></button>
+              : <span key={i} style={{ minHeight: 32, display: "flex", alignItems: "center", fontSize: 13.5 }}><span>{obsah}</span></span>;
+          })}
+        </div>}
         {it.split?.length > 0 && <div style={{ fontSize: 13.5, lineHeight: 1.5, marginTop: SPACE.xs, color: A.txt2 }}>Podpora išla: <b style={{ color: A.txt }}>{it.split.map((s: { komu: string; pct: number }) => `${s.komu} ${s.pct} %`).join(" · ")}</b></div>}
 
         {isCase && (
@@ -522,7 +532,7 @@ export function DeedDetail({ it, support, votes, vote, toast, home, openPerson, 
           oblubene={{ refId: it.id, typ: isCase ? "ziadost" : isTalent ? "talent" : "skutok", modul: "aktivity", nazov: it.title, lok: it.loc }} toast={toast}
           qr={bezPodpory ? undefined : { label: `QR ${isCase ? "tejto akcie" : isTalent ? "tejto Iskry" : "tohto skutku"}`, popis: "Zväčšiť · kopírovať · zdieľať", cta: "Zdieľať", onClick: () => zdielaj({ titul: it.title, text: it.title, url: aktualnaUrl() }, toast) }} />
 
-        <div style={{ textAlign: "center", fontSize: 10, color: A.txt3, marginTop: SPACE.md }}>
+        {!charita && <><div style={{ textAlign: "center", fontSize: 10, color: A.txt3, marginTop: SPACE.md }}>
           {myVote ? (myVote === "ok" ? "Označil(a) si tento skutok ako overený. Ďakujeme." : "Podal(a) si námietku — preverí ju AI + komunita.") : "Bol si pri tom? Komunita preveruje skutky."}
         </div>
         <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.gutter }}>
@@ -534,7 +544,7 @@ export function DeedDetail({ it, support, votes, vote, toast, home, openPerson, 
             if (myVote) return toast("Už si hlasoval(a) o tomto skutku");
             vote(it.id, "no"); toast("Námietka odoslaná — preverí ju AI + overenie");
           }} />
-        </div>
+        </div></>}
       </div>
       {platba && <PlatbaModal kanal={platba} komu={it.author} onClose={() => setPlatba(null)}
         onDone={(s: number) => support(s, it.author, it)} />}

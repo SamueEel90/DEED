@@ -45,6 +45,8 @@ export interface MojSkutok {
   zaznam?: { cas: number; kto: string; co: string }[];
   /** OPRAVY 122 (2): kam pôjdu peniaze zo skutku charity — zapečatené pri zverejnení (100 % na zbierku) */
   peniaze?: "nasa" | "centralna" | "ina" | "bez";
+  /** OPRAVY 447 (3): skutok z akcie za charitu — pomocníci s časom na akcii (ms) a účtom (od P1 na stránke) */
+  pomocnici?: { meno: string; ms: number; ucet?: string }[];
   /** Obsah → Skutky (charita): stiahnutý z profilu a feedu, ISO; upravený po zverejnení, ISO */
   stiahnuty?: string;
   upraveny?: string;

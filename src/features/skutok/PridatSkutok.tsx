@@ -429,6 +429,8 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
         id, feedId, nazov: nz, popis: popisHtml, oblast: oblast ?? "Pomoc", miesto: kde, datum: teraz(), stav: "ok", karma: null,
         det: "Ľuďom vo vašej lokalite a na váš profil.", fotky, ucastnici: sk ? uc.filter((u) => u.overeny).map((u) => u.meno) : undefined,
         dar: kamZ ? [kamZ] : undefined, peniaze: kam ?? "bez", za: pr.autor, vytvoril: ja.celeMeno || undefined, zaznam: pr.zAkcie?.zaznam, seria: prav ? pvF : undefined,
+        // OPRAVY 447 (3): pomocníci z akcie s časom — len tí, ktorí ostali v zozname
+        pomocnici: pr.zAkcie?.pomocnici?.filter((p) => uc.some((u) => u.overeny && u.meno === p.meno)),
       });
       const it: GoodPolozka = {
         id: feedId, typ: "skutok", velkost: "med", kat: KAT[oblast ?? "Pomoc"] ?? "Komunita", autor: pr.autor || "Charita", num: 0, emoji: "",
@@ -845,7 +847,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       <div style={{ borderRadius: 18, overflow: "hidden", border: "1px solid var(--cardBd)" }}>
         <FeedCard wide typ="skutok" cas="teraz" media={foto ? { fotky: [foto], h: 235 } : orgLogo ? { fotky: [orgLogo], h: 235 } : {}}
           tvorca={{ meno: pr.autor || "Charita", logo: orgLogo || undefined, ini, mesto: kde || undefined, stit: "Bronze" }}
-          cipy={[oblast ?? "Pomoc"]} title={nz} text={cistyText(po)} />
+          title={nz} text={cistyText(po)} />
       </div>
       <span style={{ fontSize: 13, color: "var(--ink3)", textAlign: "center" }}>Na vašom profile</span>
       {(kam === "nasa" && nasaZ || kam === "centralna" && pr.centralna || kam === "ina" && inaZ) && <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 12, background: "var(--goldBg)", border: "1px solid var(--goldBd)", fontSize: 13, fontWeight: 700 }}><span style={{ color: "var(--gold)", display: "flex" }}><Ik d={IK.dar} s={16} /></span>Príspevky idú na zbierku · {(kam === "nasa" ? nasaZ : kam === "centralna" ? pr.centralna : inaZ)?.nazov}</div>}
