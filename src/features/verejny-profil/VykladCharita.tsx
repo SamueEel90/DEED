@@ -11,7 +11,7 @@ import { druhF, druhT, type Druh } from "@/lib/druhy";
 import { PracaKarta } from "@/components/PracaKarta";
 import { DOK, LokalitaPrepinac, StitCare, StitOkno, klikKarta, nazovStitu, useDomaceMesto } from "./casti";
 import { ModulProfilu } from "./ModulProfilu";
-import { type PolCh, ZIskier, bgF, useCharitaData } from "./charitaCasti";
+import { type PolCh, ZIskier, bgF, useCharitaData, OnasPokracovanie } from "./charitaCasti";
 
 const PC = "(min-width: 1200px)";
 function usePc() {
@@ -252,6 +252,7 @@ export function VykladCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, 
       <div style={{ flex: 1, minWidth: 0, padding: "28px 28px 20px", display: "flex", flexDirection: "column", gap: 12, background: "var(--panel)", borderLeft: "1px solid var(--cardBd)", overflowY: "auto" }}>{tentoTyzden}</div>
     </div>
     {kov}
+    <OnasPokracovanie html={profil.onas2} pad="28px 40px 0" />
     <div style={{ display: "flex", gap: 32, padding: "44px 40px 0", alignItems: "flex-start" }}>
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 28 }}>
         {pribehTyzdna && <>{kicker("PRÍBEH TÝŽDŇA", { fontSize: 13, letterSpacing: ".14em" })}{pribehTyzdna}</>}
@@ -265,6 +266,7 @@ export function VykladCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, 
   return obal(<>
     {fotoTitulky}{kov}
     <div style={{ padding: "18px 16px 0", display: "flex", flexDirection: "column", gap: 10 }}>
+      <OnasPokracovanie html={profil.onas2} />
       {hore}
       {tentoTyzden}
       {pribehTyzdna && <>{kicker("PRÍBEH TÝŽDŇA", { letterSpacing: ".14em", paddingTop: 16 })}{pribehTyzdna}</>}

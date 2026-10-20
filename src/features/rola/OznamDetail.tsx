@@ -11,7 +11,7 @@ import { BackChip, FeedCard, useGaleria } from "@/shared";
 import type { StitLevel } from "@/components/stit";
 import { casOd } from "@/components/feedcard";
 import { zverejneneText } from "@/components/CisloObjektu";
-import { sanitizujHtml } from "@/lib/richtext";
+import { RozbalitelnyText } from "@/components/formattext";
 import { cistyText } from "./obsahZbierky";
 import { Media } from "./obsahZbierky";
 import { ucast, nacitajUcasti, prihlasNaOznam, pocetText, useZmenyUcasti } from "@/lib/oznamUcast";
@@ -69,7 +69,7 @@ export function OznamDetail({ o, org, onBack, onProfil, toast }: { o: OznamChari
               {m.popis?.trim() && <figcaption style={{ fontSize: 13.5, lineHeight: 1.4, color: "var(--ink3)" }}>{m.popis}</figcaption>}
             </figure>))}
         </div>}
-        {cistyText(o.text) && <div style={{ fontSize: 15.5, lineHeight: 1.6, color: "var(--ink2)", overflowWrap: "anywhere" }} dangerouslySetInnerHTML={{ __html: sanitizujHtml(o.text) }} />}
+        {cistyText(o.text) && <RozbalitelnyText text={o.text} style={{ fontSize: 15.5, lineHeight: 1.6, color: "var(--ink2)" }} />}
         {o.pozvanie !== "bez" && <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 14, borderRadius: 16, background: "var(--field)", border: "1px solid var(--cardBd)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             {moja ? <span role="status" style={{ ...tl, display: "inline-flex", alignItems: "center", background: "var(--gSoft)", color: "var(--gInk)" }}>{o.pozvanie === "zavazne" ? "Prihlásený ✓" : "Zúčastníte sa ✓"}</span>

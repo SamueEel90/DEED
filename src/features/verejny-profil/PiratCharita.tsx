@@ -10,7 +10,7 @@ import { druhF, type Druh } from "@/lib/druhy";
 import { PracaKarta } from "@/components/PracaKarta";
 import { DOK, StitCare, StitOkno, klikKarta, nazovStitu, useDomaceMesto } from "./casti";
 import { ModulProfilu } from "./ModulProfilu";
-import { type PolCh, ZIskier, bgF, useCharitaData } from "./charitaCasti";
+import { type PolCh, ZIskier, bgF, useCharitaData, OnasPokracovanie } from "./charitaCasti";
 
 const PC = "(min-width: 1200px)";
 function usePc() {
@@ -218,7 +218,7 @@ export function PiratCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, h
     </section>);
 
   const okno = stitOtv && <StitOkno p={profil} v6 mobil={mob} onClose={() => setStitOtv(false)} />;
-  const obsah: ReactNode = <>{titulka}{hore}{teraz}{sektory.length > 0 && kamPoslat}{odFarnikov}{cesta}{dalsie}{iskry}{pata}{mob && <div style={{ height: DOK + 24, flex: "none" }} />}</>;
+  const obsah: ReactNode = <>{titulka}<OnasPokracovanie html={profil.onas2} pad={pc ? "24px 48px 0" : "16px 16px 0"} />{hore}{teraz}{sektory.length > 0 && kamPoslat}{odFarnikov}{cesta}{dalsie}{iskry}{pata}{mob && <div style={{ height: DOK + 24, flex: "none" }} />}</>;
   return (
     <div className="vp sc-tokeny" data-stit={stit} style={{ position: "relative", height: "100%", overflowY: "auto", WebkitOverflowScrolling: "touch" } as CSSProperties}>
       {obsah}{okno}

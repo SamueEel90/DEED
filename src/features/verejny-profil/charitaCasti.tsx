@@ -1,5 +1,6 @@
 // KARTA 45 · spoločné dáta a diely pre Výklad a Pirát charity (rovnaké dáta ako Kronika, iné podanie).
 // Dáta: testProfily.ts (Svetlo pomoci). Iskry z lib/iskry (2 cesty: Iskry · Zbierky).
+import { RozbalitelnyText } from "@/components/formattext";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { eur, tvar, vLokalite, type Lokalita, type Mesto, type TestProfil, type TestZbierka, jeFarnost } from "@/lib/testProfily";
 import { ISKRY_CFG, iskraViditelna, iskryVsetky, useZmenyIskier, zbierkaIskry, type Iskra } from "@/lib/iskry";
@@ -15,6 +16,12 @@ const dokladov = (n: number) => tvar(n, ["DOKLAD", "DOKLADY", "DOKLADOV"]);
 
 export interface PolCh { id: string; typ: "zb" | "sk" | "is" | "oz"; d: string; m: string; rok: number; nazov: string; s: string; q?: string; dok?: string; foto: string; zbierka?: TestZbierka; /** KARTA 50 · farnosť nedokladá */ bezDokladov?: boolean }
 export interface OznCh { id: string; den: string; mes: string; dBg: string; st: string; stc: string; n: string; s: string; btn: string; pocet: string; druh?: "vyzva" | "akcia" | "oznam"; /** OPRAVY 431 */ foto?: string; pred?: string }
+
+/** OPRAVY 435: O nás · pokračovanie pod hlavným textom — zbalené na 2 riadky + Čítať ďalej ›, rozbalené celé, Zbaliť ^ na konci */
+export function OnasPokracovanie({ html, pad, fs = 15 }: { html?: string; pad?: string; fs?: number }) {
+  if (!html) return null;
+  return <div style={{ padding: pad, minWidth: 0 }}><RozbalitelnyText text={html} riadky={2} style={{ fontSize: fs, lineHeight: 1.5, color: "var(--ink2)" }} /></div>;
+}
 
 /** dáta charity v meste človeka — rovnaké pre Výklad aj Pirát */
 export function useCharitaData(profil: TestProfil, lok: Lokalita, domace: Mesto) {

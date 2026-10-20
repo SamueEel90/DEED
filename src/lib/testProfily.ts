@@ -49,12 +49,16 @@ export interface TestSektor {
   stitok?: string; dlazdicaText?: string; typ?: string; typ2?: string; info?: string;
   /** OPRAVY 155/4: popis sektora (2 až 4 vety) — Pirát pod názvom vybraného sektora a hore v module */
   popis?: string;
+  /** OPRAVY 435: celý text s formátovaním (HTML z TextovePolia: text + pokračovanie) — v module zbalený na 5 riadkov */
+  popisHtml?: string;
 }
 
 export interface TestZbierka {
   id: string;
   nazov: string;
   popis: string;
+  /** OPRAVY 435: celý text s formátovaním (detail zbierky) — popis je čistý text pre karty */
+  popisHtml?: string;
   mesto: Mesto;
   cast?: string;              // mestská časť pod mestom
   foto: string;
@@ -164,6 +168,8 @@ export interface TestProfil {
   meno: string;
   iniciala: string;
   veta: string;
+  /** OPRAVY 435: O nás · pokračovanie (HTML z Upraviť profil) — pod hlavným textom zbalené na 2 riadky */
+  onas2?: string;
   mesto: Mesto;               // sídlo
   stit: StitUroven;
   odRoku: number;

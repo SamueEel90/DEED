@@ -12,6 +12,7 @@ import { ISKRY_CFG, iskraViditelna, iskryVsetky, useZmenyIskier, zbierkaIskry, t
 import { otvorIskry } from "@/features/iskry/otvor";
 import { DOK, LokalitaPrepinac, MESIACE, PlagatPrace, PrepinacPodania, klikKarta, PribehText, StitCare, StitOkno, kovText, nazovStitu, norm, useDomaceMesto, useMobil } from "./casti";
 import { PodporaProfilu } from "./PodporaProfilu";
+import { OnasPokracovanie } from "./charitaCasti";
 import { useVsetkyNaKonci } from "./charitaCasti";
 
 type Typ = "zb" | "sk" | "is" | "oz" | "pr";
@@ -524,6 +525,7 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
                 <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4, paddingBottom: 4 }}>
                   <b style={{ fontSize: 28, lineHeight: 1.1 }}>{profil.meno}</b>
                   <span style={{ fontSize: 14.5, lineHeight: 1.45, color: "var(--ink2)" }}>{profil.veta}</span>
+                  <OnasPokracovanie html={profil.onas2} fs={14.5} />
                 </span>
                 {stitTlacidlo(100, 118, 92, 112)}
               </div>}
@@ -535,6 +537,7 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
                 <span style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                   <b style={{ fontSize: 25, lineHeight: 1.15 }}>{profil.meno}</b>
                   <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)", textWrap: "pretty" } as CSSProperties}>{profil.veta}</span>
+                  <OnasPokracovanie html={profil.onas2} fs={14.5} />
                 </span>
               </>}
           {hore}
@@ -569,6 +572,7 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
           <span style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <b style={{ fontSize: 30, lineHeight: 1.1, letterSpacing: "-.01em" }}>{profil.meno}</b>
             <span style={{ fontSize: 15, lineHeight: 1.5, color: "var(--ink2)", textWrap: "pretty" } as CSSProperties}>{profil.veta}</span>
+            <OnasPokracovanie html={profil.onas2} />
           </span>
           {hore}
           {prepinac}

@@ -6,7 +6,7 @@ import { StityRad, type StitLevel as StitLv } from "@/components/stit";
 import { stityOblastiSubjektu } from "@/lib/stityOblasti";
 const naStitLevelOpt = (k: string): StitLv | null => ((["Bronze", "Silver", "Gold", "Platinum", "Legend"] as string[]).includes(k) ? (k as StitLv) : null);
 import { useState, useMemo, useEffect, memo } from "react";
-import { FormatovanyText, RichTextInput } from "@/shared";
+import { FormatovanyText, RichTextInput, RozbalitelnyText } from "@/shared";
 import { ModulHlavicka, Hlavicka, PlatobnyModul, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, TypBadge, BackChip, SwipeBack, obalSiroky, OkruhVyber, Lupa, IkonaMoznosti, Zdielanie, IkonaPlay, IkonaDoska, IkonaPin, IkonaObalka, FotoPrispevku, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, EntityHero, BtnAkcia, Overene, KontextMenu, IkonaOdkaz, IkonaVlajka, FotoProfiluSheet } from "@/shared";
 import { FOTO_TEST_REZIM, klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { SIRKA, C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
@@ -501,7 +501,7 @@ export function DeedDetail({ it, support, votes, vote, toast, home, openPerson, 
           {it.verified && <span style={{ marginLeft: "auto", display: "inline-flex" }}><Overene size={15} label="Overené komunitou" /></span>}
         </div>
         <TitulAkt it={it} typ={isCase ? "ziadost" : isTalent ? "talent" : "skutok"} style={{ marginTop: SPACE.sm }} titul={<div style={{ ...titleS, fontSize: 14 }}>{it.title}</div>} />
-        <FormatovanyText text={it.desc} style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs, color: A.txt2 }} />
+        <div style={{ marginTop: SPACE.xs }}><RozbalitelnyText text={it.desc} style={{ fontSize: 14.5, lineHeight: 1.6, color: A.txt2 }} /></div>
         {it.pomahali && <div style={{ fontSize: 13.5, marginTop: SPACE.xs, color: A.txt2 }}>Pomáhali: <b style={{ color: A.txt }}>{it.pomahali}</b></div>}
         {it.split?.length > 0 && <div style={{ fontSize: 13.5, lineHeight: 1.5, marginTop: SPACE.xs, color: A.txt2 }}>Podpora išla: <b style={{ color: A.txt }}>{it.split.map((s: { komu: string; pct: number }) => `${s.komu} ${s.pct} %`).join(" · ")}</b></div>}
 
@@ -556,7 +556,7 @@ function WorkshopDetail({ it, toast, celebrate, home, openPerson }: any) {
       </DetailHero>
       <div style={{ padding: `${SPACE.gutter}px ${SPACE.md}px` }}>
         <TitulAkt it={it} typ="ponuka" titul={<div style={{ ...titleS, fontSize: 15 }}>{it.title}</div>} />
-        <FormatovanyText text={it.desc} style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs, color: A.txt2 }} />
+        <div style={{ marginTop: SPACE.xs }}><RozbalitelnyText text={it.desc} style={{ fontSize: 14.5, lineHeight: 1.6, color: A.txt2 }} /></div>
 
         <div onClick={() => openPerson(it.author)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: A.surface2, border: `1px solid ${A.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginTop: SPACE.gutter, cursor: "pointer" }}>
           <div style={{ width: 44, height: 44, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 16, color: "#fff", flex: "none", background: it.pfp }}>{it.ini}</div>
@@ -607,7 +607,7 @@ function HelpDetail({ it, toast, celebrate, home, openPerson }: any) {
           <div><div style={{ ...nameS, display: "flex", alignItems: "center", gap: SPACE.xs }}>{it.author} <span style={{ color: C.textTer, fontSize: 13 }}>›</span></div><div style={{ fontSize: 12, color: A.txt3 }}>{it.loc}</div></div>
         </div>
         <TitulAkt it={it} typ="ziadost" style={{ marginTop: SPACE.sm }} titul={<div style={{ ...titleS, fontSize: 14 }}>{it.title}</div>} />
-        <FormatovanyText text={it.desc} style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs, color: A.txt2 }} />
+        <div style={{ marginTop: SPACE.xs }}><RozbalitelnyText text={it.desc} style={{ fontSize: 14.5, lineHeight: 1.6, color: A.txt2 }} /></div>
         <InfoBox>{it.helpers} ľudí sa už zapojilo. Po prijatí sa otvorí chat, dohodnete sa. Po dokončení: hodnotenie + tip + reťaz dobra.</InfoBox>
         <Btn green onClick={gate(() => { celebrate("Ozval si sa!", `Otvorili sme chat s ${it.author}. Dohodnite si detaily.`); setTimeout(home, 1700); })}>✋ Môžem pomôcť</Btn>
         {/* podpora — pomôcť sa dá aj peniazmi (karta / SEPA prevod / peňaženka), nielen časom */}

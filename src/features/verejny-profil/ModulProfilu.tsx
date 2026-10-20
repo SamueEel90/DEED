@@ -16,6 +16,7 @@ import { KartaStavu } from "@/features/zbierka/KartaStavu";
 import { Galeria } from "@/features/zbierka/Vrch";
 import { RychleSumyEur, VlastnaSuma, DaryVKrypte, type OtvorPlatbu, type KanalPlatby } from "@/features/zbierka/Sumy";
 import { PlatobneOkno, useRychlyDar, potvrditTuknutim, type VysledokPlatby } from "@/features/zbierka/Platba";
+import { RozbalitelnyText } from "@/components/formattext";
 import { ZdielatRiadok, PravidelnaRiadok, RetazRiadok, KartaDorovnava, Darcovia } from "@/features/zbierka/Riadky";
 import { ZdielatHarok } from "@/features/zbierka/Zdielat";
 import { PravidelnaHarok } from "@/features/zbierka/PravidelnaHarok";
@@ -49,7 +50,8 @@ export function KartaModulu({ galeria, stitok, nazov, riadok, popis, info }: {
         <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
           <b style={{ fontSize: 20, lineHeight: 1.2 }}>{nazov}</b>
           <span style={{ fontSize: 13, lineHeight: 1.4, color: "var(--ink3)" }}>{riadok}</span>
-          {popis && <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)", marginTop: 4, whiteSpace: "pre-line" }}>{popis}</span>}{/* OPRAVY 155/4 */}
+          {/* OPRAVY 155/4 · 435: celý text s odsekmi, nad 5 riadkov zbalený (Čítať ďalej › / Zbaliť ^) */}
+          {popis && <div style={{ marginTop: 4 }}><RozbalitelnyText text={popis} style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }} /></div>}
         </span>
         {info && <SvetlusikInfo otv={otv} onPrepni={() => setOtv((x) => !x)} />}
       </div>
@@ -86,7 +88,7 @@ export function ModulProfilu({ profil, sektor, poradie, mestoV, onZbal, dorovnan
     <div data-hier={hier ?? String(poradie)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <SpatNaZbierky onClick={onZbal} />{/* bod 149 · Späť hore v module */}
       <KartaModulu galeria={sektor.galeria?.length ? sektor.galeria : [{ typ: "foto", src: sektor.foto }]} stitok={hlavna ? "HLAVNÁ ZBIERKA" : `POSIELAŠ DO · ${typ}`}
-        nazov={sektor.nazov} riadok={hlavna ? meno ?? profil.meno : `${meno ?? profil.meno} · ${typ2}`} popis={sektor.popis}
+        nazov={sektor.nazov} riadok={hlavna ? meno ?? profil.meno : `${meno ?? profil.meno} · ${typ2}`} popis={sektor.popisHtml ?? sektor.popis}
         info={hlavna ? "Hlavná zbierka je na celú činnosť. Peniaze sa použijú tam, kde treba najviac." : infoText} />
       <ZmensenyModul><Modul profil={profil} sektor={sektor} mestoV={mestoV} sDorovnanim={dorovnanie} uvidisOdkaz={uvidisOdkaz} bezDarcov /></ZmensenyModul>
       <ZbalitASpat onClick={onZbal} />

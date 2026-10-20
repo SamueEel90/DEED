@@ -6,7 +6,7 @@ import { NahlasitSheet } from "@/components/nahlasit";
 import { useState, useEffect, useRef, memo } from "react";
 import { SIRKA, C, inp, btn, GRAD, SPACE, RADIUS } from "@/theme";
 import { HostPruh } from "./HostPruh";
-import { Foto, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PlatobnyModul, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, Oslava, useGaleria, useScrollPamat, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackChip, ProgresBox, SwipeBack, obalSiroky, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, SplitQrSheet, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, FormatovanyText, ZoznamDarcov } from "@/shared";
+import { Foto, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PlatobnyModul, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, Oslava, useGaleria, useScrollPamat, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackChip, ProgresBox, SwipeBack, obalSiroky, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, SplitQrSheet, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, FormatovanyText, RozbalitelnyText, ZoznamDarcov } from "@/shared";
 import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { pripravFeed, vzdialenostKm, FEED_CFG, type FeedUser } from "@/lib/feed";
 import { tint, tagChip, jeHrdina, HRDINA_COL, rovnakeOkremFunkcii } from "@/lib/ui";
@@ -831,7 +831,8 @@ export function DomovDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: G
         </div>
         {/* OPRAVY 429: Sledovať pri nadpise (uloží do Obľúbených) */}
         <TitulSoSledovat wide={wide} polozka={oblubenyZGood(it)} style={{ marginTop: SPACE.sm }} titul={<div style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.4 }}>{it.titul}</div>} />
-        <FormatovanyText text={it.popis} style={{ color: C.textSec, fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs }} />
+        {/* OPRAVY 435: dlhý text zbalený na 5 riadkov + Čítať ďalej › / Zbaliť ^ */}
+        <div style={{ marginTop: SPACE.xs }}><RozbalitelnyText text={it.popis} style={{ color: C.textSec, fontSize: 14.5, lineHeight: 1.6 }} /></div>
 
         {maProgres && it.ciel && (
           <div style={{ marginTop: SPACE.xs }}>

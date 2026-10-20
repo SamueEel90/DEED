@@ -143,7 +143,7 @@ export function Galeria({ media, vyska: vyskaP, radius: radiusP, okraj, prekryti
 }
 
 // ---------------- 3 + 4 · Nadpis a text ----------------
-const RIADKY = 3, RIADOK = 21; // 14 px × 1,5
+const RIADKY = 5, RIADOK = 21; // 14 px × 1,5 · OPRAVY 435: dlhý text na 5 riadkov
 
 /** OPRAVY 429: ☆ Sledovať ↔ Sledujete ✓ — ten istý stav ako hviezdička na karte a Domov → Obľúbené (tabuľka oblubene) */
 export function SledovatTlacidlo({ polozka }: { polozka: Oblubeny }) {
@@ -209,12 +209,12 @@ export function NadpisText({ nazov, text, otvoreny: otvorenyZvonka, onOtvoreny, 
             </div>
             {dlhy && !otvoreny && (
               <button type="button" onClick={() => setOtvoreny(true)}
-                style={{ ...odkaz, position: "absolute", right: 0, bottom: 0, height: RIADOK, lineHeight: `${RIADOK}px`, padding: "0 0 0 44px", background: "linear-gradient(90deg, rgba(0,0,0,0), var(--bg) 40px)" }}>… viac</button>
+                style={{ ...odkaz, position: "absolute", right: 0, bottom: 0, height: RIADOK, lineHeight: `${RIADOK}px`, padding: "0 0 0 44px", background: "linear-gradient(90deg, rgba(0,0,0,0), var(--bg) 40px)" }}>Čítať ďalej ›</button>
             )}
           </div>
           {dlhy && otvoreny && (
-            <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <button type="button" onClick={zbal} style={{ ...odkaz, background: "transparent", padding: "2px 0", minHeight: 44 }}>Zbaliť ⌃</button>
+            <div style={{ display: "flex" }}>
+              <button type="button" onClick={zbal} style={{ ...odkaz, background: "transparent", padding: "2px 0", minHeight: 44 }}>Zbaliť ^</button>
             </div>
           )}
         </div>

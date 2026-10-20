@@ -73,13 +73,13 @@ function sHlavnouZUctu(p: TestProfil): TestProfil {
   if (!c?.spustena) return p;
   const galeria = c.media.map((m) => ({ typ: m.typ, src: m.src, popis: m.popis }));
   const foto = c.media.find((m) => m.typ === "foto")?.src;
-  return { ...p, centralna: { ...p.centralna, nazov: nazovHlavnej(c), popis: cistyText(c.popis) || undefined, ...(galeria.length ? { galeria, foto: foto ?? p.centralna.foto } : {}) } };
+  return { ...p, centralna: { ...p.centralna, nazov: nazovHlavnej(c), popis: cistyText(c.popis) || undefined, popisHtml: [c.popis, c.popis2].filter((x) => x && cistyText(x)).join("") || undefined, ...(galeria.length ? { galeria, foto: foto ?? p.centralna.foto } : {}) } };
 }
 
 /** OPRAVY 414 (8): zbierka charity z databázy → zbierka profilu (nič predvolené, nič z testovacej stránky) */
 function zbierkaProfilu(z: SpustenaZbierka, p: TestProfil): TestZbierka {
   const s = sucetDarov(z.id), ciel = cielCislo(z), foto = z.media?.find((m) => m.typ === "foto")?.src ?? "";
-  return { id: z.id, nazov: z.nazov || "Zbierka", popis: cistyText(z.popis ?? ""), mesto: p.mesto, foto, vyzbierane: s.suma, ciel: ciel || undefined, ludia: s.pocet,
+  return { id: z.id, nazov: z.nazov || "Zbierka", popis: cistyText(z.popis ?? ""), popisHtml: [z.popis, z.popis2].filter((x) => x && cistyText(x)).join("") || undefined, mesto: p.mesto, foto, vyzbierane: s.suma, ciel: ciel || undefined, ludia: s.pocet,
     stav: (z.stav ?? "aktivna") !== "aktivna" ? "ukoncena" : z.typ === "dlha" ? "dlhodoba" : "bezi",
     galeria: (z.media ?? []).map((m) => ({ typ: m.typ, src: m.src, popis: m.popis })), zDb: true, prav: !!z.prav, eurc: !!z.eurc };
 }
@@ -112,14 +112,14 @@ function sUdajmiCharity(p: TestProfil, prof: ProfilStranky | null, tier = 0): Te
   const ini = prof?.bezLoga && prof.inicialy?.trim() ? prof.inicialy.trim() : p.iniciala;
   // centrálna len keď ju charita sama založila a spustila (Zbierky → Založiť centrálnu zbierku)
   const c = centralnaZPamate(p.k), foto = c?.media.find((m) => m.typ === "foto")?.src;
-  const centralna = c?.spustena ? { ...p.centralna, popis: cistyText(c.popis) || undefined, foto: foto ?? p.centralna.foto, galeria: c.media.map((m) => ({ typ: m.typ, src: m.src, popis: m.popis })) } : p.centralna;
+  const centralna = c?.spustena ? { ...p.centralna, popis: cistyText(c.popis) || undefined, popisHtml: [c.popis, c.popis2].filter((x) => x && cistyText(x)).join("") || undefined, foto: foto ?? p.centralna.foto, galeria: c.media.map((m) => ({ typ: m.typ, src: m.src, popis: m.popis })) } : p.centralna;
   // OPRAVY 418: skutky a oznamy zo Správy (server; bez neho zo správy na tomto zariadení)
   const sk = (skutkyStrankyZPamate(p.k) ?? skutkyOrg(p.k).filter((x) => !x.stiahnuty)).map((s) => skutokProfilu(s, p));
   const oz = oznamyStranky(p.k).filter((o) => oznamBezi(o)).map((o) => oznamProfilu(o, p));
   // OPRAVY 432: Zadarmo nemá centrálnu zbierku, pravidelnú podporu ani pracovné ponuky (všetko od P1)
   const praca = tier < 1 ? [] : verejneOznamy(`stranka:${p.k}`, "inzerat").map((o) => pracaProfilu(o, p)); // OPRAVY 408
   // OPRAVY 418: O nás · hlavný text z Upraviť profil = veta v hlavičke profilu (všetky 3 vzhľady)
-  return { ...p, veta: cistyText(prof?.onas ?? "").trim() || p.veta, zbierky, skutky: sk, oznamy: oz, praca, iniciala: ini, logo: prof?.logo || undefined, titulka: prof?.cover?.src || p.titulka, centralna, bezCentralnej: tier < 1 || !c?.spustena };
+  return { ...p, veta: cistyText(prof?.onas ?? "").trim() || p.veta, onas2: cistyText(prof?.onas2 ?? "").trim() ? prof!.onas2 : undefined, zbierky, skutky: sk, oznamy: oz, praca, iniciala: ini, logo: prof?.logo || undefined, titulka: prof?.cover?.src || p.titulka, centralna, bezCentralnej: tier < 1 || !c?.spustena };
 }
 
 function VerejnyProfilObsah({ kluc, onBack, profilNahlad }: { kluc: string; onBack: () => void; profilNahlad?: ProfilStranky }) {

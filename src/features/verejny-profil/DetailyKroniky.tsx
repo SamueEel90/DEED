@@ -4,6 +4,7 @@
 import { ZbalitASpat, ZmensenyModul } from "@/features/zbierka/ZmensenyModul";
 import { ModulPlatby } from "./ModulProfilu";
 import { zbierkaAkoSektor } from "./PodporaProfilu";
+import { RozbalitelnyText } from "@/components/formattext";
 import { useState, type CSSProperties } from "react";
 import type { TestProfil, TestZbierka } from "@/lib/testProfily";
 import { eur, jeFarnost } from "@/lib/testProfily";
@@ -76,7 +77,7 @@ export function DetailUkoncenej({ pc, profil, p, onBack }: { pc: boolean; profil
       <Foto src={z.foto} />
       <span style={{ alignSelf: "flex-start", height: 28, padding: "0 12px", borderRadius: 14, background: "var(--btn)", color: "var(--ink2)", fontSize: 11.5, fontWeight: 800, letterSpacing: ".06em", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>ZBIERKA SKONČILA{kedy ? ` · ${kedy.toLocaleUpperCase("sk-SK")}` : ""}</span>
       <b style={{ fontSize: pc ? 30 : 24, lineHeight: 1.15 }}>{z.nazov}</b>
-      {z.popis && <span style={{ fontSize: 15.5, lineHeight: 1.6, color: "var(--ink2)" }}>{z.popis}</span>}
+      {z.popis && <RozbalitelnyText text={z.popisHtml ?? z.popis} style={{ fontSize: 15.5, lineHeight: 1.6, color: "var(--ink2)" }} />}
       {!p.zbierka && <span style={{ fontSize: 15, color: "var(--ink2)", fontVariantNumeric: "tabular-nums" }}>{p.s}</span>}
       {p.zbierka && z.ciel != null && <span style={{ display: "block", height: 8, borderRadius: 4, background: "var(--track)", overflow: "hidden" }}><span style={{ display: "block", width: "100%", height: "100%", background: PRUH, transformOrigin: "0 50%", transform: `scaleX(${Math.min(1, z.vyzbierane / z.ciel)})` }} /></span>}
       {p.zbierka && <span style={{ display: "flex", alignItems: "baseline", gap: 8, fontVariantNumeric: "tabular-nums", flexWrap: "wrap" }}><b style={{ fontSize: 21 }}>{eur(z.vyzbierane)}</b><span style={{ fontSize: 14, color: "var(--ink3)" }}>{z.ciel ? `z ${eur(z.ciel)} · ` : ""}od {z.ludia} darcov</span></span>}
