@@ -5,7 +5,8 @@ import { ZbalitASpat, ZmensenyModul } from "@/features/zbierka/ZmensenyModul";
 import { ModulPlatby } from "./ModulProfilu";
 import { zbierkaAkoSektor } from "./PodporaProfilu";
 import { RozbalitelnyText } from "@/components/formattext";
-import { useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
+import { nastavSkutokDaru, nacitajDarySkutkov } from "@/lib/darZbierky";
 import type { TestProfil, TestZbierka } from "@/lib/testProfily";
 import { eur, jeFarnost } from "@/lib/testProfily";
 import { toast } from "@/shared";
@@ -37,10 +38,19 @@ export function DetailSkutku({ profil, p, onBack }: { pc: boolean; profil: TestP
   const sk = profil.skutky.find((s) => s.id === p.id);
   const [hlasy, setHlasy] = useState<Record<number, string>>({});
   const num = Math.abs([...p.id].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) | 0, 7)) % 100000;
-  const zb = sk?.podpora?.na === "zbierka" ? profil.zbierky.find((z) => z.id === (sk.podpora as { zbierkaId: string }).zbierkaId) : undefined;
+  const pz = sk?.podpora?.na === "zbierka" ? sk.podpora : undefined;
+  // OPRAVY 438 (3): zbierka skutku — naša z profilu, inak (zbierka inej charity) tak, ako sa uložila pri skutku
+  const zb: TestZbierka | undefined = pz ? profil.zbierky.find((z) => z.id === pz.zbierkaId)
+    ?? (pz.nazov ? { id: pz.zbierkaId, nazov: pz.nazov, popis: "", mesto: profil.mesto, foto: "", vyzbierane: 0, ludia: 0, stav: "bezi" } : undefined) : undefined;
+  const cudzia = !!pz && !!zb && !profil.zbierky.some((z) => z.id === pz.zbierkaId);
   const modul = !p.rok || !sk?.podpora ? null
-    : sk.podpora.na === "centralna" ? { nadpis: `PODPORIŤ · ${profil.centralna.nazov.toLocaleUpperCase("sk-SK")}`, sektor: profil.centralna, nazov: `${profil.centralna.nazov} · ${profil.meno}` }
-    : zb ? { nadpis: "PODPORIŤ ZBIERKU · 100 % IDE NA ŇU", sektor: zbierkaAkoSektor(zb), nazov: zb.nazov } : null;
+    : sk.podpora.na === "centralna" ? (profil.bezCentralnej ? null : { nadpis: `PODPORIŤ · ${profil.centralna.nazov.toLocaleUpperCase("sk-SK")}`, sektor: profil.centralna, nazov: `${profil.centralna.nazov} · ${profil.meno}`, kam: profil.centralna.nazov })
+    : zb ? { nadpis: "PODPORIŤ ZBIERKU · 100 % IDE NA ŇU", sektor: zbierkaAkoSektor(zb), nazov: cudzia && pz?.org ? `${zb.nazov} · ${pz.org}` : zb.nazov, kam: cudzia && pz?.org ? `${zb.nazov} · ${pz.org}` : zb.nazov } : null;
+  // dar z tohto modulu ide cez skutok (0140) — kým je detail otvorený
+  const refMod = modul?.sektor.id;
+  useEffect(() => { if (!refMod || !sk) return; nastavSkutokDaru(refMod, sk.id); return () => nastavSkutokDaru(refMod, null); }, [refMod, sk]);
+  const [cez, setCez] = useState<{ eur: number; pocet: number } | null>(null);
+  useEffect(() => { if (!modul || !sk) return; let z = true; void nacitajDarySkutkov([sk.id]).then((m) => { if (z) setCez(m.get(sk.id) ?? null); }); return () => { z = false; }; }, [!!modul, sk?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const it = {
     id: num, num, dom: "zdravie", type: "skutok", emoji: "", verified: true, likes: 0,
     author: profil.meno, ini: profil.iniciala, pfp: "#4B7A35",
@@ -58,6 +68,9 @@ export function DetailSkutku({ profil, p, onBack }: { pc: boolean; profil: TestP
         <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: 12 }}>
           {modul && <>
             <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)", paddingTop: 8 }}>{modul.nadpis}</span>
+            {/* OPRAVY 438 (3): kam idú peniaze a koľko už prišlo cez tento skutok */}
+            <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Peniaze idú na <b style={{ color: "var(--ink)" }}>{modul.kam}</b>{pz?.cislo ? <span style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}> · {pz.cislo}</span> : null}.
+              {cez && cez.eur > 0 ? <> Cez tento skutok prišlo <b style={{ color: "var(--ink)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{eur(cez.eur)}</b> od {cez.pocet} {cez.pocet === 1 ? "darcu" : "darcov"}.</> : null}</span>
             <ZmensenyModul><ModulPlatby profil={profil} sektor={modul.sektor} nazov={modul.nazov} dorovnanie={!jeFarnost(profil)} /></ZmensenyModul>
           </>}
           <ZbalitASpat onClick={onBack} />

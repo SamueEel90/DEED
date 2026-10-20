@@ -95,7 +95,7 @@ export interface TestSkutok {
   /** 5. 10. · komu išla podpora (split), bez splitu sa riadok „Podpora išla" neukáže */
   split?: { komu: string; pct: number }[];
   /** bod 150 / 122 · platobný modul pri skutku: na centrálnu, na zbierku (100 % tam) alebo bez modulu (chýba) */
-  podpora?: { na: "centralna" } | { na: "zbierka"; zbierkaId: string };
+  podpora?: { na: "centralna" } | { na: "zbierka"; zbierkaId: string; /** OPRAVY 438 (3): zbierka uložená pri skutku (aj zbierka inej charity) */ nazov?: string; org?: string; cislo?: string };
   /** dátum v kronike: „29." · „SEP" · 2026 */
   d?: string; m?: string; rok?: number;
   /** KARTA 55 · 1 – 2 vety, čo sa stalo (Čo sme dokázali) */

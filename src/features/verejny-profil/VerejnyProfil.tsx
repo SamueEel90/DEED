@@ -88,7 +88,10 @@ const MES = ["JAN", "FEB", "MAR", "APR", "MÁJ", "JÚN", "JÚL", "AUG", "SEP", "
 function skutokProfilu(s: MojSkutok, p: TestProfil): TestSkutok {
   const d = new Date(s.datum || Date.now());
   return { id: s.id, nazov: s.nazov, popis: cistyText(s.popis), mesto: p.mesto, kedy: `${d.getDate()}. ${d.getMonth() + 1}.`, foto: s.fotky[0] ?? "",
-    dobrovolnici: s.ucastnici?.length || undefined, d: `${d.getDate()}.`, m: MES[d.getMonth()], rok: d.getFullYear() };
+    dobrovolnici: s.ucastnici?.length || undefined, d: `${d.getDate()}.`, m: MES[d.getMonth()], rok: d.getFullYear(),
+    // OPRAVY 438 (3): kam idú peniaze zo skutku (zapečatené pri zverejnení) — platobný modul v detaile skutku
+    podpora: s.peniaze === "centralna" ? { na: "centralna" } : (s.peniaze === "nasa" || s.peniaze === "ina") && s.dar?.[0]
+      ? { na: "zbierka", zbierkaId: s.dar[0].id, nazov: s.dar[0].nazov, org: s.dar[0].org, cislo: s.dar[0].cislo } : undefined };
 }
 /** OPRAVY 408: pracovná ponuka zo Správy → plagát Hľadáme ľudí */
 function pracaProfilu(o: Oznam, p: TestProfil): TestPraca {

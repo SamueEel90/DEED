@@ -32,6 +32,7 @@ function Riadok({ r, prvy, skrytSumy }: { r: DarRiadok; prvy?: boolean; skrytSum
         <b style={{ fontWeight: 600, color: r.firma ? "var(--a-gold)" : r.moj ? C.greenL : C.text }}>{identitaDarcu(r, ja, sektor)}</b>
         <span style={{ color: C.textSec }}>{r.firma ? " dorovnala " : ` daroval${suma ? " " : ""}`}</span>
         {suma && <b style={{ fontWeight: 700, color: r.firma ? "var(--a-gold)" : C.greenL }}>{suma}</b>}
+        {r.cezSkutok && <span style={{ color: C.textSec }}> · cez skutok {r.cezSkutok}</span>}{/* OPRAVY 438 (3) */}
       </span>
       <span style={{ marginLeft: "auto", flex: "none", color: C.textTer, fontSize: 11 }}>{relCas(r.cas)}</span>
     </div>
