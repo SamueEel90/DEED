@@ -57,7 +57,7 @@ import { DarcoviaCharity, SledujuciCharity } from "./DarcoviaCharity";
 import { BrigadyFarnosti } from "./BrigadyFarnosti";
 import { IskryCharity } from "./IskryCharity";
 import { SpravaFarnosti } from "./SpravaFarnosti";
-import { useTestStav, zmenTestStav } from "@/lib/testStav";
+import { useTestStav, zmenTestStav, otvorenaRealnaStranka } from "@/lib/testStav";
 import { PrepinacPodania, TestVolba } from "@/features/verejny-profil/casti";
 import { nacitajPiny, ulozPiny, pinyZPamate, nacitajZbalenie, ulozZbalenie, zbalenieZPamate, type Zbalenie } from "@/lib/spravaPiny";
 import { nastavStitSpravy } from "@/lib/stitAppky";
@@ -348,6 +348,8 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   // OPRAVY 397: testovacia charita sa vždy tvorí od nuly — Správa bez ukážok (prepínač Profil: Vyplnený · Prázdny zmizol)
   // OPRAVY 403: charita nikdy neukazuje vymyslené dáta (ukážky ostávajú len testovacím stránkam Pekáreň a tvorca)
   const bezUkazok = nova || TESTOVACIA; // nova = vždy pri charite (OPRAVY 433)
+  // OPRAVY 445 (1): skutočná stránka — žiadne ukážkové dáta (sektory, čísla, darcovia) nikde v Správe
+  useEffect(() => (najdiTestProfil(strankaId) ? undefined : otvorenaRealnaStranka()), [strankaId]);
   const centralnaZbierka = !bezUkazok ? PH_ZBIERKY.filter((z) => /^Centrálna zbierka/.test(z.t)).map((z) => ({ id: `${strankaId}-centralna`, nazov: z.t, org: nazov, cislo: "" }))[0] ?? null : null;
   // OPRAVY 114: spustené a rozpísaná zbierka stránky (z účtu)
   useZmenyZbierok();

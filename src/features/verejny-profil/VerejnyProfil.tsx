@@ -4,7 +4,7 @@
 // KARTA 43 ZMENA: režim „vsade" zrušený — platobný modul sa otvorí len po ťuku na zbierku/skutok.
 // VerejnyProfilView sa dá vložiť priamo (feed, „Stránka organizácie", adresár),
 // VerejnyProfilHost je celoobrazovková vrstva otváraná zo store (tlačidlo v Správe, QR).
-import { useTestStav, vyprazdni } from "@/lib/testStav";
+import { useTestStav, vyprazdni, otvorenaRealnaStranka } from "@/lib/testStav";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { FarnikPridava, OdFarnikov, fabZapnuty } from "./FarnikPridava";
 import { PrihovorNaStranke } from "./PrihovorNaStranke";
@@ -169,6 +169,8 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad }: { kluc: string; onBa
   // OPRAVY 414: uložený profil a zbierky skutočnej charity
   useZmenyZbierok(); useZmenyDarov(); useZmenySkutkovStranky(); useZmenySkutkov(); useZmenyOznamovCharity(); useZmenyOznamov(); useZmenyUcasti();
   const kCh = profil0?.bezCentralnej ? profil0.k : null;
+  // OPRAVY 445 (1): profil skutočnej charity — žiadni ukážkoví darcovia ani čísla
+  useEffect(() => (kCh ? otvorenaRealnaStranka() : undefined), [kCh]);
   const idOznamov = kCh ? oznamyStranky(kCh).map((o) => o.id).join(",") : "";
   useEffect(() => { if (idOznamov) void nacitajUcasti(idOznamov.split(",")); }, [idOznamov]);
   const [profCh, setProfCh] = useState<ProfilStranky | null>(() => (kCh ? profilZPamate(kCh).ulozeny : null));
