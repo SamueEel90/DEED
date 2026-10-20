@@ -8,9 +8,15 @@
 import { verejneZPamate, zapisVerejne, useVerejneNastavenia } from "./verejneNastavenia";
 import { citajNastavenie, maNastavenie, zapisNastavenie, useZmenyNastaveni } from "./nastaveniaStranky";
 
-export interface UdajeRegistra { nazov: string; forma: string; ico: string; registracia: string; sidlo: string; /** „14. 3. 2012“ */ vznik: string }
+export interface UdajeRegistra { nazov: string; forma: string; ico: string; /** OPRAVY 422 */ dic: string; icdph: string; registracia: string; sidlo: string; /** „14. 3. 2012“ */ vznik: string; /** OPRAVY 422: dobrovoľný údaj, len číslo */ zamestnanci: string }
 export interface Statutar { meno: string; funkcia: string }
-export const PRAZDNY_REGISTER: UdajeRegistra = { nazov: "", forma: "", ico: "", registracia: "", sidlo: "", vznik: "" };
+export const PRAZDNY_REGISTER: UdajeRegistra = { nazov: "", forma: "", ico: "", dic: "", icdph: "", registracia: "", sidlo: "", vznik: "", zamestnanci: "" };
+/** OPRAVY 422: „1 zamestnanec“ · „3 zamestnanci“ · „12 zamestnancov“; prázdne = nič */
+export function zamestnanciText(z: string): string {
+  const n = Number(z.replace(/\D/g, ""));
+  if (!z.trim() || !Number.isFinite(n) || n <= 0) return "";
+  return `${n.toLocaleString("sk-SK")} ${n === 1 ? "zamestnanec" : n < 5 ? "zamestnanci" : "zamestnancov"}`;
+}
 
 export const registra = (stranka: string): UdajeRegistra => ({ ...PRAZDNY_REGISTER, ...((verejneZPamate(stranka)?.["registra"] as Partial<UdajeRegistra> | undefined) ?? {}) });
 export function useRegistra(stranka: string): UdajeRegistra {

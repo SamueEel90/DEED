@@ -57,7 +57,7 @@ export function PiratCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, h
       <div style={{ position: "absolute", left: pc ? 48 : 20, right: pc ? 48 : 20, bottom: pc ? 56 : 24, display: "flex", alignItems: "flex-end", gap: pc ? 28 : 12 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: pc ? 18 : 14, flex: 1, minWidth: 0 }}>
           <span style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
-            <span style={{ width: pc ? 104 : 80, height: pc ? 104 : 80, borderRadius: pc ? 26 : 22, background: profil.logo ? `#fff url('${profil.logo}') center/contain no-repeat` : "#fff", color: "#3F6E2A", fontSize: pc ? 38 : 30, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{profil.logo ? null : profil.iniciala}</span>
+            <span style={{ width: pc ? 104 : 80, height: pc ? 104 : 80, borderRadius: pc ? 26 : 22, background: profil.logo ? `#fff url(${JSON.stringify(profil.logo)}) center/contain no-repeat` : "#fff", color: "#3F6E2A", fontSize: pc ? 38 : 30, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{profil.logo ? null : profil.iniciala}</span>
             {mob && stitEl(86, 104)}
           </span>
           <b style={{ fontSize: pc ? 112 : 60, lineHeight: 0.92, letterSpacing: "-.045em", color: "#fff" }}>{meno}</b>

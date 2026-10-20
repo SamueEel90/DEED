@@ -233,7 +233,7 @@ export function QrKarta({ nazov, slug, cislo, organizacia, toast, odkaz: odkazP,
     </section>);
 }
 
-// ---------------- Štatistiky (zatiaľ podľa programu: Zadarmo základ, vyššie rozmazané, P4 všetko) ----------------
+// ---------------- Štatistiky (zatiaľ podľa programu: Zadarmo základ, vyššie rozmazané, P3 všetko) ----------------
 export interface DataStatistik {
   obdobie: string;
   cez: [string, number, string][];
@@ -244,14 +244,14 @@ export interface DataStatistik {
   od: string;
 }
 const FARBY_CEZ = ["var(--green)", "#C9A24A", "#3D6B8E", "var(--ink3)", "var(--ink3)"];
-/** zatiaľ: P4 odkryje všetko; nižšie programy vidia len Darcovia (čísla) a Dary po dňoch */
-export const STAT_VSETKO_OD = 4;
+/** zatiaľ: P3 odkryje všetko; nižšie programy vidia len Darcovia (čísla) a Dary po dňoch */
+export const STAT_VSETKO_OD = 3; // OPRAVY 413: P4 na MVP nie je
 function Rozmazane({ on, children }: { on: boolean; children: ReactNode }) {
   if (!on) return <>{children}</>;
   return (
     <div style={{ position: "relative" }}>
       <div aria-hidden="true" style={{ filter: "blur(6px)", pointerEvents: "none", userSelect: "none" }}>{children}</div>
-      <span style={{ position: "absolute", left: "50%", top: 40, transform: "translateX(-50%)", height: 32, padding: "0 14px", borderRadius: 16, background: "var(--bg)", border: "1px solid var(--cardBd)", display: "flex", alignItems: "center", fontSize: 13, fontWeight: 800, color: "var(--ink2)", whiteSpace: "nowrap" }}>Celé štatistiky sú v programe P4</span>
+      <span style={{ position: "absolute", left: "50%", top: 40, transform: "translateX(-50%)", height: 32, padding: "0 14px", borderRadius: 16, background: "var(--bg)", border: "1px solid var(--cardBd)", display: "flex", alignItems: "center", fontSize: 13, fontWeight: 800, color: "var(--ink2)", whiteSpace: "nowrap" }}>Celé štatistiky sú v programe P3</span>
     </div>);
 }
 export function Statistiky({ d, tier, mobil, toast }: { d: DataStatistik; tier: number; mobil: boolean; toast: (m: string) => void }) {

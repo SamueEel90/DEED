@@ -383,7 +383,7 @@ export function fakturacneUdaje(): { nazov: string; ico: string; adresa: string;
   const adresa = u.ina ? u.adr.trim() : r.sidlo.trim();
   const email = u.fmail.trim();
   if (!r.nazov.trim() || !r.ico.trim() || !adresa || !/^\S+@\S+\.\S+$/.test(email)) return null;
-  return { nazov: r.nazov.trim(), ico: icoText(r.ico), adresa, dic: u.dic.trim() || undefined, email };
+  return { nazov: r.nazov.trim(), ico: icoText(r.ico), adresa, dic: r.dic.trim() || u.dic.trim() || undefined, email };
 }
 
 /** farnost (OPRAVY 186): názov z registrácie, cirkev (číselník 18), Patrí pod; bez ukážkových údajov charity */
@@ -426,7 +426,8 @@ export function ObrUdaje({ mobil, farnost, strankaId = aktivnaCharita() }: { mob
         </div>
         <div style={{ ...nad, marginTop: 10 }}>FAKTURAČNÉ ÚDAJE</div>
         <div style={{ ...krt, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-          {Pole({ k: "dic", t: <>DIČ <span style={{ fontWeight: 600, color: "var(--ink3)" }}>· ak ho máte</span></>, ph: "napr. 2021234567" })}
+          {/* OPRAVY 422: charita má DIČ v Z registra */}
+          {farnost && Pole({ k: "dic", t: <>DIČ <span style={{ fontWeight: 600, color: "var(--ink3)" }}>· ak ho máte</span></>, ph: "napr. 2021234567" })}
           {!farnost && <RiadokPrep i={0} minH={48} t="Fakturačná adresa = sídlo" s={reg.sidlo || "sídlo zatiaľ nie je vyplnené"} on={!v("ina")} onClick={() => setD((c) => ({ ...c, ina: !v("ina") }))} />}
           {(farnost || v("ina")) && <input value={v("adr")} onChange={set("adr")} placeholder="ulica, PSČ, mesto" aria-label="Fakturačná adresa" style={pole} />}
           {Pole({ k: "fmail", t: "E-mail na faktúry", typ: "email" })}

@@ -16,7 +16,9 @@ import type { StitLevel } from "@/components/stit";
 import { createPortal } from "react-dom";
 import { useLayout } from "@/components/context";
 import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
-import { najdiTestProfil, prazdnaCharita, type TestProfil, type TestZbierka } from "@/lib/testProfily";
+import { najdiTestProfil, prazdnaCharita, type TestProfil, type TestZbierka, type TestSkutok, type TestOznam, type TestPraca } from "@/lib/testProfily";
+import { verejneOznamy, useZmenyOznamov, type Oznam } from "@/lib/oznamy";
+import { pracaZPonuky } from "@/features/rola/PonukyPrace";
 import { centralnaZPamate, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
 import { cistyText } from "@/lib/richtext";
 import { otvorVerejnyProfil, useVerejnyProfilOtvoreny, verejnyProfilKluc, zavriVerejnyProfil, vrstvaProfiluPripoj, nahladZoSpravy, cielOznamu, zrusDoOznamu } from "./otvor";
@@ -41,6 +43,10 @@ import { pribehZbierky, orgPribehu, useZmenyPribehov } from "@/lib/pribehZbierky
 import { PribehZbierky } from "./PribehZbierky";
 import { SektorDarcuKontext, sucetDarov, useZmenyDarov } from "@/lib/darcovia";
 import { jeCharitaUctu } from "@/lib/mojeStranky";
+import { nacitajPrud } from "@/lib/iskry";
+import { nacitajSkutkyStranky, skutkyStrankyZPamate, useZmenySkutkovStranky } from "@/lib/skutkyStranky";
+import { skutkyOrg, useZmenySkutkov, type MojSkutok } from "@/lib/mojeSkutky";
+import { nacitajOznamyStranky, oznamyStranky, bezi as oznamBezi, useZmenyOznamovCharity, type OznamCharity } from "@/lib/oznamyNove";
 import { nacitajZbierkyStranky, zbierkyStrankyZPamate, useZmenyZbierok, cielCislo, type SpustenaZbierka } from "@/lib/novaZbierka";
 import { PomozCharita } from "./PomozCharita";
 
@@ -74,6 +80,25 @@ function zbierkaProfilu(z: SpustenaZbierka, p: TestProfil): TestZbierka {
     stav: (z.stav ?? "aktivna") !== "aktivna" ? "ukoncena" : z.typ === "dlha" ? "dlhodoba" : "bezi",
     galeria: (z.media ?? []).map((m) => ({ typ: m.typ, src: m.src, popis: m.popis })), zDb: true, prav: !!z.prav, eurc: !!z.eurc };
 }
+/** OPRAVY 418: skutok a oznam zo Správy charity → položky verejného profilu (nič vymyslené) */
+const MES = ["JAN", "FEB", "MAR", "APR", "MÁJ", "JÚN", "JÚL", "AUG", "SEP", "OKT", "NOV", "DEC"];
+function skutokProfilu(s: MojSkutok, p: TestProfil): TestSkutok {
+  const d = new Date(s.datum || Date.now());
+  return { id: s.id, nazov: s.nazov, popis: cistyText(s.popis), mesto: p.mesto, kedy: `${d.getDate()}. ${d.getMonth() + 1}.`, foto: s.fotky[0] ?? "",
+    dobrovolnici: s.ucastnici?.length || undefined, d: `${d.getDate()}.`, m: MES[d.getMonth()], rok: d.getFullYear() };
+}
+/** OPRAVY 408: pracovná ponuka zo Správy → plagát Hľadáme ľudí */
+function pracaProfilu(o: Oznam, p: TestProfil): TestPraca {
+  const j = pracaZPonuky(o), d = new Date(o.ponuka?.uzavierka ?? o.vytvorene);
+  return { ...j, druh: "zamestnanec", text: j.opis ?? "", mesto: p.mesto, den: `${d.getDate()}.`, mesiac: MES[d.getMonth()], pod: j.pod ?? "" };
+}
+function oznamProfilu(o: OznamCharity, p: TestProfil): TestOznam {
+  const d = new Date(o.datum ? `${o.datum}T12:00:00` : o.zverejnene);
+  const druh: TestOznam["druh"] = o.druh === "vyzva" ? "vyzva" : o.druh === "verejny" ? "akcia" : "oznam";
+  const stitok = druh === "vyzva" ? "VÝZVA" : druh === "akcia" ? `AKCIA${o.cas ? ` · ${o.cas}` : ""}` : "OZNAM";
+  return { id: o.id, druh, nadpis: o.nadpis, stitok, text: [cistyText(o.text), o.miesto].filter(Boolean).join(" · "), mesto: p.mesto,
+    den: `${d.getDate()}.`, mesiac: MES[d.getMonth()], tlacidlo: o.pozvanie === "zavazne" ? "Prihlásiť sa" : o.pozvanie === "nezavazne" ? "Zúčastním sa" : "", pod: "" };
+}
 /** OPRAVY 414 (3, 8): skutočná charita — logo, titulná fotka a iniciály z Upraviť profil, zbierky len z databázy */
 function sUdajmiCharity(p: TestProfil, prof: ProfilStranky | null): TestProfil {
   if (p.typ !== "charita" || !p.bezCentralnej) return p;
@@ -82,7 +107,12 @@ function sUdajmiCharity(p: TestProfil, prof: ProfilStranky | null): TestProfil {
   // centrálna len keď ju charita sama založila a spustila (Zbierky → Založiť centrálnu zbierku)
   const c = centralnaZPamate(p.k), foto = c?.media.find((m) => m.typ === "foto")?.src;
   const centralna = c?.spustena ? { ...p.centralna, popis: cistyText(c.popis) || undefined, foto: foto ?? p.centralna.foto, galeria: c.media.map((m) => ({ typ: m.typ, src: m.src, popis: m.popis })) } : p.centralna;
-  return { ...p, zbierky, iniciala: ini, logo: prof?.logo || undefined, titulka: prof?.cover?.src || p.titulka, centralna, bezCentralnej: !c?.spustena };
+  // OPRAVY 418: skutky a oznamy zo Správy (server; bez neho zo správy na tomto zariadení)
+  const sk = (skutkyStrankyZPamate(p.k) ?? skutkyOrg(p.k).filter((x) => !x.stiahnuty)).map((s) => skutokProfilu(s, p));
+  const oz = oznamyStranky(p.k).filter((o) => oznamBezi(o)).map((o) => oznamProfilu(o, p));
+  const praca = verejneOznamy(`stranka:${p.k}`, "inzerat").map((o) => pracaProfilu(o, p)); // OPRAVY 408
+  // OPRAVY 418: O nás · hlavný text z Upraviť profil = veta v hlavičke profilu (všetky 3 vzhľady)
+  return { ...p, veta: cistyText(prof?.onas ?? "").trim() || p.veta, zbierky, skutky: sk, oznamy: oz, praca, iniciala: ini, logo: prof?.logo || undefined, titulka: prof?.cover?.src || p.titulka, centralna, bezCentralnej: !c?.spustena };
 }
 
 function VerejnyProfilObsah({ kluc, onBack, profilNahlad }: { kluc: string; onBack: () => void; profilNahlad?: ProfilStranky }) {
@@ -127,10 +157,10 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad }: { kluc: string; onBa
   useZmenyCentralnej();
   useEffect(() => { if (typP === "farnost" && profil0) void nacitajCentralnuZbierku(profil0.k); }, [typP, profil0]);
   // OPRAVY 414: uložený profil a zbierky skutočnej charity
-  useZmenyZbierok(); useZmenyDarov();
+  useZmenyZbierok(); useZmenyDarov(); useZmenySkutkovStranky(); useZmenySkutkov(); useZmenyOznamovCharity(); useZmenyOznamov();
   const kCh = profil0?.bezCentralnej ? profil0.k : null;
   const [profCh, setProfCh] = useState<ProfilStranky | null>(() => (kCh ? profilZPamate(kCh).ulozeny : null));
-  useEffect(() => { if (!kCh) return; let ziva = true; void nacitajProfil(kCh).then((z) => { if (ziva) setProfCh(z.ulozeny); }); void nacitajZbierkyStranky(kCh); void nacitajCentralnuZbierku(kCh); return () => { ziva = false; }; }, [kCh]);
+  useEffect(() => { if (!kCh) return; let ziva = true; void nacitajProfil(kCh).then((z) => { if (ziva) setProfCh(z.ulozeny); }); void nacitajZbierkyStranky(kCh); void nacitajCentralnuZbierku(kCh); void nacitajSkutkyStranky(kCh); void nacitajOznamyStranky(kCh); nacitajPrud(); return () => { ziva = false; }; }, [kCh]);
   if (!profil0) return null;
   const profil1 = sUdajmiCharity(sHlavnouZUctu(ts.prazdny ? vyprazdni(profil0) : profil0), profilNahlad ?? profCh);
   const profil = profil1.typ === "charita" && regV.nazov.trim() ? { ...profil1, meno: regV.nazov.trim() } : profil1;

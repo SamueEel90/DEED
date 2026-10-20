@@ -102,7 +102,8 @@ export function useZmenyOznamov(): number { return useSyncExternalStore(subscrib
 
 // entita → testovacia stránka v DB (lib/mojeStranky UKAZKOVE_STRANKY); iná entita ostáva lokálne
 const STRANKA_ENTITY: Record<string, string> = { b2b: "pekaren", tvorca: "tvorca", pekaren: "pekaren", farnost: "farnost" };
-const strankaEntity = (entita: string): string | null => (supabase ? (entita === "charita" ? aktivnaCharita() : STRANKA_ENTITY[entita]) ?? null : null); // OPRAVY 402
+/** OPRAVY 408: „stranka:<id>“ = presne táto stránka (pracovné ponuky charity — správa aj verejný profil) */
+const strankaEntity = (entita: string): string | null => (supabase ? (entita.startsWith("stranka:") ? entita.slice(8) : entita === "charita" ? aktivnaCharita() : STRANKA_ENTITY[entita]) ?? null : null); // OPRAVY 402
 
 const pamat = new Map<string, Oznam[]>();
 const zDb = new Set<string>();       // entity, ktoré už prišli z DB
@@ -135,7 +136,8 @@ async function nacitajZDb(entita: string): Promise<void> {
     }
     const db = ((data ?? []) as Riadok[]).map((r) => ({ ...r.data, id: r.id, entita, zaujemcovia: (zaujem.get(r.id) ?? []).sort((a, b) => a.kedy - b.kedy) }));
     const ids = new Set(db.map((o) => o.id));
-    const lenLokal = lokalne(entita).filter((o) => !ids.has(o.id));
+    // OPRAVY 408: „stranka:<id>“ číta aj návštevník — DB je jediný zdroj, nič z tohto prehliadača sa nedopisuje
+    const lenLokal = entita.startsWith("stranka:") ? [] : lokalne(entita).filter((o) => !ids.has(o.id));
     const v = [...lenLokal, ...db];
     pamat.set(entita, v); zDb.add(entita);
     ulozLokalne(entita, v); zmena();
@@ -145,13 +147,13 @@ async function nacitajZDb(entita: string): Promise<void> {
 
 const bezZaujemcov = ({ zaujemcovia: _z, ...o }: Oznam) => o;
 /** zapíše rozdiel (nové / zmenené / zmazané) — záujemcovia idú zvlášť (pridajZaujemcu) */
-async function zapisDoDb(entita: string, predtym: Oznam[], teraz: Oznam[]): Promise<void> {
+async function zapisDoDb(entita: string, predtym: Oznam[], teraz: Oznam[], tichy = false): Promise<boolean> {
   const stranka = strankaEntity(entita);
-  if (!stranka) return;
+  if (!stranka) return true;
   const stare = new Map(predtym.map((o) => [o.id, JSON.stringify(bezZaujemcov(o))]));
   const zmenene = teraz.filter((o) => stare.get(o.id) !== JSON.stringify(bezZaujemcov(o)));
   const prec = predtym.filter((o) => !teraz.some((x) => x.id === o.id)).map((o) => o.id);
-  if (!zmenene.length && !prec.length) return;
+  if (!zmenene.length && !prec.length) return true;
   try {
     await pripojTestovaciuStranku(stranka); // testovacia stránka: tester = správca
     if (zmenene.length) {
@@ -166,8 +168,10 @@ async function zapisDoDb(entita: string, predtym: Oznam[], teraz: Oznam[]): Prom
       const { error } = await supabase!.from("oznam_subjektu").delete().in("id", prec);
       if (error) throw error;
     }
+    return true;
   } catch {
-    toast("Oznam sa nepodarilo uložiť — vidíte ho len na tomto zariadení.");
+    if (!tichy) toast("Oznam sa nepodarilo uložiť — vidíte ho len na tomto zariadení.");
+    return false;
   }
 }
 
@@ -177,6 +181,14 @@ function uloz(entita: string, v: Oznam[]) {
   ulozLokalne(entita, v);
   zmena();
   void zapisDoDb(entita, predtym, v);
+}
+/** OPRAVY 408: zmena s potvrdením servera — true = uložené (bez servera lokálne), false = server odmietol, zmena sa vráti */
+export async function zmenOznamy(entita: string, f: (v: Oznam[]) => Oznam[]): Promise<boolean> {
+  const predtym = nacitajOznamy(entita), v = f(predtym);
+  pamat.set(entita, v); ulozLokalne(entita, v); zmena();
+  const ok = await zapisDoDb(entita, predtym, v, true);
+  if (!ok) { pamat.set(entita, predtym); ulozLokalne(entita, predtym); zmena(); }
+  return ok;
 }
 
 const DEN = 86400000;

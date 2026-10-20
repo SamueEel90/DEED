@@ -136,10 +136,11 @@ const prazdny = (zadarmo: boolean, start?: DruhOznamu): Form => { const p = pred
 const prazdny0 = (zadarmo: boolean, start?: DruhOznamu): Form => ({ druh: start ?? (zadarmo ? null : "oznam"), forma: "text", nadpis: "", text: "", media: [], datum: "", cas: "", miesto: "", pozvanie: "bez", limit: "", suhlas: false, potvrd: false, zbierka: "" });
 
 // OPRAVY 166: oznam nie je zbierka — „Pri akcii zbierame na" je preč, oznam aj udalosť sú bez zbierky
-export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mobil, tablet, toast, onProfil, start }: {
+export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mobil, tablet, toast, onProfil, start, upravitId }: {
   strankaId: string; tier: number; nazov: string; inicialy: string; mesto: string; logo?: string | null; mobil: boolean; tablet: boolean; toast: (m: string) => void; onProfil?: () => void;
   /** KARTA 42: druh predvolený pri otvorení (Zadarmo z hárku Pridať → rovno výzva na súrnu pomoc) */
   start?: DruhOznamu;
+  /** OPRAVY 407: Ľudia → Akcie a podujatia → Upraviť = ten istý formulár s touto akciou */ upravitId?: string;
 }) {
   useZmenyOznamovCharity();
   useEffect(() => { void nacitajOznamyStranky(strankaId); }, [strankaId]);
@@ -233,6 +234,11 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
     window.setTimeout(() => hore.current?.scrollIntoView({ block: "start" }), 30);
   };
 
+  // OPRAVY 407: otvorené z Akcií a podujatí na úpravu — formulár sa naplní, keď sú oznamy načítané
+  const upravene = useRef(false);
+  const naUpravu = upravitId ? oznamyStranky(strankaId).find((o) => o.id === upravitId) : undefined;
+  useEffect(() => { if (naUpravu && !upravene.current) { upravene.current = true; upravit(naUpravu); } }, [naUpravu]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ---- výrez fotky galérie ----
   const vyrezM = vyrezId != null ? f.media.find((m) => m.id === vyrezId) : null;
   if (vyrezM) return (
@@ -325,8 +331,9 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
       </div>}
       {druh === "vyzva" && <>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "14px 16px", borderRadius: 14, background: C.rSoft, border: `1px solid ${C.rBd}` }}>
-          <b style={{ fontSize: 15, color: "var(--ink)" }}>Výzva na súrnu pomoc</b>
-          <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>Len keď ide o náhlu situáciu: povodeň, požiar, hľadá sa krv, nezvestný človek, núdza po nehode. Na nástenke bude do konca pomoci, najviac 10 dní.</span>
+          {/* OPRAVY 419 (1): ružové pozadie je vždy svetlé → tmavé písmo aj v tmavom režime */}
+          <b style={{ fontSize: 15, color: "#2A1A14" }}>Výzva na súrnu pomoc</b>
+          <span style={{ fontSize: 14, lineHeight: 1.5, color: "#4A332A" }}>Len keď ide o náhlu situáciu: povodeň, požiar, hľadá sa krv, nezvestný človek, núdza po nehode. Na nástenke bude do konca pomoci, najviac 10 dní.</span>
           <span style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.5, color: C.red }}>Kto výzvu zneužije, napríklad na reklamu alebo bežnú zbierku, stratí možnosť posielať výzvy.</span>
         </div>
         <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={lbl}>Pomoc treba do</span>
@@ -380,8 +387,9 @@ function Hotovo({ o, onUpravit, onZrusit, onNovy }: { o: OznamCharity; onUpravit
 }
 
 // ---------- Spravovať oznamy ----------
-function Spravovat({ strankaId, ph, dva, onUpravit, toast }: { strankaId: string; ph: boolean; dva: (l: ReactNode, p: ReactNode) => ReactNode; onUpravit: (o: OznamCharity) => void; toast: (m: string) => void }) {
-  const zoznam = oznamyStranky(strankaId);
+function Spravovat({ strankaId, ph, dva, onUpravit, toast, len }: { strankaId: string; ph: boolean; dva: (l: ReactNode, p: ReactNode) => ReactNode; onUpravit: (o: OznamCharity) => void; toast: (m: string) => void;
+  /** OPRAVY 407: len akcie (druh „verejny“) — Ľudia → Akcie a podujatia */ len?: DruhOznamu }) {
+  const zoznam = oznamyStranky(strankaId).filter((o) => !len || o.druh === len);
   const n = nastaveniaOznamov(strankaId);
   const [ludiId, setLudiId] = useState<string | null>(null);
   const [zrId, setZrId] = useState<string | null>(null);
@@ -392,7 +400,7 @@ function Spravovat({ strankaId, ph, dva, onUpravit, toast }: { strankaId: string
     : `Profil · ${vLehote(o) ? `sledujúcim pôjde o ${Math.max(1, Math.ceil((Date.parse(o.zverejnene) + OZNAMY_CFG.oneskorenieMin * 60000 - Date.now()) / 60000))} min` : "poslané sledujúcim"}`;
   const lavy = (<>
     <span style={{ fontSize: 14, color: "var(--ink3)" }}>Verejné oznamy naraz: <b style={{ color: "var(--ink)" }}>{verejnych} z {OZNAMY_CFG.verejneNaraz}</b> · ďalší nad limit za {OZNAMY_CFG.cenaNadLimit} €</span>
-    {!zoznam.length && <section style={{ ...panel, alignItems: "center", textAlign: "center" }}><b style={{ fontSize: 17 }}>Zatiaľ žiadny oznam</b></section>}
+    {!zoznam.length && <section style={{ ...panel, alignItems: "center", textAlign: "center" }}><b style={{ fontSize: 17 }}>{len === "verejny" ? "Zatiaľ žiadna akcia" : "Zatiaľ žiadny oznam"}</b></section>}
     {zoznam.map((o) => {
       const [stT, stBg, stBd, stC] = stitok(o);
       const akcia = o.druh !== "oznam", aktivny = bezi(o) && zrId !== o.id;
@@ -436,4 +444,24 @@ function Spravovat({ strankaId, ph, dva, onUpravit, toast }: { strankaId: string
     {prepinac(n.spravaPriZmene, "Správa pri zmene dátumu alebo miesta", "prihláseným, automaticky", () => ulozNastaveniaOznamov(strankaId, { ...n, spravaPriZmene: !n.spravaPriZmene }))}
   </section>);
   return <>{dva(lavy, pravy)}</>;
+}
+
+// ============================================================
+// OPRAVY 407 · Ľudia → Akcie a podujatia (od P2) = akcie z Oznamov (jeden zdroj, nič dvakrát):
+// zoznam s prihlásenými a limitom, Upraviť a „+ Pridať akciu“ otvoria ten istý formulár Akcie v Oznamoch.
+// ============================================================
+export function AkcieCharity({ strankaId, mobil, tablet, toast, onPridat, onUpravit }: {
+  strankaId: string; mobil: boolean; tablet: boolean; toast: (m: string) => void; onPridat: () => void; onUpravit: (id: string) => void;
+}) {
+  useZmenyOznamovCharity();
+  useEffect(() => { void nacitajOznamyStranky(strankaId); }, [strankaId]);
+  const ph = mobil && !tablet;
+  const dva = (l: ReactNode, p: ReactNode) => ph
+    ? <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>{l}{p}</div>
+    : <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.45fr) minmax(300px,1fr)", gap: 20, alignItems: "start" }}><div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>{l}</div><div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>{p}</div></div>;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <button type="button" onClick={onPridat} style={{ alignSelf: "flex-start", minHeight: 50, padding: "0 20px", border: "none", borderRadius: 14, background: "#4B7A35", color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800 }}>+ Pridať akciu</button>
+      <Spravovat strankaId={strankaId} ph={ph} dva={dva} onUpravit={(o) => onUpravit(o.id)} toast={toast} len="verejny" />
+    </div>);
 }
