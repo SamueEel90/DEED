@@ -346,6 +346,9 @@ export interface OrgAdresar {
   nazov: string;
   /** sídlo z registra (verejné nastavenia), ak je vyplnené */
   sidlo: string;
+  /** OPRAVY 458: sektory z registrácie (tabuľka segmenty) — delenie adresára */
+  sektory?: string[];
+  logo?: string; ini?: string; mesto?: string; stit?: string;
 }
 
 /** Položka adresára charít & OZ ako tuple: [skratka, názov, popis, level, ponuky]. */

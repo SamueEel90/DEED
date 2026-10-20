@@ -91,13 +91,21 @@ export const charitaSupabase = {
 
   async adresar(): Promise<OrgAdresar[]> {
     if (!supabase) return [];
-    const { data, error } = await supabase.from("stranka").select("id, nazov").eq("typ", "charita").eq("testovacia", false).order("nazov").limit(500);
+    const { data, error } = await supabase.from("stranka").select("id, nazov, ucet_id").eq("typ", "charita").eq("testovacia", false).order("nazov").limit(500);
     if (error) throw error;
     const ids = (data ?? []).map((s: any) => s.id as string);
-    const ver = ids.length ? await supabase.from("nastavenia_stranky_verejne").select("stranka, verejne").in("stranka", ids) : { data: [], error: null };
+    const ucty = [...new Set((data ?? []).map((s: any) => s.ucet_id as string).filter(Boolean))];
+    const [ver, seg, tv] = await Promise.all([
+      ids.length ? supabase.from("nastavenia_stranky_verejne").select("stranka, verejne").in("stranka", ids) : Promise.resolve({ data: [], error: null }),
+      // OPRAVY 458: sektory z registrácie (verejne čitateľné) — delenie adresára ako pred 403
+      ucty.length ? supabase.from("segmenty").select("org_ucet_id, sektor").in("org_ucet_id", ucty) : Promise.resolve({ data: [], error: null }),
+      tvorcoviaStranok(ids),
+    ]);
     if (ver.error) throw ver.error;
     const reg = new Map<string, { nazov?: string; sidlo?: string }>((ver.data ?? []).map((v: any) => [v.stranka as string, v.verejne?.registra ?? {}] as const));
-    return (data ?? []).map((s: any) => ({ id: s.id, nazov: reg.get(s.id)?.nazov || s.nazov, sidlo: reg.get(s.id)?.sidlo ?? "" }));
+    const sek = new Map<string, string[]>();
+    for (const r of (seg.error ? [] : seg.data ?? []) as { org_ucet_id: string; sektor: string }[]) sek.set(r.org_ucet_id, [...(sek.get(r.org_ucet_id) ?? []), r.sektor]);
+    return (data ?? []).map((s: any) => { const t = tv.get(s.id); return { id: s.id, nazov: reg.get(s.id)?.nazov || s.nazov, sidlo: reg.get(s.id)?.sidlo ?? "", sektory: sek.get(s.ucet_id) ?? [], logo: t?.logo, ini: t?.ini, mesto: t?.mesto, stit: t?.stit }; });
   },
 };
 
