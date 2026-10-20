@@ -691,7 +691,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       {org ? <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 6 }}><span style={{ fontSize: 21, fontWeight: 800 }}>Fotky a video</span><span style={{ fontSize: 14, color: "var(--ink3)" }}>Skutočné fotky človeka alebo miesta, komu pomáhate. Tvár a hlas presvedčia viac než text.</span></div>
         {/* OPRAVY 439 (4): ten istý GaleriaEditor ako všade (popis fotky, výrez, poradie potiahnutím, hlavná prvá) */}
-        <GaleriaEditor media={mediaG} onMedia={zmenGal} ph={!wide} onVyrez={setVyrezId} nadpis="Fotky a video skutku" dovetok="" max={ORG_FOTIEK} />
+        <GaleriaEditor media={mediaG} onMedia={zmenGal} ph={!wide} onVyrez={setVyrezId} nadpis="Fotky a video skutku" dovetok="" max={ORG_FOTIEK} bezVerejnych />
         <div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}><b style={{ color: "var(--ink)" }}>Fotka nie je povinná.</b> Niekedy je lepšie nefotiť, napríklad človeka v ťažkej chvíli. Ak žiadnu nepridáte, pri skutku sa ukáže vaše logo.</div>
         {maMedia && <>
           <Zaskrt on={su} onClick={() => setSu(!su)} zarovnaj="flex-start">{SUHLAS_FOTKY}</Zaskrt>
@@ -707,7 +707,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       </div> : <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <div style={P.lbl}>DÔKAZY</div>
         {/* OPRAVY 441: jeden komponent na nahrávanie v celej appke (bez dlaždíc PRED / PO — pred a po napíšete do popisu fotky) */}
-        <GaleriaEditor media={mediaG} onMedia={zmenGal} ph={!wide} onVyrez={setVyrezId} nadpis="Fotky a video" dovetok="" popisNapoveda="Napríklad: Pred, Po" max={7} />
+        <GaleriaEditor media={mediaG} onMedia={zmenGal} ph={!wide} onVyrez={setVyrezId} nadpis="Fotky a video" dovetok="" popisNapoveda="Napríklad: Pred, Po" max={7} bezVerejnych />
         <div style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 12px", borderRadius: 13, background: "var(--bSoft)", border: "1px solid var(--bBd)", fontSize: 13, lineHeight: 1.5, color: "var(--ink2)" }}>
           <span style={{ color: "var(--blue)", display: "flex", flex: "none", marginTop: 1 }}><Ik d={IK.poloha} /></span><span>Foť a natáčaj <b style={{ color: "var(--ink)" }}>so zapnutou polohou</b>. AI tak overí, že fotky sú z miesta skutku, a skutok má väčšiu šancu na feed.</span></div>
         {maMedia && <>
