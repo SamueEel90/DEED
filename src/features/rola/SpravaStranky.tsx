@@ -1350,10 +1350,12 @@ let poslednyRiadok: string | null = null; // „‹ Zbierky" vráti na to isté 
 type StavZb = [string, string];
 const BEZI_ZB: StavZb = ["BEŽÍ", "#4B7A35"];
 function stavZbierky(z: ZbRiadok, id: string): StavZb {
-  if (!z.konc) return BEZI_ZB;
   const st = nacitajStav(id);
+  // OPRAVY 456 (5): štítok „Doklady čakajú na overenie“ (aj pri bežiacej zbierke)
+  const cakaju = !!st && st.doklady.some((d) => (d.odoslane ?? (st.odoslaneNaOverenie && d.datum <= st.odoslaneNaOverenie)) && !d.overene && !d.vratene && !d.zamietnute);
+  if (cakaju) return ["DOKLADY ČAKAJÚ NA OVERENIE", "#8A6A1C"];
+  if (!z.konc) return BEZI_ZB;
   if (z.overene || (st && st.doklady.length > 0 && st.doklady.every((d) => d.overene))) return ["OVERENÉ DEED+", "#2F5E3A"];
-  if (st?.odoslaneNaOverenie) return ["ČAKÁ NA OVERENIE", "#8A6A1C"];
   const kon = Date.parse(st?.ukoncena ?? z.skoncila ?? new Date().toISOString());
   const lehota = Date.parse(pridajDni(new Date(kon).toISOString(), SPRAVA_ZBIERKY_CFG.lehoty[st?.lehota ?? z.lehota ?? "30"]));
   if (Date.now() > lehota) return ["PO LEHOTE", "var(--red)"];

@@ -4,6 +4,7 @@
 // ukončená → dokladovanie podľa pásma (povinné minimum + navyše = karma)
 // Pravidlá a čísla: lib/zbierkaSprava.ts (SPRAVA_ZBIERKY_CFG, PASMA_DOKLADOV).
 // ============================================================
+import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { SvetlusikKarta } from "@/components/SvetlusikInfo";
 import { odkazQrZbierky } from "@/features/verejny-profil/otvor";
 import { Emo, IkonaOko } from "@/components/icons";
@@ -668,7 +669,7 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
     </section>}
     <Taby akt={tab} onTab={setTab} skryte={bezDokladov ? [1] : []} pribeh />
     {tab === 0 && stlpce(vlavo, vpravo)}
-    {tab === 1 && !bezDokladov && <DokladyCharity zbierkaId={z.id} s={s} zmen={zmenDoklady} vyzbierane={vyzbierane} teraz={teraz} mobil={mobil} toast={toast} />}
+    {tab === 1 && !bezDokladov && <DokladyCharity zbierkaId={z.id} s={s} zmen={zmenDoklady} vyzbierane={vyzbierane} teraz={teraz} mobil={mobil} toast={toast} onHotovo={() => setTab(0)} />}
     {tab === 2 && <Statistiky d={stat} tier={tier} mobil={mobil} toast={toast} />}
     {tab === 3 && ukoncenie}
     {tab === 4 && <PribehEditor z={z} mobil={mobil} toast={toast} />}
@@ -791,8 +792,9 @@ function ZmenaUcelu({ ucel, zmena, onZiadost }: { ucel?: string; zmena?: StavZbi
 
 // ---- Doklady (2 stĺpce: vľavo obsah, vpravo stav) ----
 /** KARTA 39 · bod 3: `nepovinne` = centrálna zbierka — dokladovanie dobrovoľné, bez povinného minima a lehoty */
-export function DokladyCharity({ s, zmen, vyzbierane, teraz, mobil, toast, nepovinne }: {
+export function DokladyCharity({ s, zmen, vyzbierane, teraz, mobil, toast, nepovinne, onHotovo }: {
   zbierkaId: string; s: StavZbierky; zmen: (p: Partial<StavZbierky>) => void; vyzbierane: number; teraz: number; mobil: boolean; toast: (m: string) => void; nepovinne?: boolean;
+  /** OPRAVY 456 (5): „Hotovo · späť na zbierku“ */ onHotovo?: () => void;
 }) {
   const pct = percentoDolozenia(s, vyzbierane);
   // 5. 10. · jeden textový editor (TextovePolia) a jedna galéria (GaleriaEditor) ako všade, bez PRED / PO
@@ -816,7 +818,17 @@ export function DokladyCharity({ s, zmen, vyzbierane, teraz, mobil, toast, nepov
   const [nazov, setNazov] = useState("");
   const [dodavatel, setDodavatel] = useState("");
   const [suma, setSuma] = useState("");
-  const [sken, setSken] = useState<string | undefined>();
+  const [sken, setSken] = useState<{ strany: string[]; subor: string } | undefined>();
+  const [nahrava, setNahrava] = useState(false);
+  const [nadZonou, setNadZonou] = useState(false);
+  // OPRAVY 456 (2): viac strán naraz (PDF, JPG, PNG, HEIC); pretiahnutý súbor sa nahrá, neotvorí v prehliadači
+  const nahrajSubory = async (l: File[]) => {
+    if (!l.length) return;
+    setNahrava(true); setChyba("");
+    try { const strany: string[] = []; for (const f of l.slice(0, 10)) strany.push(await nacitajDoklad(f)); setSken({ strany, subor: l.length > 1 ? `${l[0].name} a ďalšie (${l.length})` : l[0].name }); }
+    catch (e) { setChyba((e as Error).message || "Súbor sa nepodarilo načítať. Skúste PDF alebo JPG."); }
+    setNahrava(false);
+  };
   const [zdov, setZdov] = useState("");
   const { faza, dni } = fazaDokladovania(s, vyzbierane, Math.max(teraz, Date.now()));
   const ukoncena = s.stav === "ukoncena";
@@ -826,76 +838,112 @@ export function DokladyCharity({ s, zmen, vyzbierane, teraz, mobil, toast, nepov
     // KARTA 48: chyby slovom priamo vo formulári, príloha (foto alebo PDF) je povinná
     if (!nazov.trim()) { setChyba("Napíšte, čo sa kúpilo."); return; }
     if (!sum || sum <= 0) { setChyba("Zadajte sumu v eurách."); return; }
-    if (!sken) { setChyba("Priložte fotku alebo PDF dokladu. Bez neho sa položka nepočíta."); return; }
-    zmen({ doklady: [...s.doklady, { id: `d${Date.now()}`, druh, nazov: nazov.trim(), dodavatel: dodavatel.trim(), suma: sum, datum: new Date().toISOString(), foto: sken }] });
+    if (!sken) { setChyba("Priložte doklad (PDF alebo fotku). Bez neho sa položka nepočíta."); return; }
+    zmen({ doklady: [...s.doklady, { id: `d${Date.now()}`, druh, nazov: nazov.trim(), dodavatel: dodavatel.trim(), suma: sum, datum: new Date().toISOString(), foto: sken.strany[0], ...(sken.strany.length > 1 ? { strany: sken.strany.slice(1) } : {}), subor: sken.subor }] });
     setNazov(""); setDodavatel(""); setSuma(""); setSken(undefined); setChyba(""); setForm(false);
   };
   const priloz = async (id: string, files: FileList | null) => {
     const f = files?.[0]; if (!f) return;
     try { const u = await nacitajDoklad(f); zmen({ doklady: s.doklady.map((d) => (d.id === id ? { ...d, foto: u } : d)) }); } catch (e) { toast((e as Error).message); }
   };
-  // KARTA 48: doklady sa nezverejňujú — overuje ich DEED+ (do 2 pracovných dní), na profile je len „Overené DEED+".
+  // KARTA 48: doklady sa nezverejňujú — overuje ich DEED+ (do 48 hodín), na profile je len „Overené DEED+".
   // Druhú a poslednú správu darcom pošle server, keď DEED+ doklady overí.
+  // OPRAVY 456 (5): odoslané sa pamätá pri každej položke (staré odoslanie celé naraz platí pre položky pridané dovtedy)
+  const odoslanaPol = (d: PolozkaDokladu) => d.odoslane ?? (s.odoslaneNaOverenie && d.datum <= s.odoslaneNaOverenie ? s.odoslaneNaOverenie : undefined);
+  const nove = s.doklady.filter((d) => !!d.foto && (!odoslanaPol(d) || !!d.vratene));
   const odoslat = () => {
-    if (!mozeOdoslat) { toast("Najprv pridajte aspoň jednu položku s dokladom."); return; }
-    zmen({ odoslaneNaOverenie: new Date().toISOString(), zverejnene: s.zverejnene ?? new Date().toISOString() });
-    toast("Odoslané na overenie. DEED+ doklady skontroluje do 2 pracovných dní.");
+    if (!nove.length) return;
+    const kedy = new Date().toISOString();
+    zmen({ odoslaneNaOverenie: kedy, zverejnene: s.zverejnene ?? kedy, doklady: s.doklady.map((d) => (nove.some((x) => x.id === d.id) ? { ...d, odoslane: kedy, vratene: undefined } : d)) });
   };
-  const mozeOdoslat = s.doklady.some((d) => !!d.foto); // na overenie ide aj časť dokladov, povinné minimum stráži server pri uzávierke
+  const sumaVsetkych = s.doklady.reduce((a, d) => a + d.suma, 0);
+  const cakaju = s.doklady.some((d) => odoslanaPol(d) && !d.overene && !d.vratene && !d.zamietnute);
+  const stavPol = (d: PolozkaDokladu): [string, string, string] => d.overene ? ["Overené ✓", "var(--gSoft)", "var(--gInk)"] : d.zamietnute ? ["Zamietnuté", "#F3DAD3", "#8E2F1E"]
+    : d.vratene ? [`Vrátené · ${d.vratene}`, "#F6E7C9", "#7A5212"] : odoslanaPol(d) ? ["Čaká na overenie", "var(--btn)", "var(--ink2)"] : ["Neodoslané", "var(--btn)", "var(--ink3)"];
   const mesiac = new Date().toISOString().slice(0, 7);
   const tentoMes = s.doklady.filter((d) => d.datum.slice(0, 7) === mesiac);
-  const vlavo = (<div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+  const zona = (
+    <div onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; if (!nadZonou) setNadZonou(true); }} onDragLeave={() => setNadZonou(false)}
+      onDrop={(e) => { e.preventDefault(); setNadZonou(false); void nahrajSubory(Array.from(e.dataTransfer.files ?? [])); }}
+      style={{ borderRadius: 14, border: `2px dashed ${nadZonou ? "var(--green)" : "var(--gBd)"}`, background: nadZonou ? "var(--gSoft)" : "transparent", padding: 12 }}>
+      {sken ? <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {jePdf(sken.strany[0])
+            ? <object data={sken.strany[0]} type="application/pdf" aria-label="Náhľad prvej strany" style={{ width: 64, height: 84, flex: "none", borderRadius: 8, background: "#fff", pointerEvents: "none" }}><span style={{ display: "flex", width: 64, height: 84, alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "#7A3A2C" }}>PDF</span></object>
+            : <img src={sken.strany[0]} alt="Náhľad prvej strany" style={{ width: 64, height: 84, flex: "none", borderRadius: 8, objectFit: "cover", background: "#fff" }} />}
+          <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+            <b style={{ fontSize: 14, overflowWrap: "anywhere" }}>{sken.subor}</b>
+            <span style={{ fontSize: 13, color: "var(--ink3)" }}>{sken.strany.length} {sken.strany.length === 1 ? "strana" : sken.strany.length < 5 ? "strany" : "strán"}</span>
+          </span>
+          <label style={{ ...tlO, display: "inline-flex", alignItems: "center", flex: "none" }}>Zmeniť
+            <input type="file" accept="application/pdf,.pdf,image/jpeg,image/png,image/heic,image/heif,.heic,.heif" multiple hidden onChange={(e) => { const l = Array.from(e.target.files ?? []); e.target.value = ""; void nahrajSubory(l); }} /></label>
+        </div>
+        : <label style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, minHeight: 92, justifyContent: "center", cursor: "pointer", textAlign: "center" }}>
+          <b style={{ fontSize: 15, color: "var(--green)" }}>{nahrava ? "Nahráva sa…" : "Pretiahnite sem doklad alebo ťuknite"}</b>
+          <span style={{ fontSize: 13, color: "var(--ink3)" }}>PDF, JPG, PNG alebo HEIC · aj viac strán naraz</span>
+          <input type="file" accept="application/pdf,.pdf,image/jpeg,image/png,image/heic,image/heif,.heic,.heif" multiple hidden onChange={(e) => { const l = Array.from(e.target.files ?? []); e.target.value = ""; void nahrajSubory(l); }} />
+        </label>}
+    </div>);
+  const doklady = (
     <section style={kartaS}>
-      <span style={nadpisS}>Na čo išli peniaze</span>
-      <TextovePolia popis={text} popis2={text2} onPopis={setText} onPopis2={setText2} ph={mobil}
-        popisHlavneho="Toto darcovia uvidia hneď. Najviac 12 riadkov." />
-    </section>
-    <GaleriaEditor media={media} onMedia={naMedia} ph={mobil} nadpis={nepovinne ? "Fotky a video k dokladom" : "Fotky a video, ako ste pomohli"} popisNapoveda={nepovinne ? "Popis (nepovinné)" : "Popis (nepovinné), napríklad Po oprave"}
-      dovetok="" />
-    <section style={kartaS}>
-      <span style={nadpisS}>Rozpis a doklady</span>
-      {s.doklady.map((d, i) => (
+      <span style={nadpisS}>Doklady na kontrolu</span>
+      <span style={textS}>Súkromné, vidí ich len DEED+.</span>
+      <SvetlusikKarta><span style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <b>Doklad musí byť čitateľný:</b><span>celá strana, ostrý, nie rozmazaný ani vyblednutý, bez odlesku. Najlepšie PDF z účtovníctva alebo sken.</span>
+        <span>· Nečitateľný doklad nemusí byť uznaný.</span><span>· Doklady posúdime do 48 hodín.</span>
+        <span>· Pošlite všetko, aj citlivé údaje (mená, rodné čísla, lekárske správy). Doklady nikde nezverejníme, slúžia len na overenie.</span>
+      </span></SvetlusikKarta>
+      <SvetlusikKarta chyba><span><b>Falošný alebo upravený doklad = podvod.</b> Pri pokuse alebo dokázanom podvode charita stratí štít a hodnotenie, zbierky sa zastavia a stránka môže byť pozastavená dočasne alebo natrvalo.</span></SvetlusikKarta>
+      {s.doklady.map((d, i) => { const [st, bg, c] = stavPol(d); return (
         <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
           {d.foto && d.foto !== OVERENY_SKEN && !jePdf(d.foto)
             ? <img src={d.foto} alt="" style={{ width: 40, height: 40, flex: "none", borderRadius: 10, objectFit: "cover" }} />
             : <button type="button" onClick={jePdf(d.foto) ? () => void otvorDoklad(d.foto!) : undefined} aria-label={jePdf(d.foto) ? "Otvoriť doklad" : "Doklad"} style={{ width: 40, height: 40, flex: "none", border: "none", borderRadius: 10, background: "var(--btn)", color: "var(--ink2)", display: "flex", alignItems: "center", justifyContent: "center", cursor: jePdf(d.foto) ? "pointer" : "default" }}><IkS d={IKS.dok} s={18} /></button>}
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><b style={{ fontSize: 14.5 }}>{d.nazov}</b>
-            <span style={{ fontSize: 13, color: "var(--ink3)" }}>{d.druh}{d.dodavatel ? ` · ${d.dodavatel}` : ""}</span>
-            {d.foto && <span style={{ alignSelf: "flex-start", marginTop: 4, height: 22, padding: "0 8px", borderRadius: 11, background: "var(--gSoft)", color: "var(--gInk)", fontSize: 10.5, fontWeight: 800, letterSpacing: ".04em", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>{d.overene ? "OVERENÉ" : "ČAKÁ NA OVERENIE"}</span>}
-            {!d.foto && <label style={{ display: "inline-flex", alignItems: "center", minHeight: 32, fontSize: 13, fontWeight: 800, color: "var(--green)", cursor: "pointer" }}>Priložiť doklad<input type="file" accept="image/*,application/pdf,.pdf" hidden onChange={(e) => { void priloz(d.id, e.target.files); e.target.value = ""; }} /></label>}</span>
+            <span style={{ fontSize: 13, color: "var(--ink3)" }}>{d.druh}{d.dodavatel ? ` · ${d.dodavatel}` : ""}{d.strany?.length ? ` · ${d.strany.length + 1} strany` : ""}</span>
+            {d.foto && <span style={{ alignSelf: "flex-start", marginTop: 4, minHeight: 22, padding: "2px 8px", borderRadius: 11, background: bg, color: c, fontSize: 12, fontWeight: 800, display: "flex", alignItems: "center" }}>{st}</span>}
+            {!d.foto && <label style={{ display: "inline-flex", alignItems: "center", minHeight: 32, fontSize: 13, fontWeight: 800, color: "var(--green)", cursor: "pointer" }}>Priložiť doklad<input type="file" accept="application/pdf,.pdf,image/jpeg,image/png,image/heic,image/heif,.heic,.heif" hidden onChange={(e) => { void priloz(d.id, e.target.files); e.target.value = ""; }} /></label>}
+          </span>
           <b style={{ flex: "none", fontSize: 15, color: "var(--green)" }}>{eur(d.suma)}</b>
-          <button type="button" onClick={() => zmazPolozku(d.id)} aria-label={`Odstrániť ${d.nazov}`} style={{ flex: "none", width: 36, height: 36, border: "none", background: "transparent", color: "var(--ink3)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><IkS d={IKS.kos} s={16} /></button>
-        </div>))}
+          {!d.overene && <button type="button" onClick={() => zmazPolozku(d.id)} aria-label={`Odstrániť ${d.nazov}`} style={{ flex: "none", width: 36, height: 36, border: "none", background: "transparent", color: "var(--ink3)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><IkS d={IKS.kos} s={16} /></button>}
+        </div>); })}
       {zmazane && <div role="status" style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 14, background: "#1D211B", color: "#fff" }}>
         <span style={{ flex: 1, fontSize: 14 }}>Položka odstránená</span>
         <button type="button" onClick={vratPolozku} style={{ height: 44, padding: "0 14px", border: "none", borderRadius: 12, background: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "#1D211B" }}>Vrátiť</button>
       </div>}
       {form ? <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: 14, borderRadius: 14, background: "var(--field)" }}>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{DRUHY_DOKLADU.map((x) => { const on = x === druh; return <button key={x} type="button" aria-pressed={on} onClick={() => setDruh(x)} style={{ minHeight: 40, padding: "0 12px", borderRadius: 12, border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, background: on ? "var(--gSoft)" : "transparent", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: on ? "var(--gInk)" : "var(--ink2)", cursor: "pointer" }}>{x}</button>; })}</div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{DRUHY_DOKLADU.map((x) => { const on = x === druh; return <button key={x} type="button" aria-pressed={on} onClick={() => setDruh(x)} style={{ minHeight: 40, padding: "0 12px", borderRadius: 12, border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, background: on ? "var(--gSoft)" : "var(--card)", color: on ? "var(--gInk)" : "var(--ink2)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700 }}>{x}</button>; })}</div>
         <input value={nazov} onChange={(e) => setNazov(e.target.value)} placeholder="Čo sa kúpilo, napríklad strešná krytina" aria-label="Položka" style={poleS} />
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 120px", gap: 10 }}>
           <input value={dodavatel} onChange={(e) => setDodavatel(e.target.value)} placeholder="Dodávateľ" aria-label="Dodávateľ" style={poleS} />
           <input value={suma} onChange={(e) => setSuma(e.target.value)} placeholder="€" inputMode="decimal" aria-label="Suma v eurách" style={{ ...poleS, textAlign: "right" }} />
         </div>
-        <label style={{ ...tlO, display: "flex", alignItems: "center", gap: 8, alignSelf: "stretch", justifyContent: "center", color: sken ? "var(--gInk)" : "var(--ink2)", borderColor: sken ? "var(--gBd)" : "var(--cardBd)" }}>
-          {sken ? <><IkS d={IKS.fajka} s={16} w={2.6} />{jePdf(sken) ? "PDF priložené" : "Fotka dokladu priložená"}</> : "Priložiť doklad (foto alebo PDF)"}
-          <input type="file" accept="image/*,application/pdf,.pdf" hidden onChange={async (e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) { try { setSken(await nacitajDoklad(f)); } catch (er) { toast((er as Error).message); } } }} />
-        </label>
-        <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Osobné údaje príjemcu (meno, adresu) na doklade pred odfotením zakryte.</span>
-        {chyba && <span role="alert" style={{ fontSize: 13, fontWeight: 700, color: "#A34A2A" }}>{chyba}</span>}
-        <div style={{ display: "flex", gap: 10 }}><button type="button" onClick={() => { setForm(false); setChyba(""); }} style={tlO}>Zrušiť</button><button type="button" onClick={pridajPolozku} style={{ ...zelenyK, alignSelf: "flex-start" }}>Pridať položku</button></div>
+        {zona}
+        {chyba && <SvetlusikKarta chyba>{chyba}</SvetlusikKarta>}
+        <div style={{ display: "flex", gap: 10 }}><button type="button" onClick={() => { setForm(false); setChyba(""); setSken(undefined); }} style={tlO}>Zrušiť</button><button type="button" onClick={pridajPolozku} style={{ ...zelenyK, alignSelf: "flex-start" }}>Pridať položku</button></div>
       </div> : <button type="button" onClick={() => setForm(true)} style={tlO}>+ Pridať položku s dokladom</button>}
+    </section>);
+  const vlavo = (<div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+    {/* OPRAVY 456 (1): navrchu Doklady na kontrolu, pod tým Fotky výsledku, pod tým Na čo išli peniaze */}
+    {doklady}
+    <GaleriaEditor media={media} onMedia={naMedia} ph={mobil} bezVerejnych bezHlavnej nadpis={nepovinne ? "Fotky a video k dokladom" : "Fotky výsledku"} popisNapoveda="Popis (nepovinné), napríklad Po oprave"
+      dovetok=""><span style={{ fontSize: 14, fontWeight: 700, color: "var(--ink2)" }}>Tieto fotky uvidia všetci. Doklady sem nedávajte.</span></GaleriaEditor>
+    <section style={kartaS}>
+      <span style={nadpisS}>Na čo išli peniaze</span>
+      <TextovePolia popis={text} popis2={text2} onPopis={setText} onPopis2={setText2} ph={mobil}
+        popisHlavneho="Toto darcovia uvidia hneď. Najviac 12 riadkov." />
     </section>
   </div>);
   const vpravo = (<div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
     {nepovinne ? <section style={kartaS}>
       <span style={nadpisS}>Doložené tento mesiac · overenie DEED+</span>
       <b style={{ fontSize: 24, color: "var(--green)", fontVariantNumeric: "tabular-nums" }}>{eur(tentoMes.reduce((a, d) => a + d.suma, 0))} · {tentoMes.length} {tentoMes.length === 1 ? "doklad" : tentoMes.length >= 2 && tentoMes.length <= 4 ? "doklady" : "dokladov"}</b>
-      <span style={textS}>Doklady vidí len DEED+. Skontrolujeme ich do 2 pracovných dní. Na profile sa ukáže len „Doložené · overené DEED+“ a suma, nikdy samotné doklady. Citlivé údaje na nich tak nikto iný neuvidí a netreba žiadne súhlasy.</span>
+      <span style={textS}>Doklady vidí len DEED+. Skontrolujeme ich do 48 hodín. Na profile sa ukáže len „Doložené · overené DEED+“ a suma, nikdy samotné doklady.</span>
     </section> : <section style={kartaS}>
-      <span style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}><span style={nadpisS}>Doložené použitie</span><b style={{ fontSize: 24, color: "var(--green)" }}>{pct} %</b></span>
+      <span style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}><span style={nadpisS}>Doložené použitie</span><b style={{ fontSize: 24, color: "var(--green)" }}>{pct >= 100 ? "doložené všetko" : `${pct} %`}</b></span>
       <span style={{ display: "block", height: 8, borderRadius: 4, background: "var(--track)", overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: "100%", background: "var(--green)", transformOrigin: "left", transform: `scaleX(${pct / 100})`, transition: "transform .5s ease" }} /></span>
-      <span style={textS}>Darcovia vidia pri zbierke len „doložené {pct} % · overené DEED+“. Samotné doklady vidí len DEED+, citlivé údaje na nich nikto iný neuvidí.</span>
+      {cakaju && <span style={{ fontSize: 14, fontWeight: 700, color: "var(--ink2)" }}>Odoslané · čaká na overenie</span>}
+      {vyzbierane > 0 && sumaVsetkych > vyzbierane && <span style={textS}>Doklady sú o {eur(sumaVsetkych - vyzbierane)} vyššie ako vyzbierané. Zvyšok ste založili zo svojho, zbierka beží ďalej.</span>}
+      <span style={textS}>Rátajú sa len doklady overené DEED+. Darcovia vidia pri zbierke len „doložené {pct} % · overené DEED+“, samotné doklady nie.</span>
     </section>}
     {!nepovinne && ukoncena && (faza === "vyzva" || faza === "caka") && <section style={kartaS}>
       <span style={nadpisS}>Nemáte doklady?</span>
@@ -903,8 +951,17 @@ export function DokladyCharity({ s, zmen, vyzbierane, teraz, mobil, toast, nepov
       <RichTextInput vzhlad="sprava" value={zdov} onChange={setZdov} minH={90} placeholder="Nemáme doklady, pretože…" ariaLabel="Zdôvodnenie" nastroje={["bold", "italic", "insertUnorderedList", "diktovat"]} />
       <button type="button" onClick={() => { if (cistyText(zdov).length < 20) { toast("Napíšte zdôvodnenie aspoň jednou vetou."); return; } zmen({ zdovodnenieBezDokladov: zdov }); toast("Zdôvodnenie sme poslali. Posúdi ho DEED+."); }} style={tlO}>Poslať zdôvodnenie</button>
     </section>}
-    <button type="button" onClick={odoslat} aria-disabled={!mozeOdoslat} style={{ ...zelenyK, alignSelf: "stretch", opacity: mozeOdoslat ? 1 : 0.5, cursor: mozeOdoslat ? "pointer" : "default" }}>Odoslať na overenie</button>
-    {s.odoslaneNaOverenie && <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink3)" }}>Odoslané na overenie {dnes(s.odoslaneNaOverenie)}. Nové položky pošlete rovnako.</span>}
+    {/* OPRAVY 456 (5): po odoslaní sa zmení celá karta, tlačidlo sa vráti, keď pribudnú nové položky */}
+    {nove.length ? <section style={kartaS}>
+        <span style={textS}>{s.doklady.some((d) => odoslanaPol(d)) ? `Pribudli nové položky: ${nove.length}.` : "Keď máte doklady pripravené, pošlite ich DEED+ na overenie."}</span>
+        <PodrzTlacidlo label={s.doklady.some((d) => odoslanaPol(d)) ? `Podržte · Odoslať ${nove.length} ${nove.length === 1 ? "novú položku" : nove.length < 5 ? "nové položky" : "nových položiek"}` : "Podržte · Odoslať na overenie"} trvanie={1500} onConfirm={odoslat} />
+      </section>
+      : cakaju ? <section role="status" style={{ ...kartaS, background: "var(--gSoft)", border: "1px solid var(--gBd)" }}>
+        <b style={{ fontSize: 17, color: "var(--gInk)" }}>Odoslané ✓ · čaká na overenie</b>
+        <span style={textS}>DEED+ skontroluje do 48 hodín. Dáme vám vedieť.</span>
+      </section>
+      : !s.doklady.length ? <SvetlusikKarta>Najprv pridajte aspoň jednu položku s dokladom.</SvetlusikKarta> : null}
+    {onHotovo && <button type="button" onClick={onHotovo} style={{ ...tlO, alignSelf: "stretch" }}>Hotovo · späť na zbierku</button>}
   </div>);
   return <div style={{ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : "minmax(0,1.4fr) minmax(0,1fr)", gap: 16, alignItems: "start" }}>{vlavo}{vpravo}</div>;
 }

@@ -161,8 +161,8 @@ function PribehEditorObsah({ z, mobil, toast }: { z: ZbierkaNaSpravu; mobil: boo
           {!!r.media?.length && <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{r.media.length} {r.media.length === 1 ? "fotka" : r.media.length < 5 ? "fotky" : "fotiek"}</span>}
         </button>))}
     </>; }
-    if (i === 3) return <GaleriaEditor media={p.media} onMedia={(m) => uprav({ media: m })} ph={false} bezHlavnej nadpis="Ďalšie fotky k príbehu"
-      dovetok=" Doplnkové fotky. Hlavná fotka je vždy titulná fotka zbierky. Pod fotkou môžete napísať popis." />;
+    if (i === 3) return <GaleriaEditor media={p.media} onMedia={(m) => uprav({ media: m })} ph={false} bezHlavnej nadpis="Ďalšie fotky k príbehu" dovetok="">
+      <span style={textK}>Doplnkové fotky. Hlavná fotka je vždy titulná fotka zbierky. Pod fotkou môžete napísať popis.</span></GaleriaEditor>;
     if (i === 4) return <>
       <span style={textK}>Nepovinné. Jedna veta človeka, ktorému pomáhate.</span>
       <input style={pole} value={p.citat.text} onChange={(e) => uprav({ citat: { ...p.citat, text: e.target.value } })} placeholder="Veta" aria-label="Citát" maxLength={200} />
