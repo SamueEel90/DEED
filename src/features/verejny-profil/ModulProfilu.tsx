@@ -16,7 +16,7 @@ import { KartaStavu } from "@/features/zbierka/KartaStavu";
 import { Galeria } from "@/features/zbierka/Vrch";
 import { RychleSumyEur, VlastnaSuma, DaryVKrypte, type OtvorPlatbu, type KanalPlatby } from "@/features/zbierka/Sumy";
 import { PlatobneOkno, useRychlyDar, potvrditTuknutim, type VysledokPlatby } from "@/features/zbierka/Platba";
-import { ZdielatRiadok, PravidelnaRiadok, Oblubene, RetazRiadok, KartaDorovnava, Darcovia } from "@/features/zbierka/Riadky";
+import { ZdielatRiadok, PravidelnaRiadok, RetazRiadok, KartaDorovnava, Darcovia } from "@/features/zbierka/Riadky";
 import { ZdielatHarok } from "@/features/zbierka/Zdielat";
 import { PravidelnaHarok } from "@/features/zbierka/PravidelnaHarok";
 import { PodporitDeedHarok } from "@/features/zbierka/PodporitDeed";
@@ -157,7 +157,7 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, 
       <PravidelnaRiadok registrovany={registrovany} onClick={() => setHarok("pravidelna")} />
       {/* Martin 13. 10.: tipy „čo za to“ (5 € = obed …) zrušené (PRAVIDLA-APPKY); ostáva len skutočné číslo, koľko ľudí podporuje mesačne */}
       {sektor.mesacne != null && sektor.mesacne > 0 && <div style={{ margin: "8px 2px 0", fontSize: 13.5, fontWeight: 600, color: "var(--green)" }}>{sektor.mesacne.toLocaleString("sk-SK")} {sektor.mesacne === 1 ? "človek podporuje" : sektor.mesacne >= 2 && sektor.mesacne <= 4 ? "ľudia podporujú" : "ľudí podporuje"} mesačne</div>}
-      {!bezObjektu && <Oblubene polozka={{ refId, typ: "charita", modul: "charity", nazov }} />}
+      {/* OPRAVY 429: Obľúbené z platobného modulu preč */}
       <RetazRiadok onClick={() => setHarok("retaz")} />
       <PodporujuRetazou zbierkaId={refId} />
       {veta && uvidisOdkaz && <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: 18, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 14, lineHeight: 1.5, color: "var(--ink)", textWrap: "pretty" } as CSSProperties}>{veta}

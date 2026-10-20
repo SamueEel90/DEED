@@ -49,6 +49,8 @@ export interface NovaZbierkaData {
   rozdelenie?: PodielZbierky[];
   /** OPRAVY 338 · migrácia 0104: id osobného overenia príjemcu (sken QR + kód) — server podľa neho pustí registrovaný účet */
   overenie_prijemcu?: string;
+  /** OPRAVY 430: Komu to pomáha — oblasť a najviac 2 podpoložky z ZAUJMY_KATALOG (čipy na karte, výber vo feede) */
+  komu?: { oblast: string; pod: string[] };
 }
 export type PodielZbierky =
   | { druh: "prijemca"; ucet: string; text: string; podiel: number }

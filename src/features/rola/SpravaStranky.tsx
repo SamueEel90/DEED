@@ -65,12 +65,12 @@ import { TlacidloNastavenia, LogoKarty } from "./spravaCasti";
 import { sumaEur } from "@/lib/suma";
 import {
   FLAGS, KONFIG, nacitajTiery, ulozTiery, slovo, maPovolenie, vidnoPolozku, smieSkutokZaCharitu, type RolaStranky, odProgramu, PROGRAM_NAZOV, PIN_MAX,
-  nacitajStitCharity, ulozStitCharity, nacitajCharituNovu, ulozCharituNovu,
+  nacitajStitCharity, ulozStitCharity, nacitajCharituNovu,
   type PolozkaSpravy, type StitCharity, type Tier, type Pozicia,
   type TypStranky, TYP_NAZOV, TYPY_STRANOK, TYP_SKRYTY, NASTROJE_TYPU, typPovoli, STIT_SADA_TYPU, type StitSada,
   nacitajIbanOrg, STRANKA_POZICIE,
 } from "./stav";
-import { useVerejneNastavenia } from "@/lib/verejneNastavenia";
+import { useVerejneNastavenia, verejneZPamate } from "@/lib/verejneNastavenia";
 
 // ---------- ikony (cesty z prototypu) ----------
 const IK = {
@@ -318,9 +318,11 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   const menu = menuTypu(typ, tier);
   const setTier = (t: Tier) => { const n = { ...nacitajTiery(), [poz]: t }; setTiery(n); ulozTiery(n); };
   const [stit, setStit] = useState<StitCharity>(nacitajStitCharity);
-  const [nova, setNova] = useState<boolean>(nacitajCharituNovu);
-  // OPRAVY 109: testovacia lišta — Nová · pozvaná (prvých 50, P3 zadarmo) / Nová · zadarmo / Bežná (OPRAVY 398: charita bez Bežnej)
-  const [pozvana, setPozvana] = useState<boolean>(() => { try { return localStorage.getItem("deed.dev.pozvana") === "1"; } catch { return false; } });
+  // OPRAVY 433: testovací prepínač Stav je preč — charita je vždy bez ukážkových dát, úvod riadia skutočné dáta.
+  // Pozvaná (prvých 50, P3 zadarmo 2 mesiace) = registrácia cez pozvánku uložená pri stránke (verejné nastavenia „pozvana“), nie prepínač.
+  const nova = typ === "charita" || nacitajCharituNovu();
+  useVerejneNastavenia(strankaId);
+  const pozvana = verejneZPamate(strankaId)?.["pozvana"] === true;
   const [piny, setPiny] = useState<PolozkaSpravy[]>(() => pinyZPamate(strankaId));
   useEffect(() => { let ziva = true; void nacitajPiny(strankaId).then((p) => { if (ziva) setPiny(p); }); return () => { ziva = false; }; }, [strankaId]);
   const [zoom, setZoom] = useState(false);
@@ -342,7 +344,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   // OPRAVY 122 (2): centrálna zbierka charity — zatiaľ z ukážkových bežiacich zbierok (nová charita ju nemá); doplní server
   // OPRAVY 397: testovacia charita sa vždy tvorí od nuly — Správa bez ukážok (prepínač Profil: Vyplnený · Prázdny zmizol)
   // OPRAVY 403: charita nikdy neukazuje vymyslené dáta (ukážky ostávajú len testovacím stránkam Pekáreň a tvorca)
-  const bezUkazok = nova || TESTOVACIA || typ === "charita";
+  const bezUkazok = nova || TESTOVACIA; // nova = vždy pri charite (OPRAVY 433)
   const centralnaZbierka = !bezUkazok ? PH_ZBIERKY.filter((z) => /^Centrálna zbierka/.test(z.t)).map((z) => ({ id: `${strankaId}-centralna`, nazov: z.t, org: nazov, cislo: "" }))[0] ?? null : null;
   // OPRAVY 114: spustené a rozpísaná zbierka stránky (z účtu)
   useZmenyZbierok();
@@ -384,7 +386,10 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
 
   const pinyTypu = piny.filter((id) => menu.vse.some((v) => v.id === id));
   // OPRAVY 109: úvod novej charity (kým nemá prvú zbierku); krok 1 = prvé Uložiť profil
-  const uvod = nova;
+  // OPRAVY 433: úvod len podľa skutočných dát — nemá uložený profil → krok 1, nemá spustenú zbierku → krok 2, má → úvod preč
+  // (spustená = bežiaca, ukončená aj zrušená, z tých istých dát ako BEŽIACE ZBIERKY; rozpísaná sa nepočíta)
+  const maZbierku = vlastne.length > 0;
+  const uvod = typ === "charita" && !maZbierku;
   const krok1 = !!profil;
   const glowUp = uvod && !krok1 && sub !== "profil";
   const glowZb = uvod && krok1 && sub !== "profil" && sub !== "g_zbierky" && sub !== "x:Nová zbierka" && sub !== "x:Správa zbierky";
@@ -462,15 +467,9 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
         <TestVolba pas={!desktop} nazov="Typ" volby={TYPY_STRANOK.filter((t) => !TYP_SKRYTY[t]).map((t) => [t, TYP_NAZOV[t]] as [TypStranky, string])} hodnota={typ} onVolba={setTyp} />
         <TestVolba pas={!desktop} nazov="Rola" volby={[["hlavny", "Hlavný správca"], ["spravca", "Správca"], ["pomocnik", "Pomocník"], ["organizator", "Organizátor"]] as [RolaStranky, string][]} hodnota={rola} onVolba={(r) => zmenTestStav({ rola: r })} />
       </>}>
-      <DevSprava pas={!desktop} tier={tier} stit={stit} charita={typ === "charita"} stav={!nova && typ !== "charita" ? "bezna" : pozvana ? "pozv" : "free"}
+      <DevSprava pas={!desktop} tier={tier} stit={stit} charita={typ === "charita"}
         onTier={setTier}
-        onStit={(s) => { setStit(s); ulozStitCharity(s); }}
-        onStav={(k) => {
-          const n = k !== "bezna", pz = k === "pozv"; // OPRAVY 398: charita Bežnú nemá — tvorí sa od nuly
-          setNova(n); ulozCharituNovu(n); setPozvana(pz);
-          try { localStorage.setItem("deed.dev.pozvana", pz ? "1" : "0"); } catch { /* LS nedostupné */ }
-          setTier(pz ? 3 : n ? 0 : 1);
-        }} />
+        onStit={(s) => { setStit(s); ulozStitCharity(s); }} />
     </PrepinacPodania>
   );
   const zoomEl = <>{zoom && <StitZoom stit={stit} sada={sada} onClose={() => setZoom(false)} />}
@@ -1543,7 +1542,6 @@ function Zamknute({ program }: { program: string }) {
 }
 
 // ---------- DEV (len testovacia verzia) ----------
-type StavDev = "pozv" | "free" | "bezna";
 /** OPRAVY 398: koniec P3 zadarmo pre pozvané charity = registrácia + 2 mesiace */
 function usePozvanaDo(strankaId: string): string {
   const [od, setOd] = useState<string | null>(() => casRegistracieLokalne(strankaId));
@@ -1559,11 +1557,11 @@ function usePozvanaDo(strankaId: string): string {
   if (d.getDate() !== den) d.setDate(0); // 31. 12. + 2 mesiace → posledný deň februára
   return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`;
 }
-function DevSprava({ pas, tier, stit, stav, onTier, onStit, onStav, charita }: { /** OPRAVY 398: charita len Nová · pozvaná / Nová · zadarmo */ charita: boolean; pas: boolean; tier: Tier; stit: StitCharity; stav: StavDev; onTier: (t: Tier) => void; onStit: (s: StitCharity) => void; onStav: (s: StavDev) => void }) {
+function DevSprava({ pas, tier, stit, onTier, onStit, charita }: { charita: boolean; pas: boolean; tier: Tier; stit: StitCharity; onTier: (t: Tier) => void; onStit: (s: StitCharity) => void }) {
   return (<>
     {/* OPRAVY 153: Typ a Rola sú pod „Ďalšie testovacie ›" */}
     <TestVolba pas={pas} nazov="Program" volby={((charita ? [0, 1, 2, 3] : [0, 1, 2, 3, 4]) as Tier[]).map((t) => [t, PROGRAM_NAZOV[t]] as [Tier, string])} hodnota={tier} onVolba={onTier} />
     <StitVolba pas={pas} stit={stit} onStit={onStit} />
-    <TestVolba pas={pas} nazov="Stav" volby={([["pozv", "Nová · pozvaná"], ["free", "Nová · zadarmo"], ...(charita ? [] : [["bezna", "Bežná"]])]) as [StavDev, string][]} hodnota={stav} onVolba={onStav} />
+    {/* OPRAVY 433: prepínač Stav (Nová · pozvaná / Nová · zadarmo) zmazaný — úvod riadia skutočné dáta */}
   </>);
 }

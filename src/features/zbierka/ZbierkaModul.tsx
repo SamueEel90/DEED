@@ -3,6 +3,8 @@
 import { ZbalitASpat, ZmensenyModul } from "./ZmensenyModul";
 import { smieDorovnat } from "@/lib/dorovnanie";
 import { cisloObjektu } from "@/lib/cisloObjektu";
+import { kopirujCislo } from "@/components/CisloObjektu";
+import { toast } from "@/components/toast";
 import { TESTOVACIA, TESTOVACIE_ZOSTAVENIE } from "@/lib/testovacia";
 import { useContext, useEffect, useRef, useState, type CSSProperties } from "react";
 import type React from "react";
@@ -21,7 +23,7 @@ import { KartaStavu } from "./KartaStavu";
 import { RychleSumyEur, DeedDlazdice, VlastnaSuma, DaryVKrypte, type OtvorPlatbu } from "./Sumy";
 import { PlatobneOkno, potvrditTuknutim, nastavPotvrditTuknutim, useRychlyDar, type VysledokPlatby } from "./Platba";
 import type { KanalPlatby } from "./Sumy";
-import { ZdielatRiadok, PravidelnaRiadok, Oblubene, ZapojitFirmuRiadok, RetazRiadok, KartaDorovnava, Darcovia } from "./Riadky";
+import { ZdielatRiadok, PravidelnaRiadok, ZapojitFirmuRiadok, RetazRiadok, KartaDorovnava, Darcovia } from "./Riadky";
 import { ZdielatHarok, Harok } from "./Zdielat";
 import { NahlasitSheet } from "@/components/nahlasit";
 import { firmaPreDorovnanie } from "@/lib/podpory";
@@ -41,6 +43,8 @@ import { sumaEur } from "@/lib/suma";
 export type ZbierkaData = {
   id: string; nazov: string; popis?: string;
   cislo?: number;      // zbierka má verejné číslo (KARTA 48: zobrazí sa ako Z-123 456 789 0 z id / VS)
+  /** OPRAVY 428: VS zbierky zo servera (zbierka.vs, 0049) a čas zverejnenia — hlavička detailu */
+  vs?: string; zverejnene?: string;
   overena?: boolean;
   media?: Medium[];    // poradie volí autor (predvolene video prvé)
   organizacia?: OrgPole; // kto za zbierku zodpovedá / kto ju overil (karta 03)
@@ -225,7 +229,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
         daruješ 20 € → k príjemcovi ide {sumaEur((20 + dorovnanieKDaru(dorovnanie, 20)))}</div>}
     </>);
     if (p.kluc === "pravidelna") return obal(<PravidelnaRiadok registrovany={registrovany} onClick={() => setHarok("pravidelna")} />);
-    if (p.kluc === "oblubene") return obal(<Oblubene polozka={{ refId: zbierka.id, typ: "charita", modul: "charity", nazov: zbierka.nazov, ciel: zbierka.ciel }} />);
+    if (p.kluc === "oblubene") return null; // OPRAVY 429: Obľúbené z modulu preč → Sledovať vedľa nadpisu
     if (p.kluc === "zapojitFirmu") return !smieDorovnat("charita", firmaPreDorovnanie().ucet) ? null : obal(<ZapojitFirmuRiadok firma={firmaPreDorovnanie().nazov} onClick={() => setHarok("firma")} />);
     if (p.kluc === "retazNastavit") return obal(<><RetazRiadok onClick={() => setHarok("retaz")} /><PodporujuRetazou zbierkaId={zbierka.id} /></>);
     if (p.kluc === "darcovia") return obal(<Darcovia refId={zbierka.id} cezTvorcu={cezTvorcu} nadpis={tvorca ? `DARCOVIA CEZ ${tvorca.menoAkuzativ.toLocaleUpperCase("sk-SK")}` : undefined} />);
@@ -237,9 +241,9 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
   // karta 02 — hlavička, galéria, nadpis a text (všade okrem hárku Podporiť DEED)
   const vrch = miesto !== "podporitDeed" ? (
     <div className="zb-pol" style={{ padding: "4px 16px 0" }}>
-      <Hlavicka cisloZbierky={zbierka.cislo != null ? cisloObjektu("Z", zbierka.id) : undefined} overena={zbierka.overena} onBack={onBack} spatNazov={spatNazov} onZavriet={onZavriet} onMoznosti={() => setMenu("menu")} />
+      <Hlavicka cisloZbierky={cisloObjektu("Z", zbierka.id, zbierka.vs)} zverejnene={zbierka.zverejnene} onBack={onBack} spatNazov={spatNazov} onZavriet={onZavriet} onMoznosti={() => setMenu("menu")} />
       <Galeria media={zbierka.media ?? []} nahlady />
-      <NadpisText nazov={zbierka.nazov} text={zbierka.popis} otvoreny={st.text as boolean | undefined} onOtvoreny={(v) => zmenStav({ text: v })} />
+      <NadpisText sledovat={{ refId: zbierka.id, typ: "charita", modul: "charity", nazov: zbierka.nazov, ciel: zbierka.ciel }} nazov={zbierka.nazov} text={zbierka.popis} otvoreny={st.text as boolean | undefined} onOtvoreny={(v) => zmenStav({ text: v })} />
     </div>
   ) : <PodporitDeedObsah registrovany={registrovany} />;
   // OPRAVY 222: farár prispeje za farnosť (SEPA alebo karta), nie na vlastnú zbierku
@@ -258,6 +262,9 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
 
 
       {menu === "menu" && <Harok onClose={() => setMenu(null)} hlavicka={<span style={{ flex: 1, fontSize: 20, fontWeight: 800 }}>Možnosti</span>}>
+        {/* OPRAVY 428: Kopírovať číslo (len číslice) */}
+        <button type="button" onClick={async () => { const ok = await kopirujCislo(cisloObjektu("Z", zbierka.id, zbierka.vs)); setMenu(null); toast(ok ? "Číslo zbierky je skopírované ✓" : "Číslo sa nepodarilo skopírovať"); }} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 56, padding: "0 16px", marginBottom: 10, borderRadius: 16, border: "1px solid var(--cardBd)", background: "var(--card)", color: "var(--ink)", fontSize: 15.5, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", width: "100%", textAlign: "left", boxShadow: "none" }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg>Kopírovať číslo</button>
         <button type="button" onClick={() => setMenu("nahlasit")} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 56, padding: "0 16px", borderRadius: 16, border: "1px solid var(--cardBd)", background: "var(--card)", color: "var(--a-danger)", fontSize: 15.5, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", textAlign: "left" }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5" /></svg>Nahlásiť zbierku</button>
       </Harok>}

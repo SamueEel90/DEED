@@ -30,6 +30,7 @@ import { UpozornitSledujucich } from "./UpozornitSledujucich";
 import { useNastavenieUpoz } from "@/lib/upozorneniaFarnosti";
 import { VERIME_VAM, SUHLAS_FOTKY, SUHLAS_POZNAMKA, SUHLAS_CHYBA, PRED_SPUSTENIM_NADPIS, PRED_SPUSTENIM, PRAVDIVA_ZBIERKA } from "@/lib/pravidlaObsahu";
 
+import { ZAUJMY_KATALOG } from "@/lib/personalizaciaStore";
 import { Ik, I, Zamok, vyber, panel, pole, pozn, fmtEur, fmtSek, cis, cistyText, Media, Volby, Nadpis, Zaskrtnutie, odkaz, PravidlaObsahu, TextovePolia, GaleriaEditor } from "./obsahZbierky";
 import { AnoNie } from "@/components/AnoNie";
 import { RamPisania } from "@/components/RamPisania";
@@ -95,7 +96,8 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   // KARTA 39 · bod 2: vlastný účet (od P1) sa overuje overovacou platbou; kým nie je overený, zbierka sa nespustí
   const overenie = useOverenieUctu(strankaId, zadarmo ? "" : d.iban);
   const chybaKroku = (n: number): string => {
-    if (n === 1) { if (!d.nazov.trim()) return "Doplňte názov zbierky"; if (!cistyText(d.popis)) return "Napíšte hlavný text"; if (riadky > RIADKY_ZB) return "Hlavný text je dlhší ako 12 riadkov"; }
+    if (n === 1) { if (!d.nazov.trim()) return "Doplňte názov zbierky"; if (!cistyText(d.popis)) return "Napíšte hlavný text"; if (riadky > RIADKY_ZB) return "Hlavný text je dlhší ako 12 riadkov";
+      if (!farnost && !d.komu?.pod.length) return "Vyberte, komu to pomáha"; } // OPRAVY 430
     if (n === 2) { if (!fotiek) return "Pridajte aspoň jednu fotku"; if (!d.suhlas && suhTreba) return SUHLAS_CHYBA; }
     if (n === 3) {
       if (d.cielTyp === "ciel" && !(cielCislo(d) > 0)) return "Zadajte cieľovú sumu";
@@ -142,6 +144,7 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
     ...(eurcRezim === "nie" ? [] : [["Dary v EURC", eurcOn ? `áno · ${SADY_EURC[d.sadaE][0]} ${SADY_EURC[d.sadaE][1].map(cis).join(" · ")}` : "nie", 4, false] as [string, string, number, boolean]]),
   ] : [
     ["Názov", d.nazov || "—", 1, true], ["Popis", cistyText(d.popis).slice(0, 140) || "—", 1, true],
+    ["Komu to pomáha", d.komu?.pod.length ? `${ZAUJMY_KATALOG.find((z) => z.oblast === d.komu!.oblast)?.label ?? d.komu.oblast} · ${d.komu.pod.join(" · ")}` : "—", 1, false], // OPRAVY 430
     ["Fotky a video", `${fotiek} ${fotiek === 1 ? "fotka" : fotiek >= 2 && fotiek <= 4 ? "fotky" : "fotiek"} · ${video ? `video ${fmtSek(video.sek ?? 0)}` : "bez videa"} · hlavné: ${d.media[0] ? (d.media[0].typ === "video" ? "video" : "fotka 1") : "—"}`, 2, false],
     ["Ako dlho", typT, 3, true], ["Suma", maCiel ? fmtEur(cielCislo(d)) : "otvorená, bez cieľa", 3, true],
     [zadarmo ? "Kam prídu peniaze" : "Transparentný účet", zadarmo ? `${hlavnyUcet} · hlavný účet` : d.iban ? `${d.iban} · ${overenie?.stav === "overeny" ? "overený" : "čaká na overenie"}` : "—", 3, true],
@@ -249,6 +252,7 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
         <input value={d.nazov} onChange={(e) => zmen({ nazov: e.target.value.slice(0, NAZOV_ZB) })} maxLength={NAZOV_ZB} placeholder="Napríklad: Invalidný vozík pre Ninu" aria-label="Názov zbierky" style={pole} />
         <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginTop: -6 }}><span style={pozn}>Krátko a jasne: komu a na čo.</span><span style={{ ...pozn, fontWeight: 800, flex: "none" }}>{d.nazov.length} / {NAZOV_ZB}</span></div>
         <TextovePolia popis={d.popis} popis2={d.popis2} onPopis={(h) => zmen({ popis: h })} onPopis2={(h) => zmen({ popis2: h })} ph={ph} pecat onRiadky={setRiadky} />
+        {!farnost && <KomuPomaha komu={d.komu} onKomu={(komu) => zmen({ komu })} />}
       </section></>;
   } else if (k === 2) {
     obsah = <>{hlavicka("Fotky a video", ph ? "Prvé je hlavné, to ľudia uvidia ako prvé. Poradie zmeníte šípkami." : "Skutočné fotky človeka alebo miesta, komu pomáhate. Tvár a hlas presvedčia viac než text.")}
@@ -409,4 +413,25 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
       {spatEl}<span style={{ flex: 1 }} />{chybaEl}{dalejEl}
     </div>
   </>);
+}
+
+// ============================================================
+// OPRAVY 430 · Komu to pomáha — ten istý číselník ako záujmy usera: 1 oblasť → najviac 2 podpoložky (povinná aspoň 1)
+// ============================================================
+function KomuPomaha({ komu, onKomu }: { komu?: { oblast: string; pod: string[] }; onKomu: (k: { oblast: string; pod: string[] }) => void }) {
+  const kat = ZAUJMY_KATALOG.find((z) => z.oblast === komu?.oblast);
+  const cip = (on: boolean, dis = false): React.CSSProperties => ({ minHeight: 44, padding: "0 14px", borderRadius: 12, cursor: dis ? "default" : "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800,
+    border: on ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: on ? "var(--gSoft)" : "var(--field)", color: dis ? "var(--ink4)" : "var(--ink)", boxShadow: "none" });
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <Nadpis t="Komu to pomáha" />
+      <span style={{ ...pozn, marginTop: -6 }}>Vyberte oblasť a najviac 2 presnejšie. Podľa toho sa zbierka ukáže ľuďom, ktorých to zaujíma.</span>
+      <div role="radiogroup" aria-label="Oblasť" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {ZAUJMY_KATALOG.map((z) => { const on = z.oblast === komu?.oblast; return <button key={z.oblast} type="button" role="radio" aria-checked={on} onClick={() => onKomu({ oblast: z.oblast, pod: on ? komu!.pod : [] })} style={cip(on)}>{z.label}</button>; })}
+      </div>
+      {kat && <div role="group" aria-label={`${kat.label} · presnejšie`} style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {kat.podpolozky.map((p) => { const on = komu!.pod.includes(p), plne = !on && komu!.pod.length >= 2; return (
+          <button key={p} type="button" aria-pressed={on} aria-disabled={plne} onClick={() => { if (plne) return; onKomu({ oblast: kat.oblast, pod: on ? komu!.pod.filter((x) => x !== p) : [...komu!.pod, p] }); }} style={cip(on, plne)}>{p}</button>); })}
+      </div>}
+    </div>);
 }

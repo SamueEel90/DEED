@@ -99,7 +99,7 @@ do $$ begin perform public.platba_refund((select id from s1));
 exception when others then insert into t values ('refund z klienta zakazany: '||sqlerrm, true); end $$;
 reset role;
 -- pohyb sa nedá meniť (ani vlastníkom tabuľky)
-do $$ begin update public.pohyb set suma = 1 where id = 1;
+do $$ begin update public.pohyb set suma = 1 where id = (select min(id) from public.pohyb); -- OPRAVY 426 · 0135: seed pohyby sú zmazané, berie sa prvý existujúci
   insert into t values ('pohyb nemenny', false);
 exception when others then insert into t values ('pohyb nemenny: '||sqlerrm, true); end $$;
 -- vlastný účet → vlastná zbierka

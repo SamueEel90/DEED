@@ -187,7 +187,7 @@ function OrgProfil({ s, onBack, toast, onKampan, onZavriet }: { s: CudziSubjektO
           ]}
           akcie={<>
             <BtnAkcia variant={sleduje ? "secondary" : "primary"} ariaPressed={sleduje}
-              onClick={() => { toggleSledovanie({ meno, typ: "org", emoji: s.emoji }); toast?.(sleduje ? "Prestal si sledovať" : "Sleduješ — dostaneš upozornenia na kampane"); }}>
+              onClick={() => { toggleSledovanie({ meno, typ: "org", emoji: s.emoji }); toast?.(sleduje ? "Prestal si sledovať" : "Sleduješ"); }}>
               {sleduje ? "✓ Sledované" : "Sledovať"}
             </BtnAkcia>
             <BtnAkcia variant="secondary" onClick={zdielajProfil}><Zdielanie size={14} /> Zdieľať</BtnAkcia>

@@ -16,6 +16,7 @@ function naAktivitaItem(r: any): AktivitaItem {
   const fotky: string[] | undefined = Array.isArray(m.fotky) && m.fotky.length ? m.fotky : undefined;
   return {
     id: Number(d.id),               // pôvodné numerické id (1–34) — kľúč/detail v komponente
+    vs: r.vs ?? undefined, vytvorene: r.vytvorene ?? undefined,   // OPRAVY 428
     num: Number(r.cislo),
     dom: r.kat,                     // doména (engine si kat=dom dorobí v obohatit)
     type: d.type,                   // EN type (skutok/talent/workshop/help/case)

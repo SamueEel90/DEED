@@ -3,7 +3,7 @@
 // Číslo prideľuje server (atomická sekvencia, nikdy sa nerecykluje). Kým ho objekt nemá,
 // appka zobrazí TESTOVACIE číslo odvodené z id (rovnaké id = rovnaké číslo).
 
-export type TypObjektu = "Z" | "S" | "I" | "U" | "P" | "C" | "D"; // zbierka · skutok · iskra · user vizitka · prevádzka/stôl · stránka subjektu · D = doklad (rada dokladov)
+export type TypObjektu = "Z" | "S" | "I" | "U" | "P" | "C" | "D" | "H" | "O"; // zbierka · skutok · iskra · user vizitka · prevádzka/stôl · stránka subjektu · D = doklad (rada dokladov) · OPRAVY 428: H = žiadosť (Help aj od človeka) · O = ponuka (user, B2B, práca)
 
 /** kontrolná číslica Luhn k 9 číslicam */
 export function luhn(cislice: string): number {
@@ -29,5 +29,8 @@ export function testovacieVs(id: string): string {
 export function verejneCislo(typ: TypObjektu, vs: string): string {
   return `${typ}-${vs.slice(0, 3)} ${vs.slice(3, 6)} ${vs.slice(6, 9)} ${vs.slice(9)}`;
 }
+/** OPRAVY 428: typ čísla podľa druhu príspevku — skutok/talent S · žiadosť H · ponuka/workshop O · zbierka Z */
+export const typPrispevku = (t?: string): TypObjektu =>
+  t === "ziadost" || t === "help" ? "H" : t === "ponuka" || t === "workshop" ? "O" : t === "charita" || t === "case" || t === "zbierka" ? "Z" : "S";
 /** číslo objektu podľa id (server ho raz pošle v objekte; dovtedy testovacie) */
 export const cisloObjektu = (typ: TypObjektu, id: string, vs?: string | null) => verejneCislo(typ, vs && platnyVs(vs) ? vs : testovacieVs(id));

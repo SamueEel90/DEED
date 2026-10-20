@@ -34,6 +34,7 @@ export function naGoodPolozka(r: any): GoodPolozka {
   const fotky: string[] | undefined = Array.isArray(m.fotky) && m.fotky.length ? m.fotky : undefined;
   return {
     id: r.id,                       // uuid (stabilný kľúč + detail lookup)
+    vs: r.vs ?? undefined, vytvorene: r.vytvorene ?? undefined,   // OPRAVY 428
     num: Number(r.cislo),           // zobrazené „č."
     typ: r.typ,
     velkost: d.velkost || "small",  // feed ju aj tak prepočíta cez zobrazVelkost
