@@ -27,7 +27,6 @@ import {
 } from "@/lib/zbierkaSprava";
 import { identitaDarcu, relCas, zobrazenaSuma, useSektorDarcu } from "@/lib/darcovia";
 import { beziaceDorovnanieNaCiel, zostatok } from "@/lib/dorovnanie";
-import { TESTOVACIA } from "@/lib/testovacia";
 import { cisloObjektu } from "@/lib/cisloObjektu";
 import { hlavnyUcetOrg } from "./NastaveniaCharity";
 import { TestovaciPas } from "@/features/verejny-profil/casti";
@@ -459,39 +458,18 @@ const dnes = (iso: string) => { const d = new Date(iso); return `${d.getDate()}.
 const dniT = (n: number) => `${n} ${n === 1 ? "deň" : n >= 2 && n <= 4 ? "dni" : "dní"}`;
 const DEN_MS = 86400000;
 
-// KARTA 48 · testovacie údaje ukážkovej zbierky Strecha (1 : 1 podľa prototypu „Správa zbierky")
-const U48 = (id: string) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=800&q=70`;
-const UKAZKA_STRECHA: { obsah: ObsahZbierky; dary: [string, string, string][]; ucel: string; ucet: string; stat: DataStatistik } = {
-  obsah: { popis: "<p>V noci z 2. na 3. októbra im od komína chytila strecha. Pani Horváthová stihla vyniesť deti aj babku. Chýba krytina, laty a odkvapy, spolu 3 580 €.</p>", popis2: "", sada: 1, eurc: true, sadaE: 0,
-    media: [{ id: 1, typ: "foto", src: "/img/sprava/dom.jpg", popis: "Pred opravou" }, { id: 2, typ: "foto", src: U48("photo-1556909114-f6e7ad7d3136"), popis: "Po oprave" }, { id: 3, typ: "foto", src: U48("photo-1519681393784-d120267933ba") }] },
-  dary: [["Zuzana H.", "pred 35 min · priamo", "50 €"], ["Pekáreň Dobrota", "dorovnanie k daru", "50 €"], ["Anonymný darca", "pred 1 h · stream Martina", "25 €"]],
-  ucel: "Oprava strechy po požiari", ucet: "SK12 0900 0000 0051 2233 4521",
-  stat: {
-    obdobie: "od 26. 9.", od: "26. 9.", dni: [2, 4, 9, 6, 5, 7, 10, 8, 6, 5],
-    cez: [["Priamo na zbierke", 4620, "feed a profil Svetla pomoci"], ["Pekáreň Dobrota · dorovnanie", 2310, "1 : 1 k darom ľudí"], ["Martin Konaľ · stream", 840, "stream 3. 10. · QR v obraze"], ["QR plagát · Zámostie", 410, "22 darov"], ["Reťaz dobra a split", 240, "zo skutkov a QR"]],
-    split: [["MK", "Martin Konaľ · tvorca", "20 % z podpory fanúšikov · od 30. 9.", "96 €"], ["JK", "Jana K. · skutok „Odpratali sme trámy“", "50 % z drobnej podpory skutku · 1. 10.", "42 €"], ["LB", "Lucia B. · Reťaz dobra", "10 % z každej platby · od 27. 9.", "18 €"]],
-    darcovia: [["148", "darcov"], ["121", "nových pre Svetlo pomoci"], ["3", "firmy"], ["24 %", "darovalo viackrát"]],
-    dary: [["Zuzana H.", "50 € · priamo na zbierke · pred 35 min", "50 €"], ["Pekáreň Dobrota", "dorovnanie k daru Zuzany H.", "50 €"], ["Anonymný darca", "25 € · cez stream Martina Konaľa", "25 €"], ["Jana K.", "split 50 % · zo skutku", "4 €"]],
-  },
-};
-const UKAZKA_DOKLADY: PolozkaDokladu[] = [
-  { id: "u1", druh: "Faktúra", nazov: "Strešná krytina", dodavatel: "Stavebniny Opatová", suma: 2640, datum: "2026-10-04T10:00:00.000Z", foto: OVERENY_SKEN, overene: true },
-  { id: "u2", druh: "Faktúra", nazov: "Laty a kontralaty", dodavatel: "Píla Zlatovce", suma: 620, datum: "2026-10-04T11:00:00.000Z", foto: OVERENY_SKEN, overene: true },
-  { id: "u3", druh: "Bloček", nazov: "Odkvapy", dodavatel: "Hornbach", suma: 318, datum: "2026-10-05T09:00:00.000Z", foto: OVERENY_SKEN },
-];
 const maskUcet = (u: string) => { const x = u.replace(/\s/g, ""); return x.length > 12 ? `${x.slice(0, 4)} ${x.slice(4, 8)} •• ${x.slice(-4)}` : u; };
 const inic = (t: string) => t.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 
 export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnanie, tier = 0, bezDokladov }: { z: ZbierkaNaSpravu; mobil: boolean; onZbierky: () => void; toast: (m: string) => void; onUdaje?: () => void; onDorovnanie?: () => void; tier?: number;
   /** KARTA 50: farnosť nič nedokladá — bez záložky Doklady, lehoty a „doložené"; výsledok napíše v ohláškach */ bezDokladov?: boolean }) {
   const [teraz] = useState(() => Date.now());
-  const ukazka = TESTOVACIA && z.id.startsWith("ukazka-strecha");
   const [s, setS] = useState<StavZbierky>(() => {
     const u = nacitajStav(z.id);
     if (u) return u;
     const zac = z.zaciatok ?? pridajDni(teraz, -(CFG.dlzkaDni - (z.zostavaDni ?? CFG.dlzkaDni)));
     const koniec = z.dlha && z.mesiace ? (() => { const d = new Date(zac); d.setMonth(d.getMonth() + z.mesiace!); return d.toISOString(); })() : pridajDni(zac, CFG.dlzkaDni);
-    return { stav: z.ukoncena ? "ukoncena" : "aktivna", zaciatok: zac, koniec, ...(z.ukoncena ? { ukoncena: pridajDni(teraz, -1) } : {}), predlzenia: 0, lehota: z.lehota ?? "30", text: ukazka ? "<p>Kúpili sme strešnú krytinu, laty a odkvapy. V sobotu ich dobrovoľníci z Opatovej položili a rodina už spí doma, v suchu.</p>" : "", fotky: ukazka ? UKAZKA_STRECHA.obsah.media.slice(0, 2).map((m) => ({ src: m.src, popis: m.popis ?? "", typ: "foto" as const })) : [], doklady: ukazka ? UKAZKA_DOKLADY : [], spravy: [] };
+    return { stav: z.ukoncena ? "ukoncena" : "aktivna", zaciatok: zac, koniec, ...(z.ukoncena ? { ukoncena: pridajDni(teraz, -1) } : {}), predlzenia: 0, lehota: z.lehota ?? "30", text: "", fotky: [], doklady: [], spravy: [] };
   });
   useEffect(() => { if (!nacitajStav(z.id)) ulozStav(z.id, s); }, [z.id, s]);
   const zmen = (patch: Partial<StavZbierky>) => { setS((x) => { const n = { ...x, ...patch }; ulozStav(z.id, n); return n; }); };
@@ -514,7 +492,7 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
   const lehT = z.lehotaText ?? LEHOTA_TEXT[s.lehota];
 
   // ---- obsah: text pre darcov, galéria, rýchle sumy — ukladá sa samo 600 ms po zmene ----
-  const [ob, setOb] = useState<ObsahZbierky>(() => s.obsah ?? (ukazka ? UKAZKA_STRECHA.obsah : { popis: z.popis ?? "", popis2: z.popis2 ?? "", media: z.media ?? [], sada: z.sada ?? 1, eurc: z.eurc ?? true, sadaE: z.sadaE ?? 0 }));
+  const [ob, setOb] = useState<ObsahZbierky>(() => s.obsah ?? { popis: z.popis ?? "", popis2: z.popis2 ?? "", media: z.media ?? [], sada: z.sada ?? 1, eurc: z.eurc ?? true, sadaE: z.sadaE ?? 0 });
   const prvy = useRef(true);
   useEffect(() => { if (prvy.current) { prvy.current = false; return; } const t = window.setTimeout(() => { zmen({ obsah: ob }); z.onObsah?.(ob); }, 600); return () => window.clearTimeout(t); }, [ob]); // eslint-disable-line react-hooks/exhaustive-deps
   const zmenOb = (p: Partial<ObsahZbierky>) => setOb((x) => ({ ...x, ...p }));
@@ -586,12 +564,12 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
   // pás dorovnania (firma dorovnáva dary ľudí)
   const dor = beziaceDorovnanieNaCiel(z.id);
   const dorPas = dor ? <DorovnaniePas ini={inic(dor.firma)} firma={dor.firma} pomer={`1 : ${dor.pomer}`} pod={`ešte ${eur(zostatok(dor))}${dor.doVycerpania ? " · do vyčerpania" : ` · do ${dnes(new Date(dor.do).toISOString())}`}`} onClick={onDorovnanie} />
-    : ukazka ? <DorovnaniePas ini="PD" firma="Pekáreň Dobrota" pomer="1 : 1" pod="ešte 4 380 € · do 27. 10. 2026" onClick={onDorovnanie} /> : null;
+    : null;
 
   // ---- karty záložky Nastavenie ----
   const sektor = useSektorDarcu();
   const realneDary: [string, string, string][] = darcoviaPre(z.id).slice(0, 3).map((d) => [identitaDarcu(d, undefined, sektor), relCas(d.cas), zobrazenaSuma(d) ?? ""]);
-  const dary = realneDary.length ? realneDary : ukazka ? UKAZKA_STRECHA.dary : [];
+  const dary = realneDary; // OPRAVY 442: na skutočnej stránke nič vymyslené
   const pctC = z.ciel ? Math.round(vyzbierane / z.ciel * 100) : 0;
   const stavKarta = <CislaKarta nadpis="Stav zbierky" dary={dary} cisla={[
     [eur(vyzbierane), z.ciel ? `z ${eur(z.ciel)} · ${pctC} %` : "vyzbierané"], [String(darcov), "darcov"],
@@ -648,7 +626,7 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
     {voFeede && <button type="button" onClick={() => zmen({ stiahnuta: new Date().toISOString() })} style={obrysK}>Stiahnuť z feedu</button>}
   </section>;
   const ako = <AkoDarovat sada={ob.sada} eurc={ob.eurc} sadaE={ob.sadaE} onZmena={zmenOb} bezi={aktivna} />;
-  const zap = <Zapecatene riadky={[["Cieľ", z.ciel ? eur(z.ciel) : "bez cieľa"], ["Účel", z.ucel ?? (ukazka ? UKAZKA_STRECHA.ucel : "—")], ["Účet", maskUcet(z.ucet ?? (ukazka ? UKAZKA_STRECHA.ucet : hlavnyUcetOrg()))], ...(bezDokladov ? [] : [["Lehota na doklady", z.lehotaText ?? (s.lehota === "30" ? "30 dní po skončení" : lehT)] as [string, string]])]} />;
+  const zap = <Zapecatene riadky={[["Cieľ", z.ciel ? eur(z.ciel) : "bez cieľa"], ["Účel", z.ucel ?? "—"], ["Účet", maskUcet(z.ucet ?? hlavnyUcetOrg())], ...(bezDokladov ? [] : [["Lehota na doklady", z.lehotaText ?? (s.lehota === "30" ? "30 dní po skončení" : lehT)] as [string, string]])]} />;
   // OPRAVY 358: ten istý QR ako v QR nástrojoch — /z/{id} (adresa sa hľadá podľa id zbierky, nie podľa názvu)
   const qr = <QrKarta nazov={z.nazov} slug={z.id} odkaz={odkazQrZbierky(z.id)} cislo={cisloObjektu("Z", z.id, z.vs)} organizacia={z.organizacia} toast={toast} />;
   const vlavo = <>{stavKarta}{textKarta}{galeria}</>;
@@ -658,7 +636,7 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
     : <div style={{ display: "grid", gridTemplateColumns: sl, gap: 16, alignItems: "start" }}><div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>{l}</div><div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>{p}</div></div>;
 
   // ---- Štatistiky: zatiaľ testovacie čísla podľa prototypu, inak z darov ----
-  const stat: DataStatistik = ukazka ? UKAZKA_STRECHA.stat : {
+  const stat: DataStatistik = {
     obdobie: `od ${dnes(zac).replace(/ \d{4}$/, "")}`, od: dnes(zac).replace(/ \d{4}$/, ""), dni: Array.from({ length: 10 }, () => 0),
     cez: [["Priamo na zbierke", vyzbierane, "feed a profil"]], split: [],
     darcovia: [[String(darcov), "darcov"], ["0", "nových"], ["0", "firmy"], ["0 %", "darovalo viackrát"]], dary: realneDary,

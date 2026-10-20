@@ -257,7 +257,9 @@ type ZbRiadok = { t: string; v: number; c: number; bg: string; s: string; konc: 
 /** KARTA 38: riadok Moje zbierky → zbierka na správu (počet darcov a dni z textu riadku pri ukážkových zbierkach) */
 const naSpravu = (z: ZbRiadok): ZbierkaNaSpravu => {
   const darc = z.darcovia ?? Number(/(\d[\d\s]*) darcov/.exec(z.s)?.[1].replace(/\s/g, "") ?? 0), dni = z.zostava ?? Number(/končí o (\d+)/.exec(z.s)?.[1] ?? 30);
-  return { id: z.id ?? `ukazka-${z.t.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-")}`, nazov: z.t, bg: z.bg, ciel: z.c, vyzbierane: z.v, darcovia: darc, zostavaDni: dni, ukoncena: z.konc, lehotaText: z.lehotaText, lehota: z.lehota, bezPredlzenia: z.bezPredlzenia || /^Centrálna/.test(z.t), dlha: z.dlha, zaciatok: z.zaciatok, mesiace: z.mesiace, ucel: z.ucel, mesto: z.mesto, ...(z.zdroj ? { popis: z.zdroj.popis, popis2: z.zdroj.popis2, media: z.zdroj.media, sada: z.zdroj.sada, eurc: z.zdroj.eurc, sadaE: z.zdroj.sadaE, ucet: z.zdroj.ucet, vs: z.zdroj.vs } : {}) };
+  // OPRAVY 442 doplnok: skutočná zbierka (zdroj) — súčet a darcov dopočíta Správa zbierky z ledgera, riadok ich nesmie pridať druhýkrát
+  const real = !!z.zdroj;
+  return { id: z.id ?? `ukazka-${z.t.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-")}`, nazov: z.t, bg: z.bg, ciel: z.c, vyzbierane: real ? 0 : z.v, darcovia: real ? 0 : darc, zostavaDni: dni, ukoncena: z.konc, lehotaText: z.lehotaText, lehota: z.lehota, bezPredlzenia: z.bezPredlzenia || /^Centrálna/.test(z.t), dlha: z.dlha, zaciatok: z.zaciatok, mesiace: z.mesiace, ucel: z.ucel, mesto: z.mesto, ...(z.zdroj ? { popis: z.zdroj.popis, popis2: z.zdroj.popis2, media: z.zdroj.media, sada: z.zdroj.sada, eurc: z.zdroj.eurc, sadaE: z.zdroj.sadaE, ucet: z.zdroj.ucet, vs: z.zdroj.vs } : {}) };
 };
 /** OPRAVY 114: spustená zbierka charity → karta v Prehľade a riadok v Moje zbierky */
 const fotoBg = (z: SpustenaZbierka) => { const f = z.media.find((m) => m.typ === "foto"); return f ? `url('${f.src}') center/cover no-repeat var(--track)` : "repeating-linear-gradient(135deg,var(--track) 0 12px,var(--btn) 12px 24px)"; };

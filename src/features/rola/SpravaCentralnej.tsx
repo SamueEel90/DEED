@@ -26,38 +26,27 @@ import { useSlovaFarnosti } from "@/lib/mojeFarnosti";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { Prepinac } from "@/features/profil/nastUi";
 import {
-  useSektory, cislaSektora, obsahSektora, ulozObsahSektora, pridajSektor, zmazSektor, premenujSektor, ziadostUctu, poziadajOZmenuUctu,
+  useSektory, obsahSektora, ulozObsahSektora, pridajSektor, zmazSektor, premenujSektor, ziadostUctu, poziadajOZmenuUctu,
   zavretaCentralna, zavriCentralnu, otvorCentralnu, vyberCentralnej, nastavVyberCentralnej, useZmenySektorov,
-  CENTRALNA_CISLA, NULA, SEKTORY_MAX, SEKTORY_OD_TIERU, STANOVY_CINNOSTI, type SektorCharity,
+  NULA, SEKTORY_MAX, SEKTORY_OD_TIERU, STANOVY_CINNOSTI, type SektorCharity,
 } from "@/lib/sektoryCharity";
-import { nacitajStav, ulozStav, OVERENY_SKEN, type StavZbierky } from "@/lib/zbierkaSprava";
+import { nacitajStav, ulozStav, type StavZbierky } from "@/lib/zbierkaSprava";
 import { nastavCiste, sucetDarov, darcoviaPre, identitaDarcu, relCas, zobrazenaSuma, useZmenyDarov, useSektorDarcu } from "@/lib/darcovia";
 import { beziaceDorovnanieNaCiel, zostatok } from "@/lib/dorovnanie";
 import { cisloObjektu } from "@/lib/cisloObjektu";
 import { overIban, formatujIban } from "./segmenty";
 import { TextovePolia, GaleriaEditor } from "./obsahZbierky";
 import { DokladyCharity } from "./SpravaZbierky";
-import { kartaK, nadpisK, textK, drobneK, obrysK, zelenyK, ZAMOK, SpatZbierky, UkladaSa, DorovnaniePas, useUkladanie, UlozenePri, PasUlozene, Taby, CislaKarta, AkoDarovat, QrKarta, Statistiky, type DataStatistik } from "./spravaCasti";
+import { kartaK, nadpisK, textK, drobneK, obrysK, zelenyK, ZAMOK, SpatZbierky, UkladaSa, DorovnaniePas, useUkladanie, UlozenePri, PasUlozene, Taby, CislaKarta, AkoDarovat, QrKarta, Statistiky } from "./spravaCasti";
 import { sumaEur } from "@/lib/suma";
 
 const eur = (n: number) => `${sumaEur(n)}`;
 const inic = (t: string) => t.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 const dnes = (iso: string) => { const d = new Date(iso); return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`; };
 
-const DARY_TEST: [string, string, string][] = [["Lucia B.", "pred 4 min", "10 €"], ["Anonymný darca", "pred 11 min · mesačne", "25 €"], ["ZŠ Hodžova", "pred 1 h", "45 €"]];
-const DOKLADY_TEST: StavZbierky["doklady"] = [
-  { id: "c1", druh: "Faktúra", nazov: "Obedy pre seniorov", dodavatel: "Jedáleň Sihoť", suma: 620, datum: new Date().toISOString(), foto: OVERENY_SKEN, overene: true },
-  { id: "c2", druh: "Bloček", nazov: "Zimné deky", dodavatel: "Tesco Trenčín", suma: 310, datum: new Date().toISOString(), foto: OVERENY_SKEN, overene: true },
-  { id: "c3", druh: "Bloček", nazov: "Lieky", dodavatel: "Lekáreň Dr. Max", suma: 250, datum: new Date().toISOString(), foto: OVERENY_SKEN },
-];
-const statTest = (jeS: boolean, nazov: string): DataStatistik => ({
-  obdobie: "október", od: "5. 9.", dni: [3, 5, 2, 6, 4, 8, 5, 3, 7, 9, 4, 6, 5, 10, 7, 4, 6, 8, 5, 7, 9, 6, 4, 8, 10, 7, 5, 9, 6, 8],
-  cez: jeS ? [["Priamo na profile", 640, `ťuk na dlaždicu ${nazov}`], ["Pekáreň Dobrota · dorovnanie", 380, "1 : 1 k darom ľudí"], ["QR plagát · Sihoť", 220, "14 darov"], ["Martin Konaľ · split", 160, "tvorca, 20 % z podpory"], ["Reťaz dobra", 80, "3 ľudia"]]
-    : [["Priamo na profile", 1460, "ťuk na Celá činnosť"], ["Pekáreň Dobrota · dorovnanie", 690, "1 : 1 k darom ľudí"], ["Martin Konaľ · stream a split", 560, "stream 3. 10. + 20 % z podpory"], ["QR plagát a pokladnička", 250, "31 darov"], ["Reťaz dobra a skutky", 160, "split zo skutkov"]],
-  split: [["MK", "Martin Konaľ · tvorca", "20 % z podpory fanúšikov · od 21. 9. 2026", "412 €"], ["JK", "Jana K. · skutok „300 teplých jedál“", "30 % z drobnej podpory skutku · 2. 10.", "84 €"], ["LB", "Lucia B. · Reťaz dobra", "10 % z každej platby · od 1. 9.", "36 €"]],
-  darcovia: [[jeS ? "96" : "214", "darcov tento mesiac"], [jeS ? "22" : "61", "nových"], [jeS ? "61" : "143", "dáva mesačne"], ["38 %", "darovalo znova"]],
-  dary: [["Lucia B.", "10 € · cez QR plagát · pred 4 min", "10 €"], ["Anonymný darca", "mesačne · priamo na profile", "25 €"], ["Pekáreň Dobrota", "dorovnanie k daru Lucie B.", "10 €"], ["Martin Konaľ", "split 20 % · z podpory fanúšikov", "6 €"]],
-});
+// OPRAVY 442: ukážkové dary, doklady a štatistiky (Lucia B., Jana K., Pekáreň Dobrota …) zmazané — na stránke len skutočné.
+// id starých ukážkových dokladov, ktoré mohli ostať uložené v zariadení → pri otvorení sa vyhodia
+const STARE_UKAZKOVE_DOKLADY = new Set(["c1", "c2", "c3"]);
 
 function novyStav(id: string, _farnost = false): StavZbierky { return { stav: "aktivna", koniec: new Date(Date.now() + 3650 * 86400000).toISOString(), predlzenia: 0, lehota: "30", text: "", fotky: [], doklady: [] /* OPRAVY 403 doplnok: bez ukážkových dokladov */, spravy: [] }; }
 
@@ -109,7 +98,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
 
   // ---- doklady (dobrovoľné) ----
   // OPRAVY 311: farnosť nikdy ukážkové doklady (aj keď už ostali uložené zo skoršieho otvorenia)
-  const bezUkazok = (x: StavZbierky): StavZbierky => farnost ? { ...x, doklady: x.doklady.filter((dk) => !DOKLADY_TEST.some((t) => t.id === dk.id)) } : x;
+  const bezUkazok = (x: StavZbierky): StavZbierky => ({ ...x, doklady: x.doklady.filter((dk) => !STARE_UKAZKOVE_DOKLADY.has(dk.id)) });
   const [stav, setStav] = useState<StavZbierky>(() => bezUkazok(nacitajStav(idZbierky) ?? novyStav(idZbierky, !!farnost)));
   useEffect(() => { setStav(bezUkazok(nacitajStav(idZbierky) ?? novyStav(idZbierky, !!farnost))); }, [idZbierky]); // eslint-disable-line react-hooks/exhaustive-deps
   const zmenStav = (p: Partial<StavZbierky>) => setStav((x) => { const n = { ...x, ...p }; ulozStav(idZbierky, n); return n; });
@@ -118,8 +107,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   // OPRAVY 311: farnosť (Hlavná zbierka) nikdy ukážkové čísla — len skutočné súčty zo servera (ledger, 0096 s omšami)
   if (farnost) nastavCiste([idZbierky]); // ani ukážkoví darcovia
   // OPRAVY 403 doplnok: žiadne ukážkové čísla, dary ani dorovnanie (vymyslené prepojenia s Pekárňou a tvorcom zmazané) — len skutočné
-  const ukazky = false;
-  const c = ukazky ? (sek ? cislaSektora(sek.id) : CENTRALNA_CISLA) : NULA;
+  const c = NULA;
   const darov = sucetDarov(idZbierky);
   const hlavnaSuma = farnost ? suhrnHlavnej(strankaId, idZbierky).suma : darov.suma; // farnosť: okná sú v hlavnej (jedno číslo)
   const zacMes = (() => { const x = new Date(); x.setDate(1); x.setHours(0, 0, 0, 0); return x.getTime(); })();
@@ -142,7 +130,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
       : [identitaDarcu(r, ja, "viera"), relCas(r.cas), ""]),
   ].slice(0, 3);
   const realne: [string, string, string][] = farnost ? farnostDary : darcoviaPre(idZbierky).slice(0, 3).map((r) => [identitaDarcu(r, undefined, sektor), relCas(r.cas), zobrazenaSuma(r) ?? ""]);
-  const dary = realne.length ? realne : ukazky ? (farnost ? DARY_TEST.map(([m, k]) => [m === "Anonymný darca" ? "Bohu známy veriaci" : m, k.replace(" · mesačne", ""), ""] as [string, string, string]) : DARY_TEST) : [];
+  const dary = realne;
   const nazovPol = sek ? sek.nazov : farnost ? nazovHlavnej(d) : "Celá činnosť";
   const chip = sek ? `SEKTOR ${typ}` : farnost ? "HLAVNÁ ZBIERKA" : "CENTRÁLNA ZBIERKA";
   const podnadpis = sek ? "jedna téma · peniaze idú len sem · bez cieľa a konca" : farnost ? "stála zbierka farnosti · hore na profile" /* OPRAVY 350 */ : "na celú činnosť · stále hore na profile · nikdy vo verejnom feede";
@@ -155,7 +143,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   // ---- dorovnanie ----
   const dor = beziaceDorovnanieNaCiel(sek ? idZbierky : `${strankaId}-centralna`);
   const dorPas = farnost ? null : dor ? <DorovnaniePas ini={inic(dor.firma)} firma={dor.firma} pomer={`1 : ${dor.pomer}`} pod={`ešte ${eur(zostatok(dor))}${dor.doVycerpania ? " · do vyčerpania" : ` · do ${dnes(new Date(dor.do).toISOString())}`}`} onClick={onDorovnanie} />
-    : ukazky ? <DorovnaniePas ini="PD" firma="Pekáreň Dobrota" pomer="1 : 1" pod="ešte 4 380 € · do 27. 10. 2026" onClick={onDorovnanie} /> : null;
+    : null;
 
   // ---- účet: zamknutý, zmena len žiadosťou ----
   const [ucOtv, setUcOtv] = useState(false);
@@ -379,7 +367,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
     {tab === 0 && stlpce(vlavo, vpravo)}
     {tab === 0 && <PasUlozene u={u} onSpat={onZbierky} mobil={mobil} />}
     {tab === 1 && <DokladyCharity zbierkaId={idZbierky} s={stav} zmen={zmenStav} vyzbierane={spolu} teraz={Date.now()} mobil={mobil} toast={toast} nepovinne />}
-    {tab === 2 && <Statistiky d={ukazky ? statTest(!!sek, nazovPol) : { obdobie: "tento mesiac", od: "", dni: farnost ? dniReal : Array.from({ length: 30 }, () => 0), cez: [["Priamo na profile", mesiac, ""]], split: [], darcovia: farnost ? [[String(darcovReal), "darcov"], [String(c.mesacne), "dáva mesačne"]] : [[String(c.mesacne), "dáva mesačne"]], dary: realne }} tier={tier} mobil={mobil} toast={toast} />}
+    {tab === 2 && <Statistiky d={{ obdobie: "tento mesiac", od: "", dni: farnost ? dniReal : Array.from({ length: 30 }, () => 0), cez: [["Priamo na profile", mesiac, ""]], split: [], darcovia: farnost ? [[String(darcovReal), "darcov"], [String(c.mesacne), "dáva mesačne"]] : [[String(c.mesacne), "dáva mesačne"]], dary: realne }} tier={tier} mobil={mobil} toast={toast} />}
     {tab === 3 && ukoncenie}
     {tab === 5 && farnost && <QrZalozka strankaId={strankaId} meno={nazov} id="farnost" mobil={mobil} onTlac={onTlacQr} />}
     {plOkno && qrFar && <PlagatOkno strankaId={strankaId} meno={nazov} p={qrFar} format="a4" mobil={mobil} onZavri={() => setPlOkno(false)} />}
