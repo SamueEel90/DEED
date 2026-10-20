@@ -107,18 +107,20 @@ export function PozvankaSkutkuVrstva({ onPrihlasit, onRegistrovat }: { onPrihlas
 
 // ---------------- OPRAVY 446 (2): pripojenie k akcii charity (sken rotujúceho QR charity) ----------------
 export function PripojenieAkcieHost({ prihlaseny, onPrihlasit, onRegistrovat }: { prihlaseny: boolean; onPrihlasit?: () => void; onRegistrovat?: () => void }) {
-  const token = usePripojenie();
+  const pr = usePripojenie();
+  const token = pr?.kod ?? null;
   const [i, setI] = useState<InfoAkcie | null | "nacitava">("nacitava");
   const [chyba, setChyba] = useState<string | null>(null);
   const [hotovo, setHotovo] = useState(false);
   const [posiela, setPosiela] = useState(false);
   const poloha = usePoloha(!!token && prihlaseny);
-  useEffect(() => { if (!token) return; let z = true; void infoAkcie(token).then((x) => { if (z) { setI(x); if (x?.som) setHotovo(true); } }); return () => { z = false; }; }, [token, prihlaseny]);
-  if (!token) return null;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (!pr) return; let z = true; void infoAkcie(pr).then((x) => { if (z) { setI(x); if (x?.som) setHotovo(true); } }); return () => { z = false; }; }, [token, prihlaseny]);
+  if (!token || !pr) return null;
   const pripoj = async () => {
     if (posiela) return;
     setPosiela(true); setChyba(null);
-    const e = await pripojSaKAkcii(token, poloha.poz);
+    const e = await pripojSaKAkcii(pr, poloha.poz);
     setPosiela(false);
     if (e) setChyba(e); else setHotovo(true);
   };
@@ -136,8 +138,8 @@ export function PripojenieAkcieHost({ prihlaseny, onPrihlasit, onRegistrovat }: 
             <button type="button" onClick={zavriPripojenie} style={tlO}>Hotovo</button>
           </section>
         : !i || !i.plati ? <section style={karta}>
-            <b style={{ fontSize: 18 }}>{i?.skoncila ? "Akcia už skončila" : "Kód už neplatí"}</b>
-            <span style={sedy}>{i?.skoncila ? "K tejto akcii sa už nedá pripojiť." : "QR charity sa mení každých 15 s a platí najviac minútu. Naskenujte ho znova."}</span>
+            <b style={{ fontSize: 18 }}>{i?.skoncila ? "Akcia už skončila" : i?.vyprsal ? "Čas vypršal" : "Kód už neplatí"}</b>
+            <span style={sedy}>{i?.skoncila ? "K tejto akcii sa už nedá pripojiť." : i?.vyprsal ? "Miesto sme vám držali 15 minút. Naskenujte QR charity znova." : "QR charity sa mení každých 15 s, snímka obrazovky neplatí. Naskenujte ho znova."}</span>
           </section>
         : <section style={karta}>
             <span style={{ fontSize: 15, color: "var(--ink2)" }}>Pripojiť sa k akcii</span>

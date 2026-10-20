@@ -95,16 +95,20 @@ export function usePoloha(zapnute: boolean): { stav: StavPolohy; poz: { lat: num
 }
 
 // ---------------- účastník: okno „Pripojiť sa k akcii …?“ ----------------
+// OPRAVY 446 doplnok (0147): kód QR charity sa overí hneď pri skene; server podrží miesto 15 minút (pozvanie „rez“),
+// kým sa nový človek zaregistruje. Potom sa pripojí bez nového skenu. Po 15 minútach „Čas vypršal …“.
 const KLUC = "deed.pripojenie";
-const PLATI_MS = 10 * 60 * 1000;
-let token: string | null = null;
+const PLATI_MS = 15 * 60 * 1000;
+export type Pripojenie = { kod: string; rez?: string; cas: number };
+let stav: Pripojenie | null = null;
 let ver = 0;
 const posl = new Set<() => void>();
 const zmena = () => { ver++; posl.forEach((f) => f()); };
-function uloz(t: string | null) { try { if (t) localStorage.setItem(KLUC, JSON.stringify({ t, cas: Date.now() })); else localStorage.removeItem(KLUC); } catch { /* súkromné okno */ } }
-export function usePripojenie(): string | null { useSyncExternalStore((f) => { posl.add(f); return () => posl.delete(f); }, () => ver); return token; }
-export function otvorPripojenie(t: string) { uloz(t); token = t; zmena(); }
-export function zavriPripojenie() { uloz(null); token = null; zmena(); }
+function uloz(p: Pripojenie | null) { try { if (p) localStorage.setItem(KLUC, JSON.stringify(p)); else localStorage.removeItem(KLUC); } catch { /* súkromné okno */ } }
+export function usePripojenie(): Pripojenie | null { useSyncExternalStore((f) => { posl.add(f); return () => posl.delete(f); }, () => ver); return stav; }
+export function otvorPripojenie(kod: string) { stav = { kod, cas: Date.now() }; uloz(stav); zmena(); }
+export function zavriPripojenie() { uloz(null); stav = null; zmena(); }
+function nastavRez(rez: string) { if (!stav) return; stav = { ...stav, rez }; uloz(stav); zmena(); }
 /** kód QR charity z naskenovaného textu (adresa …/akcia/<kód> alebo holý kód) */
 export function kodAkcieZQr(text: string): string | null {
   const m = text.trim().match(/(?:\/akcia\/)?(DEED1\.[0-9a-f-]{36}\.[0-9]+\.[0-9a-f]{16})/i);
@@ -112,18 +116,27 @@ export function kodAkcieZQr(text: string): string | null {
 }
 if (typeof window !== "undefined") {
   const m = window.location.pathname.match(/^\/akcia\/(DEED1\.[^/?#]+)/);
-  if (m) { try { window.history.replaceState(null, "", window.location.origin + "/"); } catch { /* sandbox */ } uloz(m[1]); token = m[1]; }
-  else { try { const x = JSON.parse(localStorage.getItem(KLUC) ?? "null") as { t?: string; cas?: number } | null; if (x?.t && Date.now() - (x.cas ?? 0) < PLATI_MS) token = x.t; } catch { /* nič */ } }
+  if (m) { try { window.history.replaceState(null, "", window.location.origin + "/"); } catch { /* sandbox */ } stav = { kod: m[1], cas: Date.now() }; uloz(stav); }
+  else { try { const x = JSON.parse(localStorage.getItem(KLUC) ?? "null") as Pripojenie | null; if (x?.kod && Date.now() - (x.cas ?? 0) < PLATI_MS) stav = x; } catch { /* nič */ } }
 }
 
-export type InfoAkcie = { plati: boolean; skoncila?: boolean; nazov?: string; som?: boolean; organizator?: boolean };
-export async function infoAkcie(t: string): Promise<InfoAkcie | null> {
+export type InfoAkcie = { plati: boolean; skoncila?: boolean; vyprsal?: boolean; nazov?: string; som?: boolean; organizator?: boolean };
+/** pri prvom otvorení overí kód a podrží miesto; potom stav pozvania */
+export async function infoAkcie(p: Pripojenie): Promise<InfoAkcie | null> {
   if (!supabase) return null;
-  const { data, error } = await supabase.rpc("akcia_info", { p_token: t });
+  let rez = p.rez;
+  if (!rez) {
+    const { data, error } = await supabase.rpc("akcia_rezervuj", { p_token: p.kod });
+    if (error) return null;
+    const d = data as { plati: boolean; skoncila?: boolean; rez?: string };
+    if (!d.plati || !d.rez) return { plati: false, skoncila: d.skoncila };
+    rez = d.rez; nastavRez(rez);
+  }
+  const { data, error } = await supabase.rpc("akcia_info_rez", { p_rez: rez });
   return error ? null : (data as InfoAkcie);
 }
-export async function pripojSaKAkcii(t: string, poz: { lat: number; lng: number } | null): Promise<string | null> {
-  if (!supabase) return "Nie je spojenie so serverom. Skúste znova.";
-  const { error } = await supabase.rpc("akcia_pripoj", { p_token: t, p_lat: poz?.lat ?? null, p_lng: poz?.lng ?? null });
+export async function pripojSaKAkcii(p: Pripojenie, poz: { lat: number; lng: number } | null): Promise<string | null> {
+  if (!supabase || !p.rez) return "Nie je spojenie so serverom. Skúste znova.";
+  const { error } = await supabase.rpc("akcia_pripoj_rez", { p_rez: p.rez, p_lat: poz?.lat ?? null, p_lng: poz?.lng ?? null });
   return error ? vetaChyby(error.message, "Nepodarilo sa pripojiť. Skúste znova.") : null;
 }
