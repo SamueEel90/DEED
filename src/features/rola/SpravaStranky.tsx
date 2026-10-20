@@ -509,7 +509,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
         <button type="button" onClick={() => setVerejny(false)} style={{ height: 42, padding: "0 16px", border: "none", borderRadius: 13, background: "var(--btn)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>Zavrieť</button>
         <button type="button" onClick={() => { setVerejny(false); otvor("profil"); }} style={{ height: 42, padding: "0 16px", border: "none", borderRadius: 13, background: "var(--btn)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>Upraviť profil</button></>} />}</>;
 
-  const hlavicka = <Hlavicka titul={sub === "vsetko" ? <>Všetko, čo <DeedZnacka /> vie</> : titulok(sub, typ)} onSpat={spat} spatT={sub === null ? "Domov" : "Späť"} otvor={otvor} mobil={!desktop} glowNova={glowZb} telefon={telefon} onPridat={() => setPridat(true)} />;
+  const hlavicka = <Hlavicka titul={sub === "vsetko" ? <>Všetko, čo <DeedZnacka /> vie</> : titulok(sub, typ)} onSpat={spat} spatT={sub === null ? "Domov" : "Späť"} otvor={otvor} mobil={!desktop} glowNova={glowZb} telefon={telefon} onPridat={() => setPridat(true)} bezNovej={sub === "skutky"} />;
 
   if (desktop) return (
     <div ref={korenRef} className="sprava-charity" data-stit={stit} style={{ minHeight: "100dvh", boxSizing: "border-box", padding: "20px 32px", display: "flex", gap: 24, alignItems: "flex-start" }}>
@@ -573,7 +573,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
 // ============================================================
 // HLAVIČKA — na každej obrazovke
 // ============================================================
-function Hlavicka({ titul, onSpat, spatT = "Späť", otvor, mobil, glowNova, telefon, onPridat }: { titul: React.ReactNode; onSpat: () => void; /** OPRAVY 185: z Prehľadu vedie na Domov */ spatT?: string; otvor: (s: Sub) => void; mobil: boolean; glowNova?: boolean; telefon?: boolean; onPridat?: () => void }) {
+function Hlavicka({ titul, onSpat, spatT = "Späť", otvor, mobil, glowNova, telefon, onPridat, bezNovej }: { /** OPRAVY 439 doplnok: na obrazovke Skutky len „Pridať skutok“ */ bezNovej?: boolean; titul: React.ReactNode; onSpat: () => void; /** OPRAVY 185: z Prehľadu vedie na Domov */ spatT?: string; otvor: (s: Sub) => void; mobil: boolean; glowNova?: boolean; telefon?: boolean; onPridat?: () => void }) {
   const nzSh = glowNova ? "0 0 0 3px var(--bg), 0 0 0 5px var(--green), 0 0 20px rgba(78,125,55,.6)" : "none"; // OPRAVY 109
   const spatEl = (
     <button onClick={onSpat} className="sc-bdh" style={{ flex: "none", height: 44, padding: "0 14px 0 8px", borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontSize: 14.5, fontWeight: 800, color: "var(--ink)" }}>
@@ -592,7 +592,7 @@ function Hlavicka({ titul, onSpat, spatT = "Späť", otvor, mobil, glowNova, tel
       {telefon
         ? <button onClick={() => otvor("nast")} aria-label="Nastavenia" title="Nastavenia" className="sc-bdh" style={{ flex: "none", width: 44, height: 44, borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--btn)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d={IK.nast} /></button>
         : kalEl}
-      <button onClick={telefon ? onPridat : () => otvor("x:Nová zbierka")} aria-label={telefon ? "Pridať" : "Nová zbierka"} style={{ flex: "none", width: 44, height: 44, border: "none", borderRadius: 13, boxShadow: nzSh, background: "#4B7A35", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d="M12 5v14M5 12h14" s={20} c="#fff" w={2.6} /></button>
+      {(telefon || !bezNovej) && <button onClick={telefon ? onPridat : () => otvor("x:Nová zbierka")} aria-label={telefon ? "Pridať" : "Nová zbierka"} style={{ flex: "none", width: 44, height: 44, border: "none", borderRadius: 13, boxShadow: nzSh, background: "#4B7A35", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d="M12 5v14M5 12h14" s={20} c="#fff" w={2.6} /></button>}
     </header>);
   return (
     <header style={{ flex: "none", display: "flex", alignItems: "center", gap: 14, paddingBottom: 14, background: "var(--metal) left bottom/100% var(--mH,3px) no-repeat" }}>
@@ -601,7 +601,7 @@ function Hlavicka({ titul, onSpat, spatT = "Späť", otvor, mobil, glowNova, tel
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{titul}</h1>{datum}
       </span>
       {kalEl}
-      <button onClick={() => otvor("x:Nová zbierka")} style={{ ...zeleneTl, boxShadow: nzSh, background: "#4B7A35", display: "flex", alignItems: "center", gap: 8 }}><Ik d="M12 5v14M5 12h14" s={17} c="currentColor" w={2.6} />Nová zbierka</button>
+      {!bezNovej && <button onClick={() => otvor("x:Nová zbierka")} style={{ ...zeleneTl, boxShadow: nzSh, background: "#4B7A35", display: "flex", alignItems: "center", gap: 8 }}><Ik d="M12 5v14M5 12h14" s={17} c="currentColor" w={2.6} />Nová zbierka</button>}
     </header>);
 }
 
