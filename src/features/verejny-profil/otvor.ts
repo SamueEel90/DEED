@@ -8,6 +8,8 @@ import { slugNaKluc, klucNaSlug } from "@/lib/testProfily";
 import { hlavnaBezi, useZmenyCentralnej } from "@/lib/centralnaZbierka";
 import { STREAMY } from "@/lib/testTvorca";
 import { strankaZbierky } from "@/lib/novaZbierka";
+import { supabase } from "@/lib/supabase";
+import { profilOsoby, otvorOsobu } from "@/lib/odkazOsoby";
 
 let otvorene = false;
 let kluc: string | null = null;
@@ -75,6 +77,16 @@ if (typeof window !== "undefined") {
     const k = slugNaKluc(decodeURIComponent(m[1]));
     const omsa = /^\/p\/[^/?#]+\/omsa\/?$/.test(window.location.pathname);
     if (k) { otvorene = true; kluc = k; qrHlavna = !omsa && new URLSearchParams(window.location.search).has("qr"); vecnaZQr = new URLSearchParams(window.location.search).get("vz"); if (omsa) qrCiel = { omsa: true }; }
+    // OPRAVY 449 (1): staré osobné pozvánky /p/<meno-x> — keď taká stránka nie je, otvorí sa profil usera s týmto odkazom
+    const slug = decodeURIComponent(m[1]).toLowerCase();
+    if (k && k === slug && supabase && /^[a-z0-9-]+$/.test(slug)) {
+      const sb = supabase;
+      void sb.from("stranka").select("id").eq("id", k).maybeSingle().then(async ({ data, error }) => {
+        if (error || data) return;
+        const p = await profilOsoby(slug);
+        if (p) { zavriVerejnyProfil(); otvorOsobu(slug); }
+      });
+    }
   }
 }
 // KARTA 47 · /z/{zbierka}?s={stream} — QR / odkaz zo streamu tvorcu → rovno stránka streamu na zbierku.

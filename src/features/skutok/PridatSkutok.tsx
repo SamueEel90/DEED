@@ -44,6 +44,7 @@ import { navrhniAkciu, VOLBA_VETA, type FirmaVolba } from "@/lib/mojaFirma";
 import { VolbaFirma } from "@/features/profil/Zamestnavatel";
 import { qk, repo } from "@/data";
 import { zverejnitSkutokOrg, skusitZnova, TEXT_NEZVEREJNENY } from "./zverejnenieSkutku";
+import { vytvorPozvanku, stavPozvanok } from "@/lib/pozvankaSkutku";
 import type { GoodPolozka } from "@/types";
 import { usePridatSkutok, zavriPridatSkutok, type PridatParams } from "./otvor";
 import { zastavDiktovanie } from "@/lib/diktovanie";
@@ -326,12 +327,22 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
 
   // ---- skupina B ----
   const ucN = uc.length ? `${uc.length + 1} spolu s ${org ? "vami" : "tebou"}` : "";
+  // OPRAVY 449 (2): pozvánka na serveri (0143) — odkaz /pozvanka/<token> otvorí rovno „… ťa pozýva ku skutku · Bol som pri tom“
+  const [chybaPoz, setChybaPoz] = useState<string | null>(null);
   const pozvi = async () => {
-    const url = `${ADRESA}/skutok/${id}/pridaj-sa`;
-    if (typeof navigator.share === "function") { try { await navigator.share({ title: "Bol si pri tom? Potvrď v DEED+", url }); } catch { return; } }
-    else { try { await navigator.clipboard.writeText(url); toast("Pozvánka skopírovaná"); } catch { /* bez schránky */ } }
-    setUc((u) => [...u, { meno: `Pozvánka ${u.filter((x) => !x.overeny).length + 1}`, overeny: false }]);
+    setChybaPoz(null);
+    const p = await vytvorPozvanku(id, nz0.trim() || "Skutok", org ? stranka : null);
+    if (!p) { setChybaPoz("Pozvánku sa nepodarilo vytvoriť. Skontrolujte pripojenie a skúste znova."); return; }
+    if (typeof navigator.share === "function") { try { await navigator.share({ title: "Bol si pri tom? Potvrď v DEED+", url: p.odkaz }); } catch { /* zrušené — pozvánka ostáva, dá sa poslať znova */ } }
+    else { try { await navigator.clipboard.writeText(p.odkaz); toast("Pozvánka skopírovaná"); } catch { /* bez schránky */ } }
+    setUc((u) => [...u, { meno: `Pozvánka ${u.filter((x) => x.token).length + 1}`, overeny: false, token: p.token }]);
   };
+  // kto pozvánku potvrdil (každých 5 s, kým niektorá čaká)
+  useEffect(() => {
+    if (!uc.some((u) => u.token && !u.overeny)) return;
+    const t = window.setInterval(() => { void stavPozvanok(id).then((l) => setUc((u) => u.map((x) => { const r = x.token ? l.find((y) => y.token === x.token) : undefined; return r?.prijal_meno ? { ...x, meno: r.prijal_meno, overeny: true } : x; }))); }, 5000);
+    return () => window.clearInterval(t);
+  }, [uc, id]);
   // pozvánka kolegom vyzerá rovnako ako každá iná (aj od šéfa) — žiadne „povinné"
   const pozviKolegov = async () => {
     const url = `${ADRESA}/skutok/${id}/pridaj-sa`;
@@ -616,9 +627,9 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}><span style={P.lbl}>{o("SPOLU SO MNOU BOLI", "DOBROVOĽNÍCI")}</span><span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink3)" }}>{ucN}</span></div>
         <div style={{ ...P.karta, borderRadius: 16, padding: "2px 12px" }}>
           {uc.map((u, i) => (
-            <div key={u.meno} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 52, borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
+            <div key={u.token ?? u.meno} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 52, borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
               <span aria-hidden="true" style={{ width: 34, height: 34, borderRadius: "50%", background: "var(--gSoft)", color: "var(--gInk)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12.5, fontWeight: 800, flex: "none" }}>{u.overeny ? u.meno.split(" ").map((x) => x[0]).join("").slice(0, 2) : "?"}</span>
-              <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 14.5, fontWeight: 700 }}>{u.meno}</span><span style={{ display: "block", fontSize: 12.5, color: u.overeny ? "var(--gInk)" : "var(--gold)" }}>{u.overeny ? (org ? "pripojený skenom QR charity" : "overený skenom") : "čaká na potvrdenie"}</span></span>
+              <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 14.5, fontWeight: 700 }}>{u.meno}</span><span style={{ display: "block", fontSize: 12.5, color: u.overeny ? "var(--gInk)" : "var(--gold)" }}>{u.token ? (u.overeny ? "potvrdil pozvánku" : "pozvánka poslaná · čaká") : u.overeny ? (org ? "pripojený skenom QR charity" : "overený skenom") : "čaká na potvrdenie"}</span></span>
               <button type="button" onClick={() => setUc((x) => x.filter((y) => y.meno !== u.meno))} aria-label={`Odstrániť ${u.meno}`} style={{ width: 44, height: 44, border: "none", borderRadius: 10, background: "transparent", color: "var(--ink3)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d={IK.kriz} s={16} /></button>
             </div>))}
           {!uc.length && <div style={{ padding: "14px 0", fontSize: 13.5, color: "var(--ink3)" }}>{o("Zatiaľ nikto. Pridaj ľudí, ktorí pomáhali s tebou.", "Zatiaľ nikto. Pridajte ľudí, ktorí pomáhali s vami.")}</div>}
@@ -629,6 +640,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
             {!org && <button type="button" onClick={naskenuj} style={{ height: 46, borderRadius: 13, border: "1px solid var(--gBd)", background: "var(--gSoft)", fontSize: 14, fontWeight: 700, color: "var(--gInk)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontFamily: "inherit" }}><Ik d={IK.sken} s={16} />Naskenovať</button>}
             <button type="button" onClick={pozvi} style={{ height: 46, borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--btn)", fontSize: 14, fontWeight: 700, color: "var(--ink)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontFamily: "inherit" }}><Ik d={IK.poslat} s={16} />Poslať pozvánku</button>
           </div>
+          {chybaPoz && <span role="alert" style={{ fontSize: 13.5, fontWeight: 700, color: "var(--cRed, #A34A2A)" }}>{chybaPoz}</span>}
           <div style={P.maly}>{o("Pomocníkov pridáš", "Pomocníkov pridáte")} do 2 hodín po skutku. Kto dostane pozvánku, musí potvrdiť, že bol pri tom. Každý potom môže pridať aj svoje fotky.</div>
           {mojeFirmy.length > 0 && !org && <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             <button type="button" onClick={pozviKolegov} style={{ minHeight: 46, padding: "4px 8px", borderRadius: 13, border: "1px solid var(--sek-oBd)", background: "var(--goldBg)", fontSize: 13.5, fontWeight: 700, color: "var(--ink)", cursor: "pointer", fontFamily: "inherit", lineHeight: 1.25 }}>Pozvať kolegov z firmy</button>

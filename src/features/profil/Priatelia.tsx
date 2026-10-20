@@ -1,6 +1,7 @@
 // KARTA 29 · Priatelia — záložky Priatelia | Sledujem | Podporujem, žiadosti, Kam idú tvoji priatelia (+ Pridať sa),
 // moji priatelia so štítom, Pridať priateľa (4 cesty), hárok Čo o mne vidia priatelia. Anonymný profil = len meno.
 // Priateľ = vzájomný súhlas · Sledovanie = jednostranné · Podporujem = pravidelné dary. Údaje sú zatiaľ ukážkové.
+import { useMojOdkaz } from "@/lib/odkazOsoby";
 import { DOMENA } from "@/lib/adresa";
 import { sZnackou } from "@/components/DeedZnacka";
 import { useEffect, useRef, useState } from "react";
@@ -304,7 +305,8 @@ function Pozvanka({ onClose }: { onClose: () => void }) {
   const t = useT();
   const [kop, setKop] = useState(false);
   const handle = (ja.nick || `${ja.meno}-${(ja.priezvisko || "")[0] ?? ""}`).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "ja";
-  const odkaz = `${DOMENA}/p/${handle}`;
+  const odkazU = useMojOdkaz(handle, !ja.demo && !!ja.ucetId); // OPRAVY 449 (1): /u/<odkaz> otvorí profil usera
+  const odkaz = `${DOMENA}/u/${odkazU}`;
   const kopiruj = async () => { try { await navigator.clipboard.writeText(`https://${odkaz}`); setKop(true); } catch { toast(tTeraz()("priatelia.odkazChyba")); } };
   const zdielaj = async () => {
     const tn = tTeraz();

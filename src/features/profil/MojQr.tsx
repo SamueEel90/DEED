@@ -1,6 +1,7 @@
 // KARTA 18 · bod 4 — Môj QR: Na akciu · Overiť ma · Pozvánka.
 // Na akciu a Overiť ma: kód sa mení každých 15 s (snímka obrazovky neplatí), token sa tvorí v telefóne,
 // takže funguje aj bez signálu (účasť/overenie sa pripíše po pripojení). Pozvánka: statický odkaz na verejný profil.
+import { useMojOdkaz } from "@/lib/odkazOsoby";
 import { ADRESA, DOMENA } from "@/lib/adresa";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { useT } from "@/i18n";
@@ -64,7 +65,8 @@ export function MojQr({ zalozka = "akcia", onClose }: { zalozka?: ZalozkaQr; onC
   const [velky, setVelky] = useState(false); // OPRAVY 27: ťuk na QR → celá obrazovka
   const zamok = useRef<{ release: () => Promise<void> } | null>(null);
   const handle = (ja.nick || `${ja.meno}-${(ja.priezvisko || "")[0] ?? ""}`).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "ja";
-  const odkaz = `${DOMENA}/p/${handle}`;
+  const odkazU = useMojOdkaz(handle, !ja.demo && !!ja.ucetId); // OPRAVY 449 (1): /u/<odkaz> otvorí profil usera
+  const odkaz = `${DOMENA}/u/${odkazU}`;
   const stit = stitUzivatela(!!ja.demo);
   const nazovStitu = tr(`profil.stit.${stit}`);
   const ini = `${(ja.meno || "?")[0]}${(ja.priezvisko || "")[0] ?? ""}`.toUpperCase();
