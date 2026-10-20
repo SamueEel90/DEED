@@ -15,6 +15,8 @@ import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
 import { useCesta } from "@/lib/cesta";
 import { otvorPridatSkutok } from "@/features/skutok/otvor";
 import { usePouzivatel } from "@/lib/pouzivatel";
+import { usePersonalizacia } from "@/lib/personalizacia";
+import { oblastKluc } from "@/lib/personalizaciaStore";
 import { pribehZbierky, useZmenyPribehov } from "@/lib/pribehZbierky";
 import { otvorPribeh, otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
 import { casOd } from "@/components/feedcard";
@@ -182,7 +184,11 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard }: Feed
   useZmenyPribehov();
   const { desktop } = useLayout();
   // OPRAVY 403: feed = len zbierky a skutky z databázy, od najnovšieho (všetko je zatiaľ v jednom meste)
-  const { data: feed = [], isLoading, isError, refetch } = useCharitaFeed();
+  const { data: feed0 = [], isLoading, isError, refetch } = useCharitaFeed();
+  // OPRAVY 430: najprv zbierky, ktorých oblasť alebo podpoložka sedí so záujmami prihláseného (v rámci okruhu), potom ostatné; bez záujmov od najnovšieho
+  const { zaujmy } = usePersonalizacia();
+  const sedi = (it: CharitaFeedItem) => !!it.komu && zaujmy.some((z) => oblastKluc(z.oblast) === it.komu!.oblast || it.komu!.pod.includes(z.pod_polozka));
+  const feed = zaujmy.length ? [...feed0.filter(sedi), ...feed0.filter((it) => !sedi(it))] : feed0;
   const [radius, setRadius] = useState("stvrt");
   const [vyberOkruh, setVyberOkruh] = useState(false);
   const { gate } = useTvorbaGate(); // pasívny nesmie tvoriť (talent)
@@ -197,7 +203,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard }: Feed
         fotky={it.fotky} accent={K.gold}
         typ={it.typ === "skutok" ? "skutok" : "charita"} stav={it.konciDni != null ? { konciDni: it.konciDni } : undefined}
         doplnky={it.dorovnanie ? <DoplnokDorovnanie ini={it.dorovnanie.ini} text={it.dorovnanie.text} /> : undefined} zFirmy={it.zFirmy}
-        nazov={it.nazov} darov={it.darov} cas={casOd(it.casVytvorenia)}
+        nazov={it.nazov} darov={it.darov} cas={casOd(it.casVytvorenia)} cipy={it.komu?.pod}
         tvorca={it.stranka ? { meno: it.orgNazov ?? "Organizácia", logo: it.org?.logo, ini: it.org?.ini, mesto: it.org?.mesto, stit: it.org?.stit ?? "Bronze",
           onProfil: () => otvorVerejnyProfil(it.stranka!), onStit: () => setStitOkno(it) } : undefined}
         popis={pr ? <span style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{pr.kratky}</span> : it.popis}
@@ -288,10 +294,10 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard }: Feed
 // memo: re-render len pri zmene dát karty (oblubena/vyzbierane/…); inline onClick sa ignoruje
 const CharitaKarta = memo(CharitaKartaBase, rovnakeOkremFunkcii);
 // KARTA 55 · F (2a): druh = štítok na fotke + ľavý okraj, stav vpravo hore, doplnky pod názvom. Kategória nie je štítok.
-function CharitaKartaBase({ wide, onClick, fotky, emoji, typ, stav, doplnky, zFirmy, nazov, popis, vyzbierane, ciel, darov, oblubena, pribehOdkaz, tvorca, cas }: any) {
+function CharitaKartaBase({ wide, onClick, fotky, emoji, typ, stav, doplnky, zFirmy, nazov, popis, vyzbierane, ciel, darov, oblubena, pribehOdkaz, tvorca, cas, cipy }: any) {
   // OPRAVY 426: rozloženie 1b — tvorca pod fotkou so štítom (obrázok), bez modrej fajky; text bez HTML, 2 riadky
   return (
-    <FeedCard wide={wide} onClick={onClick} label={nazov} typ={typ} stav={stav} doplnky={doplnky} tvorca={tvorca} cas={cas}
+    <FeedCard wide={wide} onClick={onClick} label={nazov} typ={typ} stav={stav} doplnky={doplnky} tvorca={tvorca} cas={cas} cipy={cipy}
       media={{
         fotky, emoji,
         overlay: oblubena ? <OblubeneHviezda polozka={oblubena} style={{ top: "auto", bottom: 10 }} /> : undefined,
