@@ -13,7 +13,7 @@ import { pressable } from "@/components/pressable";
 import { FotoPrispevku, Video } from "@/components/media";
 import { MoniBar } from "@/components/layout";
 import { IkonaPin, IkonaRetaz, IkonaHodiny } from "@/components/icons";
-import { druhF, DRUH_NAZOV, type Druh } from "@/lib/druhy";
+import { druhF, druhP, DRUH_NAZOV, type Druh } from "@/lib/druhy";
 import { MEDIA_AR } from "@/lib/cardSize";
 import { StitObr, type StitLevel } from "@/components/stit";
 import { STIT_SK } from "@/lib/stityOblasti";
@@ -144,6 +144,7 @@ export function PlayKruh({ big }: { big?: boolean }) {
   return <span style={{ width: s, height: s, borderRadius: RADIUS.round, background: "rgba(255,255,255,.16)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)", border: "1px solid rgba(255,255,255,.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: "#fff", paddingLeft: SPACE.xxs }}>▶</span>;
 }
 
+const jeUroven = (k: ReactNode) => typeof k === "string" && /^(bronze|silver|gold|platinum|legend|bronz|striebro|zlato|platina|legenda)\b/i.test(k.trim());
 export type FeedCardAutor = {
   meno: ReactNode;
   /** pozadie avatara (gradient/farba) alebo ReactNode avatar */
@@ -230,7 +231,7 @@ export function FeedCard({ wide, onClick, label, typ, stav, doplnky, accent, rin
       background: C.surface2,
       border: wide ? `1px solid ${C.line}` : "none",
       borderBottom: `1px solid ${wide ? C.line : C.line2}`,
-      borderLeft: typ ? `4px solid ${druhF(druhTypu(typ))}` : accent ? `3px solid ${accent}` : undefined, // OPRAVY 426 (d): pás 4 px
+      borderLeft: typ ? `4px solid ${druhP(druhTypu(typ))}` : accent ? `3px solid ${accent}` : undefined, // OPRAVY 426 (d): pás 4 px
       borderRadius: wide ? RADIUS.md : 0,
       marginLeft: wide ? 0 : -SPACE.md, marginRight: wide ? 0 : -SPACE.md,
       marginBottom: wide ? 0 : SPACE.sm,
@@ -249,11 +250,12 @@ export function FeedCard({ wide, onClick, label, typ, stav, doplnky, accent, rin
                 style={{ fontWeight: FW.bold, fontSize: 14.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: autor.onClick ? "pointer" : undefined }}>{autor.meno}</span>
               {autor.chips}
             </div>
-            {(autor.lok || autor.karma) && (
+            {/* OPRAVY 426: štít nikdy ako text („Gold“, „Silver“) — uložená karma pri príspevku nie je skutočný štít */}
+            {(autor.lok || (autor.karma && !jeUroven(autor.karma))) && (
               <div style={{ display: "flex", alignItems: "center", gap: SPACE.xxs, marginTop: 3, minWidth: 0 }}>
                 <IkonaPin size={12} color={C.textSec} />
                 <span style={{ fontSize: 12, color: C.textSec, fontWeight: FW.semi, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{autor.lok}</span>
-                {autor.karma && <span style={{ flex: "none", fontSize: 11.5, color: C.textTer }}>· {autor.karma}</span>}
+                {autor.karma && !jeUroven(autor.karma) && <span style={{ flex: "none", fontSize: 11.5, color: C.textTer }}>· {autor.karma}</span>}
               </div>
             )}
           </div>
@@ -318,7 +320,7 @@ function PasZbierky({ vyzbierane, ciel, darcov, zFirmy }: { vyzbierane: number; 
         {vpravo && <span style={{ color: C.textSec, whiteSpace: "nowrap" }}>{vpravo}</span>}
       </div>
       <div style={{ height: 6, borderRadius: 3, background: "rgba(var(--glass-rgb),.12)", overflow: "hidden", marginTop: 6, display: "flex" }}>
-        <span style={{ height: "100%", width: `${pct - pF}%`, background: druhF("zbierka") }} />{pF > 0 && <span style={{ height: "100%", width: `${pF}%`, background: "var(--gold, #C9A24A)" }} />}
+        <span style={{ height: "100%", width: `${pct - pF}%`, background: druhP("zbierka") }} />{pF > 0 && <span style={{ height: "100%", width: `${pF}%`, background: "var(--gold, #C9A24A)" }} />}
       </div>
     </div>);
 }

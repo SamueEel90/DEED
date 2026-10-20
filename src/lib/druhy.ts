@@ -4,5 +4,7 @@ export type Druh = "zbierka" | "ziadost" | "skutok" | "ponuka" | "akcia" | "hlad
 export const DRUH_NAZOV: Record<Druh, string> = { zbierka: "Zbierka", ziadost: "Žiadosť", skutok: "Skutok", ponuka: "Ponuka", akcia: "Akcia", hladame: "Hľadáme" };
 /** farba štítku a ľavého okraja */
 export const druhF = (d: Druh) => `var(--dr-${d})`;
+/** OPRAVY 427: ľavý pás karty (v tmavom režime svetlejší) */
+export const druhP = (d: Druh) => `var(--dr-${d}-p)`;
 /** farba textu druhu (bez podkladu) */
 export const druhT = (d: Druh) => `var(--dr-${d}-t)`;
