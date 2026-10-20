@@ -13,7 +13,7 @@ import { pridajPodporu, firmaAkoDarca } from "./podpory";
 import { zapisCin } from "./vyzvy";
 import { zapisDarZbierky, idZbierkyDB, naviazObjekt, nacitajDaryZbierky, zdrojDaru, type ObjektZbierky } from "./darZbierky";
 import { toast } from "@/components/toast";
-import { ukazkyTeraz, naZmenuTestStavu } from "./testStav";
+import { naZmenuTestStavu } from "./testStav";
 import { sumaEur } from "@/lib/suma";
 
 // ---- CONFIG (spec §6) — všetky čísla ŠTARTOVACIE, žijú tu, nie v kóde ----
@@ -89,7 +89,7 @@ const emit = () => { verzia++; posluchaci.forEach((f) => f()); };
 export function useZmenyDarov(): number { return useSyncExternalStore(subscribe, () => verzia); }
 function subscribe(f: () => void) { posluchaci.add(f); return () => { posluchaci.delete(f); }; }
 
-// deterministický seed per refId (mock „posledné dary" — ako keby prišli z enginu)
+// mená pre DEV „cudzí dar“ (len testovacie tlačidlo, nie zoznam darcov)
 const POOL = [
   { meno: "Jana Kováčová", inicialovo: "Jana K.", nick: "janka_zl", mesto: "Žilina" },
   { meno: "Peter Baláž", inicialovo: "Peter B.", nick: "petob", mesto: "Prešov" },
@@ -98,46 +98,11 @@ const POOL = [
   { meno: "Zuzana Malá", inicialovo: "Zuzana M.", nick: "zuzka", mesto: "Martin" },
   { meno: "Ondrej Vlk", inicialovo: "Ondrej V.", nick: "ondro77", mesto: "Snina" },
 ];
-function hashRef(s: string): number { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; }
-
-function seed(refId: string): DarRiadok[] {
-  const h = hashRef(refId);
-  const teraz = Date.now();
-  // mix verzií, kanálov a súm — anonym, pod prahom, nad prahom so sumou aj bez
-  const vzor: Array<Partial<DarRiadok> & { minPred: number }> = [
-    { minPred: 4, suma: 10, kanal: "psp", verzia: 2, zobrazSumu: true, mestoVerejne: true },
-    { minPred: 22, suma: 2, kanal: "psp", registrovany: false },
-    { minPred: 51, suma: 25, kanal: "sepa", verzia: 1, zobrazSumu: true, mestoVerejne: true },
-    { minPred: 60 * 3, suma: 4, kanal: "deed", verzia: 3, zobrazSumu: true }, // pod prahom → suma sa NEukáže
-    { minPred: 60 * 9, suma: 15, kanal: "psp", verzia: 4 },
-    { minPred: 60 * 26, suma: 8, kanal: "psp", verzia: 2, zobrazSumu: false },
-    { minPred: 60 * 24 * 2, suma: 50, kanal: "sepa", verzia: 1, zobrazSumu: true, mestoVerejne: false },
-  ];
-  return vzor.map((v, i) => {
-    const d = POOL[(h + i) % POOL.length];
-    return {
-      id: `${refId}-seed-${i}`, refId, cas: teraz - v.minPred * 60000,
-      suma: v.suma!, kanal: v.kanal!,
-      registrovany: v.registrovany !== false,
-      verzia: (v.verzia ?? 4) as VerziaIdentity,
-      zobrazSumu: !!v.zobrazSumu,
-      mestoVerejne: !!v.mestoVerejne,
-      ...d,
-    };
-  });
-}
-
 // zbierky na ukážku klientovi: začínajú bez vymyslených darov — pribúdajú len skutočné (simulované) platby
 const ciste = new Set<string>();
-const OMSA_REF = /-omsa-\d{4}-\d{2}-\d{2}$|-zv-[^-]+-\d{4}-\d{2}-\d{2}-\d{4}$/; // OPRAVY 289: aj zvončeková omše
-/** KARTA 56D: zbierka spustená z účtu (zb-…, novaZbierka.spustiZbierku) je skutočná — nikdy nemá vymyslené dary */
-const ZBIERKA_Z_UCTU = /^zb-/;
 export function nastavCiste(ids: string[]) { ids.forEach((i) => ciste.add(i)); }
 
-// sklad = len skutočné (simulované) dary; vymyslené dary (seed) len pri ukážkach — testovacia verzia
-// a „Profil: Vyplnený". Pri „Prázdny" a mimo testovacej verzie žiadne vymyslené mená (pravidlo placebo).
-const skladSeed = new Map<string, DarRiadok[]>();
-const zlozene = new Map<string, { r: DarRiadok[]; z: DarRiadok[] }>();
+// OPRAVY 442 (2): zoznam darcov = len skutočné dary (ledger, inak dary zapísané v appke). Vymyslené mená (seed) nikde.
 naZmenuTestStavu(emit);
 function realneDary(refId: string): DarRiadok[] {
   let r = sklad.get(refId);
@@ -195,16 +160,7 @@ function riadkyPre(refId: string): DarRiadok[] {
     if (!ledgerBezi.has(refId) && Date.now() - (zLedgera.get(refId) ?? 0) > CERSTVE_DARY_MS) { zLedgera.set(refId, Date.now()); queueMicrotask(() => obnovZLedgera(refId, id)); }
     return realneDary(refId);
   }
-  const r = sOmsami(refId, realneDary(refId));
-  // KARTA 56D · OPRAVY 289: zvončeková omše (…-zv-…) nikdy nemá vymyslené dary
-  if (ciste.has(refId) || !ukazkyTeraz() || OMSA_REF.test(refId) || ZBIERKA_Z_UCTU.test(refId)) return r;
-  let s = skladSeed.get(refId);
-  if (!s) { s = seed(refId); skladSeed.set(refId, s); }
-  const c = zlozene.get(refId);
-  if (c && c.r === r) return c.z; // stabilná referencia pre useSyncExternalStore
-  const z = [...r, ...s];
-  zlozene.set(refId, { r, z });
-  return z;
+  return sOmsami(refId, realneDary(refId));
 }
 /** kľúče zbierok so skutočnými darmi podľa začiatku (omšové okná farnosti) */
 export function refIdySDarmi(zaciatok: string): string[] { return [...sklad.keys()].filter((k) => k.startsWith(zaciatok) && (sklad.get(k)?.length ?? 0) > 0); }

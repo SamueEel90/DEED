@@ -18,8 +18,8 @@ export function mestoZoSidla(sidlo?: string): string | undefined {
 }
 const UROVNE = ["Bronze", "Silver", "Gold", "Platinum", "Legend"] as const;
 /** štít stránky z verejných nastavení (OPRAVY 412) — nová charita = Bronzový */
-const stitZ = (v?: unknown) => { const s = String(v ?? "").toLowerCase(); return UROVNE.find((u) => u.toLowerCase() === s) ?? "Bronze"; };
-const iniZ = (m: string) => m.replace(/,?\s*(o\.\s?z\.|n\.\s?o\.)\s*$/i, "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("") || "?";
+export const stitZ = (v?: unknown) => { const s = String(v ?? "").toLowerCase(); return UROVNE.find((u) => u.toLowerCase() === s) ?? "Bronze"; };
+export const iniZ = (m: string) => m.replace(/,?\s*(o\.\s?z\.|n\.\s?o\.)\s*$/i, "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("") || "?";
 
 const DEN = 86_400_000;
 const dniZ = (ts?: string): number => (ts ? Math.max(0, Math.floor((Date.now() - new Date(ts).getTime()) / DEN)) : 0);
@@ -100,3 +100,22 @@ export const charitaSupabase = {
     return (data ?? []).map((s: any) => ({ id: s.id, nazov: reg.get(s.id)?.nazov || s.nazov, sidlo: reg.get(s.id)?.sidlo ?? "" }));
   },
 };
+
+/** OPRAVY 442: tvorca (logo, iniciály, mesto, štít) pre stránky — skutky charity vo feede Domov */
+export async function tvorcoviaStranok(ids: string[]): Promise<Map<string, { meno?: string; logo?: string; ini: string; mesto?: string; stit: ReturnType<typeof stitZ> }>> {
+  const m = new Map<string, { meno?: string; logo?: string; ini: string; mesto?: string; stit: ReturnType<typeof stitZ> }>();
+  const l = [...new Set(ids)].filter(Boolean);
+  if (!supabase || !l.length) return m;
+  const [ver, prof] = await Promise.all([
+    supabase.from("nastavenia_stranky_verejne").select("stranka, verejne").in("stranka", l),
+    supabase.from("profil_stranky_verejny").select("stranka, ulozeny").in("stranka", l),
+  ]);
+  const verejne = new Map<string, any>(((ver.error ? [] : ver.data) ?? []).map((v: any) => [v.stranka as string, v.verejne ?? {}] as const));
+  const profily = new Map<string, any>(((prof.error ? [] : prof.data) ?? []).map((v: any) => [v.stranka as string, v.ulozeny ?? {}] as const));
+  for (const id of l) {
+    const v = verejne.get(id) ?? {}, reg = v.registra ?? {}, pr = profily.get(id) ?? {};
+    const meno: string | undefined = reg.nazov || undefined;
+    m.set(id, { meno, logo: pr.bezLoga ? undefined : pr.logo || undefined, ini: pr.bezLoga && pr.inicialy ? pr.inicialy : iniZ(meno ?? "?"), mesto: mestoZoSidla(reg.sidlo), stit: stitZ(v.stit) });
+  }
+  return m;
+}

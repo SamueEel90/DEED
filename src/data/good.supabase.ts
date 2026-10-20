@@ -3,6 +3,7 @@
 // Číta `prispevok`/`udalost` z DB a mapuje späť na modulový tvar
 // (GoodPolozka/Udalost). UI/hooky/feed.ts sa nemenia. Fáza 4 — krok A.
 // ============================================================
+import { tvorcoviaStranok } from "./charita.supabase";
 import { supabase } from "@/lib/supabase";
 import { nahrajFotky } from "@/lib/uploadFoto";
 import type { GoodPolozka, Udalost } from "@/types";
@@ -68,6 +69,7 @@ export function naGoodPolozka(r: any): GoodPolozka {
     cas: casZ(r.vytvorene),
     suma: d.suma,
     zdroj: d.zdroj,
+    stranka: r.stranka ?? undefined, // OPRAVY 442 (0141): skutok charity
     charLevel: d.charLevel,
     otvorenaPodpora: d.otvorenaPodpora,
   } as GoodPolozka;
@@ -107,7 +109,10 @@ export const goodSupabase = {
       p_pred_cas: v?.pred?.vytvorene ?? null, p_pred_id: v?.pred?.id ?? null, p_limit: FEED_STRANA,
     });
     if (error) throw error;
-    return ((data || []) as Array<Record<string, unknown>>).map((r) => ({ ...naGoodPolozka(r), vytvorene: r.vytvorene as string }));
+    const l = ((data || []) as Array<Record<string, unknown>>).map((r) => ({ ...naGoodPolozka(r), vytvorene: r.vytvorene as string }));
+    // OPRAVY 442: skutok charity — tvorca na karte ako 426 (logo, štít, mesto z verejných údajov stránky)
+    const t = await tvorcoviaStranok(l.map((x) => x.stranka ?? "")).catch(() => new Map());
+    return l.map((x) => { const o = x.stranka ? t.get(x.stranka) : undefined; return o ? { ...x, org: { logo: o.logo, ini: o.ini, mesto: o.mesto, stit: o.stit } } : x; });
   },
   async vytvor(it: GoodPolozka, autorUcetId?: string | null): Promise<string | null> {
     if (!supabase) return null;

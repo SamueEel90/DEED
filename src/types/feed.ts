@@ -184,6 +184,9 @@ export interface GoodPolozka extends FeedKartaZaklad {
   /** čas vzniku zo servera — kurzor stránkovania feedu (5.4) */
   vytvorene?: string;
   /** OPRAVY 428: číslo objektu (vs zo servera) */ vs?: string;
+  /** OPRAVY 442 (0141): skutok charity — jej stránka a tvorca na karte (logo, štít, mesto) */
+  stranka?: string;
+  org?: { logo?: string; ini?: string; mesto?: string; stit?: "Bronze" | "Silver" | "Gold" | "Platinum" | "Legend" };
   id: number | string;   // mock = number; Supabase = uuid
   /** Zadanie 3 · 3.1: run_id behu AI (/api/score) — skóre, overené a karmu z neho doplní server */
   scoreRunId?: string;
