@@ -7,12 +7,12 @@
 // s uloženou platbou, inak bežné platobné okno. Overujem / Namietam len prihlásený.
 // Živý pás (jeden pre celý prúd) + let daru so Svetlúšikmi (DarLet z odovzdania, naraz 1 let).
 // Pridať Iskru tu nie je — príde v časti 2.
+// OPRAVY 444: ťuk na video = pauza / prehrať (veľká ikona v strede na 1 s), dole tenký posuvník s časom (dá sa ťahať), na PC aj medzerník.
 // ============================================================
 import { createPortal } from "react-dom";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent as RPointerEvent } from "react";
 import { sZnackou } from "@/components/DeedZnacka";
 import { toast } from "@/components/toast";
-import { TESTOVACIA } from "@/lib/testovacia";
 import { jeNeregistrovany, sledujDarcu } from "@/lib/devDarca";
 import { darcoviaPre, sucetDarov, pridajDar, pridajCudziDarMock, identitaDarcu, zobrazenaSuma, relCas, useZmenyDarov, type DarRiadok, type KanalDaru } from "@/lib/darcovia";
 import {
@@ -103,6 +103,7 @@ function IskryPrud() {
   const darBtn = useRef<Record<string, HTMLButtonElement | null>>({});
   const videa = useRef<Record<string, HTMLVideoElement | null>>({});
   const posledny = useRef<{ id: string; t: number; x: number; y: number } | null>(null);
+  const jedenTuk = useRef<number | undefined>(undefined);
 
   const pc = usePcIskry();
   // OPRAVY 138/4: na PC pri otvorenej zbierke, profile alebo autorovi ostane vľavo ľavé menu appky (104 px), nie prázdny pás
@@ -168,6 +169,7 @@ function IskryPrud() {
     const k = (e: KeyboardEvent) => {
       if (e.key === "Escape") { if (vrchRef.current) { setZbOkno(null); setOrgProfil(null); } else if (profilRef.current) setProfil(null); else if (sheet) setSheet(null); else if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined); else zavriIskry(); }
       else if ((e.key === "f" || e.key === "F") && pcRef.current && !sheet && !(e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement)) prepniCeluRef.current();
+      else if (e.key === " " && pcRef.current && !sheet && !profilRef.current && !vrchRef.current && !(e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement)) { e.preventDefault(); prepniHraj.current(); }
       else if ((e.key === "ArrowDown" || e.key === "ArrowUp") && !sheet) { e.preventDefault(); posunRef.current(e.key === "ArrowDown" ? 1 : -1); }
     };
     window.addEventListener("keydown", k);
@@ -178,15 +180,23 @@ function IskryPrud() {
   // hrá len viditeľné video (stlmené, samo); ostatné stoja. Appka v pozadí → stop.
   const [viditelna, setViditelna] = useState(() => document.visibilityState === "visible");
   useEffect(() => { const f = () => setViditelna(document.visibilityState === "visible"); document.addEventListener("visibilitychange", f); return () => document.removeEventListener("visibilitychange", f); }, []);
+  // OPRAVY 444: pauza ťukom (nové video vždy hrá)
+  const [stoji, setStoji] = useState(false);
+  const [ikona, setIkona] = useState<{ k: number; hraj: boolean } | null>(null);
+  useEffect(() => { setStoji(false); }, [idx, druh]);
+  useEffect(() => { if (!ikona) return; const t = window.setTimeout(() => setIkona(null), 1000); return () => window.clearTimeout(t); }, [ikona]);
+  const stojiRef = useRef(stoji);
+  useLayoutEffect(() => { stojiRef.current = stoji; });
+  const prepniHraj = useRef(() => { const n = !stojiRef.current; setStoji(n); setIkona({ k: Date.now(), hraj: !n }); });
   useEffect(() => {
     Object.entries(videa.current).forEach(([id, el]) => {
       if (!el) return;
-      if (akt && id === akt.id && !sheet && !profil && !zbOkno && !orgProfil && viditelna) { el.muted = true; void el.play().catch(() => { /* autoplay zablokovaný — ostane poster */ }); }
+      if (akt && id === akt.id && !stoji && !sheet && !profil && !zbOkno && !orgProfil && viditelna) { el.muted = true; void el.play().catch(() => { /* autoplay zablokovaný — ostane poster */ }); }
       else el.pause();
     });
     const b = bgVideo.current;
     if (b) { if (boky && akt?.src && !sheet && !profil && !zbOkno && !orgProfil && viditelna) { b.muted = true; void b.play().catch(() => undefined); } else b.pause(); }
-  }, [akt, sheet, profil, zbOkno, orgProfil, viditelna, boky]);
+  }, [akt, stoji, sheet, profil, zbOkno, orgProfil, viditelna, boky]);
   useEffect(() => () => { Object.values(videa.current).forEach((el) => el?.pause()); }, []);
 
   // ---- živý pás: dnes v Iskrách + dary v rade (každý 5 s) ----
@@ -241,9 +251,11 @@ function IskryPrud() {
     if ((e.target as HTMLElement).closest("button") || rozbaleny) return; // pri rozbalenom popise dvojitý ťuk nefunguje
     const r = e.currentTarget.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, t = Date.now();
     const p = posledny.current;
+    window.clearTimeout(jedenTuk.current);
     if (p && p.id === v.id && t - p.t < 320 && Math.hypot(p.x - x, p.y - y) < 40) { zapniIskru(v.id); setDva({ id: v.id, x, y, k: t }); posledny.current = null; }
-    else posledny.current = { id: v.id, t, x, y };
+    else { posledny.current = { id: v.id, t, x, y }; jedenTuk.current = window.setTimeout(() => prepniHraj.current(), 330); } // jeden ťuk = pauza / prehrať (po čakaní na dvojitý)
   };
+  useEffect(() => () => window.clearTimeout(jedenTuk.current), []);
   useEffect(() => { if (!dva) return; const t = window.setTimeout(() => setDva(null), 800); return () => window.clearTimeout(t); }, [dva]);
 
   const k = (n: number) => n * mierka; // pravý stĺpec a blok autora: každý rozmer × mierka
@@ -254,9 +266,10 @@ function IskryPrud() {
 
   const poloha = aktualny ? meraj() : undefined; // eslint-disable-line react-hooks/refs
 
-  return (
+  // OPRAVY 444: prúd vždy navrchu (portál do body, nad stránkou charity aj Správou) a na PC ľavé menu nikdy nezmizne
+  return createPortal(
     <div ref={dialogRef} className="isk-dialog" role="dialog" aria-modal="true" aria-label="Iskry" onClick={(e) => { if (pc && e.target === e.currentTarget) zavriIskry(); }}
-      style={{ position: "fixed", top: 0, right: 0, bottom: 0, left: desktop && (profil || zbOkno || orgProfil) ? 104 : 0, zIndex: 140, zoom: bezZoomu(), background: "#0E0F0C", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", fontFamily: "'Plus Jakarta Sans', sans-serif" } as CSSProperties}>
+      style={{ position: "fixed", top: 0, right: 0, bottom: 0, left: desktop ? 104 : 0, zIndex: 1240, zoom: bezZoomu(), background: "#0E0F0C", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", fontFamily: "'Plus Jakarta Sans', sans-serif" } as CSSProperties}>
       {/* po bokoch rozmazaná kópia aktuálneho videa (nie čierne pásy) */}
       {boky && akt && <div aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, background: akt.bg, filter: "blur(40px)", transform: "scale(1.2)" }} />
@@ -300,7 +313,8 @@ function IskryPrud() {
                   <div style={{ display: "flex", alignItems: "center", gap: k(10), flex: "none" }}>
                     {/* ťuk na logo alebo meno = profil autora */}
                     <button type="button" aria-label={`Profil: ${v.autor}`} onClick={() => setProfil(v)} style={{ flex: 1, minWidth: 0, minHeight: 44, display: "flex", alignItems: "center", gap: k(10), padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", color: "#fff", textAlign: "left" }}>
-                      <span style={{ width: k(42), height: k(42), flex: "none", borderRadius: v.org ? k(12) : "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: k(14), fontWeight: 800, color: "#3F6E2A", textShadow: "none" }}>{v.ini}</span>
+                      <span style={{ width: k(42), height: k(42), flex: "none", borderRadius: v.org ? k(12) : "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: k(14), fontWeight: 800, color: "#3F6E2A", textShadow: "none", overflow: "hidden" }}>
+                        {v.logo ? <img src={v.logo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : v.ini}</span>
                       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: k(2) }}>
                         <b style={{ fontSize: k(15.5), display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.2, wordBreak: "break-word" }}>{v.autor}</b>
                         <span style={{ fontSize: k(12.5), opacity: 0.85, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.kto}</span>
@@ -323,6 +337,11 @@ function IskryPrud() {
           })}
         </div>
 
+        {/* OPRAVY 444: ikona pauza / prehrať v strede (1 s) a posuvník s časom */}
+        {ikona && <span key={ikona.k} aria-hidden="true" className="isk-dva" style={{ position: "absolute", left: "50%", top: "46%", width: 84, height: 84, margin: "-42px 0 0 -42px", zIndex: 5, borderRadius: "50%", background: "rgba(0,0,0,.45)", display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+          {ikona.hraj ? <Ik d={IK.hraj} s={36} fill="#fff" w={0} /> : <Ik d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" s={34} fill="#fff" w={0} />}</span>}
+        {akt?.src && <Posuvnik key={akt.id} video={() => videa.current[akt.id] ?? null} k={k} />}
+
         {/* ---------- let daru (naraz 1) ---------- */}
         {aktualny && <DarLet key={kluc(aktualny)} dar={aktualny} poloha={poloha} onPas={(d) => ukazPas(darHlavne(d), darKam(d))} onKoniec={dalsi} />}
 
@@ -331,7 +350,8 @@ function IskryPrud() {
           <div style={{ display: "flex", alignItems: "center", gap: 8, pointerEvents: "auto" }}>
             <button type="button" onClick={zavriIskry} aria-label="Späť" style={{ width: 44, height: 44, marginLeft: -10, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d={IK.spat} s={24} w={2.4} /></button>
             <b style={{ flex: 1, fontSize: 20, color: "#fff" }}>Iskry</b>
-            {TESTOVACIA && <button type="button" onClick={simuluj} style={{ minHeight: 32, padding: "0 10px", borderRadius: 10, border: "1px dashed rgba(255,255,255,.5)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,.85)" }}>Cudzí dar (DEV)</button>}
+            {/* OPRAVY 444: testovacie tlačidlo len pri vývoji (npm run dev), nikdy na webe */}
+            {import.meta.env.DEV && <button type="button" onClick={simuluj} style={{ minHeight: 32, padding: "0 10px", borderRadius: 10, border: "1px dashed rgba(255,255,255,.5)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,.85)" }}>Cudzí dar (DEV)</button>}
             <span style={{ fontSize: 12.5, fontWeight: 700, color: "rgba(255,255,255,.9)" }}>{list.length ? `${Math.min(idx, list.length - 1) + 1} / ${list.length}` : ""}</span>
             {pc && <button type="button" onClick={prepniCelu} aria-label={cela ? "Zavrieť celú obrazovku" : "Celá obrazovka"} title={cela ? "Zavrieť celú obrazovku (F)" : "Celá obrazovka (F)"} style={{ width: 44, height: 44, marginRight: -8, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", filter: "drop-shadow(0 1px 3px rgba(0,0,0,.7))" }}><Ik d={cela ? IK.celaOff : IK.celaOn} s={22} w={2.2} /></button>}
           </div>
@@ -344,7 +364,8 @@ function IskryPrud() {
               style={{ flex: "none", minHeight: 44, padding: "6px 0", border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center" }}>
               <span style={{ whiteSpace: "nowrap", height: 32, display: "flex", alignItems: "center", padding: "0 12px", borderRadius: 16, border: "1px solid rgba(255,255,255,.4)", fontSize: 12.5, fontWeight: druh === i ? 800 : 600, background: druh === i ? "rgba(255,255,255,.9)" : "rgba(0,0,0,.3)", color: druh === i ? "#1D211B" : "#fff", textShadow: druh === i ? "none" : TIEN }}>{t}</span></button>)}
           </div>
-          {(pasDar || prepis) && <div ref={pasRef} role="button" tabIndex={0} aria-label="Dary v Iskrách" onClick={() => { if (pasDar && !prepis) skoc(pasDar.v.id); }} onKeyDown={(e) => { if (e.key === "Enter" && pasDar) skoc(pasDar.v.id); }}
+          {/* OPRAVY 444: pás len zo skutočných darov dnes, pri 0 € skrytý */}
+          {(pasDar || prepis) && dnesSuma > 0 && <div ref={pasRef} role="button" tabIndex={0} aria-label="Dary v Iskrách" onClick={() => { if (pasDar && !prepis) skoc(pasDar.v.id); }} onKeyDown={(e) => { if (e.key === "Enter" && pasDar) skoc(pasDar.v.id); }}
             style={{ pointerEvents: "auto", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 14, background: "rgba(14,15,12,.6)", border: "1px solid rgba(255,255,255,.16)", color: "#fff" }}>
             <span style={{ flex: "none", display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
               <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".06em", opacity: 0.8, whiteSpace: "nowrap", marginBottom: 2 }}>DNES V ISKRÁCH</span>
@@ -409,7 +430,7 @@ function IskryPrud() {
         <PlatobneOkno kanal={platba.kanal} suma={platba.suma} nazov={platba.v.zbierka?.nazov ?? platba.v.autor} registrovany={registrovany}
           pred={{ vyzbierane: s.suma, ciel: null, pocetDarov: s.pocet, darovDnes: 0 }} onClose={() => setPlatba(null)}
           onHotovo={(r) => { const v = platba.v; zaplatene(v, r.eur, kanalDaru(r.kanal, r.sposob)); }} />); })()}
-    </div>);
+    </div>, document.body);
 }
 
 // ---------- hárok zdola (vo vnútri prúdu) ----------
@@ -522,7 +543,7 @@ export function ZdielatIskru({ v, onClose }: { v: Iskra; onClose: () => void }) 
       <button type="button" onClick={() => toast("Video s vodoznakom zatiaľ nie je pripravené.")} style={riadok}>{sZnackou("Stiahnuť video s vodoznakom DEED+")}</button>
       <button type="button" onClick={() => void dalsie()} style={{ ...riadok, border: "none", background: "var(--gGrad)", color: "#fff" }}>Ďalšie možnosti</button>
     </SpolocnyHarok>
-    {velky && createPortal(<div role="dialog" aria-modal="true" aria-label="QR tejto Iskry" onClick={() => setVelky(false)} style={{ position: "fixed", inset: 0, zIndex: 160, background: "rgba(14,15,12,.85)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18, padding: 16, cursor: "zoom-out" }}>
+    {velky && createPortal(<div role="dialog" aria-modal="true" aria-label="QR tejto Iskry" onClick={() => setVelky(false)} style={{ position: "fixed", inset: 0, zIndex: 1320, background: "rgba(14,15,12,.85)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18, padding: 16, cursor: "zoom-out" }}>
       <span style={{ background: "#fff", padding: 16, borderRadius: 24, lineHeight: 0 }}><DeedQr data={url} size={Math.min(420, Math.round(Math.min(window.innerWidth, window.innerHeight) * 0.7))} /></span>
       <button type="button" onClick={() => setVelky(false)} style={{ minHeight: 48, padding: "0 26px", borderRadius: 14, border: "none", background: "#fff", color: "#1D211B", fontSize: 15.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>Zavrieť</button>
     </div>, document.body)}
@@ -612,4 +633,38 @@ function PopisDva({ text, fontSize, onRozbal }: { text: string; fontSize: number
       <span style={viditelny}>{stav.dlhy ? <>{stav.cut}{" "}<span style={{ fontWeight: 800 }}>… viac</span></> : plochy}</span>
     </button>
   );
+}
+
+// ---------- OPRAVY 444 · posuvník videa: tenká čiara s časom, ťah = posun (myš aj prst) ----------
+const cas = (x: number) => { const t = Math.max(0, Math.floor(x || 0)); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`; };
+function Posuvnik({ video, k }: { video: () => HTMLVideoElement | null; k: (n: number) => number }) {
+  const [t, setT] = useState({ c: 0, d: 0 });
+  const [tah, setTah] = useState(false);
+  const pas = useRef<HTMLDivElement | null>(null);
+  const vRef = useRef(video);
+  useLayoutEffect(() => { vRef.current = video; });
+  useEffect(() => {
+    let r = 0;
+    const krok = () => { const v = vRef.current(); if (v) setT((o) => (Math.abs(o.c - v.currentTime) < 0.05 && o.d === (v.duration || 0) ? o : { c: v.currentTime, d: Number.isFinite(v.duration) ? v.duration : 0 })); r = requestAnimationFrame(krok); };
+    r = requestAnimationFrame(krok);
+    return () => cancelAnimationFrame(r);
+  }, []);
+  const posun = (x: number) => {
+    const v = vRef.current(), el = pas.current; if (!v || !el || !t.d) return;
+    const b = el.getBoundingClientRect(), p = Math.min(1, Math.max(0, (x - b.left) / b.width));
+    v.currentTime = p * t.d; setT({ c: p * t.d, d: t.d });
+  };
+  const pct = t.d ? (t.c / t.d) * 100 : 0;
+  if (!t.d) return null; // kým video nemá dĺžku (načítava sa / chýba súbor), posuvník nie je
+  return (
+    <div onPointerDown={(e) => { e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId); setTah(true); posun(e.clientX); }}
+      onPointerMove={(e) => { if (tah) posun(e.clientX); }} onPointerUp={(e) => { e.stopPropagation(); setTah(false); }} onPointerCancel={() => setTah(false)}
+      role="slider" aria-label="Posun videa" aria-valuemin={0} aria-valuemax={Math.round(t.d)} aria-valuenow={Math.round(t.c)} aria-valuetext={`${cas(t.c)} z ${cas(t.d)}`} tabIndex={-1}
+      style={{ position: "absolute", left: k(14), right: k(14), bottom: "env(safe-area-inset-bottom, 0px)", height: 26, zIndex: 6, display: "flex", alignItems: "center", gap: 10, cursor: "pointer", touchAction: "none" }}>
+      <div ref={pas} style={{ flex: 1, height: tah ? 6 : 3, borderRadius: 3, background: "rgba(255,255,255,.3)", position: "relative", transition: "height .15s" }}>
+        <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${pct}%`, borderRadius: 3, background: "#fff" }} />
+        {tah && <div style={{ position: "absolute", left: `${pct}%`, top: "50%", width: 14, height: 14, margin: "-7px 0 0 -7px", borderRadius: "50%", background: "#fff" }} />}
+      </div>
+      <span style={{ flex: "none", fontSize: 11.5, fontWeight: 700, color: "#fff", fontVariantNumeric: "tabular-nums", textShadow: TIEN }}>{cas(t.c)} / {cas(t.d)}</span>
+    </div>);
 }
