@@ -120,10 +120,21 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
     ...zbierky.filter((z) => z.stav === "ukoncena" && z.rok).map((z): Pol => ({ id: z.id, typ: "zb", d: z.d!, m: z.m!, rok: z.rok!, nazov: z.nazov, s: `${eur(z.vyzbierane)} · od ${z.ludia} darcov`, q: z.spravaDarcom, dok: z.doklady ? dokladov(z.doklady) : undefined, foto: z.foto, zbierka: z })),
     ...vLokalite(profil.kronika ?? [], lok, domace).map((k): Pol => ({ ...k })),
   ].sort((a, b) => b.rok - a.rok || poradieDatumu(b.m, b.d) - poradieDatumu(a.m, a.d)).map((p) => (jeFarnost(profil) ? { ...p, bezDokladov: true, dok: undefined } : p)); // KARTA 50: farnosť nedokladá
-  const roky = rokyData.length ? rokyData : [...new Set(vsetkyPol.map((p) => p.rok))].sort((a, b) => b - a).map((rok) => ({ rok, nZaz: 0, sum: [] as [string, string][] }));
+  // OPRAVY 443 (2): posledné 3 skutky v Aktuálne (vedľa seba), v roku sa neopakujú
+  const skVsetky = vsetkyPol.filter((p) => p.typ === "sk");
+  const vAkt = new Set(skVsetky.slice(0, 3).map((p) => p.id));
+  const aktSk = skVsetky.slice(0, 3).filter((p) => ok("sk", `${p.nazov} ${p.s}`, "akt"));
+  const polRoky = vsetkyPol.filter((p) => !vAkt.has(p.id));
+  // skutočná stránka (bez dát rokov): súhrn pod číslom roka zo záznamov („3 skutky · 1 zbierka“)
+  const slovo = (n: number, f: [string, string, string]) => (n === 1 ? f[0] : n >= 2 && n <= 4 ? f[1] : f[2]);
+  const sumRoka = (rok: number): [string, string][] => {
+    const v = polRoky.filter((p) => p.rok === rok), nS = v.filter((p) => p.typ === "sk").length, nZ = v.filter((p) => p.typ === "zb").length;
+    return [...(nS ? [[String(nS), slovo(nS, ["skutok", "skutky", "skutkov"])] as [string, string]] : []), ...(nZ ? [[String(nZ), slovo(nZ, ["zbierka", "zbierky", "zbierok"])] as [string, string]] : [])];
+  };
+  const roky = rokyData.length ? rokyData : [...new Set(polRoky.map((p) => p.rok))].sort((a, b) => b - a).map((rok) => ({ rok, nZaz: 0, sum: sumRoka(rok) }));
   const kapitoly = roky.map((r, i) => {
     const t = String(r.rok);
-    const vid = vsetkyPol.filter((p) => p.rok === r.rok && ok(p.typ, `${p.nazov} ${p.s} ${p.q ?? ""}`, t));
+    const vid = polRoky.filter((p) => p.rok === r.rok && ok(p.typ, `${p.nazov} ${p.s} ${p.q ?? ""}`, t));
     const exp = !!otv[t] || (hlada && vid.length > 0);
     return { ...r, t, vid, exp, prvy: i === 0 };
   });
@@ -356,6 +367,21 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
       </div>
     </div>
   );
+  // OPRAVY 443 (2): SKUTKY v Aktuálne — posledné 3 vedľa seba (mobil posun do strany), ťuk na celú kartu = detail
+  const skutkyBlok = aktSk.length > 0 && <>
+    <span style={{ fontSize: rez === "mob" ? 11.5 : 12, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)", paddingTop: rez === "pc" ? 8 : 6 }}>SKUTKY</span>
+    <div style={rez === "mob" ? { display: "flex", gap: 10, overflowX: "auto", paddingBottom: 2, scrollSnapType: "x proximity" } : { display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: rez === "pc" ? 14 : 12 }}>
+      {aktSk.map((p) => (
+        <button key={p.id} type="button" onClick={() => { uloz(); onZaznam(p); }} aria-label={`Otvoriť skutok: ${p.nazov}`}
+          style={{ flex: rez === "mob" ? "0 0 72%" : undefined, scrollSnapAlign: "start", display: "flex", flexDirection: "column", padding: 0, borderRadius: rez === "pc" ? 20 : 18, overflow: "hidden", background: "var(--card)", border: "1px solid var(--cardBd)", cursor: "pointer", textAlign: "left", color: "var(--ink)", fontFamily: "inherit", boxShadow: "none" }}>
+          <span style={{ display: "block", width: "100%", aspectRatio: "16 / 10", background: bg(p.foto) }} />
+          <span style={{ padding: rez === "pc" ? "12px 14px 14px" : "10px 12px 12px", display: "flex", flexDirection: "column", gap: 4 }}>
+            <b style={{ fontSize: rez === "pc" ? 15.5 : 14.5, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.nazov}</b>
+            <span style={{ fontSize: 12.5, color: "var(--ink3)", fontVariantNumeric: "tabular-nums" }}>{p.d} {p.m.toLocaleLowerCase("sk-SK")} {p.rok}</span>
+          </span>
+        </button>))}
+    </div>
+  </>;
   const oznamyBlok = aktOz.length > 0 && <>
     <span style={{ fontSize: rez === "mob" ? 11.5 : 12, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)", paddingTop: rez === "pc" ? 8 : 6 }}>OZNAMY</span>
     <div style={{ display: rez === "mob" ? "flex" : "grid", flexDirection: "column", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: rez === "pc" ? 14 : 12 }}>
@@ -381,7 +407,7 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
       })}
     </div>
   </>;
-  const pocty = `${tvar(bezice.length, ["zbierka", "zbierky", "zbierok"])} · ${tvar(oznamy.length, ["oznam", "oznamy", "oznamov"])}${praca.length && !jeFarnost(profil) ? ` · hľadáme ${tvar(praca.length, ["človeka", "ľudí", "ľudí"])}` : ""}`;
+  const pocty = `${tvar(bezice.length, ["zbierka", "zbierky", "zbierok"])} · ${tvar(oznamy.length, ["oznam", "oznamy", "oznamov"])}${aktSk.length ? ` · ${tvar(aktSk.length, ["skutok", "skutky", "skutkov"])}` : ""}${praca.length && !jeFarnost(profil) ? ` · hľadáme ${tvar(praca.length, ["človeka", "ľudí", "ľudí"])}` : ""}`;
   const aktualne = (
     <section ref={(el) => { rf.current.akt = el; }} style={{ display: "flex", flexDirection: "column", gap: rez === "pc" ? 18 : rez === "tab" ? 16 : 12 }}>
       {rez === "pc"
@@ -393,9 +419,10 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
         : <span style={{ display: "flex", alignItems: "baseline", gap: rez === "tab" ? 14 : 10, flexWrap: "wrap" }}><b style={{ fontSize: rez === "tab" ? 52 : 40, lineHeight: 1, letterSpacing: "-.02em", ...kovText }}>Aktuálne</b><span style={{ fontSize: rez === "tab" ? 14 : 13, color: rez === "tab" ? "var(--ink2)" : "var(--ink3)" }}>{pocty}</span></span>}
       {velkaKarta}
       {maleKarty}
+      {skutkyBlok}
       {zIskier}
       {oznamyBlok}
-      {!velka && !aktOz.length && hlada && <span style={{ fontSize: 15, color: "var(--ink3)" }}>Aktuálne tu nič také nie je. Pozri nižšie do rokov.</span>}
+      {!velka && !aktOz.length && !aktSk.length && hlada && <span style={{ fontSize: 15, color: "var(--ink3)" }}>Aktuálne tu nič také nie je. Pozri nižšie do rokov.</span>}
     </section>
   );
 

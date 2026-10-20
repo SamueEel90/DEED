@@ -25,13 +25,15 @@ export async function nacitajSkutkyStranky(stranka: string): Promise<void> {
   zmena();
 }
 
-/** zápis (nový aj úprava) — chyba sa nevyhadzuje, skutok ostáva v správe; pri ďalšej úprave sa zapíše znova */
-export async function zapisSkutokStranky(stranka: string, s: MojSkutok): Promise<void> {
+/** zápis (nový aj úprava). OPRAVY 443 (1): vráti chybu (slovenská veta) alebo null — Správa ju ukáže, skutok sa „nestratí“ potichu */
+export async function zapisSkutokStranky(stranka: string, s: MojSkutok): Promise<string | null> {
   const l = pamat.get(stranka);
   if (l) { pamat.set(stranka, s.stiahnuty ? l.filter((x) => x.id !== s.id) : l.some((x) => x.id === s.id) ? l.map((x) => (x.id === s.id ? s : x)) : [s, ...l]); zmena(); }
-  if (!supabase) return;
+  if (!supabase) return null;
   const data = await bezDataUrl(s, "stranky").catch(() => s);
-  await supabase.from("skutok_stranky").upsert({ id: s.id, stranka, data, stiahnuty: s.stiahnuty ?? null, upravene: new Date().toISOString() }, { onConflict: "id" });
+  const { error } = await supabase.from("skutok_stranky").upsert({ id: s.id, stranka, data, stiahnuty: s.stiahnuty ?? null, upravene: new Date().toISOString() }, { onConflict: "id" });
+  if (error) { void nacitajSkutkyStranky(stranka); return "Skutok sa nepodarilo uložiť. Skontrolujte pripojenie a skúste znova."; }
+  return null;
 }
 
 // OPRAVY 436 · skutok charity vo feede Domov (prispevok, zapísaný pri zverejnení) — úprava a zmazanie aj na serveri

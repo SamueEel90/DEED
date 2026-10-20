@@ -95,7 +95,7 @@ export function DetailSkutku({ profil, p, onBack }: { pc: boolean; profil: TestP
               {cez && cez.eur > 0 ? <> Cez tento skutok prišlo <b style={{ color: "var(--ink)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{eur(cez.eur)}</b> od {cez.pocet} {cez.pocet === 1 ? "darcu" : "darcov"}.</> : null}</span>
             <ZmensenyModul><ModulPlatby profil={profil} sektor={modul.sektor} nazov={modul.nazov} dorovnanie={!jeFarnost(profil)} /></ZmensenyModul>
           </>}
-          <ZbalitASpat onClick={onBack} />
+          {/* OPRAVY 443 (3): „Zbaliť a späť ^“ dole v detaile skutku preč (ako 440) */}
         </div>
       </div>
     </div>

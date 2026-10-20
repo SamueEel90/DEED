@@ -4,7 +4,7 @@
 // Demo účet dostane ukážkovú históriu (SEED); nový účet začína prázdny → ukážky pre začiatok.
 import { useEffect, useSyncExternalStore } from "react";
 import { getSession } from "@/lib/session";
-import { zapisSkutokStranky } from "./skutkyStranky";
+import { zapisSkutokStranky, skutkyStrankyZPamate } from "./skutkyStranky";
 import { supabase } from "@/lib/supabase";
 import { bezDataUrl } from "@/lib/uploadFoto";
 import { toast } from "@/components/toast";
@@ -212,10 +212,18 @@ export const ulozKonceptOrg = (stranka: string, k: Koncept | null) => {
 export const skutkyOrg = (stranka: string): MojSkutok[] => nacitaj().skutkyOrg?.[stranka] ?? [];
 export const pridajSkutokOrg = (stranka: string, x: MojSkutok) => { uloz({ skutkyOrg: { ...(nacitaj().skutkyOrg ?? {}), [stranka]: [x, ...skutkyOrg(stranka)] } }); void zapisSkutokStranky(stranka, x); }; // OPRAVY 418: aj na verejný profil
 /** Obsah → Skutky: úprava zverejneného skutku charity (text) alebo stiahnutie */
-export const upravSkutokOrg = (stranka: string, id: string, z: Partial<MojSkutok>) => {
-  uloz({ skutkyOrg: { ...(nacitaj().skutkyOrg ?? {}), [stranka]: skutkyOrg(stranka).map((x) => (x.id === id ? { ...x, ...z } : x)) } });
-  const n = skutkyOrg(stranka).find((x) => x.id === id); if (n) void zapisSkutokStranky(stranka, n); // OPRAVY 418
+// OPRAVY 443 (1): zdroj pravdy je server (skutok_stranky) — úprava vychádza zo serverovej kópie, keď ju zariadenie nemá
+// (skutok zverejnený z iného počítača); vráti chybu zápisu alebo null
+export const upravSkutokOrg = (stranka: string, id: string, z: Partial<MojSkutok>): Promise<string | null> => {
+  const lok = skutkyOrg(stranka);
+  const zaklad = skutkyStrankyZPamate(stranka)?.find((x) => x.id === id) ?? lok.find((x) => x.id === id);
+  if (!zaklad) return Promise.resolve("Skutok sa nenašiel.");
+  const n: MojSkutok = { ...zaklad, ...z };
+  uloz({ skutkyOrg: { ...(nacitaj().skutkyOrg ?? {}), [stranka]: lok.some((x) => x.id === id) ? lok.map((x) => (x.id === id ? n : x)) : [n, ...lok] } });
+  return zapisSkutokStranky(stranka, n); // OPRAVY 418
 };
+/** OPRAVY 443 (1): skutky charity v Správe = tie isté ako na stránke (server); bez servera zo zariadenia */
+export const skutkyOrgSpravy = (stranka: string): MojSkutok[] => skutkyStrankyZPamate(stranka) ?? skutkyOrg(stranka).filter((x) => !x.stiahnuty);
 
 // ---------- ohlásený skutok (Chystám sa to urobiť) ----------
 export const ohlasenie = () => nacitaj().ohlasenie;

@@ -7,7 +7,8 @@
 // Funkcie za tlačidlami NIE SÚ — každé tlačidlo otvorí obrazovku „Pripravujeme".
 // ============================================================
 import { useZmenyDarov, darcoviaPre, sucetDarov } from "@/lib/darcovia";
-import { skutkyOrg, useZmenySkutkov } from "@/lib/mojeSkutky";
+import { skutkyOrgSpravy, useZmenySkutkov } from "@/lib/mojeSkutky";
+import { nacitajSkutkyStranky, useZmenySkutkovStranky } from "@/lib/skutkyStranky";
 import { naviazObjekt } from "@/lib/darZbierky";
 import { UKAZKOVE_STRANKY } from "@/lib/mojeStranky";
 import { TlZbalit } from "@/features/verejny-profil/zbalit";
@@ -1312,7 +1313,8 @@ function PopisOznamov({ strankaId, popis }: { strankaId: string; popis: string }
 /** OPRAVY 436: dlaždica Skutky — „1 zverejnený skutok“ · „3 zverejnené skutky“ · „5 zverejnených skutkov“; keď nič, popis */
 function PopisSkutkov({ strankaId, popis }: { strankaId: string; popis: string }) {
   useZmenySkutkov();
-  const n = skutkyOrg(strankaId).filter((x) => !x.stiahnuty).length;
+  useZmenySkutkovStranky(); useEffect(() => { void nacitajSkutkyStranky(strankaId); }, [strankaId]);
+  const n = skutkyOrgSpravy(strankaId).length; // OPRAVY 443 (1): ten istý počet ako na stránke
   return <>{n === 1 ? "1 zverejnený skutok" : n >= 2 && n <= 4 ? `${n} zverejnené skutky` : n > 4 ? `${n} zverejnených skutkov` : popis}</>;
 }
 function KartaPolozky({ k, tier, piny, prepniPin, otvorPolozku, strankaId }: { k: Karta } & Pick<Spolocne, "tier" | "piny" | "prepniPin" | "otvorPolozku" | "strankaId">) {
