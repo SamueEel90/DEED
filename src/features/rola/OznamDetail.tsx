@@ -5,15 +5,15 @@
 // Prihlásiť sa → „Prihlásený ✓“ + počet), kto zodpovedá + Pozri profil.
 // VyzvaKarta = karta výzvy vo feede Domov (FeedCard podľa 426, jantárový pás a štítok VÝZVA).
 // ============================================================
+import { Galeria } from "@/features/zbierka/Vrch";
 import { useEffect, useState, type CSSProperties } from "react";
 import "@/styles/sprava.css";
-import { BackChip, FeedCard, useGaleria } from "@/shared";
+import { BackChip, FeedCard } from "@/shared";
 import type { StitLevel } from "@/components/stit";
 import { casOd } from "@/components/feedcard";
 import { zverejneneText } from "@/components/CisloObjektu";
 import { RozbalitelnyText } from "@/components/formattext";
 import { cistyText } from "./obsahZbierky";
-import { Media } from "./obsahZbierky";
 import { ucast, nacitajUcasti, prihlasNaOznam, pocetText, useZmenyUcasti } from "@/lib/oznamUcast";
 import { druhF, druhT } from "@/lib/druhy";
 import type { OznamCharity } from "@/lib/oznamyNove";
@@ -33,12 +33,10 @@ const zavrete = (o: OznamCharity, pocet: number, dnes = new Date().toISOString()
 export function OznamDetail({ o, org, onBack, onProfil, toast }: { o: OznamCharity; org: OrgOznamu; onBack: () => void; onProfil?: () => void; toast?: (m: string) => void }) {
   useZmenyUcasti();
   useEffect(() => { void nacitajUcasti([o.id]); }, [o.id]);
-  const otvorGaleriu = useGaleria();
   const [chyba, setChyba] = useState<string | null>(null);
   const [posiela, setPosiela] = useState(false);
   const { pocet, moja } = ucast(o.id);
   const vyzva = o.druh === "vyzva";
-  const fotky = o.media.filter((m) => m.typ === "foto");
   const druhFarba = vyzva ? druhF("vyzva") : "var(--ink3)";
   const prihlas = async () => {
     if (posiela || moja) return;
@@ -61,14 +59,8 @@ export function OznamDetail({ o, org, onBack, onProfil, toast }: { o: OznamChari
         <h1 style={{ margin: 0, fontSize: 22, lineHeight: 1.25, fontWeight: 800, textDecoration: o.zrusene ? "line-through" : "none", overflowWrap: "anywhere" }}>{o.nadpis}</h1>
         {(o.datum || o.miesto) && <span style={{ fontSize: 15, fontWeight: 700, color: vyzva ? druhT("vyzva") : "var(--ink2)" }}>
           {[vyzva ? (o.datum ? `Pomoc treba do ${fmtD(o.datum)}` : "") : o.datum ? `Koná sa ${fmtD(o.datum)}${o.cas ? ` o ${o.cas}` : ""}` : "", o.miesto].filter(Boolean).join(" · ")}</span>}
-        {fotky.length > 0 && <div style={{ display: "grid", gridTemplateColumns: fotky.length > 1 ? "repeat(auto-fill,minmax(min(100%,300px),1fr))" : "minmax(0,1fr)", gap: 12 }}>
-          {fotky.map((m, i) => (
-            <figure key={m.id} style={{ margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
-              <button type="button" onClick={() => otvorGaleriu(fotky.map((x) => x.src), i)} aria-label={`Fotka ${i + 1} z ${fotky.length}, zväčšiť`}
-                style={{ display: "block", width: "100%", aspectRatio: "16 / 9", padding: 0, border: "none", borderRadius: 16, overflow: "hidden", background: "#1D211B", cursor: "zoom-in", boxShadow: "none" }}><Media m={m} /></button>
-              {m.popis?.trim() && <figcaption style={{ fontSize: 13.5, lineHeight: 1.4, color: "var(--ink3)" }}>{m.popis}</figcaption>}
-            </figure>))}
-        </div>}
+        {/* OPRAVY 441: jedna galéria všade (popis fotky na celej obrazovke, aj video) */}
+        {o.media.length > 0 && <Galeria okraj="0" radius={16} nahlady media={o.media.map((m) => ({ typ: m.typ, src: m.src, popis: m.popis?.trim() || undefined }))} />}
         {cistyText(o.text) && <RozbalitelnyText text={o.text} style={{ fontSize: 15.5, lineHeight: 1.6, color: "var(--ink2)" }} />}
         {o.pozvanie !== "bez" && <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 14, borderRadius: 16, background: "var(--field)", border: "1px solid var(--cardBd)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>

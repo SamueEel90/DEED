@@ -3,6 +3,7 @@
 // Aby zbierka nebola suchý platobný modul, ale karta ako každá iná:
 // galéria fotiek (s voľbou úvodnej), krátke video, názov a popis.
 // ============================================================
+import { Galeria } from "@/features/zbierka/Vrch";
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
 import { tint } from "@/lib/ui";
@@ -160,7 +161,10 @@ export function NahladKarty({ profil, logo, vyzbierane, dolozene, ludia, sipka, 
   const dalsie = Math.max(0, fotkyZbierky(profil).length - 1);
   return (
     <div style={{ background: C.surface2, border: `1px solid ${tint(ZELENA, .25)}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
-      {titulna && (
+      {/* OPRAVY 441: viac fotiek / video → tá istá galéria, prepínajú sa hneď na karte */}
+      {(dalsie > 0 || profil.video) && titulna ? <Galeria bezCelej bezBodiek vyska={240} radius={0} okraj="0"
+        media={[{ typ: "foto" as const, src: titulna }, ...fotkyZbierky(profil).filter((f) => f !== titulna).map((src) => ({ typ: "foto" as const, src })), ...(profil.video && jeVideo(profil.video) ? [{ typ: "video" as const, src: profil.video }] : [])]} />
+      : titulna && (
         <div style={{ position: "relative" }}>
           <FotkaObsahu src={titulna} maxVyska={320} />
           {(dalsie > 0 || profil.video) && (
@@ -185,25 +189,11 @@ export function NahladKarty({ profil, logo, vyzbierane, dolozene, ludia, sipka, 
 /** galéria zbierky pre darcu — fotky a video pod platobným modulom */
 export function GaleriaZbierky({ profil }: { profil: ProfilZbierky }) {
   const fotky = fotkyZbierky(profil);
-  const [otvorena, setOtvorena] = useState<number | null>(null);
   if (fotky.length < 2 && !profil.video) return null;
+  // OPRAVY 441: jedna galéria všade (doteraz rad náhľadov, ťuk len rozbalil fotku v riadku)
   return (
     <div style={{ marginTop: SPACE.sm }}>
-      {profil.video && jeVideo(profil.video) && (
-        <div style={{ borderRadius: RADIUS.sm, overflow: "hidden", marginBottom: SPACE.xs }}>
-          <MediaNahlad src={profil.video} popis="Video zbierky" ovladanie style={{ width: "100%", aspectRatio: "16/9", objectFit: "contain", display: "block" }} />
-        </div>
-      )}
-      {fotky.length > 1 && (
-        <div style={{ display: "flex", gap: SPACE.xxs, overflowX: "auto" }}>
-          {fotky.map((f, i) => (
-            <span key={i} {...pressable(() => setOtvorena(otvorena === i ? null : i), `Fotka ${i + 1}`)}
-              style={{ flex: "none", width: otvorena === i ? "100%" : 96, height: otvorena === i ? "auto" : 60, borderRadius: RADIUS.xs, overflow: "hidden", cursor: "pointer" }}>
-              <img src={f} alt="" style={{ width: "100%", height: otvorena === i ? "auto" : "100%", objectFit: "contain", background: "rgba(var(--glass-rgb),.06)", display: "block" }} />
-            </span>
-          ))}
-        </div>
-      )}
+      <Galeria okraj="0" radius={RADIUS.sm} nahlady media={[...(profil.video && jeVideo(profil.video) ? [{ typ: "video" as const, src: profil.video }] : []), ...fotky.map((src) => ({ typ: "foto" as const, src }))]} />
     </div>
   );
 }

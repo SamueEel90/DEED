@@ -74,12 +74,14 @@ function VideoNahlad({ src, onDlzka }: { src: string; onDlzka: (s: number) => vo
 // OPRAVY 441: jedna galéria v celej appke — posun fotiek inline, nezávisí od rodičovskej triedy (.deed-platba / .vp)
 const SNAP: CSSProperties = { display: "flex", height: "100%", overflowX: "auto", overflowY: "hidden", scrollSnapType: "x mandatory", overscrollBehaviorX: "contain", scrollbarWidth: "none" };
 const SNAP_DIETA: CSSProperties = { flex: "none", width: "100%", height: "100%", position: "relative", scrollSnapAlign: "start", scrollSnapStop: "always" };
-export function Galeria({ media, vyska: vyskaP, radius: radiusP, okraj, prekrytie, bezBodiek, nahlady, bezCelej }: {
+export function Galeria({ media, vyska: vyskaP, radius: radiusP, okraj, prekrytie, bezBodiek, nahlady, bezCelej, neorezat }: {
   media: Medium[];
   /** 5. 10. · galéria aj v náhľade „Posielaš do …" (iná výška, rám, bez okraja) · OPRAVY 441: aj „100%“ (karta feedu) */
   vyska?: number | string; radius?: number | string; okraj?: string;
   /** OPRAVY 441: na karte feedu — fotky sa prepínajú potiahnutím / šípkami, ťuk otvorí detail (prebuble na kartu), nie celú obrazovku */
   bezCelej?: boolean;
+  /** OPRAVY 441: plagát / ponuka — fotka sa neoreže (celá, so zvyškom pozadia) */
+  neorezat?: boolean;
   /** štítky nad fotkou (napr. „Posielaš do · …"), neklikateľné */
   prekrytie?: ReactNode;
   bezBodiek?: boolean;
@@ -113,7 +115,7 @@ export function Galeria({ media, vyska: vyskaP, radius: radiusP, okraj, prekryti
           {media.map((m, i) => (
             <div key={i} style={SNAP_DIETA}>
               {m.typ === "foto"
-                ? <span role="img" aria-label={m.popis || undefined} style={{ position: "absolute", inset: 0, background: `url(${m.src}) center/cover no-repeat` }} />
+                ? <span role="img" aria-label={m.popis || undefined} style={{ position: "absolute", inset: 0, background: `url(${m.src}) center/${neorezat ? "contain" : "cover"} no-repeat` }} />
                 : <VideoNahlad src={m.src} onDlzka={setSekundy} />}
             </div>
           ))}

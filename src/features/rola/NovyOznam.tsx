@@ -5,6 +5,7 @@
 // sú prvé dva zamknuté so štítkom „od P1"). Texty = textové polia, fotky = galéria, ako všade.
 // Zverejnenie vždy podržaním (ten istý diel ako platba). Oznam ide sledujúcim po 5 min, verejný a výzva hneď.
 // ============================================================
+import { Galeria } from "@/features/zbierka/Vrch";
 import { CasPole, sNulou } from "@/components/CasPole";
 import { Volby, kartaVolby, FajkaVolby } from "@/components/Volby";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
@@ -110,6 +111,8 @@ export function OznamKartaNova({ o, autor, mesto, inicialy, logo, onProfil, onUc
           ? <object data={o.plagat.src} type="application/pdf" aria-label="Plagát" style={{ display: "block", width: "100%", height: "min(80vh, 640px)", background: "#fff" }}><a href={o.plagat.src} target="_blank" rel="noreferrer" style={{ display: "block", padding: 16 }}>Otvoriť plagát (PDF)</a></object>
           : <img src={o.plagat.src} alt="Plagát" style={{ display: "block", width: "100%", height: "auto", maxHeight: "80vh", objectFit: "contain", background: "#fff" }} />
         : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", aspectRatio: "3 / 4", maxHeight: 420, background: "repeating-linear-gradient(135deg,#D9D3C7 0 10px,#E4DFD5 10px 20px)", fontSize: 14, fontWeight: 700, color: "var(--ink3)" }}>Tu bude váš plagát</span>)
+      // OPRAVY 441: viac fotiek / video → tá istá galéria (doteraz len prvá fotka)
+      : o.media.length > 1 ? <div style={{ aspectRatio: "16 / 9" }}><Galeria vyska="100%" radius={0} okraj="0" media={o.media.map((m) => ({ typ: m.typ, src: m.src, popis: m.popis?.trim() || undefined }))} /></div>
       : hl ? <span style={{ display: "block", aspectRatio: "16 / 9", overflow: "hidden", background: "#1D211B" }}><Media m={hl} /></span>
       : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", aspectRatio: "16 / 8", background: "var(--gSoft)" }}><span style={{ width: 84, height: 84, borderRadius: 22, background: logo ? `url('${logo}') center/cover no-repeat #fff` : "#fff", border: "1px solid var(--gBd)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 800, color: "var(--gInk)" }}>{logo ? "" : inicialy}</span></span>}
       <div style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
