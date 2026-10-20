@@ -37,7 +37,8 @@ import { RamPisania } from "@/components/RamPisania";
 
 /** OPRAVY 416: účet zbierky nie je overený pre stránku — návod namiesto „Skúsiť znova“ */
 const UCET_NEOVERENY = "Najprv overte účet · Nastavenia → Účet ›";
-export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, tablet, stit, onMojeZbierky, farnost, onUcet }: {
+export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, tablet, stit, onMojeZbierky, farnost, onUcet, onQr }: {
+  /** OPRAVY 453: Ďalší krok po spustení · Stiahnuť QR plagát → záložka QR */ onQr?: (id: string) => void;
   /** OPRAVY 416: neoverený účet → Nastavenia → Účet */ onUcet?: () => void;
   strankaId: string; pozicia: Pozicia; tier: Tier; nazov: string; inicialy: string; mobil: boolean; tablet: boolean; stit: string;
   /** „Moje zbierky" (hotovo) */
@@ -174,8 +175,10 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
       <span style={{ width: 72, height: 72, borderRadius: "50%", background: "var(--gSoft)", border: "1.5px solid var(--gBd)", color: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d={I.fajka} s={34} w={2.6} /></span>
       <span style={{ fontSize: 26, fontWeight: 800 }}>Zbierka beží</span>
       <span style={{ maxWidth: 560, fontSize: 15.5, lineHeight: 1.55, color: "var(--ink2)" }}>„{hotovo.nazov}“ je zapečatená a vidia ju darcovia{ph ? "." : " na vašom profile aj vo feede. Fotky a video môžete pridávať aj teraz."}</span>
+      {onQr && <span style={{ maxWidth: 560, fontSize: 15, lineHeight: 1.5, color: "var(--ink)" }}><b>Ďalší krok:</b> stiahnite QR plagát, vytlačte ho a dajte ho tam, kde vás ľudia vidia.</span>}
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", marginTop: 6 }}>
-        <button type="button" onClick={() => setPozriet(true)} style={{ height: 50, padding: "0 22px", border: "none", borderRadius: 14, background: "var(--green)", color: "#fff", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>Pozrieť zbierku</button>
+        {onQr && <button type="button" onClick={() => onQr(hotovo.id)} style={{ height: 50, padding: "0 22px", border: "none", borderRadius: 14, background: "var(--green)", color: "#fff", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>Stiahnuť QR plagát</button>}
+        <button type="button" onClick={() => setPozriet(true)} style={{ height: 50, padding: "0 22px", border: onQr ? "1.5px solid var(--cardBd)" : "none", borderRadius: 14, background: onQr ? "transparent" : "var(--green)", color: onQr ? "var(--ink)" : "#fff", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>Pozrieť zbierku</button>
         <button type="button" onClick={onMojeZbierky} style={{ height: 50, padding: "0 22px", borderRadius: 14, border: "1.5px solid var(--cardBd)", background: "transparent", color: "var(--ink)", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>Moje zbierky</button>
       </div>
     </section>);

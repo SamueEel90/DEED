@@ -1,6 +1,8 @@
 // ============================================================
 // OPRAVY 347 · Nástroje → QR nástroje, jeden plagát pre všetky QR a záložka QR v Správe zbierky.
 // TRVALÉ (QR farnosti, QR zvončeka) a ZBIERKY (každá bežiaca: farnosti, vecná, rodiny).
+// OPRAVY 453: to isté pre charitu (charita = true): TRVALÉ = QR charity (stránka, a keď beží centrálna, rovno ona), bez zvončeka;
+// ZBIERKY = každá bežiaca zbierka charity. Texty sektora: CHARITA, „Podporte našu činnosť“, „Naskenujte QR a prispejte na zbierku …“.
 // PDF: vektorový QR v ráme DEED (lib/qrPdf), nálepky so značkami na strihanie, plagát z rozloženia vecnej zbierky.
 // ============================================================
 import { QrCelaObrazovka } from "@/components/qrNaUkazanie";
@@ -11,7 +13,7 @@ import { DOMENA } from "@/lib/adresa";
 import { nalepkyPdf, plagatPdfVektor, stiahni, menoSuboru, type FormatQr } from "@/lib/qrPdf";
 import { kresliPlagat, riadkovTextu } from "./vecnaPlagat";
 import { odkazQrStranky, odkazQrZvonceka, odkazQrZbierky } from "@/features/verejny-profil/otvor";
-import { centralnaZPamate, useZmenyCentralnej } from "@/lib/centralnaZbierka";
+import { centralnaZPamate, useZmenyCentralnej, hlavnaBezi } from "@/lib/centralnaZbierka";
 import { zbierkyStrankyZPamate, useZmenyZbierok, type SpustenaZbierka } from "@/lib/novaZbierka";
 import { useVecneZbierky, vecnaZbierka, ulozVecnu, odkazVecnej, fotoVecnej, doKedyText, textPlagatuZPoli } from "@/lib/vecnaZbierka";
 import { profilZPamate } from "@/lib/profilStranky";
@@ -38,7 +40,10 @@ export function usePolozkyQr(strankaId: string, meno: string, charita = false): 
   const vecne = useVecneZbierky(strankaId);
   const cover = profilZPamate(strankaId).ulozeny?.cover?.src ?? null;
   const hl = centralnaZPamate(strankaId);
-  const l: PolozkaQr[] = [
+  const l: PolozkaQr[] = charita ? [
+    { id: "charita", t: "QR charity", s: "nálepka na dvere, pokladničku, leták", kam: hlavnaBezi(strankaId) ? "otvorí stránku charity · centrálna zbierka je hore" : "otvorí stránku charity", odkaz: odkazQrStranky(strankaId), trvaly: true,
+      druh: "CHARITA", nazov: "Podporte našu činnosť", text: "Naskenujte QR a podporte našu činnosť.", foto: cover ?? (hl ? fotoZbierky(hl) : null), organizuje: meno, vecna: false },
+  ] : [
     { id: "farnost", t: "QR farnosti", s: "nálepka na lavicu, dvere kostola", kam: "otvorí stránku farnosti a Hlavnú zbierku", odkaz: odkazQrStranky(strankaId), trvaly: true,
       druh: "FARNOSŤ", nazov: "Podporte našu farnosť", text: "Naskenujte QR a prispejte na Hlavnú zbierku farnosti.", foto: cover ?? (hl ? fotoZbierky(hl) : null), organizuje: meno, vecna: false },
     { id: "zvon", t: "QR zvončekovej zbierky", s: "pri vchode, pri zvončeku", kam: "otvorí zbierku pri aktuálnej omši", odkaz: odkazQrZvonceka(strankaId), trvaly: true,
@@ -47,8 +52,9 @@ export function usePolozkyQr(strankaId: string, meno: string, charita = false): 
   for (const z of zbierkyStrankyZPamate(strankaId)) {
     if ((z.stav ?? "aktivna") !== "aktivna") continue;
     if (charita) {
-      l.push({ id: z.id, t: z.nazov || "Zbierka", s: "zbierka · QR platí, kým zbierka beží", kam: "otvorí priamo túto zbierku", odkaz: odkazQrZbierky(z.id), trvaly: false,
-        druh: "ZBIERKA", nazov: z.nazov || "Zbierka", text: kratky(cistyText(z.popis) || "Naskenujte QR a prispejte na zbierku."), foto: fotoZbierky(z), organizuje: meno, vecna: false });
+      const n = z.nazov || "Zbierka";
+      l.push({ id: z.id, t: n, s: "zbierka charity · QR platí, kým zbierka beží", kam: `otvorí zbierku ${n}`, odkaz: odkazQrZbierky(z.id), trvaly: false,
+        druh: "ZBIERKA", nazov: n, text: kratky(`Naskenujte QR a prispejte na zbierku ${n}.`), foto: fotoZbierky(z), organizuje: meno, vecna: false });
       continue;
     }
     const d = z.farnost?.druh ?? "farnost", rod = d === "pohreb" || d === "svadba";
@@ -79,8 +85,8 @@ function CelyQr({ p, onZavri }: { p: PolozkaQr; onZavri: () => void }) {
 }
 
 /** OPRAVY 347 (4): Nástroje → QR nástroje */
-export function QrNastroje({ strankaId, meno, mobil, zvyraznit }: { strankaId: string; meno: string; mobil: boolean; /** zbierka, z ktorej prišiel Tlačiť › */ zvyraznit?: string | null }) {
-  const polozky = usePolozkyQr(strankaId, meno);
+export function QrNastroje({ strankaId, meno, mobil, zvyraznit, charita }: { strankaId: string; meno: string; mobil: boolean; /** zbierka, z ktorej prišiel Tlačiť › */ zvyraznit?: string | null; /** OPRAVY 453 */ charita?: boolean }) {
+  const polozky = usePolozkyQr(strankaId, meno, charita);
   const [fm, setFm] = useState<FormatQr>("n5");
   const [farba, setFarba] = useState<DeedQrVariant>("svetly");
   const [stav, setStav] = useState<Record<string, "busy" | "ok" | "err">>({});
@@ -214,7 +220,7 @@ export function PlagatOkno({ strankaId, meno, p, format, mobil, onZavri }: { str
           {sekcia("Fotka", <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 }}>
             <button type="button" aria-pressed={sFotkou && !!p.foto} disabled={!p.foto} onClick={() => { setSFotkou(true); setPdf(""); }} style={{ ...vol(sFotkou && !!p.foto), opacity: p.foto ? 1 : 0.5 }}>Titulná fotka</button>
             <button type="button" aria-pressed={!sFotkou || !p.foto} onClick={() => { setSFotkou(false); setPdf(""); }} style={vol(!sFotkou || !p.foto)}>Bez fotky</button></div>,
-            !p.foto ? <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{p.vecna || !p.trvaly ? "Zbierka nemá titulnú fotku." : "Profil farnosti nemá titulnú fotku (Upraviť profil)."}</span> : null)}
+            !p.foto ? <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{p.vecna || !p.trvaly ? "Zbierka nemá titulnú fotku." : p.id === "charita" ? "Profil charity nemá titulnú fotku (Upraviť profil)." : "Profil farnosti nemá titulnú fotku (Upraviť profil)."}</span> : null)}
           {chyba && <span role="alert" style={{ fontSize: 13.5, fontWeight: 700, color: "var(--cRed)" }}>{chyba}</span>}
           <button type="button" aria-busy={pdf === "busy"} disabled={!obr} onClick={() => void stiahniPdf()} style={{ minHeight: 52, border: pdf === "err" ? "1.5px solid var(--rBd)" : "none", borderRadius: 14, background: pdf === "ok" ? "var(--gSoft)" : pdf === "err" ? "var(--rBg)" : "#4B7A35", color: pdf === "ok" ? "var(--gInk)" : pdf === "err" ? "var(--cRed)" : "#fff", cursor: obr ? "pointer" : "default", opacity: obr ? 1 : 0.6, fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, boxShadow: "none" }}>
             {pdf === "busy" ? "Pripravujem PDF …" : pdf === "ok" ? "Stiahnuté ✓ · vytlačte na 100 %" : pdf === "err" ? CHYBA : "Stiahnuť PDF na tlač"}</button>

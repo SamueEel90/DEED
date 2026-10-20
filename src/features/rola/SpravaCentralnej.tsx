@@ -69,7 +69,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const idZbierky = `${strankaId}-${kluc}`;
   // OPRAVY 445 (2): centrálna charity = dary z ledgera (stranka:hlavna), ten istý zdroj ako profil a zoznam v Správe
   if (!farnost && !sek) naviazObjekt(idZbierky, { stranka: strankaId, hlavna: true, nazov: "Celá činnosť" });
-  const [tab, setTab] = useState(startQr && farnost ? 5 : 0);
+  const [tab, setTab] = useState(startQr ? 5 : 0); // OPRAVY 453: aj charita
   // OPRAVY 347: plagát hlavnej = jeden plagát pre všetky QR (QR farnosti)
   const qrFar = usePolozkyQr(strankaId, nazov).find((x) => x.id === "farnost");
   const [plOkno, setPlOkno] = useState(false);
@@ -359,7 +359,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
       </div>
     </div>}
     {dorPas}
-    <Taby akt={tab} onTab={setTab} odsadenie={16} skryte={farnost ? [1] : []} qr={!!farnost} />
+    <Taby akt={tab} onTab={setTab} odsadenie={16} skryte={farnost ? [1] : []} qr />
     {pasZav && <div role="status" style={{ borderRadius: 18, background: "#1D211B", color: "#fff", padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
       <span style={{ flex: 1, minWidth: 200, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15.5 }}>{pasZav.t}</b><span style={{ fontSize: 13, opacity: .8 }}>Pravidelným darcom pošleme správu o 15 minút. Dovtedy to môžete vrátiť.</span></span>
       <button type="button" onClick={pasZav.vrat} style={{ height: 46, padding: "0 18px", border: "none", borderRadius: 14, background: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "#1D211B" }}>Vrátiť späť</button>
@@ -370,6 +370,8 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
     {tab === 2 && <Statistiky d={{ obdobie: "tento mesiac", od: "", dni: dniReal, cez: [["Priamo na profile", mesiac, ""]], split: [], darcovia: farnost ? [[String(darcovReal), "darcov"], [String(c.mesacne), "dáva mesačne"]] : [[String(darcovReal), "darcov"]] /* OPRAVY 442 doplnok 3: charita bez „0 dáva mesačne“, dni zo skutočných darov */, dary: realne }} tier={tier} mobil={mobil} toast={toast} />}
     {tab === 3 && ukoncenie}
     {tab === 5 && farnost && <QrZalozka strankaId={strankaId} meno={nazov} id="farnost" mobil={mobil} onTlac={onTlacQr} />}
+    {/* OPRAVY 453: charita — centrálna aj sektor majú QR charity (sektor nemá vlastnú verejnú adresu) */}
+    {tab === 5 && !farnost && <QrZalozka strankaId={strankaId} meno={nazov} id="charita" mobil={mobil} onTlac={onTlacQr} charita />}
     {plOkno && qrFar && <PlagatOkno strankaId={strankaId} meno={nazov} p={qrFar} format="a4" mobil={mobil} onZavri={() => setPlOkno(false)} />}
     {harok && <ZavrietHarok mobil={mobil} sektor={sek?.nazov ?? null} farnost={!!farnost} mesacne={c.mesacne} onPotvrd={potvrd} onZavri={() => setHarok(false)} />}
   </>);

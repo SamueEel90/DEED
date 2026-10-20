@@ -454,7 +454,8 @@ const DEN_MS = 86400000;
 const maskUcet = (u: string) => { const x = u.replace(/\s/g, ""); return x.length > 12 ? `${x.slice(0, 4)} ${x.slice(4, 8)} •• ${x.slice(-4)}` : u; };
 const inic = (t: string) => t.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 
-export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnanie, tier = 0, bezDokladov }: { z: ZbierkaNaSpravu; mobil: boolean; onZbierky: () => void; toast: (m: string) => void; onUdaje?: () => void; onDorovnanie?: () => void; tier?: number;
+export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnanie, tier = 0, bezDokladov, startTab, onTlacQr }: { z: ZbierkaNaSpravu; mobil: boolean; onZbierky: () => void; toast: (m: string) => void; onUdaje?: () => void; onDorovnanie?: () => void; tier?: number;
+  /** OPRAVY 453: otvoriť rovno na záložke (QR po návrate z QR nástrojov) · Tlačiť › */ startTab?: number; onTlacQr?: (id: string) => void;
   /** KARTA 50: farnosť nič nedokladá — bez záložky Doklady, lehoty a „doložené"; výsledok napíše v ohláškach */ bezDokladov?: boolean }) {
   const [teraz] = useState(() => Date.now());
   const [s, setS] = useState<StavZbierky>(() => {
@@ -476,7 +477,7 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
   };
   const vyzbierane = z.vyzbierane + darov.suma;
   const darcov = z.darcovia + darov.pocet;
-  const [tab, setTab] = useState(0);
+  const [tab, setTab] = useState(startTab ?? 0);
   const [conf, setConf] = useState(false);
   const aktivna = s.stav === "aktivna";
   const zac = s.zaciatok ?? pridajDni(s.koniec, -CFG.dlzkaDni);
@@ -675,7 +676,7 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
     {tab === 3 && ukoncenie}
     {tab === 4 && <PribehEditor z={z} mobil={mobil} toast={toast} />}
     {/* OPRAVY 453: záložka QR aj pri bežnej zbierke charity (ako centrálna a farnosť) */}
-    {tab === 5 && z.stranka && <QrZalozka strankaId={z.stranka} meno={z.organizacia ?? ""} id={z.id} mobil={mobil} charita />}
+    {tab === 5 && z.stranka && <QrZalozka strankaId={z.stranka} meno={z.organizacia ?? ""} id={z.id} mobil={mobil} charita onTlac={onTlacQr} />}
     {conf && <UkoncitHarok mobil={mobil} vyzbierane={vyzbierane} darcov={darcov} ciel={z.ciel} lehota={bezDokladov ? null : lehT} onUkonci={ukonci} onZavri={() => setConf(false)} />}
   </>);
 }

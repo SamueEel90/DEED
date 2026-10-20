@@ -22,6 +22,7 @@ import { NovaZbierka } from "./NovaZbierka";
 import { zastavDiktovanie } from "@/lib/diktovanie";
 import { SpravaZbierky, type ZbierkaNaSpravu } from "./SpravaZbierky";
 import { SpravaCentralnej } from "./SpravaCentralnej";
+import { QrNastroje } from "./QrNastroje";
 import { SpravaDorovnania } from "./SpravaDorovnania";
 import { SkutkyCharity } from "./SkutkyCharity";
 import { OznamySprava, AkcieCharity } from "./NovyOznam";
@@ -384,6 +385,9 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   const beziacich = vlastne.filter(bezi).length + (bezUkazok ? 0 : PH_ZBIERKY.filter((z) => !/^Centrálna zbierka/.test(z.t)).length); // limit je mimo centrálnej
   const [limitOkno, setLimitOkno] = useState(false);
   const [spravZb, setSpravZb] = useState<ZbierkaNaSpravu | null>(null); // KARTA 38: ktorú zbierku spravujem
+  // OPRAVY 453: Tlačiť › zo záložky QR → QR nástroje so zvýraznenou zbierkou; ‹ Späť na zbierku otvorí znova záložku QR
+  const [qrZ, setQrZ] = useState<string | null>(null);
+  const [zbTab, setZbTab] = useState<number | undefined>(undefined);
   const [verejny, setVerejny] = useState(false); // OPRAVY 107: tlačidlo Verejný profil = skutočný verejný profil
   const [verejnyTest, setVerejnyTest] = useState(false); // OPRAVY 154: testovací profil (Kronika/Výklad/Pirát) v okne nad Správou
   // KARTA 42: Zadarmo → z hárku Pridať sa Oznamy otvoria rovno na výzve na súrnu pomoc
@@ -404,6 +408,8 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   // pri prepnutí obrazovky hore
   useEffect(() => { korenRef.current?.scrollIntoView?.({ block: "start" }); }, [sub]);
 
+  const tlacQr = (id: string) => { setQrZ(id); setZbTab(undefined); otvor("qr"); };
+  useEffect(() => { if (sub !== "qr" && sub !== "x:Správa zbierky" && sub !== "centralna") { setQrZ(null); setZbTab(undefined); } }, [sub]);
   const otvorPolozku = (id: PolozkaSpravy) => otvor(id === "zbierky" ? "g_zbierky" : id === "spravcovia" ? "n:spravcovia" : id);
   // pri zmene typu (DEV) späť na Prehľad, nech nezostane otvorená vypnutá položka
   const typPred = useRef(typ);
@@ -458,8 +464,9 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
     stit={stit} onUlozene={(pr) => { setProfil(pr); setKoncept(null); }}
     onZmena={setKoncept} onZrusit={() => { hist.current = []; setSub(null); }} onHotovo={() => { hist.current = []; setSub(null); }} />;
   else if (sub === "x:Nová zbierka") obsah = <NovaZbierka strankaId={strankaId} pozicia={poz} tier={tier} nazov={nazov} inicialy={inicialy} mobil={!desktop} tablet={tablet} stit={stit}
-    onMojeZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onUcet={() => otvor("n:ucty")} />;
-  else if (sub === "x:Správa zbierky" && spravZb) obsah = <SpravaZbierky key={spravZb.id} tier={tier} onDorovnanie={() => otvor("dorovnanie")} z={{ ...spravZb, organizacia: nazov, stranka: strankaId, onObsah: vlastne.some((x) => x.id === spravZb.id) ? (o) => void upravZbierku(strankaId, spravZb.id, o) : undefined }} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onUdaje={() => otvor("n:udaje")} />;
+    onMojeZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onUcet={() => otvor("n:ucty")}
+    onQr={typ === "charita" ? (id) => { const z = zbierkyStrankyZPamate(strankaId).find((x) => x.id === id); if (!z) { hist.current = []; setSub("g_zbierky"); return; } hist.current = ["g_zbierky"]; setSpravZb(naSpravu(naRiadok(z))); setZbTab(5); setSub("x:Správa zbierky"); } : undefined} />;
+  else if (sub === "x:Správa zbierky" && spravZb) obsah = <SpravaZbierky key={spravZb.id} tier={tier} startTab={zbTab} onTlacQr={typ === "charita" ? tlacQr : undefined} onDorovnanie={() => otvor("dorovnanie")} z={{ ...spravZb, organizacia: nazov, stranka: strankaId, onObsah: vlastne.some((x) => x.id === spravZb.id) ? (o) => void upravZbierku(strankaId, spravZb.id, o) : undefined }} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onUdaje={() => otvor("n:udaje")} />;
   // OPRAVY 411: charita · Kalendár (dlaždica na telefóne aj ikona v hlavičke) — plní sa sám, ťuk otvorí správu položky
   else if ((sub === "kalendar" || sub === "x:Kalendár") && typ === "charita") obsah = <KalendarCharity strankaId={strankaId} mobil={!desktop}
     onAkcia={(id) => otvor("oznamy", undefined, id)} onBrigady={() => otvor("dobrovolnici")} onPonuky={() => otvor("inzeraty")}
@@ -488,7 +495,12 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   else if (sub === "inzeraty" && typ === "charita") obsah = maPovolenie("inzeraty", tier) ? <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 900 }}><PonukyPrace strankaId={strankaId} tier={tier} mobil={!desktop} /></div> : <Zamknute program={odProgramu("inzeraty")} />;
   // OPRAVY 406: charita · Dobrovoľníctvo = Brigády z Viery (od P2)
   else if (sub === "dobrovolnici" && typ === "charita") obsah = maPovolenie("dobrovolnici", tier) ? <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 900 }}><BrigadyFarnosti strankaId={strankaId} mobil={!desktop} charita /></div> : <Zamknute program={odProgramu("dobrovolnici")} />;
-  else if (sub === "centralna" && typPovoli("centralna", typ) && maPovolenie("centralna", tier)) obsah = <SpravaCentralnej strankaId={strankaId} nazov={nazov} hlavnyUcet={nacitajIbanOrg(poz)} tier={tier} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onDorovnanie={() => otvor("dorovnanie")} onDarcovia={() => otvor("darcovia")} />;
+  // OPRAVY 453: charita · Nástroje → QR nástroje (1 : 1 ako vo Viere), Tlačiť › zo záložky QR sem so zvýraznenou zbierkou
+  else if (sub === "qr" && typ === "charita") obsah = <>
+    {qrZ && <button type="button" onClick={() => { setZbTab(5); spat(); }} style={{ alignSelf: "flex-start", flex: "none", minHeight: 44, padding: 0, border: "none", background: "transparent", color: "var(--green)", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>‹ Späť na zbierku</button>}
+    <QrNastroje strankaId={strankaId} meno={nazov} mobil={!desktop} zvyraznit={qrZ} charita />
+  </>;
+  else if (sub === "centralna" && typPovoli("centralna", typ) && maPovolenie("centralna", tier)) obsah = <SpravaCentralnej key={zbTab === 5 ? "qr" : "z"} startQr={zbTab === 5} onTlacQr={typ === "charita" ? tlacQr : undefined} strankaId={strankaId} nazov={nazov} hlavnyUcet={nacitajIbanOrg(poz)} tier={tier} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onDorovnanie={() => otvor("dorovnanie")} onDarcovia={() => otvor("darcovia")} />;
   else obsah = !typPovoli(sub as PolozkaSpravy, typ) ? <Pripravujeme /> : maPovolenie(sub as PolozkaSpravy, tier) ? <Pripravujeme /> : <Zamknute program={odProgramu(sub as PolozkaSpravy)} />;
   // OPRAVY 404: pracovník charity vidí len zapnuté časti, zvyšok je zamknutý
   { const treba = typ === "charita" ? pravoPreSub(sub) : null; if (treba && !smie(mojePrava, treba)) obsah = <NematePovolene />; }
