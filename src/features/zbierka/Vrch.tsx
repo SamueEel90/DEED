@@ -5,8 +5,7 @@ import { useLayout } from "@/components/context";
 import { useVideoUrl } from "@/lib/videoUloz";
 import { FormatovanyText } from "@/components/formattext";
 import { SpatTlacidlo, ZavrietTlacidlo } from "@/components/cesta";
-import { kopiruj } from "@/lib/zdielanie";
-import { toast } from "@/components/toast";
+import { CisloObjektu } from "@/components/CisloObjektu";
 import { CelaGaleria } from "@/components/celaGaleria";
 
 /** 5. 10. · popis = nepovinný popis fotky (najviac 80 znakov): darca ho vidí pod fotkou na celej obrazovke, čítačka ako alt */
@@ -15,9 +14,9 @@ export type Medium = ({ typ: "video"; src: string } | { typ: "foto"; src: string
 const TMAVA = "rgba(20,18,14,.7)";
 
 // ---------------- 1 · Hlavička ----------------
-export function Hlavicka({ cisloZbierky, overena, onBack, onZavriet, onMoznosti }: {
-  /** KARTA 48: verejné číslo zbierky „Z-123 456 789 0" (= variabilný symbol), ťuk = skopírovať */
-  cisloZbierky?: string; overena?: boolean; onBack: () => void;
+export function Hlavicka({ cisloZbierky, zverejnene, nazovCisla = "číslo zbierky", onBack, onZavriet, onMoznosti }: {
+  /** KARTA 48 · OPRAVY 428: verejné číslo „Z-123 456 789 0" (= VS) v strede hlavičky, ťuk = skopírovať číslice */
+  cisloZbierky?: string; /** OPRAVY 428: ISO čas zverejnenia pod číslom */ zverejnene?: string; nazovCisla?: string; /** OPRAVY 426: už sa nezobrazuje */ overena?: boolean; onBack: () => void;
   spatNazov?: string;        // kam vedie Späť — zatiaľ sa nezobrazuje (jednotné „‹ Späť")
   onZavriet?: () => void;    // krížik: zavrie celú cestu → feed na mieste, kde bola zbierka
   onMoznosti?: () => void;   // ⋯ menu zbierky (Nahlásiť — OPRAVY 51)
@@ -25,12 +24,10 @@ export function Hlavicka({ cisloZbierky, overena, onBack, onZavriet, onMoznosti 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 52, padding: "6px 0 14px", boxSizing: "border-box" }}>
       <SpatTlacidlo onClick={onBack} />
-      {cisloZbierky != null && (
-        <button type="button" onClick={async () => { const ok = await kopiruj(cisloZbierky.replace(/^[A-Z]-/, "").replace(/\s/g, "")); toast(ok ? "Číslo zbierky je skopírované" : "Číslo sa nepodarilo skopírovať"); }} aria-label={`Číslo zbierky ${cisloZbierky}, skopírovať`}
-          style={{ minHeight: 44, padding: "0 10px", borderRadius: 10, background: "var(--bSoft)", border: "1px solid var(--bBd)", color: "var(--blue)", fontFamily: "inherit", fontSize: 13.5, fontWeight: 700, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", cursor: "pointer", boxShadow: "none" }}>{cisloZbierky}</button>
-      )}
-      {/* OPRAVY 426: „Overená“ preč — neoverenú organizáciu nezaregistrujeme */}
-      <button type="button" aria-label="Ďalšie možnosti" onClick={onMoznosti} style={{ marginLeft: "auto", minWidth: 44, height: 44, border: "none", background: "transparent", fontSize: 18, color: "var(--ink3)", letterSpacing: 1, cursor: "pointer", padding: "0 4px", fontFamily: "inherit" }}>···</button>
+      {/* OPRAVY 428: číslo a dátum zverejnenia v strede medzi ‹ Späť a ··· × (komunikácia s podporou) · OPRAVY 426: „Overená“ preč */}
+      <span style={{ flex: 1, minWidth: 0, display: "flex", justifyContent: "center" }}>{cisloZbierky != null && <CisloObjektu cislo={cisloZbierky} zverejnene={zverejnene} hlavicka nazov={nazovCisla} />}</span>
+      {/* OPRAVY 428: ··· okrúhle ako × */}
+      <button type="button" aria-label="Ďalšie možnosti" onClick={onMoznosti} style={{ width: 40, height: 40, flex: "none", borderRadius: "50%", border: "none", background: "rgba(var(--glass-rgb), .12)", fontSize: 16, fontWeight: 800, color: "var(--c-text)", letterSpacing: 1, cursor: "pointer", padding: 0, fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "none" }}>···</button>
       {onZavriet && <ZavrietTlacidlo onClick={onZavriet} />}
     </div>
   );

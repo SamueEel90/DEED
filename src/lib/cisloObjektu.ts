@@ -3,7 +3,7 @@
 // Číslo prideľuje server (atomická sekvencia, nikdy sa nerecykluje). Kým ho objekt nemá,
 // appka zobrazí TESTOVACIE číslo odvodené z id (rovnaké id = rovnaké číslo).
 
-export type TypObjektu = "Z" | "S" | "I" | "U" | "P" | "C" | "D"; // zbierka · skutok · iskra · user vizitka · prevádzka/stôl · stránka subjektu · D = doklad (rada dokladov)
+export type TypObjektu = "Z" | "S" | "I" | "U" | "P" | "C" | "D" | "H" | "O"; // zbierka · skutok · iskra · user vizitka · prevádzka/stôl · stránka subjektu · D = doklad (rada dokladov) · OPRAVY 428: H = žiadosť (Help aj od človeka) · O = ponuka (user, B2B, práca)
 
 /** kontrolná číslica Luhn k 9 číslicam */
 export function luhn(cislice: string): number {

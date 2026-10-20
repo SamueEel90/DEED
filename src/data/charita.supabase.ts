@@ -36,7 +36,7 @@ function naSkutok(r: any): CharitaFeedItem {
     dni: dniZ(r.vytvorene), podpora: r.podpora_count ?? undefined, narodne: !!r.narodne,
     nazov: r.titul || r.autor_nazov || undefined, popis: cistyText(r.popis || "").trim() || undefined,
     fotky: Array.isArray(m.fotky) && m.fotky.length ? m.fotky : undefined,
-    overena: !!r.overene, lok: r.lok || undefined, casVytvorenia: r.vytvorene,
+    overena: !!r.overene, lok: r.lok || undefined, casVytvorenia: r.vytvorene, vs: r.vs || undefined,
   } as CharitaFeedItem;
 }
 
@@ -54,7 +54,7 @@ export const charitaSupabase = {
     const idZbierok = zbierky.map((z: any) => z.id as string);
     const [st, nas, ver, prof] = await Promise.all([
       idStranok.length ? supabase.from("stranka").select("id, typ, testovacia").in("id", idStranok) : Promise.resolve({ data: [], error: null }),
-      idZbierok.length ? supabase.from("zbierka_verejna").select("id, nastavenie").in("id", idZbierok) : Promise.resolve({ data: [], error: null }),
+      idZbierok.length ? supabase.from("zbierka_verejna").select("id, vs, nastavenie").in("id", idZbierok) : Promise.resolve({ data: [], error: null }),
       // OPRAVY 426: tvorca na karte — názov, sídlo, IČO a štít z verejných nastavení, logo z uloženého profilu
       idStranok.length ? supabase.from("nastavenia_stranky_verejne").select("stranka, verejne").in("stranka", idStranok) : Promise.resolve({ data: [], error: null }),
       idStranok.length ? supabase.from("profil_stranky_verejny").select("stranka, ulozeny").in("stranka", idStranok) : Promise.resolve({ data: [], error: null }),
@@ -65,6 +65,7 @@ export const charitaSupabase = {
     if (nas.error) throw nas.error;
     const charity = new Set((st.data ?? []).filter((s: any) => s.typ === "charita" && !s.testovacia).map((s: any) => s.id as string));
     const nastavenie = new Map<string, { popis?: string; media?: Media; typ?: string; mesiace?: number }>((nas.data ?? []).map((n: any) => [n.id as string, n.nastavenie ?? {}] as const));
+    const vsZbierok = new Map<string, string>((nas.data ?? []).map((n: any) => [n.id as string, n.vs as string] as const));
     const karty: CharitaFeedItem[] = zbierky.filter((z: any) => charity.has(z.stranka)).map((z: any) => {
       const n = nastavenie.get(z.id) ?? {};
       const fotky = (Array.isArray(n.media) ? n.media : []).filter((m) => m.typ === "foto" && m.src).map((m) => m.src as string);
@@ -78,7 +79,7 @@ export const charitaSupabase = {
         podpora: Number(z.darov) || undefined, narodne: false,
         nazov: z.nazov, popis: cistyText(n.popis || "").trim() || undefined, fotky: fotky.length ? fotky : undefined,
         vyzbierane: Number(z.vyzbierane) || 0, ciel: ciel > 0 ? ciel : undefined, darov: Number(z.darov) || 0,
-        konciDni: Math.max(0, Math.ceil((koniec.getTime() - Date.now()) / DEN)),
+        konciDni: Math.max(0, Math.ceil((koniec.getTime() - Date.now()) / DEN)), vs: vsZbierok.get(z.id) || undefined,
         orgNazov: meno, stranka: z.stranka, casVytvorenia: z.vytvorene,
         org: { logo: pr.bezLoga ? undefined : pr.logo || undefined, ini: pr.bezLoga && pr.inicialy ? pr.inicialy : iniZ(meno), mesto: mestoZoSidla(reg.sidlo), stit: stitZ(v.stit), ico: reg.ico || undefined, sidlo: reg.sidlo || undefined },
       } as CharitaFeedItem;

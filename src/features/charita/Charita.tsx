@@ -72,13 +72,15 @@ type ZbierkaDetail = {
   org?: string;
   /** OPRAVY 403: stránka organizácie z databázy (odkaz na jej verejný profil) */
   stranka?: string;
+  /** OPRAVY 428: VS zbierky a čas zverejnenia (hlavička detailu) */
+  vs?: string; zverejnene?: string;
 };
 
 // dátovo riadená karta (comp: "data") → detail
 const zoItem = (it: CharitaFeedItem): ZbierkaDetail => ({
   id: String(it.id), nazov: it.nazov || "Zbierka", accent: K.gold,
   overena: it.overena, popis: it.popis || "", vyzbierane: it.vyzbierane, ciel: it.ciel,
-  ludia: it.podpora, fotky: it.fotky, lok: it.lok, org: it.orgNazov, stranka: it.stranka, volunteer: it.typ === "skutok",
+  ludia: it.podpora, fotky: it.fotky, lok: it.lok, org: it.orgNazov, stranka: it.stranka, volunteer: it.typ === "skutok", vs: it.vs, zverejnene: it.casVytvorenia,
 });
 
 // ZbierkaDetail → záznam obľúbených (bookmark)
@@ -121,7 +123,7 @@ export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
     return (<SwipeBack onBack={cesta.spat}><ZbierkaModul key={krok.id}
       zbierka={{ id: z.id ?? z.nazov, nazov: z.nazov, popis: z.pribeh ?? z.popis, overena: z.overena,
         media: (z.fotky ?? []).map((src) => ({ typ: "foto" as const, src })),
-        vyzbierane: z.vyzbierane, ciel: z.ciel, ludia: z.ludia }}
+        vyzbierane: z.vyzbierane, ciel: z.ciel, ludia: z.ludia, vs: z.vs, zverejnene: z.zverejnene }}
       onBack={cesta.spat} spatNazov={spatNazov} onZavriet={cesta.zavri}
       onOtvorOrg={z.stranka ? () => otvorVerejnyProfil(z.stranka!) : undefined}
       stav={krok.stav} onStav={(zm) => cesta.ulozStav(krok.id, zm)} /></SwipeBack>);

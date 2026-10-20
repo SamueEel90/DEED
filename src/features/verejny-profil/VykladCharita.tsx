@@ -7,7 +7,6 @@
 import { useOtvorHlavnuZQr } from "./otvor";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { eur, pct, tvar, jeFarnost, type Lokalita, type TestProfil, type TestSektor, type TestZbierka } from "@/lib/testProfily";
-import { cisloObjektu } from "@/lib/cisloObjektu";
 import { druhF, druhT, type Druh } from "@/lib/druhy";
 import { PracaKarta } from "@/components/PracaKarta";
 import { DOK, LokalitaPrepinac, StitCare, StitOkno, klikKarta, nazovStitu, useDomaceMesto } from "./casti";
@@ -114,7 +113,7 @@ export function VykladCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, 
   const pribehTyzdna = tyzden && (() => {
     const z = tyzden, zF = z.zFirmy ?? 0, p = pct(z.vyzbierane, z.ciel), pF = z.ciel ? Math.min(100 - p, Math.round(zF / z.ciel * 100)) : 0, pL = Math.max(0, p - pF);
     const st = stavZb(z);
-    const sumaRiadok = [tvar(z.ludia, ["človek", "ľudia", "ľudí"]), zF ? `${eur(zF)} pridala firma` : null, `zbierka ${cisloObjektu("Z", z.id)}`].filter(Boolean).join(" · ");
+    const sumaRiadok = [tvar(z.ludia, ["človek", "ľudia", "ľudí"]), zF ? `${eur(zF)} pridala firma` : null].filter(Boolean) /* OPRAVY 428: číslo na karte nie (je v detaile) */.join(" · ");
     return (
       <div {...klikKarta(() => onDetail(z), z.nazov)} style={{ borderRadius: mob ? 22 : 24, overflow: "hidden", background: "var(--card)", border: "1px solid var(--cardBd)", borderLeft: `${mob ? 5 : 6}px solid ${druhF("zbierka")}`, cursor: "pointer" }}>
         <div style={{ position: "relative", aspectRatio: mob ? "4/3" : "16/8", background: bgF(z.foto) }}>
