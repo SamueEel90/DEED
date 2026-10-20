@@ -4,6 +4,7 @@
 // ukončená → dokladovanie podľa pásma (povinné minimum + navyše = karma)
 // Pravidlá a čísla: lib/zbierkaSprava.ts (SPRAVA_ZBIERKY_CFG, PASMA_DOKLADOV).
 // ============================================================
+import { QrZalozka } from "./QrNastroje";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { SvetlusikKarta } from "@/components/SvetlusikInfo";
 import { odkazQrZbierky } from "@/features/verejny-profil/otvor";
@@ -667,12 +668,14 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
         <button type="button" onClick={() => zmen({ upozornenie90Zavrete: new Date().toISOString() })} style={tlO}>Teraz nie</button>
       </div>
     </section>}
-    <Taby akt={tab} onTab={setTab} skryte={bezDokladov ? [1] : []} pribeh />
+    <Taby akt={tab} onTab={setTab} skryte={bezDokladov ? [1] : []} pribeh qr={!!z.stranka} />
     {tab === 0 && stlpce(vlavo, vpravo)}
     {tab === 1 && !bezDokladov && <DokladyCharity zbierkaId={z.id} s={s} zmen={zmenDoklady} vyzbierane={vyzbierane} teraz={teraz} mobil={mobil} toast={toast} onHotovo={() => setTab(0)} />}
     {tab === 2 && <Statistiky d={stat} tier={tier} mobil={mobil} toast={toast} />}
     {tab === 3 && ukoncenie}
     {tab === 4 && <PribehEditor z={z} mobil={mobil} toast={toast} />}
+    {/* OPRAVY 453: záložka QR aj pri bežnej zbierke charity (ako centrálna a farnosť) */}
+    {tab === 5 && z.stranka && <QrZalozka strankaId={z.stranka} meno={z.organizacia ?? ""} id={z.id} mobil={mobil} charita />}
     {conf && <UkoncitHarok mobil={mobil} vyzbierane={vyzbierane} darcov={darcov} ciel={z.ciel} lehota={bezDokladov ? null : lehT} onUkonci={ukonci} onZavri={() => setConf(false)} />}
   </>);
 }

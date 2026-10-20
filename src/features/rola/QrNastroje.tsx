@@ -32,7 +32,8 @@ const kratky = (t: string) => { const s = t.replace(/\s+/g, " ").trim(); return 
 const fotoZbierky = (z: Pick<SpustenaZbierka, "media">) => z.media.find((m) => m.typ === "foto")?.src ?? null;
 
 /** všetky QR farnosti: trvalé a bežiace zbierky */
-export function usePolozkyQr(strankaId: string, meno: string): PolozkaQr[] {
+/** OPRAVY 453: charita = zbierky charity (bez farských slov a bez dátumu konca farnosti) */
+export function usePolozkyQr(strankaId: string, meno: string, charita = false): PolozkaQr[] {
   useZmenyCentralnej(); useZmenyZbierok();
   const vecne = useVecneZbierky(strankaId);
   const cover = profilZPamate(strankaId).ulozeny?.cover?.src ?? null;
@@ -45,6 +46,11 @@ export function usePolozkyQr(strankaId: string, meno: string): PolozkaQr[] {
   ];
   for (const z of zbierkyStrankyZPamate(strankaId)) {
     if ((z.stav ?? "aktivna") !== "aktivna") continue;
+    if (charita) {
+      l.push({ id: z.id, t: z.nazov || "Zbierka", s: "zbierka · QR platí, kým zbierka beží", kam: "otvorí priamo túto zbierku", odkaz: odkazQrZbierky(z.id), trvaly: false,
+        druh: "ZBIERKA", nazov: z.nazov || "Zbierka", text: kratky(cistyText(z.popis) || "Naskenujte QR a prispejte na zbierku."), foto: fotoZbierky(z), organizuje: meno, vecna: false });
+      continue;
+    }
     const d = z.farnost?.druh ?? "farnost", rod = d === "pohreb" || d === "svadba";
     l.push({ id: z.id, t: z.nazov || "Zbierka", s: rod ? "zbierka rodiny · QR je aj na parte" : `zbierka farnosti · beží do ${datumKonca(koniecZbierky(strankaId, z))}`, kam: rod ? "otvorí zbierku rodiny" : "otvorí priamo túto zbierku",
       odkaz: odkazQrZbierky(z.id), trvaly: false, druh: rod ? "ZBIERKA RODINY" : "ZBIERKA FARNOSTI", nazov: z.nazov || "Zbierka",
@@ -220,8 +226,8 @@ export function PlagatOkno({ strankaId, meno, p, format, mobil, onZavri }: { str
 }
 
 /** OPRAVY 347 (6): záložka QR v Správe zbierky — QR v ráme, adresa, TRVALÝ / NA DOBU ZBIERKY, Tlačiť › a Plagát A4 › */
-export function QrZalozka({ strankaId, meno, id, mobil, onTlac }: { strankaId: string; meno: string; id: string; mobil: boolean; onTlac?: (id: string) => void }) {
-  const p = usePolozkyQr(strankaId, meno).find((x) => x.id === id);
+export function QrZalozka({ strankaId, meno, id, mobil, onTlac, charita }: { strankaId: string; meno: string; id: string; mobil: boolean; onTlac?: (id: string) => void; /** OPRAVY 453 */ charita?: boolean }) {
+  const p = usePolozkyQr(strankaId, meno, charita).find((x) => x.id === id);
   const [pl, setPl] = useState(false);
   const [cely, setCely] = useState(false);
   if (!p) return <section style={{ ...karta, padding: 18, fontSize: 14.5, color: "var(--ink3)" }}>QR má len bežiaca zbierka. Po skončení zbierky jej QR otvorí „Zbierka skončila · ďakujeme“.</section>;
