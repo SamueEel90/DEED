@@ -45,3 +45,14 @@ export async function zmazSkutokZFeedu(prispevokId: string | undefined): Promise
   if (!supabase || !prispevokId) return;
   await supabase.from("prispevok").delete().eq("id", prispevokId);
 }
+
+/** OPRAVY 448 (3) · 0144: zverejnené skutky charít, pri ktorých som bol (sken Môj QR alebo potvrdená pozvánka) — do denníka */
+export async function skutkyKdeSomPomahal(): Promise<MojSkutok[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("skutky_kde_som_pomahal");
+  if (error || !data) return [];
+  return (data as { skutok: string; stranka: string; od: string; data: MojSkutok; vytvorene: string }[]).map((r) => ({
+    ...r.data, id: `pom-${r.skutok}`, za: r.od, karma: null, stav: "ok" as MojSkutok["stav"], fotky: r.data.fotky ?? [],
+    det: `Pomáhal(a) si s ${r.od}.`, datum: r.data.datum || new Date(r.vytvorene).getTime(),
+  }));
+}

@@ -1,6 +1,7 @@
 // KARTA 18 · bod 4 — Môj QR: Na akciu · Overiť ma · Pozvánka.
 // Na akciu a Overiť ma: kód sa mení každých 15 s (snímka obrazovky neplatí), token sa tvorí v telefóne,
 // takže funguje aj bez signálu (účasť/overenie sa pripíše po pripojení). Pozvánka: statický odkaz na verejný profil.
+import { useMojQrKod } from "@/lib/osobnyQr";
 import { useMojOdkaz } from "@/lib/odkazOsoby";
 import { ADRESA, DOMENA } from "@/lib/adresa";
 import { TESTOVACIA } from "@/lib/testovacia";
@@ -101,7 +102,9 @@ export function MojQr({ zalozka = "akcia", onClose }: { zalozka?: ZalozkaQr; onC
     try { navigator.vibrate?.([8, 40, 12]); } catch { /* bez vibrácie */ }
     setOk(true); window.setTimeout(() => setOk(false), 2200);
   };
-  const data = zivy ? tokenQr(ja.ucetId || ja.cisloUctu, z, okno) : `https://${odkaz}`;
+  // OPRAVY 448 (3): kód podpísaný serverom (0144) — bez neho (offline) len kód zariadenia, ten server neprijme
+  const kodServer = useMojQrKod(zivy && !ja.demo && !!ja.ucetId);
+  const data = zivy ? (kodServer ? `${ADRESA}/q/${z}/${kodServer}` : tokenQr(ja.ucetId || ja.cisloUctu, z, okno)) : `https://${odkaz}`;
   const zalozkaBtn = (k: ZalozkaQr, t: string) => (
     <button key={k} type="button" onClick={() => prepni(k)} style={{ minHeight: 44, borderRadius: 10, border: "none", cursor: "pointer", fontSize: 14.5, fontWeight: 800, fontFamily: "inherit", background: z === k ? "var(--green)" : "transparent", color: z === k ? "#fff" : "var(--ink2)" }}>{t}</button>);
 

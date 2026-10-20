@@ -3,6 +3,7 @@
 // akcie priamo v ozname · agregácia malých darov do súhrnu (povinná).
 // Nastavenia: hlavný vypínač · každá položka V APPKE a NA DISPLEJ · zbalené kategórie · strop 3 denne ·
 // večerný súhrn · tichý čas. Tá istá obrazovka je aj v Nastavenia → Oznámenia (jeden komponent, dva vstupy).
+import { otvorPozvankuSkutku } from "@/lib/pozvankaSkutku";
 import { TlZbalit } from "@/features/verejny-profil/zbalit";
 import { sZnackou } from "@/components/DeedZnacka";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -127,7 +128,7 @@ export function Zvoncek({ color = "var(--c-textSec)", toast }: { color?: string;
   const [um, setUm] = useState<{ stranka: string; id: string; text: string } | null>(null);
   const umX = um ? odFarnikov(um.stranka).find((x) => x.id === um.id && x.k === "umysel") : undefined;
   const naOdkaz = (n: Notifikacia) => {
-    const m = /^(odv|prisp|nezv|vz|ovp|str|um|poz):([^:]+):(.+)$/.exec(n.odkaz ?? "");
+    const m = /^(odv|prisp|nezv|vz|ovp|str|um|poz|pzs):([^:]+):(.+)$/.exec(n.odkaz ?? "");
     oznac(n); setOtvor(false);
     if (!m) return;
     const [, druh, stranka, pid] = m;
@@ -137,6 +138,7 @@ export function Zvoncek({ color = "var(--c-textSec)", toast }: { color?: string;
     else if (druh === "vz") otvorVerejnyProfil(stranka, { doVecnej: pid }); // OPRAVY 320: poďakovanie darcom vecnej zbierky → detail zbierky
     else if (druh === "str") otvorVerejnyProfil(stranka); // OPRAVY 349: poďakovanie od farnosti → stránka farnosti
     else if (druh === "poz") otvorPozvanku(stranka, pid); // OPRAVY 392: pozvánka do Správy → Prijať · Odmietnuť
+    else if (druh === "pzs") otvorPozvankuSkutku(pid); // OPRAVY 448 (5): pozvánka ku skutku → Bol som pri tom
     else if (druh === "um") { setUm({ stranka, id: pid, text: n.text }); void obnovCakajuce(stranka); } // OPRAVY 375
     else setNezv({ stranka, t: mojeCakajuce().find((c) => c.id === pid)?.t ?? n.text });
   };

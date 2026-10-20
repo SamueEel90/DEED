@@ -45,6 +45,7 @@ import { VolbaFirma } from "@/features/profil/Zamestnavatel";
 import { qk, repo } from "@/data";
 import { zverejnitSkutokOrg, skusitZnova, TEXT_NEZVEREJNENY } from "./zverejnenieSkutku";
 import { vytvorPozvanku, stavPozvanok } from "@/lib/pozvankaSkutku";
+import { SkenerPomocnika, HarokPozvanky } from "./PomocniciSkutku";
 import type { GoodPolozka } from "@/types";
 import { usePridatSkutok, zavriPridatSkutok, type PridatParams } from "./otvor";
 import { zastavDiktovanie } from "@/lib/diktovanie";
@@ -329,14 +330,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   const ucN = uc.length ? `${uc.length + 1} spolu s ${org ? "vami" : "tebou"}` : "";
   // OPRAVY 449 (2): pozvánka na serveri (0143) — odkaz /pozvanka/<token> otvorí rovno „… ťa pozýva ku skutku · Bol som pri tom“
   const [chybaPoz, setChybaPoz] = useState<string | null>(null);
-  const pozvi = async () => {
-    setChybaPoz(null);
-    const p = await vytvorPozvanku(id, nz0.trim() || "Skutok", org ? stranka : null);
-    if (!p) { setChybaPoz("Pozvánku sa nepodarilo vytvoriť. Skontrolujte pripojenie a skúste znova."); return; }
-    if (typeof navigator.share === "function") { try { await navigator.share({ title: "Bol si pri tom? Potvrď v DEED+", url: p.odkaz }); } catch { /* zrušené — pozvánka ostáva, dá sa poslať znova */ } }
-    else { try { await navigator.clipboard.writeText(p.odkaz); toast("Pozvánka skopírovaná"); } catch { /* bez schránky */ } }
-    setUc((u) => [...u, { meno: `Pozvánka ${u.filter((x) => x.token).length + 1}`, overeny: false, token: p.token }]);
-  };
+  const [pomPanel, setPomPanel] = useState<null | "sken" | "pozvanka">(null); // OPRAVY 448
   // kto pozvánku potvrdil (každých 5 s, kým niektorá čaká)
   useEffect(() => {
     if (!uc.some((u) => u.token && !u.overeny)) return;
@@ -345,17 +339,12 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   }, [uc, id]);
   // pozvánka kolegom vyzerá rovnako ako každá iná (aj od šéfa) — žiadne „povinné"
   const pozviKolegov = async () => {
-    const url = `${ADRESA}/skutok/${id}/pridaj-sa`;
-    if (typeof navigator.share === "function") { try { await navigator.share({ title: "Bol si pri tom? Potvrď v DEED+", url }); } catch { return; } }
-    else { try { await navigator.clipboard.writeText(url); toast("Pozvánka pre kolegov skopírovaná"); } catch { /* bez schránky */ } }
-    setUc((u) => [...u, { meno: `Kolega ${u.filter((x) => !x.overeny).length + 1}`, overeny: false }]);
-  };
-  const DEMO_MENA = ["Lucia H.", "Tomáš B.", "Jana N.", "Peťo K.", "Mária S.", "Ondrej V.", "Katka L.", "Miro D."];
-  const naskenuj = () => {
-    // skener QR „Na akciu" — overenie tokenu robí server; v DEV pribudne ukážkový účastník
-    if (!TESTOVACIA) { toast("Skener účastníkov pribudne s napojením na server."); return; }
-    const n = DEMO_MENA.find((m) => !uc.some((u) => u.meno === m));
-    if (n) { setUc((u) => [...u, { meno: n, overeny: true }]); vibruj(8); }
+    setChybaPoz(null);
+    const p = await vytvorPozvanku(id, nz0.trim() || "Skutok", null); // OPRAVY 449: odkaz zo servera (0143)
+    if (!p) { setChybaPoz("Pozvánku sa nepodarilo vytvoriť. Skontrolujte pripojenie a skúste znova."); return; }
+    if (typeof navigator.share === "function") { try { await navigator.share({ title: "Bol si pri tom? Potvrď v DEED+", url: p.odkaz }); } catch { /* zrušené */ } }
+    else { try { await navigator.clipboard.writeText(p.odkaz); toast("Pozvánka pre kolegov skopírovaná"); } catch { /* bez schránky */ } }
+    setUc((u) => [...u, { meno: `Kolega ${u.filter((x) => x.token).length + 1}`, overeny: false, token: p.token }]);
   };
 
   // ---- AI hodnotenie ----
@@ -629,17 +618,25 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
           {uc.map((u, i) => (
             <div key={u.token ?? u.meno} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 52, borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
               <span aria-hidden="true" style={{ width: 34, height: 34, borderRadius: "50%", background: "var(--gSoft)", color: "var(--gInk)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12.5, fontWeight: 800, flex: "none" }}>{u.overeny ? u.meno.split(" ").map((x) => x[0]).join("").slice(0, 2) : "?"}</span>
-              <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 14.5, fontWeight: 700 }}>{u.meno}</span><span style={{ display: "block", fontSize: 12.5, color: u.overeny ? "var(--gInk)" : "var(--gold)" }}>{u.token ? (u.overeny ? "potvrdil pozvánku" : "pozvánka poslaná · čaká") : u.overeny ? (org ? "pripojený skenom QR charity" : "overený skenom") : "čaká na potvrdenie"}</span></span>
+              <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 14.5, fontWeight: 700 }}>{u.meno}</span><span style={{ display: "block", fontSize: 12.5, color: u.overeny ? "var(--gInk)" : "var(--gold)" }}>{u.token ? (u.overeny ? "potvrdil pozvánku" : "pozvánka poslaná · čaká") : u.sken ? "pridaný skenom" : u.overeny ? (pr.zAkcie ? (org ? "pripojený skenom QR charity" : "overený skenom na akcii") : "overený skenom") : "čaká na potvrdenie"}</span></span>
               <button type="button" onClick={() => setUc((x) => x.filter((y) => y.meno !== u.meno))} aria-label={`Odstrániť ${u.meno}`} style={{ width: 44, height: 44, border: "none", borderRadius: 10, background: "transparent", color: "var(--ink3)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d={IK.kriz} s={16} /></button>
             </div>))}
           {!uc.length && <div style={{ padding: "14px 0", fontSize: 13.5, color: "var(--ink3)" }}>{o("Zatiaľ nikto. Pridaj ľudí, ktorí pomáhali s tebou.", "Zatiaľ nikto. Pridajte ľudí, ktorí pomáhali s vami.")}</div>}
         </div>
         {!pr.zAkcie ? <>
-          {/* OPRAVY 442 doplnok 3: za charitu bez DEV simulácie skenu (vymyslení pomocníci); sken kamerou príde v 448 */}
-          <div style={{ display: "grid", gridTemplateColumns: org ? "1fr" : "1fr 1fr", gap: 8 }}>
-            {!org && <button type="button" onClick={naskenuj} style={{ height: 46, borderRadius: 13, border: "1px solid var(--gBd)", background: "var(--gSoft)", fontSize: 14, fontWeight: 700, color: "var(--gInk)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontFamily: "inherit" }}><Ik d={IK.sken} s={16} />Naskenovať</button>}
-            <button type="button" onClick={pozvi} style={{ height: 46, borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--btn)", fontSize: 14, fontWeight: 700, color: "var(--ink)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontFamily: "inherit" }}><Ik d={IK.poslat} s={16} />Poslať pozvánku</button>
-          </div>
+          {/* OPRAVY 448: naostro — kamera na Môj QR pomocníka (overí server, 0144) a hárok s odkazom pozvánky (0143) */}
+          {pomPanel === "sken" ? <SkenerPomocnika skutok={id} nazov={nz0.trim()} stranka={org ? stranka : null} onZavri={() => setPomPanel(null)}
+              onPridany={(meno) => setUc((u) => (u.some((x) => x.meno === meno && x.sken) ? u : [...u, { meno, overeny: true, sken: true }]))} />
+            : pomPanel === "pozvanka" ? <HarokPozvanky skutok={id} nazov={nz0.trim()} stranka={org ? stranka : null} onZavri={() => setPomPanel(null)}
+              onOdkaz={(token) => setUc((u) => [...u, { meno: `Pozvánka ${u.filter((x) => x.token).length + 1}`, overeny: false, token }])}
+              onPozvany={(token, meno) => setUc((u) => [...u, { meno, overeny: false, token }])} />
+            : <>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <button type="button" onClick={() => setPomPanel("sken")} style={{ minHeight: 46, padding: "4px 8px", borderRadius: 13, border: "1px solid var(--gBd)", background: "var(--gSoft)", fontSize: 14, fontWeight: 800, color: "var(--gInk)", cursor: "pointer", fontFamily: "inherit" }}>Naskenovať pomocníka</button>
+                <button type="button" onClick={() => setPomPanel("pozvanka")} style={{ minHeight: 46, padding: "4px 8px", borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--btn)", fontSize: 14, fontWeight: 800, color: "var(--ink)", cursor: "pointer", fontFamily: "inherit" }}>Poslať pozvánku</button>
+              </div>
+              <div style={P.maly}>{o("Pomocník otvorí v appke Môj QR a ukáže ti ho.", "Pomocník otvorí v appke Môj QR a ukáže vám ho.")}</div>
+            </>}
           {chybaPoz && <span role="alert" style={{ fontSize: 13.5, fontWeight: 700, color: "var(--cRed, #A34A2A)" }}>{chybaPoz}</span>}
           <div style={P.maly}>{o("Pomocníkov pridáš", "Pomocníkov pridáte")} do 2 hodín po skutku. Kto dostane pozvánku, musí potvrdiť, že bol pri tom. Každý potom môže pridať aj svoje fotky.</div>
           {mojeFirmy.length > 0 && !org && <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>

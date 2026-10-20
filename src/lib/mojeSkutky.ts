@@ -62,7 +62,7 @@ export interface MojSkutok {
   caka?: { opis: string; text: string; miesto: string; maVideo: boolean; dokaz: boolean; autor: string; ucetId: string | null; lat?: number; lng?: number };
 }
 
-export interface Ucastnik { meno: string; overeny: boolean; /** OPRAVY 449: pozvánka na serveri (0143) — potvrdenie príde odtiaľ */ token?: string }
+export interface Ucastnik { meno: string; overeny: boolean; /** OPRAVY 449: pozvánka na serveri (0143) — potvrdenie príde odtiaľ */ token?: string; /** OPRAVY 448: pridaný skenom Môj QR (0144) */ sken?: boolean }
 export interface Koncept {
   sk: boolean; plan: boolean; nazov: string; popis: string; miesto: string; kedy: string;
   oblast: Oblast | null; dar: ZbierkaVolba[]; ucastnici: Ucastnik[]; ulozene: number;

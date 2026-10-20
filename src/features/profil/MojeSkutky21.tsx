@@ -1,5 +1,7 @@
 // KARTA 21 · Moje skutky — zoznam po mesiacoch, filtre 3 × 2, hľadanie, (ročný súhrn na zdieľanie je v Štatistikách, karta 27),
 // prázdny stav = tá istá obrazovka s ukážkami. Pridať skutok = spoločný komponent (otvorPridatSkutok).
+import { useQuery } from "@tanstack/react-query";
+import { skutkyKdeSomPomahal } from "@/lib/skutkyStranky";
 import { ADRESA } from "@/lib/adresa";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { SpatTlacidlo } from "@/components/cesta";
@@ -64,7 +66,9 @@ export function MojeSkutky21({ onBack, oblastStitu }: { onBack: () => void; /** 
   const { desktop } = useLayout();
   const session = useSession() as { demo?: boolean } | null;
   const nast = useNastaveniaAppky();
-  const vsetky = mojeSkutky();
+  // OPRAVY 448 (3): aj skutky charít, pri ktorých som bol (sken Môj QR alebo potvrdená pozvánka) — zo servera
+  const { data: pomahal = [] } = useQuery({ queryKey: ["skutky-pomahal"], queryFn: skutkyKdeSomPomahal, staleTime: 60_000 });
+  const vsetky = [...mojeSkutky(), ...pomahal];
   const [f, setF] = useState<Filter>("vsetky");
   const [hlad, setHlad] = useState(false);
   const [q, setQ] = useState("");

@@ -28,6 +28,8 @@ export function usePozvanka(): StavPozvanky {
   return stav;
 }
 export function zavriPozvanku() { uloz(null); stav = null; zmena(); }
+/** z upozornenia v zvončeku (OPRAVY 448 · 5) */
+export function otvorPozvankuSkutku(token: string) { uloz(token); stav = { token }; zmena(); }
 
 // /pozvanka/<token> — otvorí okno pozvánky ešte pred prihlásením (adresa sa vráti na „/“)
 if (typeof window !== "undefined") {
@@ -67,4 +69,18 @@ export async function stavPozvanok(skutok: string): Promise<{ token: string; pri
   if (!supabase) return [];
   const { data, error } = await supabase.rpc("pozvanky_skutku", { p_skutok: skutok });
   return error || !data ? [] : (data as { token: string; prijal_meno: string | null; prijate: string | null; plati_do: string }[]);
+}
+
+// ---- OPRAVY 448 (5): pozvať registrovaného podľa mena (0144) ----
+export type NajdenaOsoba = { ucet: string; meno: string; mesto: string | null };
+export async function hladajOsoby(q: string): Promise<NajdenaOsoba[]> {
+  if (!supabase || q.trim().length < 3) return [];
+  const { data, error } = await supabase.rpc("hladaj_osoby", { p_q: q.trim() });
+  return error || !data ? [] : (data as NajdenaOsoba[]);
+}
+/** pošle pozvánku do zvončeka registrovaného; vráti chybu alebo null */
+export async function posliPozvanku(token: string, ucet: string): Promise<string | null> {
+  if (!supabase) return "Nie je spojenie so serverom. Skúste znova.";
+  const { error } = await supabase.rpc("pozvanka_posli", { p_token: token, p_ucet: ucet });
+  return error ? (/^[A-ZÁČĎÉÍĽĹŇÓÔŔŠŤÚÝŽ]/.test(error.message) && !/[a-z]+_[a-z]+/.test(error.message) ? error.message : "Pozvánku sa nepodarilo poslať. Skúste znova.") : null;
 }
