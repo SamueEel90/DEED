@@ -344,16 +344,17 @@ export function DvaStlpce({ hlavny, bok, sirkaBoku = 340 }: { hlavny: ReactNode;
 }
 
 // ---- KONTAKT RIADOK — jednotný riadok kontaktu s ikonou ----
-export function KontaktPolozka({ ikona, label, hodnota, href, posledna }: { ikona: ReactNode; label: string; hodnota: string; href?: string; posledna?: boolean }) {
+export function KontaktPolozka({ ikona, label, hodnota, href, posledna, zalom }: { ikona: ReactNode; label: string; hodnota: string; href?: string; posledna?: boolean;
+  /** OPRAVY 432: dlhá hodnota (adresa) sa zalomí v poli, nikdy nevytŕča k susednému */ zalom?: boolean }) {
   const obsah = (
     <>
       <span style={{ width: 32, height: 32, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: RADIUS.xs, background: "rgba(var(--glass-rgb),.06)", color: C.textSec }}>{ikona}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 10.5, color: C.textTer }}>{label}</div>
-        <div style={{ fontSize: 13, fontWeight: 600, color: href ? "var(--a-info)" : C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{hodnota}</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: href ? "var(--a-info)" : C.text, ...(zalom ? { overflowWrap: "anywhere" } : { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }) }}>{hodnota}</div>
       </div>
     </>
   );
-  const st: CSSProperties = { display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.xs + 2}px ${SPACE.gutter}px`, borderBottom: posledna ? "none" : `1px solid ${C.line2}`, textDecoration: "none" };
+  const st: CSSProperties = { display: "flex", alignItems: "center", gap: SPACE.sm, minWidth: 0, padding: `${SPACE.xs + 2}px ${SPACE.gutter}px`, borderBottom: posledna ? "none" : `1px solid ${C.line2}`, textDecoration: "none" };
   return href ? <a href={href} target="_blank" rel="noreferrer" style={st}>{obsah}</a> : <div style={st}>{obsah}</div>;
 }

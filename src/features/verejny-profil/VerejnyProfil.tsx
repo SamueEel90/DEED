@@ -48,6 +48,7 @@ import { nacitajSkutkyStranky, skutkyStrankyZPamate, useZmenySkutkovStranky } fr
 import { skutkyOrg, useZmenySkutkov, type MojSkutok } from "@/lib/mojeSkutky";
 import { ucast, nacitajUcasti, pocetText, useZmenyUcasti } from "@/lib/oznamUcast";
 import { OznamDetail } from "@/features/rola/OznamDetail";
+import { useProgramStranky } from "@/lib/programStranky";
 import { nacitajOznamyStranky, oznamyStranky, bezi as oznamBezi, useZmenyOznamovCharity, type OznamCharity } from "@/lib/oznamyNove";
 import { nacitajZbierkyStranky, zbierkyStrankyZPamate, useZmenyZbierok, cielCislo, type SpustenaZbierka } from "@/lib/novaZbierka";
 import { PomozCharita } from "./PomozCharita";
@@ -105,7 +106,7 @@ function oznamProfilu(o: OznamCharity, p: TestProfil): TestOznam {
     tlacidlo: o.pozvanie === "zavazne" ? "Prihlásiť sa" : o.pozvanie === "nezavazne" ? "Zúčastním sa" : "", pod: o.pozvanie !== "bez" && pocet > 0 ? pocetText(pocet, druh === "vyzva") : "" };
 }
 /** OPRAVY 414 (3, 8): skutočná charita — logo, titulná fotka a iniciály z Upraviť profil, zbierky len z databázy */
-function sUdajmiCharity(p: TestProfil, prof: ProfilStranky | null): TestProfil {
+function sUdajmiCharity(p: TestProfil, prof: ProfilStranky | null, tier = 0): TestProfil {
   if (p.typ !== "charita" || !p.bezCentralnej) return p;
   const zbierky = zbierkyStrankyZPamate(p.k).map((z) => zbierkaProfilu(z, p));
   const ini = prof?.bezLoga && prof.inicialy?.trim() ? prof.inicialy.trim() : p.iniciala;
@@ -115,9 +116,10 @@ function sUdajmiCharity(p: TestProfil, prof: ProfilStranky | null): TestProfil {
   // OPRAVY 418: skutky a oznamy zo Správy (server; bez neho zo správy na tomto zariadení)
   const sk = (skutkyStrankyZPamate(p.k) ?? skutkyOrg(p.k).filter((x) => !x.stiahnuty)).map((s) => skutokProfilu(s, p));
   const oz = oznamyStranky(p.k).filter((o) => oznamBezi(o)).map((o) => oznamProfilu(o, p));
-  const praca = verejneOznamy(`stranka:${p.k}`, "inzerat").map((o) => pracaProfilu(o, p)); // OPRAVY 408
+  // OPRAVY 432: Zadarmo nemá centrálnu zbierku, pravidelnú podporu ani pracovné ponuky (všetko od P1)
+  const praca = tier < 1 ? [] : verejneOznamy(`stranka:${p.k}`, "inzerat").map((o) => pracaProfilu(o, p)); // OPRAVY 408
   // OPRAVY 418: O nás · hlavný text z Upraviť profil = veta v hlavičke profilu (všetky 3 vzhľady)
-  return { ...p, veta: cistyText(prof?.onas ?? "").trim() || p.veta, zbierky, skutky: sk, oznamy: oz, praca, iniciala: ini, logo: prof?.logo || undefined, titulka: prof?.cover?.src || p.titulka, centralna, bezCentralnej: !c?.spustena };
+  return { ...p, veta: cistyText(prof?.onas ?? "").trim() || p.veta, zbierky, skutky: sk, oznamy: oz, praca, iniciala: ini, logo: prof?.logo || undefined, titulka: prof?.cover?.src || p.titulka, centralna, bezCentralnej: tier < 1 || !c?.spustena };
 }
 
 function VerejnyProfilObsah({ kluc, onBack, profilNahlad }: { kluc: string; onBack: () => void; profilNahlad?: ProfilStranky }) {
@@ -154,7 +156,9 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad }: { kluc: string; onBa
   // „Celá kronika" v Pirátovi otvorí Kroniku len pre tohto návštevníka (nič sa neukladá).
   const [tiery] = useState(nacitajTiery);
   const typP = profil0?.typ;
-  const tierStranky = TESTOVACIA && ts.program !== null ? ts.program : typP === "charita" ? tiery.charita : typP === "firma" ? tiery.b2b : tiery.tvorca;
+  // OPRAVY 432: charita — program zo servera (program_stranky, 0137); testovací prepínač Program ho na tomto zariadení prebije
+  const programCh = useProgramStranky(typP === "charita" ? profil0?.k : null);
+  const tierStranky = TESTOVACIA && ts.program !== null ? ts.program : typP === "charita" ? programCh : typP === "firma" ? tiery.b2b : tiery.tvorca;
   const regV = useRegistra(profil0?.k ?? kluc); // OPRAVY 400: názov charity z registra
   const vzhlad = useVzhlad(profil0?.k ?? kluc, typP !== "farnost" && tierStranky === 0); // farnosť: jeden platený program, výber má vždy
   const [prepis, setPrepis] = useState<Vzhlad | null>(null);
@@ -170,7 +174,7 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad }: { kluc: string; onBa
   const [profCh, setProfCh] = useState<ProfilStranky | null>(() => (kCh ? profilZPamate(kCh).ulozeny : null));
   useEffect(() => { if (!kCh) return; let ziva = true; void nacitajProfil(kCh).then((z) => { if (ziva) setProfCh(z.ulozeny); }); void nacitajZbierkyStranky(kCh); void nacitajCentralnuZbierku(kCh); void nacitajSkutkyStranky(kCh); void nacitajOznamyStranky(kCh); nacitajPrud(); return () => { ziva = false; }; }, [kCh]);
   if (!profil0) return null;
-  const profil1 = sUdajmiCharity(sHlavnouZUctu(ts.prazdny ? vyprazdni(profil0) : profil0), profilNahlad ?? profCh);
+  const profil1 = sUdajmiCharity(sHlavnouZUctu(ts.prazdny ? vyprazdni(profil0) : profil0), profilNahlad ?? profCh, tierStranky);
   const profil = profil1.typ === "charita" && regV.nazov.trim() ? { ...profil1, meno: regV.nazov.trim() } : profil1;
   if (zPribehu) {
     const zb = profil0.zbierky.find((x) => x.id === zPribehu), pr = pribehZbierky(zPribehu);

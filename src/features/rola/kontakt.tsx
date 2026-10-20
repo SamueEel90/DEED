@@ -112,9 +112,9 @@ export function KontaktBlok({ k, zbalitelna, vodorovne }: { k: Kontakt; zbalitel
   const riadky: ReactNode[] = [];
   // OPRAVY 400: charita s prevádzkami — sídlo + každá prevádzka s popisom; inak ako doteraz (adresa pre verejnosť alebo sídlo)
   if (k.prevadzky?.length) {
-    if (k.sidlo.trim()) riadky.push(<KontaktPolozka key="adr" ikona={<IkonaPin size={15} />} label="Sídlo" hodnota={k.sidlo} />);
-    k.prevadzky.filter((x) => x.adresa.trim()).forEach((x, i) => riadky.push(<KontaktPolozka key={`pv${i}`} ikona={<IkonaPin size={15} />} label={x.popis.trim() || "Prevádzka"} hodnota={x.adresa} />));
-  } else if ((k.adresaVerejna || k.sidlo).trim()) riadky.push(<KontaktPolozka key="adr" ikona={<IkonaPin size={15} />} label={k.adresaVerejna ? "Adresa pre verejnosť" : "Adresa"} hodnota={k.adresaVerejna || k.sidlo} />);
+    if (k.sidlo.trim()) riadky.push(<KontaktPolozka key="adr" ikona={<IkonaPin size={15} />} label="Sídlo" hodnota={k.sidlo} zalom />);
+    k.prevadzky.filter((x) => x.adresa.trim()).forEach((x, i) => riadky.push(<KontaktPolozka key={`pv${i}`} ikona={<IkonaPin size={15} />} label={x.popis.trim() || "Prevádzka"} hodnota={x.adresa} zalom />));
+  } else if ((k.adresaVerejna || k.sidlo).trim()) riadky.push(<KontaktPolozka key="adr" ikona={<IkonaPin size={15} />} label={k.adresaVerejna ? "Adresa pre verejnosť" : "Adresa"} hodnota={k.adresaVerejna || k.sidlo} zalom />);
   k.telefony.filter((t) => t.cislo.trim()).forEach((t, i) => riadky.push(
     <KontaktPolozka key={`t${i}`} ikona={<span style={{ fontSize: 13 }}>📞</span>} label={t.popis || "Telefón"} hodnota={t.cislo} href={`tel:${t.cislo.replace(/\s/g, "")}`} />));
   k.emaily.filter((e) => e.adresa.trim()).forEach((e, i) => riadky.push(
@@ -126,7 +126,7 @@ export function KontaktBlok({ k, zbalitelna, vodorovne }: { k: Kontakt; zbalitel
       <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: C.textTer, marginBottom: SPACE.xs }}>KONTAKT</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: SPACE.xs }}>
         {riadky.map((r, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.sm}px` }}>{r}</div>
+          <div key={i} style={{ minWidth: 0, background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.sm}px` }}>{r}</div>
         ))}
       </div>
       {siete.length > 0 && (

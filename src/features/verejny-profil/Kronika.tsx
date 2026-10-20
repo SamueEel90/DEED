@@ -132,6 +132,9 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
   const mojeIskry = iskryVsetky().filter((v) => v.autor === profil.meno && iskraViditelna(v));
   const iskryCesty: Iskra[][] = [mojeIskry.filter((v) => v.druh !== ISKRY_CFG.druhZbierky), mojeIskry.filter((v) => v.druh === ISKRY_CFG.druhZbierky)];
   const iskryTu = iskryCesty[isk];
+  // OPRAVY 432: filtre len pre to, čo stránka naozaj má (Práca v Zadarmo nie je, prázdne sa neukážu)
+  const maTyp: Record<Typ, boolean> = { zb: zbierky.length > 0, sk: vsetkyPol.some((p) => p.typ === "sk") || profil.skutky.length > 0, is: mojeIskry.length > 0, oz: oznamy.length > 0, pr: praca.length > 0 };
+  const filtreVid = FILTRE.map(([t, typ], i) => ({ t, i, vid: !typ || maTyp[typ] })).filter((x) => x.vid);
 
   // ---- posun: pás rokov svieti podľa polohy, ťuk skočí na rok a rozbalí ho ----
   const onSc = () => {
@@ -245,7 +248,7 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
         </button>}
       </span>
       <div style={{ display: "flex", gap: 6, flexWrap: rez === "mob" ? "nowrap" : "wrap", overflowX: rez === "mob" ? "auto" : undefined, margin: rez === "mob" ? "0 -16px" : undefined, padding: rez === "mob" ? "0 16px" : undefined }}>
-        {FILTRE.map(([t], i) => {
+        {filtreVid.length > 1 && filtreVid.map(({ t, i }) => {
           const on = f === i;
           return <button key={t} type="button" aria-pressed={on} onClick={() => setF(i)} style={{ flex: "none", minHeight: 44, padding: "4px 0", border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", margin: "-4px 0" }}>
             <span style={{ height: 36, padding: "0 14px", borderRadius: 18, border: `1px solid ${on ? "var(--ink)" : "var(--cardBd)"}`, background: on ? "var(--ink)" : "transparent", display: "flex", alignItems: "center", whiteSpace: "nowrap", fontSize: 13.5, fontWeight: 800, color: on ? "var(--bg)" : "var(--ink2)" }}>{t}</span>
