@@ -114,6 +114,7 @@ const G: Record<Exclude<Skupina, "g_zbierky" | "g_typ">, Karta[]> = {
     P("M5 4h14v16H5zM9 9l6 3-6 3z", "Upútavky v Iskrách", "Upútavka na zbierku medzi videami", "upoutavky"),
   ],
   g_ludia: [
+    P("M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20c.6-3.6 3.2-5.6 6.5-5.6s5.9 2 6.5 5.6M19 8v6M16 11h6", "Štatutár a pracovníci", "Kto spravuje stránku · pridať človeka", "spravcovia"),
     P("M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c1.5-4 4.5-6 8-6s6.5 2 8 6", "Darcovia a sumy", "Zoznam darcov a hromadné poďakovanie", "darcovia"),
     P("M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20c.8-3.2 3.2-5 6-5s5.2 1.8 6 5", "Sledujúci", "Kto sleduje vašu stránku", "sledujuci"),
     P("M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20c.8-3.2 3.2-5 6-5s5.2 1.8 6 5M16 5.5a3 3 0 0 1 0 5.5", "Dobrovoľníctvo", "Brigády a pomoc · blok Pomôž na stránke", "dobrovolnici"),
@@ -171,7 +172,7 @@ function menuTypu(typ: TypStranky, tier: Tier): Menu {
   const kartaNavrch = (id: PolozkaSpravy): Karta | undefined => KARTY_TYPU[id] ?? [...DRUHY, ...G.g_obsah, ...G.g_ludia, ...G.g_nastroje].find((k) => k.id === id);
   const skupiny: Partial<Record<Skupina, Karta[]>> = {
     g_typ: navrch.map(kartaNavrch).filter((k): k is Karta => !!k),
-    g_obsah: G.g_obsah.filter((k) => ok(k.id)), g_ludia: G.g_ludia.filter((k) => ok(k.id)), g_nastroje: G.g_nastroje.filter((k) => ok(k.id)),
+    g_obsah: G.g_obsah.filter((k) => ok(k.id)), g_ludia: G.g_ludia.filter((k) => ok(k.id)).map((k) => (k.id === "spravcovia" && typ !== "charita" ? { ...k, t: "Správcovia a prístupy", s: "Kto spravuje stránku · pozvať ďalšieho" } : k)), g_nastroje: G.g_nastroje.filter((k) => ok(k.id)),
   };
   const druhy = DRUHY.filter((k) => ok(k.id)), mojeZbierky = ok("zbierky");
   const d: Record<string, string> = { g_typ: navrch.length && KARTY_TYPU[navrch[0]] ? IK.nastroje : navrch.length ? G.g_obsah.find((k) => k.id === navrch[0])?.d ?? IK.obsah : IK.obsah };
@@ -403,7 +404,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   // pri prepnutí obrazovky hore
   useEffect(() => { korenRef.current?.scrollIntoView?.({ block: "start" }); }, [sub]);
 
-  const otvorPolozku = (id: PolozkaSpravy) => otvor(id === "zbierky" ? "g_zbierky" : id);
+  const otvorPolozku = (id: PolozkaSpravy) => otvor(id === "zbierky" ? "g_zbierky" : id === "spravcovia" ? "n:spravcovia" : id);
   // pri zmene typu (DEV) späť na Prehľad, nech nezostane otvorená vypnutá položka
   const typPred = useRef(typ);
   useEffect(() => { if (typPred.current === typ) return; typPred.current = typ; hist.current = []; setSub(null); }, [typ]);
@@ -413,7 +414,13 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
     else toast(`Najviac ${PIN_MAX} pripnutých položiek.`);
   };
 
-  const pinyTypu = piny.filter((id) => menu.vse.some((v) => v.id === id));
+  // OPRAVY 450: zamknutá položka (od P1/P2…) sa nedá pripnúť; už pripnuté zamknuté sa odopnú
+  const odomknuta = (id: PolozkaSpravy) => maPovolenie(id, tier) || id === "oznamy";
+  const pinyTypu = piny.filter((id) => menu.vse.some((v) => v.id === id) && odomknuta(id));
+  useEffect(() => {
+    const n = piny.filter((id) => !menu.vse.some((v) => v.id === id) || odomknuta(id));
+    if (n.length !== piny.length) { setPiny(n); void ulozPiny(strankaId, n); }
+  }, [tier, piny.join(","), strankaId]); // eslint-disable-line react-hooks/exhaustive-deps
   // OPRAVY 109: úvod novej charity (kým nemá prvú zbierku); krok 1 = prvé Uložiť profil
   // OPRAVY 433: úvod len podľa skutočných dát — nemá uložený profil → krok 1, nemá spustenú zbierku → krok 2, má → úvod preč
   // (spustená = bežiaca, ukončená aj zrušená, z tých istých dát ako BEŽIACE ZBIERKY; rozpísaná sa nepočíta)
@@ -904,7 +911,7 @@ function StitZoom({ stit, sada, onClose }: { stit: StitCharity; sada: StitSada; 
     </div>, document.body);
 }
 
-function Prehlad({ strankaId, tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit, sada, menu, mobil, tablet, zbal, prepniZbal, onZoom, uvod, krok1, pozvana, vlastne, hornaCast }: Spolocne & { onZoom: () => void; hornaCast?: React.ReactNode }) {
+function Prehlad({ strankaId, tier, piny, prepniPin, otvorPolozku, otvor, nova, stit, sada, menu, mobil, tablet, zbal, prepniZbal, onZoom, uvod, krok1, pozvana, vlastne, hornaCast }: Spolocne & { onZoom: () => void; hornaCast?: React.ReactNode }) {
   const p3Do = usePozvanaDo(strankaId); // OPRAVY 398: dátum registrácie + 2 mesiace (nie napevno)
   const PHZ: PhZbierka[] = [...vlastne.filter(bezi).map(naPh), ...(nova ? [] : PH_ZBIERKY)]; // OPRAVY 114: spustené zbierky navrchu
   const VSE = menu.vse; // KARTA 36: na pripnutie len položky, ktoré typ má
@@ -986,9 +993,9 @@ function Prehlad({ strankaId, tier: _tier, piny, prepniPin, otvorPolozku, otvor,
       </div>
       {pinOtv && <div style={{ position: "absolute", right: 8, left: mobil ? 8 : undefined, top: 58, zIndex: 20, width: mobil ? undefined : 340, maxHeight: 420, overflowY: "auto", overscrollBehavior: "contain", padding: 8, borderRadius: 18, background: "var(--bg)", border: "1px solid var(--cardBd)", boxShadow: "0 16px 40px rgba(30,28,20,.2)", display: "flex", flexDirection: "column", gap: 2, animation: "spravaFade .15s ease both" }}>
         <span style={{ padding: "8px 10px 6px", fontSize: 13, color: "var(--ink3)" }}>Pripnite si, čo používate najčastejšie. Najviac {PIN_MAX}.</span>
-        {VSE.map((v) => { const on = piny.includes(v.id); return (
-          <button key={v.id} role="checkbox" aria-checked={on} onClick={() => prepniPin(v.id)} style={{ minHeight: 46, padding: "0 10px", border: "none", borderRadius: 12, background: on ? "var(--gSoft)" : "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, textAlign: "left" }}>
-            <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 14.5, fontWeight: 700, color: "var(--ink)" }}>{v.t}</span><span style={{ fontSize: 12, color: "var(--ink3)" }}>{v.g}</span></span>
+        {VSE.map((v) => { const on = piny.includes(v.id); const zam = !maPovolenie(v.id, tier) && v.id !== "oznamy"; return (
+          <button key={v.id} role="checkbox" aria-checked={on} aria-disabled={zam || undefined} onClick={() => { if (!zam) prepniPin(v.id); }} style={{ minHeight: 46, padding: "0 10px", border: "none", borderRadius: 12, background: on ? "var(--gSoft)" : "transparent", cursor: zam ? "default" : "pointer", opacity: zam ? 0.5 : 1, display: "flex", alignItems: "center", gap: 10, textAlign: "left" }}>
+            <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 14.5, fontWeight: 700, color: "var(--ink)" }}>{v.t}</span><span style={{ fontSize: 12, color: "var(--ink3)" }}>{zam ? `Pripnúť môžete od ${odProgramu(v.id)}` : v.g}</span></span>
             <span style={{ width: 24, height: 24, flex: "none", borderRadius: 7, border: `1.5px solid ${on ? "var(--green)" : "#A8A396"}`, background: on ? "var(--green)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d={IK.fajka} s={14} c="#fff" w={3} style={{ opacity: on ? 1 : 0 }} /></span>
           </button>); })}
         <button onClick={() => setPinOtv(false)} style={{ height: 46, marginTop: 6, border: "none", borderRadius: 13, background: "var(--green)", cursor: "pointer", fontSize: 14.5, fontWeight: 800, color: "#fff", flex: "none" }}>Hotovo</button>
@@ -1125,9 +1132,9 @@ function Prehlad({ strankaId, tier: _tier, piny, prepniPin, otvorPolozku, otvor,
         <PinyTelefon polozky={pinyV} otvor={otvorPolozku} onUpravit={() => setPinOtv((o) => !o)} upravitOtv={pinOtv} />
         {pinOtv && <SpodnyHarok stit={stit} nadpis="Pripnuté" onClose={() => setPinOtv(false)}>
           <span style={{ fontSize: 13, color: "var(--ink3)" }}>Pripnite si, čo používate najčastejšie. Najviac {PIN_MAX}.</span>
-          {VSE.map((v) => { const on = piny.includes(v.id); return (
-            <button key={v.id} role="checkbox" aria-checked={on} onClick={() => prepniPin(v.id)} style={{ flex: "none", minHeight: 48, padding: "0 10px", border: "none", borderRadius: 12, background: on ? "var(--gSoft)" : "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, textAlign: "left" }}>
-              <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 14.5, fontWeight: 700, color: "var(--ink)" }}>{v.t}</span><span style={{ fontSize: 12, color: "var(--ink3)" }}>{v.g}</span></span>
+          {VSE.map((v) => { const on = piny.includes(v.id); const zam = !maPovolenie(v.id, tier) && v.id !== "oznamy"; return (
+            <button key={v.id} role="checkbox" aria-checked={on} aria-disabled={zam || undefined} onClick={() => { if (!zam) prepniPin(v.id); }} style={{ flex: "none", minHeight: 48, padding: "0 10px", border: "none", borderRadius: 12, background: on ? "var(--gSoft)" : "transparent", cursor: zam ? "default" : "pointer", opacity: zam ? 0.5 : 1, display: "flex", alignItems: "center", gap: 10, textAlign: "left" }}>
+              <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 14.5, fontWeight: 700, color: "var(--ink)" }}>{v.t}</span><span style={{ fontSize: 12, color: "var(--ink3)" }}>{zam ? `Pripnúť môžete od ${odProgramu(v.id)}` : v.g}</span></span>
               <span style={{ width: 24, height: 24, flex: "none", borderRadius: 7, border: `1.5px solid ${on ? "var(--green)" : "#A8A396"}`, background: on ? "var(--green)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d={IK.fajka} s={14} c="#fff" w={3} style={{ opacity: on ? 1 : 0 }} /></span>
             </button>); })}
           <button onClick={() => setPinOtv(false)} style={{ flex: "none", height: 48, marginTop: 6, border: "none", borderRadius: 13, background: "var(--green)", cursor: "pointer", fontSize: 14.5, fontWeight: 800, color: "#fff" }}>Hotovo</button>
@@ -1322,6 +1329,8 @@ function KartaPolozky({ k, tier, piny, prepniPin, otvorPolozku, strankaId }: { k
   // KARTA 40: Oznamy majú v Zadarmo výzvu na súrnu pomoc — karta bez štítka „od P1"
   const zamok = !maPovolenie(k.id, tier) && k.id !== "oznamy";
   const pn = piny.includes(k.id);
+  const [pinHl, setPinHl] = useState(false); // OPRAVY 450: ťuk na pin zamknutej = veta na mieste
+  useEffect(() => { if (!pinHl) return; const t = window.setTimeout(() => setPinHl(false), 3500); return () => window.clearTimeout(t); }, [pinHl]);
   return (
     <div role="button" tabIndex={0} onClick={() => otvorPolozku(k.id)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); otvorPolozku(k.id); } }} className="sc-bdh"
       style={{ borderRadius: 20, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "16px 18px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", textAlign: "left", minWidth: 0 }}>
@@ -1330,12 +1339,18 @@ function KartaPolozky({ k, tier, piny, prepniPin, otvorPolozku, strankaId }: { k
         <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><b style={{ fontSize: 15.5, color: "var(--ink)" }}>{k.t}</b>
           {zamok && <span style={{ flex: "none", whiteSpace: "nowrap", height: 22, padding: "0 8px", borderRadius: 11, border: "1px solid var(--cardBd)", fontSize: 11.5, fontWeight: 800, color: "var(--ink3)", display: "flex", alignItems: "center" }}>od {odProgramu(k.id)}</span>}
         </span>
+        {pinHl && <span role="status" style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>{`Pripnúť môžete od ${odProgramu(k.id)}`}</span>}
         <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink3)" }}>{k.id === "oznamy" ? <PopisOznamov strankaId={strankaId} popis={k.s} /> : k.id === "skutky" ? <PopisSkutkov strankaId={strankaId} popis={k.s} /> : k.s}</span>
       </span>
-      <button onClick={(e) => { e.stopPropagation(); prepniPin(k.id); }} aria-label={pn ? "Odopnúť z lišty" : "Pripnúť na lištu"} aria-pressed={pn} title={pn ? "Odopnúť z lišty" : "Pripnúť na lištu"}
-        style={{ flex: "none", width: 44, height: 44, borderRadius: 12, border: `1px solid ${pn ? "var(--cuBd)" : "transparent"}`, background: pn ? "var(--accSoft)" : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Ik d={IK.pin} s={17} w={2} fill={pn ? "var(--acc)" : "none"} />
-      </button>
+      {zamok
+        ? <button onClick={(e) => { e.stopPropagation(); setPinHl(true); }} aria-label={`Pripnúť môžete od ${odProgramu(k.id)}`} title={`Pripnúť môžete od ${odProgramu(k.id)}`}
+            style={{ flex: "none", width: 44, height: 44, borderRadius: 12, border: "1px solid transparent", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.35 }}>
+            <Ik d={IK.pin} s={17} w={2} fill="none" />
+          </button>
+        : <button onClick={(e) => { e.stopPropagation(); prepniPin(k.id); }} aria-label={pn ? "Odopnúť z lišty" : "Pripnúť na lištu"} aria-pressed={pn} title={pn ? "Odopnúť z lišty" : "Pripnúť na lištu"}
+            style={{ flex: "none", width: 44, height: 44, borderRadius: 12, border: `1px solid ${pn ? "var(--cuBd)" : "transparent"}`, background: pn ? "var(--accSoft)" : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Ik d={IK.pin} s={17} w={2} fill={pn ? "var(--acc)" : "none"} />
+          </button>}
       <Ik d={IK.sipkaP} s={16} w={2.4} />
     </div>);
 }
