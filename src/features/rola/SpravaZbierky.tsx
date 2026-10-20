@@ -22,16 +22,15 @@ import { cistyText } from "@/lib/richtext";
 import { ZBIERKY, predvolenyStav } from "@/lib/zbierky";
 import {
   SPRAVA_ZBIERKY_CFG as CFG, PASMA_DOKLADOV, POZIADAVKA_TEXT, DRUHY_DOKLADU, OVERENY_SKEN,
-  nacitajStav, ulozStav, pasmoPre, sumaDokladov, splnene, navyse, percentoDolozenia, fazaDokladovania, dniDo, pridajDni, upozornenie90, UPOZORNENIE_90_TEXT, UPOZORNENIE_DNI, kdeJeDlhodoba,
+  nacitajStav, ulozStav, pasmoPre, sumaDokladov, splnene, navyse, percentoDolozenia, fazaDokladovania, dniDo, pridajDni, upozornenie90, UPOZORNENIE_90_TEXT, kdeJeDlhodoba,
   LEHOTA_TEXT, type StavZbierky, type Lehota, type DruhDokladu, type PolozkaDokladu, type ObsahZbierky,
 } from "@/lib/zbierkaSprava";
 import { identitaDarcu, relCas, zobrazenaSuma, useSektorDarcu } from "@/lib/darcovia";
 import { beziaceDorovnanieNaCiel, zostatok } from "@/lib/dorovnanie";
 import { cisloObjektu } from "@/lib/cisloObjektu";
 import { hlavnyUcetOrg } from "./NastaveniaCharity";
-import { TestovaciPas } from "@/features/verejny-profil/casti";
 import { kartaK, nadpisK, textK, obrysK, zelenyK, SpatZbierky, UkladaSa, DorovnaniePas, Taby, CislaKarta, AkoDarovat, Zapecatene, QrKarta, Statistiky, type DataStatistik } from "./spravaCasti";
-import { FLAGS, KONFIG, TIER_LABEL, type Tier } from "./stav";
+import { KONFIG, TIER_LABEL, type Tier } from "./stav";
 import { pridajOznamDarcom } from "@/lib/oznamyDarcom";
 import { OznamDarcoviSheet } from "@/features/notifikacie/OznamDarcovi";
 import type { OrgZbierka } from "./mock";
@@ -86,7 +85,7 @@ export function SpravaZbierkySheet({ z, tier, toast, onPaywall, onClose }: {
   const zmen = (patch: Partial<StavZbierky>) => { const n = { ...s, ...patch }; setS(n); ulozStav(z.id, n); };
 
   useZmenyDarov();
-  const vyzbierane = s.simVyzbierane ?? z.vyzbierane + sucetDarov(z.id).suma;
+  const vyzbierane = z.vyzbierane + sucetDarov(z.id).suma;
   const aktivna = s.stav === "aktivna";
   const [potvrdUkoncit, setPotvrdUkoncit] = useState(false);
   const [platba, setPlatba] = useState<null | { druh: "predlzenie" } | { druh: "top"; kluc: string }>(null);
@@ -141,16 +140,6 @@ export function SpravaZbierkySheet({ z, tier, toast, onPaywall, onClose }: {
       </div>
       <div style={{ marginBottom: SPACE.xxs }}><MoniBar vyzbierane={vyzbierane} ciel={z.ciel} mini /></div>
       <div style={{ fontSize: 12, fontWeight: 700, color: ZELENA, marginBottom: SPACE.sm }}>Doložené použitie: {percentoDolozenia(s, vyzbierane)} %</div>
-
-      {FLAGS.dev_tier_switcher && (
-        <div style={{ display: "flex", alignItems: "center", gap: SPACE.xxs, flexWrap: "wrap", fontSize: 10.5, color: C.textTer, marginBottom: SPACE.sm }}>
-          <b>DEV · vyzbierané:</b>
-          {[undefined, 80, 300, 1000, 3000, 8000].map((v) => (
-            <span key={String(v)} {...pressable(() => zmen({ simVyzbierane: v }), `sim ${v ?? "skutočné"}`)}
-              style={{ cursor: "pointer", padding: "2px 8px", borderRadius: RADIUS.pill, border: `1px solid ${s.simVyzbierane === v ? ZELENA : C.line}`, color: s.simVyzbierane === v ? ZELENA : C.textTer }}>{v === undefined ? "skutočné" : eur(v)}</span>
-          ))}
-        </div>
-      )}
 
       {aktivna ? (
         <>
@@ -475,13 +464,13 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
   const zmen = (patch: Partial<StavZbierky>) => { setS((x) => { const n = { ...x, ...patch }; ulozStav(z.id, n); return n; }); };
   useZmenyDarov();
   const darov = sucetDarov(z.id);
-  const kde = z.dlha ? kdeJeDlhodoba({ zaciatok: s.zaciatok ?? s.koniec, dary30: s.simDary30 ?? darcoviaPre(z.id).filter((d) => Date.now() - d.cas < KONFIG.dlhodoba.prah.dni * DEN_MS).length, vytiahnute: s.vytiahnute, teraz: Math.max(teraz, Date.now()), cfg: KONFIG.dlhodoba }) : null;
+  const kde = z.dlha ? kdeJeDlhodoba({ zaciatok: s.zaciatok ?? s.koniec, dary30: darcoviaPre(z.id).filter((d) => Date.now() - d.cas < KONFIG.dlhodoba.prah.dni * DEN_MS).length, vytiahnute: s.vytiahnute, teraz: Math.max(teraz, Date.now()), cfg: KONFIG.dlhodoba }) : null;
   const zmenDoklady = (patch: Partial<StavZbierky>) => {
     const novy = !!patch.doklady && patch.doklady.length > s.doklady.length;
     if (kde && s.stav === "aktivna" && novy && kde.mozeVytiahnut) { zmen({ ...patch, vytiahnute: new Date().toISOString() }); toast(`Zbierka je na ${KONFIG.dlhodoba.horeHodin} hodín hore vo feede`); }
     else zmen(patch);
   };
-  const vyzbierane = s.simVyzbierane ?? z.vyzbierane + darov.suma;
+  const vyzbierane = z.vyzbierane + darov.suma;
   const darcov = z.darcovia + darov.pocet;
   const [tab, setTab] = useState(0);
   const [conf, setConf] = useState(false);
@@ -613,9 +602,8 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
   </section>;
   const upoz = aktivna && z.dlha && upozornenie90(s, zac, Math.max(teraz, Date.now()));
   const dlhaKarty = aktivna && <>
-    {kde && <KdeJeTeraz kde={kde} dary30={s.simDary30 ?? darcoviaPre(z.id).filter((d) => Date.now() - d.cas < KONFIG.dlhodoba.prah.dni * DEN_MS).length} simDary={s.simDary30} onSim={(n) => zmen({ simDary30: n })} onDolozit={() => setTab(1)} />}
-    {z.dlha && <ZmenaUcelu ucel={z.ucel} zmena={s.zmenaUcelu} onZiadost={(ucel, zdovodnenie) => zmen({ zmenaUcelu: { ucel, zdovodnenie, podana: new Date().toISOString() } })}
-      onSchval={() => { const zm = s.zmenaUcelu!; pridajOznamDarcom({ zbierkaId: z.id, typ: "sprava", text: `Zbierka „${z.nazov}“ mení účel na: ${zm.ucel}. ${cistyText(zm.zdovodnenie)}` }); zmen({ zmenaUcelu: { ...zm, schvalena: new Date().toISOString() } }); }} />}
+    {kde && <KdeJeTeraz kde={kde} dary30={darcoviaPre(z.id).filter((d) => Date.now() - d.cas < KONFIG.dlhodoba.prah.dni * DEN_MS).length} onDolozit={() => setTab(1)} />}
+    {z.dlha && <ZmenaUcelu ucel={z.ucel} zmena={s.zmenaUcelu} onZiadost={(ucel, zdovodnenie) => zmen({ zmenaUcelu: { ucel, zdovodnenie, podana: new Date().toISOString() } })} />}
   </>;
   const koniecPodakovania = pridajDni(zac, CFG.podakovanieDni);
   const dniPodakovania = dniDo(koniecPodakovania, teraz);
@@ -637,9 +625,11 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
 
   // ---- Štatistiky: zatiaľ testovacie čísla podľa prototypu, inak z darov ----
   const stat: DataStatistik = {
-    obdobie: `od ${dnes(zac).replace(/ \d{4}$/, "")}`, od: dnes(zac).replace(/ \d{4}$/, ""), dni: Array.from({ length: 10 }, () => 0),
+    // OPRAVY 442 doplnok 3: dary po dňoch zo skutočných darov (posledných 10 dní), bez čísel, ktoré appka nepozná
+    obdobie: `od ${dnes(zac).replace(/ \d{4}$/, "")}`, od: dnes(zac).replace(/ \d{4}$/, ""),
+    dni: Array.from({ length: 10 }, (_, i) => { const d0 = new Date(); d0.setHours(0, 0, 0, 0); d0.setDate(d0.getDate() - (9 - i)); const d1 = d0.getTime() + DEN_MS; return darcoviaPre(z.id).filter((r) => r.cas >= d0.getTime() && r.cas < d1).length; }),
     cez: [["Priamo na zbierke", vyzbierane, "feed a profil"]], split: [],
-    darcovia: [[String(darcov), "darcov"], ["0", "nových"], ["0", "firmy"], ["0 %", "darovalo viackrát"]], dary: realneDary,
+    darcovia: [[String(darcov), "darcov"], ...(() => { const f = new Set(darcoviaPre(z.id).filter((r) => r.firma).map((r) => r.firma)).size; return f ? [[String(f), f === 1 ? "firma" : "firmy"] as [string, string]] : []; })()], dary: realneDary,
   };
   const { faza, dni } = fazaDokladovania(s, vyzbierane, Math.max(teraz, Date.now()));
   const ukoncenie = aktivna ? <section style={kartaK}>
@@ -659,13 +649,6 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
       </section>
     </div>;
 
-  const testovacie = FLAGS.dev_tier_switcher && <TestovaciPas nazov="Stav zbierky">
-    {([["bezi", "Beží"], ["skoncila", "Skončila"]] as const).map(([k, t]) => { const on = (k === "bezi") === aktivna; return (
-      <button key={k} type="button" aria-pressed={on} onClick={() => zmen(k === "bezi" ? { stav: "aktivna", ukoncena: undefined, vratitDo: undefined } : { stav: "ukoncena", ukoncena: s.ukoncena ?? new Date().toISOString(), vysledokPoslany: s.vysledokPoslany ?? new Date().toISOString() })}
-        style={{ minHeight: 44, padding: "0 14px", borderRadius: 12, border: on ? "2px solid var(--ink)" : "1px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>{t}</button>); })}
-    {z.dlha && aktivna && <button type="button" onClick={() => zmen({ zaciatok: pridajDni(zac, -UPOZORNENIE_DNI), doklady: s.doklady.map((d) => ({ ...d, datum: pridajDni(d.datum, -UPOZORNENIE_DNI) })), ...(s.upozornenie90Zavrete ? { upozornenie90Zavrete: pridajDni(s.upozornenie90Zavrete, -UPOZORNENIE_DNI) } : {}) })} style={{ minHeight: 44, padding: "0 14px", borderRadius: 12, border: "1px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>Posunúť o 90 dní</button>}
-    {tab === 1 && [undefined, 80, 300, 1000, 3000, 8000].map((v) => <button key={String(v)} type="button" onClick={() => zmen({ simVyzbierane: v })} style={{ minHeight: 44, padding: "0 12px", borderRadius: 12, border: s.simVyzbierane === v ? "2px solid var(--ink)" : "1px solid var(--cardBd)", background: "transparent", fontFamily: "inherit", fontSize: 13, fontWeight: 700, color: "var(--ink)", cursor: "pointer" }}>{v === undefined ? "skutočné" : eur(v)}</button>)}
-  </TestovaciPas>;
 
   return (<>
     <SpatZbierky onClick={onZbierky} />
@@ -687,7 +670,6 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
     {tab === 3 && ukoncenie}
     {tab === 4 && <PribehEditor z={z} mobil={mobil} toast={toast} />}
     {conf && <UkoncitHarok mobil={mobil} vyzbierane={vyzbierane} darcov={darcov} lehota={bezDokladov ? null : lehT} onUkonci={ukonci} onZavri={() => setConf(false)} />}
-    {testovacie}
   </>);
 }
 
@@ -736,7 +718,7 @@ function UkoncitHarok({ mobil, vyzbierane, darcov, lehota, onUkonci, onZavri }: 
 }
 
 // ---- KARTA 39 · bod 1: Kde je zbierka teraz (dlhodobá) ----
-function KdeJeTeraz({ kde, dary30, simDary, onSim, onDolozit }: { kde: ReturnType<typeof kdeJeDlhodoba>; dary30: number; simDary?: number; onSim: (n: number | undefined) => void; onDolozit: () => void }) {
+function KdeJeTeraz({ kde, dary30, onDolozit }: { kde: ReturnType<typeof kdeJeDlhodoba>; dary30: number; onDolozit: () => void }) {
   const K = KONFIG.dlhodoba;
   const dar = (n: number) => `${n} ${n === 1 ? "dar" : n >= 2 && n <= 4 ? "dary" : "darov"}`;
   const miestoT = { velka: `Vo feede ako veľká karta, prvých ${K.velkaDni} dní.`, hore: `Vo feede hore ako veľká karta, ${K.horeHodin} hodín po doložení.`, mala: "Vo feede ako malá karta.", profil: "Len na vašom profile, vo feede teraz nie je." }[kde.miesto];
@@ -747,15 +729,11 @@ function KdeJeTeraz({ kde, dary30, simDary, onSim, onDolozit }: { kde: ReturnTyp
       <span style={nadpisS}>Kde je zbierka teraz</span>
       <span style={textS}><b style={{ color: "var(--ink)" }}>{miestoT}</b> {zivaT} {vytT}</span>
       <button type="button" onClick={onDolozit} style={tlO}>Priebežne doložiť</button>
-      {FLAGS.dev_tier_switcher && <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", fontSize: 12.5, color: "var(--ink3)" }}>
-        <span>DEV · darov za 30 dní:</span>
-        {[undefined, 0, 2, 5].map((n) => <button key={String(n)} type="button" onClick={() => onSim(n)} style={{ minHeight: 32, padding: "0 10px", borderRadius: 9, border: `1px dashed ${simDary === n ? "var(--green)" : "var(--cardBd)"}`, background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, fontWeight: 700, color: "var(--ink2)" }}>{n == null ? "skutočné" : n}</button>)}
-      </div>}
     </section>);
 }
 
 // ---- KARTA 39 · bod 1: Požiadať o zmenu účelu (len dlhodobá) ----
-function ZmenaUcelu({ ucel, zmena, onZiadost, onSchval }: { ucel?: string; zmena?: StavZbierky["zmenaUcelu"]; onZiadost: (ucel: string, zdovodnenie: string) => void; onSchval: () => void }) {
+function ZmenaUcelu({ ucel, zmena, onZiadost }: { ucel?: string; zmena?: StavZbierky["zmenaUcelu"]; onZiadost: (ucel: string, zdovodnenie: string) => void }) {
   const [form, setForm] = useState(false);
   const [novy, setNovy] = useState("");
   const [zd, setZd] = useState("");
@@ -768,7 +746,6 @@ function ZmenaUcelu({ ucel, zmena, onZiadost, onSchval }: { ucel?: string; zmena
       {zmena && !zmena.schvalena ? <>
         <span style={{ alignSelf: "flex-start", padding: "4px 10px", borderRadius: 9, background: "var(--goldBg)", border: "1px solid var(--goldBd)", fontSize: 13, fontWeight: 800, color: "var(--ink)" }}>Čaká na schválenie</span>
         <span style={textS}>Nový účel: <b style={{ color: "var(--ink)" }}>{zmena.ucel}</b>. Žiadosť ste poslali {dnes(zmena.podana)}. Po schválení pošleme správu všetkým darcom skôr, než sa peniaze použijú inak.</span>
-        {FLAGS.dev_tier_switcher && <button type="button" onClick={onSchval} style={{ ...tlO, height: 40, fontSize: 13.5, borderStyle: "dashed" }}>Schváliť (DEV)</button>}
       </> : zmena?.schvalena ? <span style={textS}>Zmenu účelu schválil DEED+ {dnes(zmena.schvalena)}. Všetci darcovia dostali správu.</span>
       : !form ? <>
         <span style={textS}>Ak potrebujete peniaze použiť na niečo iné, požiadajte o zmenu. Po schválení dostanú správu všetci darcovia.</span>

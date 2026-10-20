@@ -132,9 +132,3 @@ export async function zrusOznamCharity(o: OznamCharity): Promise<string | null> 
   }
   try { await zapis({ ...o, zrusene: new Date().toISOString() }); return null; } catch (e) { return e instanceof Error ? e.message : "Nepodarilo sa zrušiť. Skúste znova."; }
 }
-/** DEV — prihlásenie / účasť na skúšku (v produkcii klik človeka pri ozname) */
-export async function simulujUcast(o: OznamCharity) {
-  const MENA = ["Jana K.", "Peter M.", "Lucia B.", "Martin Š.", "Eva H.", "Tomáš R."];
-  try { if (o.pozvanie === "zavazne") { if (o.limit && o.prihlaseni.length >= o.limit) return; await zapis({ ...o, prihlaseni: [...o.prihlaseni, { meno: MENA[o.prihlaseni.length % MENA.length], cas: new Date().toISOString() }] }); }
-  else if (o.pozvanie === "nezavazne") await zapis({ ...o, zucastniSa: o.zucastniSa + 1 }); } catch { /* DEV simulácia */ }
-}

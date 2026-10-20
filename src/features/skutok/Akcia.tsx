@@ -160,7 +160,7 @@ function AkciaObrazovka({ a, onZavrete }: { a: Akcia; onZavrete: () => void }) {
             </div>
             <span style={{ position: "absolute", left: 0, right: 0, bottom: 12, textAlign: "center", fontSize: 13.5, fontWeight: 600, color: "rgba(241,236,225,.85)" }}>Namier na QR účastníka · Na akciu</span>
           </div>}
-          {mozePridat && (!org || TESTOVACIA) && <button type="button" onClick={naskenuj} style={{ height: 50, borderRadius: 15, border: "1px solid var(--gBd)", background: "var(--gSoft)", fontSize: 15, fontWeight: 800, color: "var(--gInk)", cursor: "pointer", fontFamily: "inherit" }}>{org ? "Simulovať príchod (DEV)" : a.stav === "bezi" ? "Naskenovať ďalšieho" : "Naskenovať účastníka"}</button>}
+          {mozePridat && !org && <button type="button" onClick={naskenuj} style={{ height: 50, borderRadius: 15, border: "1px solid var(--gBd)", background: "var(--gSoft)", fontSize: 15, fontWeight: 800, color: "var(--gInk)", cursor: "pointer", fontFamily: "inherit" }}>{org ? "Simulovať príchod (DEV)" : a.stav === "bezi" ? "Naskenovať ďalšieho" : "Naskenovať účastníka"}</button>}
 
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}><h2 style={{ margin: 0, fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" }}>{org ? "ORGANIZÁTOR A DOBROVOĽNÍCI" : "ÚČASTNÍCI"}</h2><span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink3)" }}>{org ? `${a.uc.length} ${a.uc.length === 1 ? "dobrovoľník" : a.uc.length >= 2 && a.uc.length <= 4 ? "dobrovoľníci" : "dobrovoľníkov"}` : pocet}</span></div>
           <div aria-live="polite" style={{ borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "2px 12px" }}>

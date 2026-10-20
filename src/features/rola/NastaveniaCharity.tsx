@@ -5,6 +5,7 @@
 // Stav obrazoviek sa ukladá do účtu stránky (nastavenia_stranky, migrácia 0050) — lib/nastaveniaStranky.
 // ============================================================
 import { aktivnaCharita } from "@/lib/aktivnaCharita";
+import { zbierkyStrankyZPamate, useZmenyZbierok } from "@/lib/novaZbierka";
 import { TlZbalit } from "@/features/verejny-profil/zbalit";
 import { RichTextInput } from "@/components/richtext";
 import { kartaVolby, FajkaVolby } from "@/components/Volby";
@@ -15,7 +16,6 @@ import { DeedZnacka, sZnackou } from "@/components/DeedZnacka";
 import { DeedQr } from "@/components/deedqr";
 import { zdielaj, kopiruj } from "@/lib/zdielanie";
 import { SADY_EURC, SADY_EUR, type SadaEurc, type SadaEur } from "@/lib/sadyDarov";
-import { TESTOVACIA } from "@/lib/testovacia";
 import { useFakturyOrg, otvorFakturu, type FakturaOrg } from "@/lib/fakturyOrg";
 import { maNastavenie, citajNastavenie, zapisNastavenie, useZmenyNastaveni } from "@/lib/nastaveniaStranky";
 import { nacitajIbanOrg, nacitajKryptoOrg, ulozKryptoOrg, nacitajSady, ulozSady, type Tier, type TypStranky, CENNIK_TYPU, TYP_NAZOV, TIER_LABEL, TIER_POPIS } from "./stav";
@@ -304,7 +304,6 @@ export function ObrSpravcovia({ mobil }: { mobil: boolean }) {
                     </select>
                     {x.caka === "potvrdit" && <button onClick={() => setL((a) => a.map((y) => (y.id === x.id ? { ...y, caka: false } : y)))} style={{ height: 44, padding: "0 14px", borderRadius: 12, border: "none", background: ZELENA, cursor: "pointer", fontSize: 13.5, fontWeight: 800, color: "#fff" }}>Potvrdiť</button>}
                     {x.caka === "prijatie" && <button onClick={() => toast("Pozvánku sme poslali znova.")} style={{ ...obrys(), fontSize: 13.5 }}>Poslať znova</button>}
-                    {x.caka === "prijatie" && x.odkaz && TESTOVACIA && <button onClick={() => { setL((a) => a.map((y) => (y.id === x.id ? { ...y, n: "Jana Kováčová", k: "jana.kovacova@gmail.com · bez účtu", caka: "potvrdit" } : y))); setPoz(null); }} style={{ ...obrys("var(--ink3)"), fontSize: 12, borderStyle: "dashed" }}>DEV · prijal pozvánku</button>}
                     <button onClick={odober} style={{ ...obrys(CERVENA), fontSize: 13.5 }}>{odT}</button>
                   </div>}
               </div>);
@@ -517,7 +516,7 @@ function ProgramCharita({ mobil, tier, onTier, otvor }: { mobil: boolean; tier: 
   const [roc, setRoc] = usePamat<boolean>("pr.roc", false);
   const [ch, setCh] = useState<number | null>(null);
   const [por, setPor] = useState(false);
-  const stav = cur === 0 ? "Neplatíte nič." : `Ďalšia platba 1. 11. 2026 · ${f2(roc ? PROG[cur][3] : PROG[cur][2])} bez DPH`;
+  const stav = cur === 0 ? "Neplatíte nič." : `${f2(roc ? PROG[cur][3] : PROG[cur][2])} bez DPH ${roc ? "ročne" : "mesačne"}`; // OPRAVY 442 doplnok 3: bez vymysleného dátumu platby
   const poznT = ch != null && ch !== cur
     ? (ch > cur ? "Vyšší program platí hneď. Doplatíte len rozdiel za zvyšok obdobia." : "Nižší program začne platiť od ďalšieho obdobia. Dovtedy máte všetko, za čo ste zaplatili. Zbierky nad limit dobehnú, nové otvoríte až v limite.")
     : (roc ? "Na rok zaplatíte jednou platbou a máte 15 % zľavu. " : "Mesačne platíte každý mesiac, kedykoľvek zrušíte. ") + "Ceny sú bez DPH. Program môžete zmeniť kedykoľvek.";
@@ -536,7 +535,7 @@ function ProgramCharita({ mobil, tier, onTier, otvor }: { mobil: boolean; tier: 
         const on = i === cur, pot = ch === i, cena = roc ? r : m;
         const dph = cena ? `bez DPH · s DPH ${f2(Math.round(cena * 1.23 * 100) / 100)}${roc ? ` · ušetríte ${f2(Math.round((m * 12 - r) * 100) / 100)}` : ""}` : "navždy";
         const btT = on ? "Váš program" : pot ? (i > cur ? "Potvrdiť zmenu" : "Potvrdiť prechod") : `Prejsť na ${n}`;
-        const tap = on ? undefined : pot ? () => { onTier(i as Tier); setCh(null); toast(i > cur ? `Program ${n} platí od dnes.` : `Program ${n} začne platiť od 1. 11. 2026.`); } : () => setCh(i);
+        const tap = on ? undefined : pot ? () => { onTier(i as Tier); setCh(null); toast(i > cur ? `Program ${n} platí od dnes.` : `Program ${n} začne platiť od ďalšieho obdobia.`); } : () => setCh(i);
         return (
           <div key={n} style={{ minWidth: 0, borderRadius: 18, background: on ? "var(--accSoft)" : "var(--card)", border: on ? "1.5px solid var(--cuBd)" : "1px solid var(--cardBd)", padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}><b style={{ flex: 1, fontSize: 17 }}>{n}</b><span style={{ height: 22, padding: "0 8px", borderRadius: 11, background: "var(--btn)", display: "flex", alignItems: "center", fontSize: 11.5, fontWeight: 800, color: "var(--ink3)" }}>{k}</span></div>
@@ -590,11 +589,8 @@ function ProgramCharita({ mobil, tier, onTier, otvor }: { mobil: boolean; tier: 
 // ============================================================
 const denFa = (iso: string) => { const d = new Date(iso); return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`; };
 /** testovacie faktúry za program (platený program = 3 mesačné platby) + faktúry zaplatené v tejto relácii, najnovšie hore */
-function vsetkyFaktury(platby: FakturaOrg[], cur: number): FakturaOrg[] {
-  const r = registra(aktivnaCharita()), ud = fakturacneUdaje() ?? { nazov: r.nazov, ico: icoText(r.ico), adresa: r.sidlo, email: UD0.fmail };
-  const program: FakturaOrg[] = cur ? [10, 9, 8].map((m, i) => ({ cislo: `2026/${1042 - i}`, co: `Program ${PROG[cur][0]} · mesačne`, suma: PROG[cur][2], datum: new Date(2026, m - 1, 1, 9).toISOString(), sposob: "faktúra prevodom", odberatel: ud })) : [];
-  return [...platby, ...program];
-}
+// OPRAVY 442 doplnok 3: len skutočné faktúry (vymyslené FA 2026/1040–1042 za program zmazané)
+function vsetkyFaktury(platby: FakturaOrg[], _cur: number): FakturaOrg[] { return platby; }
 export function ObrFaktury({ mobil, tier, otvor }: { mobil: boolean; tier: Tier; otvor: (s: string) => void }) {
   const fa = vsetkyFaktury(useFakturyOrg(), Math.min(3, tier));
   const ud = fakturacneUdaje();
@@ -661,7 +657,7 @@ export function ObrZariadenia({ mobil }: { mobil: boolean }) {
 // ============================================================
 export function ObrSuhlasy({ mobil, otvor }: { mobil: boolean; otvor: (s: string) => void }) {
   const [sh, setSh] = usePamat<Record<string, boolean>>("shc", {});
-  const POV: [string, string, string][] = [["Podmienky pre organizácie", "zbierky, doklady, programy a poplatky", "Martin Štofik · 30. 9. 2026 · verzia 1.0"], ["Zmluva o spracúvaní osobných údajov", "ako DEED+ spracúva údaje vašich darcov za vás", "Martin Štofik · 30. 9. 2026"], ["Overenie organizácie", "kontrola v registri a overenie štatutára", "overené 30. 9. 2026"]];
+  const POV: [string, string, string][] = [["Podmienky pre organizácie", "zbierky, doklady, programy a poplatky", "verzia 1.0"], ["Zmluva o spracúvaní osobných údajov", "ako DEED+ spracúva údaje vašich darcov za vás", ""], ["Overenie organizácie", "kontrola v registri a overenie štatutára", ""]] /* OPRAVY 442 doplnok 3: bez vymysleného mena a dátumu */;
   const NEP: [string, string, string, boolean][] = [["news", "Novinky DEED+ e-mailom", "nové funkcie, najviac raz mesačne", true], ["stat", "Anonymné štatistiky", "pomáhajú nám opraviť chyby, bez údajov darcov", true], ["part", "Súhrn pre partnerov", "firmy, ktoré dorovnávajú, vidia len súčty, nikdy mená darcov", true], ["tip", "Tipy, ako zbierať lepšie", "raz týždenne v appke", false]];
   return (<>
     <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)", maxWidth: 760 }}>Tu vidíte, s čím organizácia súhlasila. Povinné súhlasy odsúhlasil štatutár pri registrácii. Nepovinné môžete kedykoľvek vypnúť.</span>
@@ -793,7 +789,7 @@ export function ObrPodpora({ mobil, otvor }: { mobil: boolean; otvor: (s: string
   const [zb, setZb] = useState("");
   const [tx, setTx] = useState("");
   const [pr, setPr] = useState(0);
-  const [L, setL] = usePamat<Msg[]>("po.L", [{ t: "Výplata na účet neprišla", d: "odoslané 24. 9. 2026", s: "vyriešené" }]);
+  const [L, setL] = usePamat<Msg[]>("po.L2", []); // OPRAVY 442 doplnok 3: bez vymyslenej správy (nový kľúč, staré uložené sa neukážu)
   const ok = tm >= 0 && cistyText(tx).length > 5;
   const odosli = () => { if (!ok) return; setL((a) => [{ t: cistyText(tx).slice(0, 60), d: `${TEMY[tm]} · odoslané dnes`, s: "riešime" }, ...a]); setTm(-1); setTx(""); setPr(0); setZb(""); toast("Správu sme dostali. Odpovieme do 1 pracovného dňa."); };
   return (
@@ -805,7 +801,7 @@ export function ObrPodpora({ mobil, otvor }: { mobil: boolean; otvor: (s: string
             {TEMY.map((t, i) => { const on = i === tm; return <button key={t} role="radio" aria-checked={on} onClick={() => setTm(i)} style={{ height: 44, padding: "0 14px", borderRadius: 12, border: `1.5px solid ${on ? "var(--cuBd)" : "var(--cardBd)"}`, background: on ? "var(--accSoft)" : "transparent", cursor: "pointer", fontSize: 14, fontWeight: 800, color: on ? "var(--acc)" : "var(--ink)" }}>{t}</button>; })}
           </div>
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink2)" }}>Týka sa to zbierky? <span style={{ fontWeight: 600, color: "var(--ink3)" }}>· nepovinné</span></span>
-            <select value={zb} onChange={(e) => setZb(e.target.value)} style={{ ...pole, padding: "0 12px" }}><option value="">Nie</option><option value="1">Strecha pre rodinu Horváthovú</option><option value="2">Invalidný vozík pre Ninu</option><option value="3">Teplé jedlo na zimu</option></select></label>
+            <select value={zb} onChange={(e) => setZb(e.target.value)} style={{ ...pole, padding: "0 12px" }}><option value="">Nie</option>{zbierkyStrankyZPamate(aktivnaCharita()).map((z) => <option key={z.id} value={z.id}>{z.nazov}</option>)}</select></label>
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink2)" }}>Čo sa stalo</span>
             <RichTextInput vzhlad="sprava" value={tx} onChange={setTx} minH={150} placeholder="Napíšte to vlastnými slovami. Čím viac podrobností, tým rýchlejšie pomôžeme." ariaLabel="Čo sa stalo" nastroje={["bold", "italic", "insertUnorderedList", "diktovat"]} /></label>
           <label style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48, padding: "0 14px", borderRadius: 12, border: "1.5px dashed #BDB6A8", cursor: "pointer", color: "var(--gInk)" }}>
@@ -835,17 +831,18 @@ export function ObrPodpora({ mobil, otvor }: { mobil: boolean; otvor: (s: string
 // ============================================================
 // 12 · Zrušiť stránku charity
 // ============================================================
-export function ObrZrusit({ mobil, otvor, tier, nova }: { mobil: boolean; otvor: (s: string) => void; tier: Tier; nova: boolean }) {
+export function ObrZrusit({ mobil, otvor, tier }: { mobil: boolean; otvor: (s: string) => void; tier: Tier; nova: boolean }) {
   const [dov, setDov] = useState("");
   const [txt, setTxt] = useState("");
   const [k2, setK2] = useState(false);
   const cur = Math.min(3, tier);
-  const program = cur === 0 ? "Žiadny, neplatíte nič." : `Program ${PROG[cur][0]} · zaplatené do 31. 10. 2026. Zrušením sa platba zastaví, peniaze za zvyšok obdobia nevraciame.`;
+  const program = cur === 0 ? "Žiadny, neplatíte nič." : `Program ${PROG[cur][0]}. Zrušením sa platba zastaví, peniaze za zvyšok obdobia nevraciame.`;
+  // OPRAVY 442 doplnok 3: skutočný stav zbierok, nie pevný text; doklady a výplaty appka zatiaľ nevie overiť → riadky preč
+  useZmenyZbierok();
+  const bezia = zbierkyStrankyZPamate(aktivnaCharita()).filter((z) => (z.stav ?? "aktivna") === "aktivna").length;
   // blokuje len bežiaca zbierka a nedoložené doklady; platený program neblokuje
   const K: [string, string, boolean, string?][] = [
-    ["Bežiace zbierky", nova ? "Žiadna zbierka nebeží." : "2 zbierky ešte bežia. Ukončite ich, peniaze prídu na účty.", !nova, "Ukončiť zbierky"],
-    ["Doklady", nova ? "Všetko je doložené." : "Teplé jedlo na zimu čaká na doklady do 12. 10. 2026.", !nova, "Nahrať doklady"],
-    ["Výplaty na účet", "Všetko je vyplatené.", false],
+    ["Bežiace zbierky", bezia ? `${bezia} ${bezia === 1 ? "zbierka ešte beží" : bezia <= 4 ? "zbierky ešte bežia" : "zbierok ešte beží"}. Ukončite ich, peniaze prídu na účty.` : "Žiadna zbierka nebeží.", bezia > 0, "Ukončiť zbierky"],
     ["Platený program", program, false],
   ];
   const blok = K.some((k) => k[2]);

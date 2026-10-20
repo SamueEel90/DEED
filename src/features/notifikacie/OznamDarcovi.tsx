@@ -27,7 +27,7 @@ export function OznamDarcoviSheet({ zbierkaId, typ, text, nahladStav, onClose }:
 
   const st = nahladStav ?? nacitajStav(zbierkaId);
   const dokaz = st ? dokazZoStavu(st) : z.dokaz;
-  const vyz = st?.simVyzbierane ?? z.vyzbierane + sucetDarov(zbierkaId).suma;
+  const vyz = z.vyzbierane + sucetDarov(zbierkaId).suma;
   const pct = st ? percentoDolozenia(st, vyz) : 100;
   const menom = ja.typ !== "pasivny" && ja.typ !== "charita" && ja.meno ? ja.meno : null;
   const mojaSuma = moje.reduce((a, r) => a + r.suma, 0);

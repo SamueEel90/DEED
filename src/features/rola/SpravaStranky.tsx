@@ -226,7 +226,7 @@ const D8: [string, string][][] = [
   [["1 940 €", "+9 % oproti min. mesiacu"], ["64", "+6 %"], ["30,31 €", ""], ["21", "+5"], ["19 ľudí", "+3 noví"], ["620 €", "1 partner"], ["1 204", "+38 za mesiac"], ["312", "od začiatku"]],
   [["18 420 €", "od januára"], ["642", ""], ["28,69 €", ""], ["248", ""], ["19 ľudí", ""], ["2 140 €", "3 partneri"], ["1 204", "+410 za rok"], ["312", "od začiatku"]],
 ];
-const N8 = ["0 €", "0", "—", "0", "0 ľudí", "0 €", "0", "0"];
+const N8 = ["0 €", "0", "—", "—", "—", "0 €", "—", "—"];
 // OPRAVY 440 (2) · 445 (2): skutočná stránka — čísla z ledgera (tie isté dary ako detail zbierky, profil a feed).
 // Čo ledger nevie bez účtov darcov (noví darcovia, sledujúci, darcovia spolu), je „—“, nie vymyslené číslo.
 const DEN_MS = 86_400_000;
@@ -237,7 +237,7 @@ function cislaZLedgera(refs: string[], obd: number): [string, string][] {
   const od = obd === 0 ? dnes.getTime() : Date.now() - [7, 30, 365][obd - 1] * DEN_MS;
   const v = refs.flatMap((r) => darcoviaPre(r)).filter((r) => r.cas >= od);
   const ludia = v.filter((r) => !r.firma), suma = ludia.reduce((a, r) => a + r.suma, 0), firmy = v.filter((r) => r.firma).reduce((a, r) => a + r.suma, 0);
-  return [[eur(suma), ""], [String(ludia.length), ""], [ludia.length ? eur(suma / ludia.length) : "—", ""], ["—", ""], ["0 ľudí", ""], [eur(firmy), ""], ["—", ""], ["—", ""]];
+  return [[eur(suma), ""], [String(ludia.length), ""], [ludia.length ? eur(suma / ludia.length) : "—", ""], ["—", ""], ["—", ""], [eur(firmy), ""], ["—", ""], ["—", ""]]; // OPRAVY 442 doplnok 3: pravidelnú podporu appka zatiaľ nepočíta → „—“, nie „0 ľudí“
 }
 const ULOHY: [string, string, string, string][] = [
   ["#C9A24A", "Strecha pre rodinu Horváthovú končí o 9 dní", "Chýba 3 580 €. Pripomeňte ju sledujúcim.", "Pripomenúť"],
@@ -263,8 +263,12 @@ const naSpravu = (z: ZbRiadok): ZbierkaNaSpravu => {
 };
 /** OPRAVY 114: spustená zbierka charity → karta v Prehľade a riadok v Moje zbierky */
 const fotoBg = (z: SpustenaZbierka) => { const f = z.media.find((m) => m.typ === "foto"); return f ? `url('${f.src}') center/cover no-repeat var(--track)` : "repeating-linear-gradient(135deg,var(--track) 0 12px,var(--btn) 12px 24px)"; };
-const naPh = (z: SpustenaZbierka): PhZbierka => ({ t: z.nazov, v: 0, c: z.cielTyp === "ciel" ? cielCislo(z) : 0, d: z.typ === "dlha" ? `beží ${z.mesiace} mesiacov` : "končí o 30 dní", bg: fotoBg(z), dn: 0 });
-const naRiadok = (z: SpustenaZbierka): ZbRiadok => ({ id: z.id, zdroj: z, lehotaText: z.lehota ? (/^\d/.test(z.lehota) ? `do ${z.lehota}` : z.lehota) : undefined, lehota: z.lehotaKluc ?? "30", bezPredlzenia: z.typ === "dlha", dlha: z.typ === "dlha", zaciatok: z.spustena, mesiace: z.mesiace, ucel: z.ucel != null ? (jeIne(z) ? z.ineT : UCELY[z.ucel][0]) : undefined, t: z.nazov, v: sucetDarov(z.id).suma, c: z.cielTyp === "ciel" ? cielCislo(z) : 0, bg: fotoBg(z), s: `${darcovT(sucetDarov(z.id).pocet)} · ${z.typ === "dlha" ? `beží ${z.mesiace} mesiacov` : "končí o 30 dní"}`, konc: false }); // OPRAVY 445 (2): z ledgera
+// OPRAVY 442 doplnok 3: skutočný koniec (zo servera, inak spustenie + 30 dní / + mesiace) a skutočné dary dnes — nič napevno
+const koniecZb = (z: SpustenaZbierka): number => { if (z.koniec) return new Date(z.koniec).getTime(); const d = new Date(z.spustena); if (z.typ === "dlha") d.setMonth(d.getMonth() + (z.mesiace || 0)); else d.setDate(d.getDate() + 30); return d.getTime(); };
+const kedyKonci = (z: SpustenaZbierka): string => { const dni = Math.max(0, Math.ceil((koniecZb(z) - Date.now()) / 86400000)); return dni === 0 ? "končí dnes" : `končí o ${dni} ${dni === 1 ? "deň" : dni <= 4 ? "dni" : "dní"}`; };
+const dnesEur = (id: string) => { const d = new Date(); d.setHours(0, 0, 0, 0); return darcoviaPre(id).filter((r) => r.cas >= d.getTime()).reduce((a, r) => a + r.suma, 0); };
+const naPh = (z: SpustenaZbierka): PhZbierka => ({ t: z.nazov, v: sucetDarov(z.id).suma, c: z.cielTyp === "ciel" ? cielCislo(z) : 0, d: kedyKonci(z), bg: fotoBg(z), dn: dnesEur(z.id) });
+const naRiadok = (z: SpustenaZbierka): ZbRiadok => ({ id: z.id, zdroj: z, lehotaText: z.lehota ? (/^\d/.test(z.lehota) ? `do ${z.lehota}` : z.lehota) : undefined, lehota: z.lehotaKluc ?? "30", bezPredlzenia: z.typ === "dlha", dlha: z.typ === "dlha", zaciatok: z.spustena, mesiace: z.mesiace, ucel: z.ucel != null ? (jeIne(z) ? z.ineT : UCELY[z.ucel][0]) : undefined, t: z.nazov, v: sucetDarov(z.id).suma, c: z.cielTyp === "ciel" ? cielCislo(z) : 0, bg: fotoBg(z), s: `${darcovT(sucetDarov(z.id).pocet)} · ${kedyKonci(z)}`, konc: false }); // OPRAVY 445 (2): z ledgera
 const darcovT = (n: number) => `${n} ${n === 1 ? "darca" : n >= 2 && n <= 4 ? "darcovia" : "darcov"}`;
 // KARTA 48 · testovacie zbierky 1 : 1 podľa prototypu „Zbierky zoznam"
 const ZB_LIST: ZbRiadok[] = [
@@ -428,7 +432,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   else if (sub === "g_zbierky") obsah = <ObrZbierky {...spolocne} />;
   else if (sub === "g_obsah" || sub === "g_ludia" || sub === "g_nastroje" || sub === "g_typ") obsah = <Mriezka karty={menu.skupiny[sub] ?? []} {...spolocne} />;
   else if (sub === "vsetko") obsah = <ObrVsetko typ={typ} tier={tier} otvor={otvor} stlpce={desktop || tablet ? 2 : 1} />;
-  else if (sub === "penazenka") obsah = <ObrPenazenka otvor={otvor} mobil={!desktop} />;
+  else if (sub === "penazenka") obsah = <ObrPenazenka otvor={otvor} mobil={!desktop} refs={[...zbierkyStrankyZPamate(strankaId).map((z) => z.id), refCentralnej(strankaId)]} />;
   // OPRAVY 396: Vzhľad stránky (Kronika · Výklad · Pirát) je v Nastaveniach pod Témou, ako vo Viere — nie v Upraviť profil
   else if (sub === "nast") obsah = <ObrNastavenia tier={tier} otvor={otvor} mobil={!wide} charita={typ === "charita"}
     vzhlad={<VzhladStranky strankaId={strankaId} sektor={typ === "tvorca" ? "tvorca" : undefined} zadarmo={tier === 0} kto={slovo(typ, "darcovia", "darcovia")} onPozriet={() => otvor("x:Verejný profil")} />} />;
@@ -797,7 +801,7 @@ function PinyTelefon({ polozky, otvor, onUpravit, upravitOtv }: { polozky: PinV[
 
 /** Čísla — prepínač obdobia + len 4 (2 × 2), „Všetky čísla ›" rozbalí 8, „Graf ›" otvorí graf v hárku */
 const K4 = [0, 1, 3, 6]; // Vyzbierané · Počet darov · Noví darcovia · Sledujúci (indexy v K8)
-function CislaTelefon({ obd, setObd, nova, stit, realne }: { obd: number; setObd: (i: number) => void; nova: boolean; stit: StitCharity; /** OPRAVY 445 (2): čísla z ledgera */ realne?: [string, string][] }) {
+function CislaTelefon({ obd, setObd, nova, stit, realne, refs }: { obd: number; setObd: (i: number) => void; nova: boolean; stit: StitCharity; /** OPRAVY 445 (2): čísla z ledgera */ realne?: [string, string][]; /** OPRAVY 442 doplnok 3: graf zo skutočných darov */ refs?: string[] }) {
   const [vsetky, setVsetky] = useState(false);
   const [graf, setGraf] = useState(false);
   const idx = vsetky ? K8.map((_, i) => i) : K4;
@@ -819,7 +823,7 @@ function CislaTelefon({ obd, setObd, nova, stit, realne }: { obd: number; setObd
         <button onClick={() => setVsetky((x) => !x)} aria-expanded={vsetky} style={{ minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontSize: 13, fontWeight: 800, color: "var(--green)" }}>{vsetky ? "Menej čísel ‹" : "Všetky čísla ›"}</button>
         <button onClick={() => setGraf(true)} style={{ minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontSize: 13, fontWeight: 800, color: "var(--green)" }}>Graf ›</button>
       </div>
-      {graf && <SpodnyHarok stit={stit} nadpis="Graf darov" bezHlavicky onClose={() => setGraf(false)}><GrafDarov obd={obd} nova={nova} mobil onZavri={() => setGraf(false)} /></SpodnyHarok>}
+      {graf && <SpodnyHarok stit={stit} nadpis="Graf darov" bezHlavicky onClose={() => setGraf(false)}><GrafDarov obd={obd} nova={nova} refs={refs} mobil onZavri={() => setGraf(false)} /></SpodnyHarok>}
     </section>);
 }
 
@@ -906,7 +910,8 @@ function Prehlad({ strankaId, tier: _tier, piny, prepniPin, otvorPolozku, otvor,
   const [obd, setObd] = useState(0);
   // OPRAVY 445 (2): skutočná stránka (bez ukážok) → čísla z ledgera všetkých jej zbierok a centrálnej
   useZmenyDarov();
-  const realne = nova ? cislaZLedgera([...vlastne.map((z) => z.id), refCentralnej(strankaId)], obd) : undefined;
+  const refsCisel = [...vlastne.map((z) => z.id), refCentralnej(strankaId)];
+  const realne = nova ? cislaZLedgera(refsCisel, obd) : undefined;
   const [grafPc, setGrafPc] = useState(false); // OPRAVY 92: graf darov pod číslami
   const graf = mobil ? jeOtv(zbal, "graf") : grafPc;
   const setGraf = (f: (g: boolean) => boolean) => (mobil ? prepniZbal("graf", f(graf)) : setGrafPc(f));
@@ -1060,7 +1065,7 @@ function Prehlad({ strankaId, tier: _tier, piny, prepniPin, otvorPolozku, otvor,
             <b style={{ fontSize: 16, color: "var(--ink)" }}>{z.t}</b>
             <Pruh sc={z.c ? z.v / z.c : 1} />
             <span style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 13, color: "var(--ink3)" }}><span><b style={{ color: "var(--ink)" }}>{eur(z.v)}</b>{z.c ? ` z ${eur(z.c)}` : ""}</span><span>{z.d}</span></span>
-            <span style={{ alignSelf: "flex-start", height: 26, padding: "0 10px", borderRadius: 13, background: z.dn ? "var(--gSoft)" : "var(--btn)", color: z.dn ? "var(--gInk)" : "var(--ink3)", display: "flex", alignItems: "center", fontSize: 12.5, fontWeight: 800 }}>{z.dn ? `dnes +${z.dn} €` : "dnes zatiaľ nič"}</span>
+            <span style={{ alignSelf: "flex-start", height: 26, padding: "0 10px", borderRadius: 13, background: z.dn ? "var(--gSoft)" : "var(--btn)", color: z.dn ? "var(--gInk)" : "var(--ink3)", display: "flex", alignItems: "center", fontSize: 12.5, fontWeight: 800 }}>{z.dn ? `dnes +${eur(z.dn)}` : "dnes zatiaľ nič"}</span>
           </span>
         </button>))}
     </div>);
@@ -1103,12 +1108,12 @@ function Prehlad({ strankaId, tier: _tier, piny, prepniPin, otvorPolozku, otvor,
   const pravy = (
     <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: mobil ? 0 : 28 }}>{retazEl}{dorEl}</div>);
 
-  const grafEl = graf && <GrafDarov obd={obd} nova={nova} mobil={ph} onZavri={() => setGraf(() => false)} />;
+  const grafEl = graf && <GrafDarov obd={obd} nova={nova} refs={nova ? refsCisel : undefined} mobil={ph} onZavri={() => setGraf(() => false)} />;
   if (mobil) {
     // OPRAVY 95: zbaliteľné sekcie; Treba vybaviť vždy rozbalené. OPRAVY 96: tablet — Reťaz a Dorovnávané vedľa seba
     const obdTxt = ["dnes", "za 7 dní", "za 30 dní", "za rok"][obd];
     const vyz = realne ? realne[0][0] : nova ? N8[0] : D8[obd][0][0];
-    const retazS = <Sekcia id="retaz" nazov="Reťaz dobra" suhrn={nova ? "0 €" : "640 €"} zbal={zbal} prepni={prepniZbal}>{retazEl}</Sekcia>;
+    const retazS = <Sekcia id="retaz" nazov="Reťaz dobra" suhrn={nova ? undefined : "640 €"} zbal={zbal} prepni={prepniZbal}>{retazEl}</Sekcia>;
     const dorS = <Sekcia id="dorovnanie" nazov="Dorovnávané zbierky" suhrn={nova ? undefined : "1 beží"} zbal={zbal} prepni={prepniZbal}>{dorEl}</Sekcia>;
     // KARTA 42 · telefón: najprv konať, potom čísla
     if (ph) {
@@ -1136,7 +1141,7 @@ function Prehlad({ strankaId, tier: _tier, piny, prepniPin, otvorPolozku, otvor,
                 <button onClick={() => otvor(`x:${b}`)} style={{ ...zeleneTl, height: 44, padding: "0 13px", borderRadius: 12, fontSize: 13 }}>{b}</button>
               </div>))}
           </section>}
-        <CislaTelefon obd={obd} setObd={setObd} nova={nova} stit={stit} realne={realne} />
+        <CislaTelefon obd={obd} setObd={setObd} nova={nova} stit={stit} realne={realne} refs={nova ? refsCisel : undefined} />
         {PHZ.length > 0 && <><span style={nadpisSekcie}>BEŽIACE ZBIERKY</span>{zbMriezka}</>}
         {retazS}{dorS}
       </>);
@@ -1147,7 +1152,7 @@ function Prehlad({ strankaId, tier: _tier, piny, prepniPin, otvorPolozku, otvor,
     </>);
     return (<>
       <Sekcia id="cisla" nazov="Čísla" suhrn={`Vyzbierané ${vyz} ${obdTxt}`} akcia={cislaAkcia} zbal={zbal} prepni={prepniZbal}>{cisla}</Sekcia>
-      <Sekcia id="graf" nazov="Graf darov" suhrn={`${sumaEur((nova ? 0 : GRAF_CIEL[obd]))} ${obdTxt}`} zbal={zbal} prepni={prepniZbal}>{grafEl}</Sekcia>
+      <Sekcia id="graf" nazov="Graf darov" suhrn={`${sumaEur(nova ? grafData(obd, true, refsCisel).spolu : GRAF_CIEL[obd])} ${obdTxt}`} zbal={zbal} prepni={prepniZbal}>{grafEl}</Sekcia>
       <Sekcia id="piny" nazov="Pripnuté" suhrn={pocet(pinyV.length, ["položka", "položky", "položiek"])} zbal={zbal} prepni={prepniZbal}>{pinBar}</Sekcia>
       {treba}{zbierky}
       {tablet ? <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 14, alignItems: "start" }}><div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{retazS}</div><div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{dorS}</div></div> : <>{retazS}{dorS}</>}
@@ -1220,7 +1225,25 @@ const GRAF_X: string[][] = [["8", "10", "12", "14", "16", "18", "20", "22"], ["P
 const GRAF_A0 = [[0, 12, 0, 30, 20, 46, 38, 0], [38, 52, 44, 70, 61, 88, 107], [40, 55, 48, 62, 58, 71, 66, 80, 74, 69, 85, 78, 92, 88, 70, 95, 84, 99, 90, 104, 97, 110, 101, 96, 115, 108, 120, 112, 118, 126], [820, 1040, 1210, 1380, 1290, 1560, 1440, 1720, 1940, 2210, 0, 0]];
 const GRAF_B0 = [[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 19, 0, 0, 0, 0], Array.from({ length: 30 }, (_, i) => (i === 0 || i === 14 ? 240 : 0)), [380, 380, 395, 410, 410, 430, 445, 460, 470, 480, 0, 0]];
 const GRAF_CIEL = [146, 460, 1940, 18420]; // = Vyzbierané v paneli Čísla
-function grafData(ob: number, nova: boolean) {
+/** OPRAVY 442 doplnok 3: skutočná stránka — dary zo skutočných darov (ledger) po hodinách / dňoch / mesiacoch; pravidelnú appka zatiaľ nerozlišuje */
+function grafSkutocny(ob: number, refs: string[]): number[] {
+  const n = GRAF_X[ob].length, A = Array.from({ length: n }, () => 0), d = new Date(); d.setHours(0, 0, 0, 0);
+  const zac = ob === 0 ? d.getTime() : ob === 1 ? d.getTime() - ((d.getDay() + 6) % 7) * DEN_MS : ob === 2 ? d.getTime() - 29 * DEN_MS : new Date(d.getFullYear(), 0, 1).getTime();
+  for (const r of refs.flatMap((x) => darcoviaPre(x))) {
+    if (r.cas < zac) continue;
+    const t = new Date(r.cas);
+    const i = ob === 0 ? Math.min(n - 1, Math.max(0, Math.floor((t.getHours() - 8) / 2))) : ob === 3 ? t.getMonth() : Math.floor((r.cas - zac) / DEN_MS);
+    if (i >= 0 && i < n) A[i] += r.suma;
+  }
+  return A;
+}
+function grafData(ob: number, nova: boolean, refs?: string[]) {
+  if (nova && refs) {
+    const A = grafSkutocny(ob, refs), B = A.map(() => 0);
+    const mx = Math.max(4, ...A), r = mx / 4, p = Math.pow(10, Math.floor(Math.log10(r))), n = r / p;
+    const krok = (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * p;
+    return { A, B, krok, top: krok * 4, spolu: A.reduce((s, v) => s + v, 0) };
+  }
   const A0 = GRAF_A0[ob], B0 = GRAF_B0[ob];
   const sum0 = A0.reduce((s, v) => s + v, 0) + B0.reduce((s, v) => s + v, 0), kf = GRAF_CIEL[ob] / sum0;
   const A = A0.map((v) => (nova ? 0 : Math.round(v * kf))), B = B0.map((v) => (nova ? 0 : Math.round(v * kf)));
@@ -1230,8 +1253,8 @@ function grafData(ob: number, nova: boolean) {
   const krok = (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * p;
   return { A, B, krok, top: krok * 4, spolu: A.reduce((s, v) => s + v, 0) + B.reduce((s, v) => s + v, 0) };
 }
-function GrafDarov({ obd, nova, mobil, onZavri }: { obd: number; nova: boolean; mobil: boolean; onZavri: () => void }) {
-  const { A, B, krok, top, spolu } = grafData(obd, nova);
+function GrafDarov({ obd, nova, refs, mobil, onZavri }: { obd: number; nova: boolean; refs?: string[]; mobil: boolean; onZavri: () => void }) {
+  const { A, B, krok, top, spolu } = grafData(obd, nova, refs);
   const X = GRAF_X[obd], gap = obd === 2 ? 3 : mobil ? 6 : 10;
   const fmt = (v: number) => `${sumaEur(Math.round(v))}`;
   const tip = (i: number) => `${X[i] || `${i + 1}.`} · ${fmt(A[i] + B[i])}${B[i] ? ` (z toho pravidelná ${fmt(B[i])})` : ""}`;
@@ -1423,7 +1446,7 @@ function ObrZbierky(s: Spolocne) {
         <button onClick={() => otvor("x:Nová zbierka")} style={{ ...zeleneTl, flex: "none" }}>Dokončiť</button>
       </section>}
       {list.map((z) => (
-        <RiadokZb key={z.id ?? z.t} id={z.id ?? z.t} foto={z.bg} stit={`${(z.mesto ?? "Trenčín").toLocaleUpperCase("sk-SK")}${z.dlha ? " · DLHODOBÁ" : ""}`} nazov={z.t} pod={z.s} suma={eur(z.v)}
+        <RiadokZb key={z.id ?? z.t} id={z.id ?? z.t} foto={z.bg} stit={[z.mesto?.toLocaleUpperCase("sk-SK"), z.dlha ? "DLHODOBÁ" : ""].filter(Boolean).join(" · ") || "ZBIERKA"} nazov={z.t} pod={z.s} suma={eur(z.v)}
           cislo={cisloObjektu("Z", naSpravu(z).id, naSpravu(z).vs)} stav={stavZbierky(z, naSpravu(z).id)} onClick={() => spravuj(naSpravu(z))} />))}
       {list.length === 0 && !rozpisana && <section style={{ ...karta, padding: "26px 18px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
         <b style={{ fontSize: 16.5 }}>Zatiaľ nemáte žiadnu zbierku</b>
@@ -1434,8 +1457,12 @@ function ObrZbierky(s: Spolocne) {
   </>);
 }
 
-function ObrPenazenka({ otvor, mobil }: { otvor: (s: Sub) => void; mobil: boolean }) {
-  const dlazdice: [string, string, string][] = [["Prišlo tento mesiac", "0 €", "0 darov"], ["Čaká na výplatu", "0 €", ""], ["Vyplatené spolu", "0 €", "od začiatku"]];
+function ObrPenazenka({ otvor, mobil, refs }: { otvor: (s: Sub) => void; mobil: boolean; refs: string[] }) {
+  // OPRAVY 442 doplnok 3: prišlo tento mesiac zo skutočných darov (ledger); výplaty appka zatiaľ nevie → „—“
+  useZmenyDarov();
+  const zac = new Date(); zac.setDate(1); zac.setHours(0, 0, 0, 0);
+  const mes = refs.flatMap((r) => darcoviaPre(r)).filter((r) => r.cas >= zac.getTime());
+  const dlazdice: [string, string, string][] = [["Prišlo tento mesiac", eur(mes.reduce((a, r) => a + r.suma, 0)), mes.length ? `${mes.length} ${mes.length === 1 ? "dar" : mes.length <= 4 ? "dary" : "darov"}` : "zatiaľ žiadne dary"], ["Čaká na výplatu", "—", ""], ["Vyplatené spolu", "—", ""]];
   return (<>
     <span style={{ flex: "none", fontSize: 14, color: "var(--ink3)" }}>Peniaze z darov a výplaty na účet charity.</span>
     <div style={{ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : "repeat(auto-fit,minmax(170px,1fr))", gap: 12 }}>

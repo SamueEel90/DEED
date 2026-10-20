@@ -177,7 +177,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
     </section>);
 
   // ---- karty Nastavenia ----
-  const tentoMesiac = <CislaKarta nadpis="Tento mesiac" dary={dary} cisla={farnost ? [[eur(mesiac), "tento mesiac · cez DEED+"], [String(c.mesacne), "ľudí dáva mesačne"], [eur(spolu), "od začiatku · cez DEED+"]] : [[eur(mesiac), "tento mesiac"], [String(c.mesacne), "ľudí dáva mesačne"], [eur(spolu), "od začiatku"]]}>
+  const tentoMesiac = <CislaKarta nadpis="Tento mesiac" dary={dary} cisla={farnost ? [[eur(mesiac), "tento mesiac · cez DEED+"], [String(c.mesacne), "ľudí dáva mesačne"], [eur(spolu), "od začiatku · cez DEED+"]] : [[eur(mesiac), "tento mesiac"], [eur(spolu), "od začiatku"]]}>
     <button type="button" onClick={onDarcovia} style={obrysK}>Všetci darcovia ›</button>
   </CislaKarta>;
   const textKarta = <section data-pole="text" style={kartaK}><span style={nadpisK}>Text pre darcov</span>
@@ -208,7 +208,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const sektorKarta = sek && (
     <section style={kartaK}>
       <span style={nadpisK}>Sektor</span>
-      <span style={textK}>Podľa stanov: <b style={{ color: "var(--ink)" }}>{sek.stanovy}</b> · overené pri registrácii. Názov sektora na profile zmeníte tu.</span>
+      <span style={textK}>Téma: <b style={{ color: "var(--ink)" }}>{sek.stanovy}</b>. Názov sektora na profile zmeníte tu.</span>{/* OPRAVY 442 doplnok 3: stanovy appka nepozná, bez „overené pri registrácii“ */}
       <input value={sek.nazov} maxLength={30} onChange={(e) => premenujSektor(sek.id, e.target.value)} onBlur={(e) => { if (!e.target.value.trim()) premenujSektor(sek.id, STANOVY_CINNOSTI.find((x) => x.stanovy === sek.stanovy)?.nazov ?? "Sektor"); }} aria-label="Názov sektora"
         style={{ height: 48, padding: "0 14px", borderRadius: 12, border: "1.5px solid var(--cardBd)", background: "var(--field)", fontFamily: "inherit", fontSize: 15, fontWeight: 700, color: "var(--ink)", outline: "none", width: "100%", boxSizing: "border-box" }} />
     </section>);
@@ -323,7 +323,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const novyPanel = novySek && (
     <div style={{ borderRadius: 18, background: "var(--panel)", border: "1px solid var(--cardBd)", padding: "14px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
       <b style={{ fontSize: 15 }}>Nový sektor</b>
-      <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>Len téma, ktorú máte v stanovách. Najviac {SEKTORY_MAX} sektory, od programu Akcia. Dostane farbu podľa poradia a vlastné QR.</span>
+      <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>Vyberte tému. Najviac {SEKTORY_MAX} sektory, od programu Akcia. Dostane farbu podľa poradia a vlastné QR.</span>
       {smieSektory && <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         {volne.map((o) => <button key={o.nazov} type="button" aria-disabled={plno} onClick={() => { if (plno) return; const s = pridajSektor(o); if (s) { prepni(sektory.length + 1); toast(`Sektor ${s.nazov} je pridaný`); } }} style={{ height: 44, padding: "0 14px", borderRadius: 22, border: "1px solid var(--cardBd)", background: "var(--field)", cursor: plno ? "default" : "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--ink)", opacity: plno ? 0.5 : 1, boxShadow: "none" }}>{o.nazov}</button>)}
       </div>}
@@ -367,7 +367,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
     {tab === 0 && stlpce(vlavo, vpravo)}
     {tab === 0 && <PasUlozene u={u} onSpat={onZbierky} mobil={mobil} />}
     {tab === 1 && <DokladyCharity zbierkaId={idZbierky} s={stav} zmen={zmenStav} vyzbierane={spolu} teraz={Date.now()} mobil={mobil} toast={toast} nepovinne />}
-    {tab === 2 && <Statistiky d={{ obdobie: "tento mesiac", od: "", dni: farnost ? dniReal : Array.from({ length: 30 }, () => 0), cez: [["Priamo na profile", mesiac, ""]], split: [], darcovia: farnost ? [[String(darcovReal), "darcov"], [String(c.mesacne), "dáva mesačne"]] : [[String(c.mesacne), "dáva mesačne"]], dary: realne }} tier={tier} mobil={mobil} toast={toast} />}
+    {tab === 2 && <Statistiky d={{ obdobie: "tento mesiac", od: "", dni: dniReal, cez: [["Priamo na profile", mesiac, ""]], split: [], darcovia: farnost ? [[String(darcovReal), "darcov"], [String(c.mesacne), "dáva mesačne"]] : [[String(darcovReal), "darcov"]] /* OPRAVY 442 doplnok 3: charita bez „0 dáva mesačne“, dni zo skutočných darov */, dary: realne }} tier={tier} mobil={mobil} toast={toast} />}
     {tab === 3 && ukoncenie}
     {tab === 5 && farnost && <QrZalozka strankaId={strankaId} meno={nazov} id="farnost" mobil={mobil} onTlac={onTlacQr} />}
     {plOkno && qrFar && <PlagatOkno strankaId={strankaId} meno={nazov} p={qrFar} format="a4" mobil={mobil} onZavri={() => setPlOkno(false)} />}
@@ -404,7 +404,7 @@ function ZavrietHarok({ mobil, sektor, farnost, mesacne, onPotvrd, onZavri }: { 
         <span style={sekcia}>ČO SA STANE</span>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 14, lineHeight: 1.45, color: "var(--ink2)" }}>
           <span>· {farnost ? "Zmazať ju môžete, len keď nebeží žiadna iná zbierka farnosti." : `Dary sem sa zastavia. Konkrétne zbierky ${sektor ? "a ostatné sektory" : "a sektory"} bežia ďalej.`}</span>
-          <span>· <b style={{ color: "var(--ink)" }}>{mesacne}</b> pravidelných darcov dostane správu, ich mesačný dar sa zastaví{sektor ? " a ponúkneme im presun na centrálnu" : ""}.</span>
+          {mesacne > 0 && <span>· <b style={{ color: "var(--ink)" }}>{mesacne}</b> pravidelných darcov dostane správu, ich mesačný dar sa zastaví{sektor ? " a ponúkneme im presun na centrálnu" : ""}.</span>}
           <span>· Vyzbierané peniaze ostávajú na účte, nič sa nevracia.</span>
         </div>
         <button type="button" aria-disabled={dovod == null} onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); zacni(); }} onPointerUp={pusti} onPointerCancel={pusti}

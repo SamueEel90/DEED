@@ -15,13 +15,12 @@ import { spracujFotku } from "@/lib/obrazok";
 import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { potvrditTuknutim } from "@/features/zbierka/Platba";
-import { FLAGS } from "./stav";
 import { SUHLAS_FOTKY, SUHLAS_POZNAMKA, SUHLAS_CHYBA } from "@/lib/pravidlaObsahu";
 import { panel, pole, cistyText, Media, Zaskrtnutie, odkaz, PravidlaObsahu, GaleriaEditor } from "./obsahZbierky";
 import type { MediumZbierky } from "@/lib/novaZbierka";
 import {
   OZNAMY_CFG, KATEGORIE_OZNAMU, oznamyStranky, nacitajOznamyStranky, useZmenyOznamovCharity, zverejniOznam, upravOznamCharity, zrusOznamCharity,
-  simulujUcast, nastaveniaOznamov, ulozNastaveniaOznamov, beziaceVerejne, vLehote, bezi, dnesIso, maxAkcia, maxVyzva,
+  nastaveniaOznamov, ulozNastaveniaOznamov, beziaceVerejne, vLehote, bezi, dnesIso, maxAkcia, maxVyzva,
   type OznamCharity, type DruhOznamu, type FormaOznamu, type Pozvanie, type Plagat, type ZbierkaPriAkcii,
 } from "@/lib/oznamyNove";
 import { sucetDarov, useZmenyDarov } from "@/lib/darcovia";
@@ -449,7 +448,7 @@ function Spravovat({ strankaId, mesto, ph, dva, onUpravit, toast, len, tier = 1,
         {o.pozvanie !== "bez" && <div onClick={stop} style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <button type="button" aria-expanded={ludiId === o.id} onClick={() => setLudiId(ludiId === o.id ? null : o.id)} style={{ ...odkaz, minHeight: 44, padding: 0, fontSize: 14 }}>
             {o.pozvanie === "zavazne" ? `Prihlásení: ${pocet}${o.limit ? ` z ${o.limit}` : ""} · záväzne ›` : `Zúčastní sa: ${pocet} ${pocet === 1 ? "človek" : pocet >= 2 && pocet <= 4 ? "ľudia" : "ľudí"} · nezáväzne ›`}</button>
-          {FLAGS.dev_tier_switcher && <button type="button" onClick={() => void simulujUcast(o)} style={{ minHeight: 32, padding: "0 10px", borderRadius: 10, border: "1px dashed var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, fontWeight: 700, color: "var(--ink3)" }}>+1 (DEV)</button>}
+          
         </div>}
         {ludiId === o.id && <div onClick={stop} style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{menaO.length ? menaO.map((l, i) => <span key={i} style={{ flex: "none", whiteSpace: "nowrap", minHeight: 30, padding: "0 12px", borderRadius: 15, background: "var(--field)", border: "1px solid var(--cardBd)", display: "flex", alignItems: "center", fontSize: 13, color: "var(--ink2)" }}>{l.meno}</span>) : <span style={{ fontSize: 13, color: "var(--ink3)" }}>Zatiaľ nikto.</span>}</div>}
         <div onClick={stop} onKeyDown={stop} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
