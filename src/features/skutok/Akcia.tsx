@@ -1,6 +1,7 @@
 // KARTA 22 · Organizovaná akcia (celá obrazovka sprava): skener účastníkov → Začať akciu (čas + GPS)
 // → Akcia beží (okno pre meškajúcich, odstránenie krížikom) → Ukončiť akciu → Pridať skutok krok 2.
 // Vstupy: Pridať skutok → So skupinou → Akcia práve začína · Môj QR → Organizujem akciu.
+import { SvetlusikKarta } from "@/components/SvetlusikInfo";
 import { QrNaUkazanie } from "@/components/qrNaUkazanie";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -168,12 +169,12 @@ function AkciaObrazovka({ a, onZavrete }: { a: Akcia; onZavrete: () => void }) {
           {/* OPRAVY 446 (3): appka zistí polohu sama — zapnutá = malý zelený riadok, inak červená karta s tlačidlom */}
           {poloha.stav === "ok" || poloha.stav === "zistuje"
             ? <div role="status" style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, fontWeight: 700, color: poloha.stav === "ok" ? "var(--gInk)" : "var(--ink3)" }}><Ik d={POLOHA} s={16} />{poloha.stav === "ok" ? "Poloha zapnutá ✓" : "Zisťujeme polohu…"}</div>
-            : <div role="alert" style={{ display: "flex", flexDirection: "column", gap: 10, padding: "14px 16px", borderRadius: 16, background: "color-mix(in srgb, #A34A2A 12%, var(--card))", border: "1.5px solid #C8664A" }}>
-                <span style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 16, fontWeight: 800, color: "var(--cRed, #A34A2A)" }}><Ik d={POLOHA} />{org ? "Zapnite polohu · bez nej akcia nezačne" : "Zapni polohu · bez nej akcia nezačne"}</span>
+            : <SvetlusikKarta chyba><span style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <b style={{ fontSize: 15.5 }}>{org ? "Zapnite polohu · bez nej akcia nezačne" : "Zapni polohu · bez nej akcia nezačne"}</b>
                 {poloha.stav === "zamietnuta" && <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>{org ? "Appka nemá povolenú polohu. Povoľte ju v nastaveniach telefónu: Nastavenia → Súkromie → Polohové služby → prehliadač alebo DEED+ → Pri používaní. Potom ťuknite znova." : "Appka nemá povolenú polohu. Povoľ ju v nastaveniach telefónu: Nastavenia → Súkromie → Polohové služby → prehliadač alebo DEED+ → Pri používaní. Potom ťukni znova."}</span>}
                 {poloha.stav === "nepodporovana" && <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>Tento prehliadač polohu nevie zistiť. Otvorte DEED+ v Safari alebo Chrome.</span>}
-                <button type="button" onClick={poloha.skus} style={{ alignSelf: "flex-start", minHeight: 46, padding: "0 18px", borderRadius: 13, border: "none", background: "#A34A2A", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>Zapnúť polohu</button>
-              </div>}
+                <button type="button" onClick={poloha.skus} style={{ alignSelf: "flex-start", minHeight: 46, padding: "0 18px", borderRadius: 13, border: "none", background: "var(--green)", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>Zapnúť polohu</button>
+              </span></SvetlusikKarta>}
           {a.stav === "bezi" && <>
             <div style={{ borderRadius: 22, background: "#1D211B", color: "#F1ECE1", padding: 18, display: "flex", flexDirection: "column", gap: 6 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "#8DB866" }}><span aria-hidden="true" className="zb-pulz" style={{ width: 8, height: 8, borderRadius: "50%", background: "#8DB866" }} />AKCIA BEŽÍ</div>
@@ -243,7 +244,7 @@ function AkciaObrazovka({ a, onZavrete }: { a: Akcia; onZavrete: () => void }) {
               <button type="button" onClick={koniec.dalej} style={{ width: "100%", height: 52, borderRadius: 16, border: "none", fontSize: 16, fontWeight: 800, color: "#fff", cursor: "pointer", background: "var(--gGrad)", fontFamily: "inherit" }}>{org ? "Ďalej · Opíšte skutok" : "Ďalej · Opíš skutok"}</button>
             </div>
             : <>
-              {hlaska && <div role="alert" style={{ marginBottom: 10, padding: "12px 14px", borderRadius: 14, background: "color-mix(in srgb, #A34A2A 12%, var(--card))", border: "1.5px solid #C8664A", fontSize: 15, fontWeight: 700, lineHeight: 1.4, color: "var(--ink)" }}>{hlaska}</div>}
+              {hlaska && <SvetlusikKarta chyba style={{ marginBottom: 10 }}><b style={{ fontSize: 14.5 }}>{hlaska}</b></SvetlusikKarta>}
               {a.stav === "sken"
                 ? <PodrzTlacidlo label={org ? "Podržte · Začať akciu" : "Podrž · Začať akciu"} trvanie={1500} onConfirm={zacat} onHint={tukZacat} />
                 : <PodrzTlacidlo label={org ? "Podržte · Ukončiť pre všetkých" : "Podrž · Ukončiť akciu"} trvanie={1500} onConfirm={ukoncit} />}

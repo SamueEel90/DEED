@@ -1,5 +1,6 @@
 // Tmavé pruhy nad tlačidlom Pridať skutok (Moje skutky aj Domov):
 // „Akcia beží · 1:12:04 · 8 účastníkov" (karta 22) a ohlásený skutok „Pripravuje sa / Práve prebieha" (karta 21 bod 12).
+import { SvetlusikKarta } from "@/components/SvetlusikInfo";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAkcia, otvorAkciu, cas } from "@/lib/akcia";
 import { ohlasenie, nastavOhlasenie, useZmenySkutkov } from "@/lib/mojeSkutky";
@@ -45,6 +46,6 @@ export function PruhySkutkov() {
         <span style={{ display: "block", fontSize: 13, color: "rgba(241,236,225,.72)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ohl.stav === "bezi" ? "Keď skončíš, pridaj dôkazy" : ohl.nazov}</span></span>
       <button type="button" onClick={ohl.stav === "bezi" ? () => otvorPridatSkutok({ dokoncit: true, start: ohl.sk ? "skupina" : "solo" }) : zacinam} style={{ flex: "none", height: 44, padding: "0 14px", borderRadius: 13, border: "none", background: "linear-gradient(90deg,#4B7A35,#8DB866)", color: "#fff", fontSize: 14.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>{ohl.stav === "bezi" ? "Dokončiť" : "Začínam"}</button>
     </Pruh>}
-    {ohl && !ak && hlaska && <div role="alert" style={{ pointerEvents: "auto", padding: "12px 14px", borderRadius: 14, background: "color-mix(in srgb, #A34A2A 14%, var(--card))", border: "1.5px solid #C8664A", fontSize: 14.5, fontWeight: 700, lineHeight: 1.45, color: "var(--ink)" }}>{hlaska}</div>}
+    {ohl && !ak && hlaska && <SvetlusikKarta chyba style={{ pointerEvents: "auto" }}>{hlaska}</SvetlusikKarta>}
   </>;
 }
