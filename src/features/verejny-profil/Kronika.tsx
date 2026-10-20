@@ -6,6 +6,7 @@
 // Mobil (< 760): titulka 200, Naživo zbalené na 1 riadok, dlaždice 2 × 2, lepkavá lišta, Aktuálne, roky.
 // Štítky, štít a overenie sú v okne štítu (bod 137). Rozbalený je len aktuálny rok. Z ISKIER: Iskry / Zbierky.
 // Zbaliť aj Späť z detailu, Iskier či hárku vráti na to isté miesto (pamäť posunu na úrovni stránky).
+import { podlaPribehu, stitokNoveho, useZmenyPribehov } from "@/lib/pribehZbierky";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { eur, pct, tvar, vLokalite, type Lokalita, type TestProfil, type TestZbierka, jeFarnost } from "@/lib/testProfily";
 import { ISKRY_CFG, iskraViditelna, iskryVsetky, useZmenyIskier, zbierkaIskry, type Iskra } from "@/lib/iskry";
@@ -14,6 +15,8 @@ import { DOK, LokalitaPrepinac, MESIACE, PlagatPrace, PrepinacPodania, klikKarta
 import { PodporaProfilu } from "./PodporaProfilu";
 import { OnasPokracovanie } from "./charitaCasti";
 import { useVsetkyNaKonci } from "./charitaCasti";
+/** OPRAVY 461: štítok zbierky s najnovším zápisom v Priebehu */
+const NOVE_ST: React.CSSProperties = { alignSelf: "flex-start", minHeight: 24, padding: "2px 10px", borderRadius: 12, background: "var(--goldBg, #F6E7C9)", border: "1px solid var(--goldBd, #D9B65A)", color: "var(--gold, #8A6A1C)", fontSize: 12, fontWeight: 800, display: "inline-flex", alignItems: "center" };
 
 type Typ = "zb" | "sk" | "is" | "oz" | "pr";
 type Rez = "pc" | "tab" | "mob";
@@ -102,7 +105,8 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
   const ok = (typ: Typ, txt: string, rok: string) => (f === 0 || FILTRE[f][1] === typ) && (!qn || norm(txt).includes(qn) || qn === rok);
   const hlada = !!qn || f !== 0;
 
-  const aktZb = bezice.filter((z) => ok("zb", `${z.nazov} ${z.popis}`, "akt"));
+  useZmenyPribehov();
+  const aktZb = podlaPribehu(bezice.filter((z) => ok("zb", `${z.nazov} ${z.popis}`, "akt"))); // OPRAVY 461
   const velka = aktZb[0];
   const male = aktZb.slice(1);
   const aktOz: Ozn[] = [
@@ -286,6 +290,7 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
       </span>
       <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 9 }}>
         <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>{stZb(velka)}</span>
+        {stitokNoveho(velka.id) && <span style={NOVE_ST}>{stitokNoveho(velka.id)}</span>}
         <b style={{ fontSize: 20, lineHeight: 1.2 }}>{velka.nazov}</b>
         {velka.ciel != null && <span style={{ display: "block", height: 8, borderRadius: 4, background: "var(--track)", overflow: "hidden" }}><span style={{ display: "block", width: "100%", height: "100%", background: PRUH, transformOrigin: "0 50%", transform: `scaleX(${pct(velka.vyzbierane, velka.ciel) / 100})` }} /></span>}
         <span style={{ display: "flex", alignItems: "baseline", gap: 8, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}><b style={{ fontSize: 19 }}>{eur(velka.vyzbierane)}</b><span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{velka.ciel ? `z ${eur(velka.ciel)} · ` : ""}{velka.ludia} ľudí</span></span>
@@ -299,6 +304,7 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
       </span>
       <div style={{ padding: rez === "tab" ? "18px 20px" : "22px 24px", display: "flex", flexDirection: "column", gap: rez === "tab" ? 9 : 11 }}>
         <span style={{ fontSize: rez === "tab" ? 11 : 11.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>{stZb(velka)}</span>
+        {stitokNoveho(velka.id) && <span style={NOVE_ST}>{stitokNoveho(velka.id)}</span>}
         <b style={{ fontSize: rez === "tab" ? 21 : 23, lineHeight: 1.2 }}>{velka.nazov}</b>
         {velka.pribeh ? <PribehText text={velka.pribeh} /> : <span style={{ fontSize: rez === "tab" ? 14 : 14.5, lineHeight: rez === "tab" ? 1.5 : 1.55, color: "var(--ink2)" }}>{velka.popis}</span>}
         {velka.ciel != null && <span style={{ display: "block", height: rez === "tab" ? 8 : 9, borderRadius: 5, background: "var(--track)", overflow: "hidden", marginTop: rez === "tab" ? 0 : 2 }}><span style={{ display: "block", width: "100%", height: "100%", borderRadius: 5, background: PRUH, transformOrigin: "0 50%", transform: `scaleX(${pct(velka.vyzbierane, velka.ciel) / 100})` }} /></span>}

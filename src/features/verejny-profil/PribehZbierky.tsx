@@ -6,7 +6,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { eur, pct, tvar, jeFarnost, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { cisloObjektu } from "@/lib/cisloObjektu";
 import { druhF } from "@/lib/druhy";
-import { jePribehTyzdna, type Pribeh } from "@/lib/pribehZbierky";
+import { stitokNoveho, type Pribeh } from "@/lib/pribehZbierky";
 import { FormatovanyText, RozbalitelnyText } from "@/components/formattext";
 import { Galeria } from "@/features/zbierka/Vrch";
 import { ZbalitASpat, ZmensenyModul } from "@/features/zbierka/ZmensenyModul";
@@ -32,7 +32,7 @@ export function PribehZbierky({ profil, z, p, spatText = "Späť do feedu", onBa
   const farnost = jeFarnost(profil);
   const zF = z.zFirmy ?? 0, pp = pct(z.vyzbierane, z.ciel), pF = z.ciel ? Math.min(100 - pp, Math.round(zF / z.ciel * 100)) : 0, pL = Math.max(0, pp - pF);
   const st = z.stav === "dlhodoba" ? "DLHODOBÁ" : z.konciDni != null ? `KONČÍ O ${tvar(z.konciDni, ["DEŇ", "DNI", "DNÍ"])}` : z.stav === "ukoncena" ? "UKONČENÁ" : null;
-  const tyzden = jePribehTyzdna(z.id, profil.k);
+  const nove = stitokNoveho(z.id); // OPRAVY 461: namiesto ručného Príbehu týždňa
   const meno = profil.meno.replace(/\s+o\.\s?z\.$/i, "");
   const stitok = (t: string, s: CSSProperties) => <span style={{ height: pc ? 30 : 26, padding: `0 ${pc ? 12 : 10}px`, borderRadius: 9, fontSize: pc ? 12.5 : 11.5, fontWeight: 800, letterSpacing: ".06em", display: "flex", alignItems: "center", whiteSpace: "nowrap", color: "#fff", ...s }}>{t}</span>;
 
@@ -51,7 +51,7 @@ export function PribehZbierky({ profil, z, p, spatText = "Späť do feedu", onBa
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {stitok("ZBIERKA", { background: druhF("zbierka") })}
           {pc && st && stitok(st, { background: "var(--dr-stav)" })}
-          {tyzden && stitok("PRÍBEH TÝŽDŇA", { background: "rgba(42,37,24,.9)", border: "1px solid #6B5A2E", color: "#E2C27A" })}
+          {nove && stitok(nove.toLocaleUpperCase("sk-SK"), { background: "rgba(42,37,24,.9)", border: "1px solid #6B5A2E", color: "#E2C27A" })}
         </div>
         <b style={{ fontSize: pc ? 68 : 36, lineHeight: 1.02, letterSpacing: "-.035em", color: "#fff", maxWidth: 820 }}>{z.nazov}</b>
         <span style={{ fontSize: pc ? 14 : 12.5, fontWeight: 800, letterSpacing: ".1em", color: "#E8E1D3" }}>{[z.mesto, z.cast, pc ? z.kategoria : st, pc ? cisloObjektu("Z", z.id) : null].filter(Boolean).join(" · ").toLocaleUpperCase("sk-SK")}</span>

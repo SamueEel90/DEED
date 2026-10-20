@@ -100,7 +100,7 @@ export function VykladCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, 
   </>;
 
   // ---- Príbeh týždňa a Ďalšie príbehy (bežiace zbierky) ----
-  const tyzden = d.bezice.find((z) => z.pribehTyzdna) ?? d.bezice[0];
+  const tyzden = d.bezice[0]; // OPRAVY 461: automaticky zbierka s najnovším zápisom v Priebehu (poradie z useCharitaData)
   const dalsie = d.bezice.filter((z) => z !== tyzden).slice(0, 4);
   const dorPill = (z: TestZbierka) => z.dorovnanie && !farnost && profil.dorovnaniePas ? (
     <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 12px 5px 5px", borderRadius: 12, background: "var(--goldBg)", border: "1px solid var(--goldBd)", alignSelf: "flex-start" }}>

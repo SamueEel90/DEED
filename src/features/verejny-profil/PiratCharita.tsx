@@ -37,7 +37,7 @@ export function PiratCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, h
   const stit = profil.stit.toLowerCase();
   const farnost = jeFarnost(profil);
   const meno = profil.meno.replace(/\s+o\.\s?z\.$/i, "");
-  const hlavna = d.bezice.find((z) => z.pribehTyzdna) ?? d.bezice[0];
+  const hlavna = d.bezice[0]; // OPRAVY 461: automaticky zbierka s najnovším zápisom v Priebehu
 
   // ---- 1 · titulka ----
   const bodka = <span style={{ width: 9, height: 9, borderRadius: 5, background: "var(--green)", animation: "vpPulz 1.6s ease infinite", flex: "none" }} />;

@@ -132,3 +132,19 @@ export function nastavPribehTyzdna(id: string, org: string, zap: boolean): strin
 }
 /** testovací profil, pri ktorom príbeh vznikol (verejný odkaz /p/{org}) */
 export const orgPribehu = (id: string) => pamat.get(kluc(id))?.org ?? "";
+
+// OPRAVY 461: Príbeh týždňa automaticky — hore je zbierka s najnovším zápisom v Priebehu (bez zápisu najnovšia zbierka)
+/** dátum najnovšieho zverejneného zápisu v Priebehu (ISO) alebo null */
+export function novePribehu(id: string): string | null {
+  const l = pamat.get(kluc(id))?.zverejneny?.priebeh ?? [];
+  return l.reduce<string | null>((m, r) => (!m || r.datum > m ? r.datum : m), null);
+}
+/** štítok „Nové v príbehu · 20. 10.“ */
+export function stitokNoveho(id: string): string | null {
+  const d = novePribehu(id); if (!d) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d); return m ? `Nové v príbehu · ${+m[3]}. ${+m[2]}.` : null;
+}
+/** poradie bežiacich zbierok: najnovší zápis v Priebehu navrchu, ostatné v pôvodnom poradí (najnovšia zbierka prvá) */
+export function podlaPribehu<T extends { id: string }>(l: T[]): T[] {
+  return l.map((z, i) => ({ z, i, d: novePribehu(z.id) })).sort((a, b) => (a.d && b.d ? (a.d < b.d ? 1 : a.d > b.d ? -1 : a.i - b.i) : a.d ? -1 : b.d ? 1 : a.i - b.i)).map((x) => x.z);
+}

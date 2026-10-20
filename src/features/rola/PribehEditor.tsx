@@ -11,7 +11,7 @@ import { pridajOznamDarcom } from "@/lib/oznamyDarcom";
 import { najdiTestProfil, prazdnaCharita, type TestZbierka } from "@/lib/testProfily";
 import { registra } from "@/lib/udajeRegistra";
 import {
-  pribehNaUpravu, ulozKonceptPribehu, zverejniPribeh, zmenPriebeh, nacitajPribeh, jeNacitany, jePribehTyzdna, nastavPribehTyzdna, orgPribehu,
+  pribehNaUpravu, ulozKonceptPribehu, zverejniPribeh, zmenPriebeh, nacitajPribeh, jeNacitany, orgPribehu,
   useZmenyPribehov, PRIBEH_ZNAKOV, PRIBEH_RIADKOV, type Pribeh, type ZapisPriebehu,
 } from "@/lib/pribehZbierky";
 import type { MediumZbierky } from "@/lib/novaZbierka";
@@ -24,7 +24,7 @@ import type { ZbierkaNaSpravu } from "./SpravaZbierky";
 
 const pole: CSSProperties = { width: "100%", minHeight: 48, padding: "0 14px", borderRadius: 12, border: "1px solid #CFC9BC", background: "var(--field, var(--card))", color: "var(--ink)", fontFamily: "inherit", fontSize: 15, boxSizing: "border-box" };
 // OPRAVY 455: poradie krokov · „Ako to zatiaľ ide“ (živé zhrnutie) · Priebeh hneď pod ním · „Ďalšie fotky k príbehu“
-const KROKY = ["Krátky text do feedu", "Ako to zatiaľ ide", "Priebeh", "Ďalšie fotky k príbehu", "Citát", "Príbeh týždňa"] as const;
+const KROKY = ["Krátky text do feedu", "Ako to zatiaľ ide", "Priebeh", "Ďalšie fotky k príbehu", "Citát"] as const; // OPRAVY 461: Príbeh týždňa ide automaticky
 const dnes = () => new Date().toISOString().slice(0, 10);
 const datumSk = (iso: string) => { const d = new Date(iso); return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`; };
 const podlaDatumu = (l: ZapisPriebehu[]) => [...l].sort((a, b) => (a.datum < b.datum ? 1 : a.datum > b.datum ? -1 : 0));
@@ -74,7 +74,7 @@ function PribehEditorObsah({ z, mobil, toast }: { z: ZbierkaNaSpravu; mobil: boo
 
   const vyplnene = [
     !!p.kratky.trim(), !!cistyText(p.text).trim(), p.priebeh.length > 0, p.media.length > 0,
-    !!p.citat.text.trim() && p.citat.suhlas, jePribehTyzdna(z.id, org),
+    !!p.citat.text.trim() && p.citat.suhlas,
   ];
   const citatBezSuhlasu = !!p.citat.text.trim() && !p.citat.suhlas;
   const dlhyKratky = riadky > PRIBEH_RIADKOV;
@@ -111,11 +111,6 @@ function PribehEditorObsah({ z, mobil, toast }: { z: ZbierkaNaSpravu; mobil: boo
     const r = await zmenPriebeh(z.id, org, zoznam);
     if ("chyba" in r) { setChybaZapis(r.chyba); return; }
     setP((x) => ({ ...x, priebeh: zoznam })); setNovy(prazdnyZapis());
-  };
-  const tyzdna = jePribehTyzdna(z.id, org);
-  const prepniTyzdna = () => {
-    const vyp = nastavPribehTyzdna(z.id, org, !tyzdna);
-    toast(!tyzdna ? (vyp ? "Príbeh týždňa je teraz tento. Pri inej zbierke sa vypol." : "Príbeh týždňa je zapnutý") : "Príbeh týždňa je vypnutý");
   };
   const naPriebeh = () => { if (mobil) setKrok(2); else priebehRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); };
 
@@ -163,7 +158,7 @@ function PribehEditorObsah({ z, mobil, toast }: { z: ZbierkaNaSpravu; mobil: boo
     </>; }
     if (i === 3) return <GaleriaEditor media={p.media} onMedia={(m) => uprav({ media: m })} ph={false} bezHlavnej nadpis="Ďalšie fotky k príbehu" dovetok="">
       <span style={textK}>Doplnkové fotky. Hlavná fotka je vždy titulná fotka zbierky. Pod fotkou môžete napísať popis.</span></GaleriaEditor>;
-    if (i === 4) return <>
+    return <>
       <span style={textK}>Nepovinné. Jedna veta človeka, ktorému pomáhate.</span>
       <input style={pole} value={p.citat.text} onChange={(e) => uprav({ citat: { ...p.citat, text: e.target.value } })} placeholder="Veta" aria-label="Citát" maxLength={200} />
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -175,16 +170,6 @@ function PribehEditorObsah({ z, mobil, toast }: { z: ZbierkaNaSpravu; mobil: boo
         <span>Tento človek súhlasí so zverejnením citátu aj mena.</span>
       </label>
       {citatBezSuhlasu && <SvetlusikKarta chyba>Bez súhlasu sa príbeh s citátom nedá zverejniť. Súhlas zaškrtnite, alebo citát vymažte.</SvetlusikKarta>}
-    </>;
-    return <>
-      <span style={textK}>Jeden príbeh navrchu profilu organizácie. Zapnutie tu vypne Príbeh týždňa pri inej zbierke.</span>
-      <button type="button" role="switch" aria-checked={tyzdna} onClick={prepniTyzdna}
-        style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 48, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--ink)", boxShadow: "none", alignSelf: "flex-start" }}>
-        <span style={{ width: 52, height: 30, borderRadius: 15, background: tyzdna ? "#4B7A35" : "var(--track)", position: "relative", flex: "none" }}>
-          <span style={{ position: "absolute", top: 3, left: 3, width: 24, height: 24, borderRadius: "50%", background: "#fff", transform: `translateX(${tyzdna ? 22 : 0}px)`, transition: "transform .2s ease" }} />
-        </span>
-        {tyzdna ? "Príbeh týždňa je zapnutý" : "Príbeh týždňa je vypnutý"}
-      </button>
     </>;
   };
 

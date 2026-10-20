@@ -6,6 +6,7 @@
 // Len rozloženie, farby podľa štítu a témy, Späť všade, povolenia z jedného miesta (stav.ts).
 // Funkcie za tlačidlami NIE SÚ — každé tlačidlo otvorí obrazovku „Pripravujeme".
 // ============================================================
+import { useZmenyPribehov, nacitajPribehy, novePribehu, stitokNoveho } from "@/lib/pribehZbierky";
 import { useZmenyDarov, darcoviaPre, sucetDarov } from "@/lib/darcovia";
 import { skutkyOrgSpravy, useZmenySkutkov } from "@/lib/mojeSkutky";
 import { nacitajSkutkyStranky, useZmenySkutkovStranky } from "@/lib/skutkyStranky";
@@ -1362,7 +1363,7 @@ function stavZbierky(z: ZbRiadok, id: string): StavZb {
   const d = new Date(lehota);
   return [`DOLOŽTE DO ${d.getDate()}. ${d.getMonth() + 1}.`, "#8A6A1C"];
 }
-function RiadokZb({ id, foto, hier, stit, nazov, pod, cislo, suma, stav, onClick }: { id: string; foto: string; hier?: number; stit: string; nazov: string; pod: string; cislo?: string; suma: string; stav?: StavZb; onClick: () => void }) {
+function RiadokZb({ id, foto, hier, stit, nazov, pod, cislo, suma, stav, novinka, onClick }: { id: string; foto: string; hier?: number; stit: string; nazov: string; pod: string; cislo?: string; suma: string; stav?: StavZb; /** OPRAVY 461 */ novinka?: string; onClick: () => void }) {
   return (
     <button type="button" data-riadok={id} onClick={() => { poslednyRiadok = id; onClick(); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, padding: 12, borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", cursor: "pointer", textAlign: "left", color: "var(--ink)", fontFamily: "inherit", boxShadow: "none" }}>
       <span style={{ position: "relative", flex: "none", width: 64, height: 64, borderRadius: 14, background: foto || "#3a3530", overflow: "hidden" }}>{hier != null && <span style={{ position: "absolute", left: 0, right: 0, top: 0, height: 5, background: `var(--h${hier})` }} />}</span>
@@ -1371,6 +1372,7 @@ function RiadokZb({ id, foto, hier, stit, nazov, pod, cislo, suma, stav, onClick
         <b style={{ fontSize: 16, lineHeight: 1.25 }}>{nazov}</b>
         <span style={{ fontSize: 13, color: "var(--ink3)" }}>{pod}</span>
         {cislo && <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ink3)", fontVariantNumeric: "tabular-nums" }}>{cislo}</span>}
+        {novinka && <span style={{ alignSelf: "flex-start", minHeight: 22, padding: "2px 9px", borderRadius: 11, background: "var(--goldBg)", border: "1px solid var(--goldBd)", color: "var(--gold)", fontSize: 11.5, fontWeight: 800, display: "inline-flex", alignItems: "center" }}>{novinka}</span>}
       </span>
       <span style={{ flex: "none", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
         <b style={{ fontSize: 16, fontVariantNumeric: "tabular-nums" }}>{suma}</b>
@@ -1406,6 +1408,11 @@ function ObrZbierky(s: Spolocne) {
   const sektory = useSektory();
   useZmenyCentralnej(); useZmenyDarov(); // OPRAVY 445 (2): sumy zbierok z ledgera
   const list: ZbRiadok[] = [...vlastne.map(naRiadok), ...(nova ? [] : ZB_LIST)];
+  // OPRAVY 461: štítok „Nové v príbehu · …“ pri zbierke s najnovším zápisom v Priebehu
+  useZmenyPribehov();
+  const idList = vlastne.map((z) => z.id).join(",");
+  useEffect(() => { if (idList) void nacitajPribehy(idList.split(",")); }, [idList]);
+  const najnovsia = list.map((z) => naSpravu(z).id).filter((id) => novePribehu(id)).sort((a, b) => (novePribehu(a)! < novePribehu(b)! ? 1 : -1))[0];
   const centralna = typPovoli("centralna", menu.typ) && maPovolenie("centralna", tier);
   const sek = centralna && tier >= SEKTORY_OD_TIERU ? sektory : [];
   const cen = centralnaZPamate(strankaId) ?? prazdnaCentralna();
@@ -1451,7 +1458,7 @@ function ObrZbierky(s: Spolocne) {
       </section>}
       {list.map((z) => (
         <RiadokZb key={z.id ?? z.t} id={z.id ?? z.t} foto={z.bg} stit={[z.mesto?.toLocaleUpperCase("sk-SK"), z.dlha ? "DLHODOBÁ" : ""].filter(Boolean).join(" · ") || "ZBIERKA"} nazov={z.t} pod={z.s} suma={eur(z.v)}
-          cislo={cisloObjektu("Z", naSpravu(z).id, naSpravu(z).vs)} stav={stavZbierky(z, naSpravu(z).id)} onClick={() => spravuj(naSpravu(z))} />))}
+          cislo={cisloObjektu("Z", naSpravu(z).id, naSpravu(z).vs)} stav={stavZbierky(z, naSpravu(z).id)} novinka={naSpravu(z).id === najnovsia ? stitokNoveho(najnovsia) ?? undefined : undefined} onClick={() => spravuj(naSpravu(z))} />))}
       {list.length === 0 && !rozpisana && <section style={{ ...karta, padding: "26px 18px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
         <b style={{ fontSize: 16.5 }}>Zatiaľ nemáte žiadnu zbierku</b>
         <span style={{ fontSize: 14, lineHeight: 1.45, color: "var(--ink2)" }}>Keď ju vytvoríte, uvidíte ju tu aj s tým, koľko prišlo a čo treba doložiť.</span>

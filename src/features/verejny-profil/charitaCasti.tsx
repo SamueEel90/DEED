@@ -1,5 +1,6 @@
 // KARTA 45 · spoločné dáta a diely pre Výklad a Pirát charity (rovnaké dáta ako Kronika, iné podanie).
 // Dáta: testProfily.ts (Svetlo pomoci). Iskry z lib/iskry (2 cesty: Iskry · Zbierky).
+import { podlaPribehu, useZmenyPribehov } from "@/lib/pribehZbierky";
 import { RozbalitelnyText } from "@/components/formattext";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { eur, tvar, vLokalite, type Lokalita, type Mesto, type TestProfil, type TestZbierka, jeFarnost } from "@/lib/testProfily";
@@ -28,7 +29,8 @@ export function useCharitaData(profil: TestProfil, lok: Lokalita, domace: Mesto)
   useZmenyIskier();
   const sk = lok === "Celé Slovensko";
   const zbierky = vLokalite(profil.zbierky, lok, domace);
-  const bezice = zbierky.filter((z) => z.stav !== "ukoncena");
+  useZmenyPribehov();
+  const bezice = podlaPribehu(zbierky.filter((z) => z.stav !== "ukoncena")); // OPRAVY 461: najnovší zápis v Priebehu navrchu
   const darcovia0 = sk ? profil.darcovia : profil.darcovia.filter((d) => d.mesto === lok);
   const dnes = darcovia0.reduce((s, d) => s + (d.suma ?? 0), 0);
   const darcovia = jeFarnost(profil) ? darcovia0.map((d) => ({ ...d, suma: undefined })) : darcovia0; // KARTA 56B · §5: vo Viere mená bez súm
