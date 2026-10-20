@@ -104,6 +104,10 @@ export interface StavZbierky {
   vratitDo?: string;
   /** 5. 10. · prečo charita ukončila (Cieľ je splnený · Už to nepotrebujeme · Iný dôvod) */
   dovodUkoncenia?: string;
+  /** OPRAVY 459 (4): „Iný dôvod“ — krátky text, vidí ho len DEED (štatistiky), darcovia nie */
+  dovodIny?: string;
+  /** OPRAVY 459 (1): jediné poďakovanie darcom (HTML z TextovePolia) — odíde po 15 minútach spolu s výsledkom */
+  podakovanieDarcom?: string;
   /** KARTA 37 · bod 7: dlhodobá zbierka — kedy charita zavrela upozornenie po 90 dňoch bez doloženia („Teraz nie") */
   upozornenie90Zavrete?: string;
   /** KARTA 39 · bod 1: posledné vytiahnutie dlhodobej hore (priebežné doloženie), ISO */

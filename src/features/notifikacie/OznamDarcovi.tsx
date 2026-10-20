@@ -3,6 +3,7 @@
 // charita doložila použitie zbierky (+ opätovné poďakovanie) alebo
 // priebežná správa počas zbierky. Rovnaký pohľad slúži ako náhľad v správe.
 // ============================================================
+import { sanitizujHtml } from "@/lib/richtext"; // OPRAVY 459: poďakovanie charity s formátovaním
 import { C, SPACE, RADIUS } from "@/theme";
 import { Sheet } from "@/components/sheet";
 import { tint } from "@/lib/ui";
@@ -69,7 +70,7 @@ export function OznamDarcoviSheet({ zbierkaId, typ, text, nahladStav, onClose }:
       ) : (
         <div style={{ padding: `${SPACE.xs}px 0 ${SPACE.md}px` }}>
           <div style={{ fontSize: 18, fontWeight: 800, marginBottom: SPACE.sm }}>Novinka zo zbierky</div>
-          <div style={{ fontSize: 14.5, lineHeight: 1.55, background: tint(ZELENA, .07), borderLeft: `3px solid ${ZELENA}`, borderRadius: RADIUS.xs, padding: SPACE.sm }}>{text}</div>
+          <div className="ftext" style={{ fontSize: 14.5, lineHeight: 1.55, background: tint(ZELENA, .07), borderLeft: `3px solid ${ZELENA}`, borderRadius: RADIUS.xs, padding: SPACE.sm }} dangerouslySetInnerHTML={{ __html: sanitizujHtml(text ?? "") }} />
           <div style={{ fontSize: 13, color: C.textSec, marginTop: SPACE.sm }}>Ďakujeme{menom ? `, ${menom},` : ""} že pomáhaš.</div>
         </div>
       )}

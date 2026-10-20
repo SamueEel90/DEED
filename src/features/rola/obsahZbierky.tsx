@@ -95,10 +95,11 @@ export function PravidlaObsahu({ ph, stit, onZavri }: { ph: boolean; stit: strin
 
 
 /** TEXTOVÉ POLIA — hlavný text (najviac 12 riadkov) + pokračovanie po „… viac", spolu 1 500 znakov */
-export function TextovePolia({ popis, popis2, onPopis, onPopis2, ph, pecat, onRiadky, popisHlavneho = "Toto ľudia uvidia hneď. Napíšte, komu a na čo idú peniaze, tak, aby to zaujalo. Najviac 12 riadkov.", placeholder, bezPokracovania, nadpis2, popis2Text, placeholder2 }: {
+export function TextovePolia({ popis, popis2, onPopis, onPopis2, ph, pecat, onRiadky, popisHlavneho = "Toto ľudia uvidia hneď. Napíšte, komu a na čo idú peniaze, tak, aby to zaujalo. Najviac 12 riadkov.", placeholder, bezPokracovania, nadpis2, popis2Text, placeholder2 , nadpis1, popis1}: {
   popis: string; popis2: string; onPopis: (h: string) => void; onPopis2: (h: string) => void; ph: boolean; pecat?: boolean; onRiadky?: (n: number) => void; popisHlavneho?: string;
   /** OPRAVY 160/3 · text v prázdnom hlavnom poli */ placeholder?: string;
   /** OPRAVY 313: len Hlavný text (zvončeková); keď už pokračovanie má text, ostane, aby sa dalo upraviť */ bezPokracovania?: boolean;
+  /** OPRAVY 459: vlastný nadpis a popis hlavného poľa (aj na mobile) */ nadpis1?: string; popis1?: string;
   /** OPRAVY 314: poďakovanie — vlastný nadpis, popis a text v prázdnom poli pokračovania */ nadpis2?: string; popis2Text?: string; placeholder2?: string;
 }) {
   const [riadky, setRiadky] = useState(0);
@@ -106,8 +107,8 @@ export function TextovePolia({ popis, popis2, onPopis, onPopis2, ph, pecat, onRi
   const [zn2, setZn2] = useState(0);
   const dlhy = riadky > RIADKY_ZB, f = dlhy ? "#A34A2A" : riadky > 9 ? "#8A5A2B" : "var(--green)";
   return (<>
-        <Nadpis t="Hlavný text" pecat={pecat} />
-    <span style={{ fontSize: 13.5, lineHeight: 1.45, color: "var(--ink2)", marginTop: -6 }}>{ph ? "Toto ľudia uvidia hneď. Najviac 12 riadkov." : popisHlavneho}</span>
+        <Nadpis t={nadpis1 ?? "Hlavný text"} pecat={pecat} />
+    <span style={{ fontSize: 13.5, lineHeight: 1.45, color: "var(--ink2)", marginTop: -6 }}>{popis1 ?? (ph ? "Toto ľudia uvidia hneď. Najviac 12 riadkov." : popisHlavneho)}</span>
     <RichTextInput vzhlad="sprava" value={popis} onChange={onPopis} nastroje={NASTROJE} minH={150} chybaRam={dlhy} placeholder={placeholder}
       ariaLabel="Hlavný text" tvrdyLimit={Math.max(0, ZNAKY_ZB - zn2)} onRiadky={(n) => { setRiadky(n); onRiadky?.(n); }} onZnaky={setZn1} />
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

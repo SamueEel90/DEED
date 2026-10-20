@@ -4,6 +4,7 @@
 // ukončená → dokladovanie podľa pásma (povinné minimum + navyše = karma)
 // Pravidlá a čísla: lib/zbierkaSprava.ts (SPRAVA_ZBIERKY_CFG, PASMA_DOKLADOV).
 // ============================================================
+import { SvetlusikKarta } from "@/components/SvetlusikInfo";
 import { odkazQrZbierky } from "@/features/verejny-profil/otvor";
 import { Emo, IkonaOko } from "@/components/icons";
 import { kartaVolby, FajkaVolby } from "@/components/Volby";
@@ -18,7 +19,7 @@ import { ulozVideo, jeVideo, VIDEO_CFG } from "@/lib/videoUloz";
 import { MediaNahlad } from "./DokazBlok";
 import { sucetDarov, useZmenyDarov, darcoviaPre } from "@/lib/darcovia";
 import { RichTextInput } from "@/components/richtext";
-import { cistyText } from "@/lib/richtext";
+import { cistyText, sanitizujHtml } from "@/lib/richtext";
 import { ZBIERKY, predvolenyStav } from "@/lib/zbierky";
 import {
   SPRAVA_ZBIERKY_CFG as CFG, PASMA_DOKLADOV, POZIADAVKA_TEXT, DRUHY_DOKLADU, OVERENY_SKEN,
@@ -501,19 +502,20 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
     setTopSel(null); setHotovo((h) => ({ ...h, T: { text: `Topované: ${t.nazov} na ${CFG.topovanieDni} dní`, fa } }));
   };
   // 5. 10. · ukončenie: hárok (prečo, čo sa stane, podrž 1,5 s) → 15 minút sa dá vrátiť, výsledok darcom odíde až potom
-  const ukonci = (dovod: string) => {
+  const ukonci = (dovod: string, iny: string, podakovanie: string) => {
     const kedy = new Date().toISOString();
     pasVidel.current = false;
-    zmen({ stav: "ukoncena", ukoncena: kedy, vratitDo: new Date(Date.now() + VRATIT_MIN * 60000).toISOString(), dovodUkoncenia: dovod, vysledokPoslany: undefined }); setConf(false);
+    zmen({ stav: "ukoncena", ukoncena: kedy, vratitDo: new Date(Date.now() + VRATIT_MIN * 60000).toISOString(), dovodUkoncenia: dovod, dovodIny: iny.trim() || undefined,
+      podakovanieDarcom: cistyText(podakovanie).trim() ? podakovanie : undefined, vysledokPoslany: undefined }); setConf(false);
   };
   const pasVidel = useRef(false); // pás „Zbierka je ukončená" sa po ukončení raz posunie do obrazovky
-  const vratit = () => zmen({ stav: "aktivna", ukoncena: undefined, vratitDo: undefined, dovodUkoncenia: undefined });
+  const vratit = () => zmen({ stav: "aktivna", ukoncena: undefined, vratitDo: undefined, dovodUkoncenia: undefined, dovodIny: undefined, podakovanieDarcom: undefined });
   // KARTA 38 · bod 4: výsledok darcom posiela systém sám (1. z 2 správ) — po uplynutí 15 minút na vrátenie
   const [, tik] = useState(0);
   useEffect(() => {
     if (s.stav !== "ukoncena" || !s.vratitDo || s.vysledokPoslany) return;
     const zostava = Date.parse(s.vratitDo) - Date.now();
-    const posli = () => { pridajOznamDarcom({ zbierkaId: z.id, typ: "vysledok", text: `Vyzbierali ste ${eur(vyzbierane)} od ${darcov} darcov. Ďakujeme.` }); zmen({ vysledokPoslany: new Date().toISOString(), vratitDo: undefined }); };
+    const posli = () => { pridajOznamDarcom({ zbierkaId: z.id, typ: "vysledok", text: s.podakovanieDarcom ?? `Vyzbierali sme spolu ${eur(vyzbierane)} od ${darcov} darcov. Ďakujeme.` }); /* OPRAVY 459 (1): poďakovanie charity, inak výsledok */ zmen({ vysledokPoslany: new Date().toISOString(), vratitDo: undefined }); };
     if (zostava <= 0) { posli(); return; }
     const t = window.setTimeout(posli, zostava); const t2 = window.setInterval(() => tik((x) => x + 1), 30000);
     return () => { window.clearTimeout(t); window.clearInterval(t2); };
@@ -669,22 +671,26 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
     {tab === 2 && <Statistiky d={stat} tier={tier} mobil={mobil} toast={toast} />}
     {tab === 3 && ukoncenie}
     {tab === 4 && <PribehEditor z={z} mobil={mobil} toast={toast} />}
-    {conf && <UkoncitHarok mobil={mobil} vyzbierane={vyzbierane} darcov={darcov} lehota={bezDokladov ? null : lehT} onUkonci={ukonci} onZavri={() => setConf(false)} />}
+    {conf && <UkoncitHarok mobil={mobil} vyzbierane={vyzbierane} darcov={darcov} ciel={z.ciel} lehota={bezDokladov ? null : lehT} onUkonci={ukonci} onZavri={() => setConf(false)} />}
   </>);
 }
 
 const VRATIT_MIN = 15;
 const DOVODY_UKONCENIA = ["Cieľ je splnený", "Už to nepotrebujeme", "Iný dôvod"];
-/** 5. 10. · hárok „Ukončiť zbierku?" (PC v strede, mobil zdola): Prečo končíte → Čo sa stane → Podrž a ukonči (1,5 s) · Nechať bežať */
-function UkoncitHarok({ mobil, vyzbierane, darcov, lehota, onUkonci, onZavri }: { mobil: boolean; vyzbierane: number; darcov: number; lehota: string | null; onUkonci: (dovod: string) => void; onZavri: () => void }) {
+/** 5. 10. · hárok „Ukončiť zbierku?" (PC v strede, mobil zdola): Prečo končíte → Poďakovanie → Čo sa stane → Podrž a ukonči (1,5 s) · Nechať bežať
+ *  OPRAVY 459: „Cieľ je splnený“ len pri vyzbieranom ≥ cieľ · „Iný dôvod“ krátke pole (len DEED) · jediné poďakovanie darcom s náhľadom */
+function UkoncitHarok({ mobil, vyzbierane, darcov, ciel, lehota, onUkonci, onZavri }: { mobil: boolean; vyzbierane: number; darcov: number; ciel?: number; lehota: string | null; onUkonci: (dovod: string, iny: string, podakovanie: string) => void; onZavri: () => void }) {
   const [vidno, setVidno] = useState(false);
-  const [dovod, setDovod] = useState<number | null>(null);
+  const dovody = DOVODY_UKONCENIA.filter((d) => d !== "Cieľ je splnený" || (!!ciel && vyzbierane >= ciel));
+  const [dovod, setDovod] = useState<string | null>(null);
+  const [iny, setIny] = useState("");
+  const [dak, setDak] = useState(`<p>Ďakujeme. Vyzbierali sme spolu ${eur(vyzbierane)} od ${darcov} ${darcov === 1 ? "darcu" : "darcov"}. Čo bude ďalej, uvidíte na stránke zbierky.</p>`);
   const [drz, setDrz] = useState(false);
   const tm = useRef<number | undefined>(undefined);
   useEffect(() => { const r = requestAnimationFrame(() => requestAnimationFrame(() => setVidno(true))); return () => { cancelAnimationFrame(r); window.clearTimeout(tm.current); }; }, []);
   const zavri = () => { setVidno(false); window.setTimeout(onZavri, 260); };
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === "Escape") zavri(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); });
-  const zacni = () => { if (dovod == null) return; setDrz(true); window.clearTimeout(tm.current); tm.current = window.setTimeout(() => { setDrz(false); onUkonci(DOVODY_UKONCENIA[dovod]); }, 1500); };
+  const zacni = () => { if (dovod == null) return; setDrz(true); window.clearTimeout(tm.current); tm.current = window.setTimeout(() => { setDrz(false); onUkonci(dovod, dovod === "Iný dôvod" ? iny : "", dak); }, 1500); };
   const pusti = () => { window.clearTimeout(tm.current); setDrz(false); };
   const sekcia: CSSProperties = { fontSize: 14, fontWeight: 800, color: "var(--ink3)", letterSpacing: ".04em" };
   const karta: CSSProperties = { position: "fixed", zIndex: 91, background: "var(--bg)", color: "var(--ink)", boxShadow: "0 30px 80px rgba(0,0,0,.45)", padding: 22, display: "flex", flexDirection: "column", gap: 14, maxHeight: "92vh", overflowY: "auto" };
@@ -693,26 +699,44 @@ function UkoncitHarok({ mobil, vyzbierane, darcov, lehota, onUkonci, onZavri }: 
       <div onClick={zavri} style={{ position: "fixed", inset: 0, zIndex: 90, background: "rgba(10,8,5,.6)", opacity: vidno ? 1 : 0, transition: "opacity .25s ease" }} />
       <div role="dialog" aria-modal="true" aria-label="Ukončiť zbierku" style={mobil
         ? { ...karta, left: 0, right: 0, bottom: 0, borderRadius: "26px 26px 0 0", paddingBottom: "max(24px, env(safe-area-inset-bottom))", transform: `translateY(${vidno ? "0%" : "105%"})`, transition: "transform .32s cubic-bezier(.2,.8,.2,1)" }
-        : { ...karta, left: "50%", top: "50%", width: "min(520px, calc(100% - 32px))", borderRadius: 26, opacity: vidno ? 1 : 0, transform: `translate(-50%, -50%) scale(${vidno ? 1 : 0.94})`, transition: "opacity .25s ease, transform .3s ease" }}>
+        : { ...karta, left: "50%", top: "50%", width: "min(560px, calc(100% - 32px))", borderRadius: 26, opacity: vidno ? 1 : 0, transform: `translate(-50%, -50%) scale(${vidno ? 1 : 0.94})`, transition: "opacity .25s ease, transform .3s ease" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <b style={{ fontSize: 21 }}>Ukončiť zbierku?</b>
         <span style={sekcia}>PREČO KONČÍTE</span>
         <div role="radiogroup" aria-label="Prečo končíte" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {DOVODY_UKONCENIA.map((t, i) => { const on = dovod === i; return (
-            <button key={t} type="button" role="radio" aria-checked={on} onClick={() => setDovod(i)} style={{ minHeight: 50, padding: "0 16px", borderRadius: 14, border: on ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: on ? "var(--gSoft)" : "var(--field)", cursor: "pointer", textAlign: "left", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--ink)" }}>{t}</button>); })}
+          {dovody.map((t) => { const on = dovod === t; return (
+            <button key={t} type="button" role="radio" aria-checked={on} onClick={() => setDovod(t)} style={{ minHeight: 50, padding: "0 16px", borderRadius: 14, border: on ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: on ? "var(--gSoft)" : "var(--field)", cursor: "pointer", textAlign: "left", fontFamily: "inherit", fontSize: 15.5, fontWeight: 700, color: "var(--ink)" }}>{t}</button>); })}
+        </div>
+        {dovod === "Iný dôvod" && <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <input value={iny} onChange={(e) => setIny(e.target.value.slice(0, 200))} placeholder="Krátko, prečo končíte (nepovinné)" aria-label="Iný dôvod"
+            style={{ height: 48, padding: "0 14px", borderRadius: 12, border: "1.5px solid var(--cardBd)", background: "var(--field)", color: "var(--ink)", fontSize: 16, fontFamily: "inherit" }} />
+          <span style={{ fontSize: 13, color: "var(--ink3)" }}>Vidí to len DEED, darcovia nie.</span>
+        </label>}
+        <TextovePolia popis={dak} popis2="" onPopis={setDak} onPopis2={() => {}} ph={mobil} bezPokracovania
+          nadpis1="Poďakovanie darcom · nepovinné" popis1="Jediné poďakovanie zbierky. Darcom odíde o 15 minút spolu s výsledkom. Môžete ho prepísať." />
+        <span style={{ fontSize: 13, fontWeight: 800, color: "var(--ink3)" }}>Takto to dostane darca</span>
+        <div style={{ padding: 14, borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", display: "flex", flexDirection: "column", gap: 8 }}>
+          <b style={{ fontSize: 16 }}>Novinka zo zbierky</b>
+          {cistyText(dak).trim()
+            ? <div className="ftext" style={{ fontSize: 14.5, lineHeight: 1.55, padding: 12, borderRadius: 8, borderLeft: "3px solid var(--green)", background: "var(--gSoft)" }} dangerouslySetInnerHTML={{ __html: sanitizujHtml(dak) }} />
+            : <div style={{ fontSize: 14.5, lineHeight: 1.55, padding: 12, borderRadius: 8, borderLeft: "3px solid var(--green)", background: "var(--gSoft)" }}>Vyzbierali sme spolu {eur(vyzbierane)} od {darcov} {darcov === 1 ? "darcu" : "darcov"}. Ďakujeme.</div>}
+          <span style={{ fontSize: 13, color: "var(--ink3)" }}>Ďakujeme, že pomáhaš.</span>
         </div>
         <span style={sekcia}>ČO SA STANE</span>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 14, lineHeight: 1.45, color: "var(--ink2)" }}>
           <span>· Dary sa zastavia. Vyzbierali ste <b style={{ color: "var(--ink)" }}>{eur(vyzbierane)}</b> od {darcov} darcov.</span>
-          <span>· Darcom pošleme výsledok o {VRATIT_MIN} minút. Dovtedy to môžete vrátiť.</span>
+          <span>· Darcom pošleme výsledok aj poďakovanie o {VRATIT_MIN} minút. Dovtedy to môžete vrátiť.</span>
           {lehota && <span>· Začne plynúť lehota na doklady: {lehota}.</span>}
         </div>
-        <button type="button" aria-disabled={dovod == null} onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); zacni(); }} onPointerUp={pusti} onPointerCancel={pusti}
+        <button type="button" aria-disabled={dovod == null} onPointerDown={(e) => { if (dovod == null) return; e.currentTarget.setPointerCapture(e.pointerId); zacni(); }} onPointerUp={pusti} onPointerCancel={pusti}
           onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !e.repeat) { e.preventDefault(); zacni(); } }} onKeyUp={(e) => { if (e.key === "Enter" || e.key === " ") pusti(); }} onContextMenu={(e) => e.preventDefault()}
-          style={{ position: "relative", height: 58, border: "none", borderRadius: 16, background: "#7A3A2C", overflow: "hidden", cursor: dovod == null ? "default" : "pointer", touchAction: "none", userSelect: "none", opacity: dovod == null ? 0.45 : 1, fontFamily: "inherit" } as CSSProperties}>
+          style={{ position: "relative", height: 58, border: "none", borderRadius: 16, background: dovod == null ? "var(--btn)" : "#7A3A2C", overflow: "hidden", cursor: dovod == null ? "default" : "pointer", touchAction: "none", userSelect: "none", fontFamily: "inherit" } as CSSProperties}>
           <span style={{ position: "absolute", inset: 0, background: "#A34A2A", transformOrigin: "0 50%", transform: `scaleX(${drz ? 1 : 0})`, transition: `transform ${drz ? "1.5s" : ".2s"} linear` }} />
-          <span style={{ position: "relative", fontSize: 16, fontWeight: 800, color: "#fff" }}>Podrž a ukonči zbierku</span>
+          <span style={{ position: "relative", fontSize: 16, fontWeight: 800, color: dovod == null ? "var(--ink3)" : "#fff" }}>Podrž a ukonči zbierku</span>
         </button>
+        {dovod == null && <SvetlusikKarta chyba>Vyberte, prečo končíte.</SvetlusikKarta>}
         <button type="button" onClick={zavri} style={{ height: 44, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--ink3)" }}>Nechať bežať</button>
+        </div>
       </div>
     </div>, document.body);
 }
