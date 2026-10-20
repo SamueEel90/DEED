@@ -23,7 +23,7 @@ import { KartaStavu } from "./KartaStavu";
 import { RychleSumyEur, DeedDlazdice, VlastnaSuma, DaryVKrypte, type OtvorPlatbu } from "./Sumy";
 import { PlatobneOkno, potvrditTuknutim, nastavPotvrditTuknutim, useRychlyDar, type VysledokPlatby } from "./Platba";
 import type { KanalPlatby } from "./Sumy";
-import { ZdielatRiadok, PravidelnaRiadok, Oblubene, ZapojitFirmuRiadok, RetazRiadok, KartaDorovnava, Darcovia } from "./Riadky";
+import { ZdielatRiadok, PravidelnaRiadok, ZapojitFirmuRiadok, RetazRiadok, KartaDorovnava, Darcovia } from "./Riadky";
 import { ZdielatHarok, Harok } from "./Zdielat";
 import { NahlasitSheet } from "@/components/nahlasit";
 import { firmaPreDorovnanie } from "@/lib/podpory";
@@ -229,7 +229,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
         daruješ 20 € → k príjemcovi ide {sumaEur((20 + dorovnanieKDaru(dorovnanie, 20)))}</div>}
     </>);
     if (p.kluc === "pravidelna") return obal(<PravidelnaRiadok registrovany={registrovany} onClick={() => setHarok("pravidelna")} />);
-    if (p.kluc === "oblubene") return obal(<Oblubene polozka={{ refId: zbierka.id, typ: "charita", modul: "charity", nazov: zbierka.nazov, ciel: zbierka.ciel }} />);
+    if (p.kluc === "oblubene") return null; // OPRAVY 429: Obľúbené z modulu preč → Sledovať vedľa nadpisu
     if (p.kluc === "zapojitFirmu") return !smieDorovnat("charita", firmaPreDorovnanie().ucet) ? null : obal(<ZapojitFirmuRiadok firma={firmaPreDorovnanie().nazov} onClick={() => setHarok("firma")} />);
     if (p.kluc === "retazNastavit") return obal(<><RetazRiadok onClick={() => setHarok("retaz")} /><PodporujuRetazou zbierkaId={zbierka.id} /></>);
     if (p.kluc === "darcovia") return obal(<Darcovia refId={zbierka.id} cezTvorcu={cezTvorcu} nadpis={tvorca ? `DARCOVIA CEZ ${tvorca.menoAkuzativ.toLocaleUpperCase("sk-SK")}` : undefined} />);
@@ -243,7 +243,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
     <div className="zb-pol" style={{ padding: "4px 16px 0" }}>
       <Hlavicka cisloZbierky={cisloObjektu("Z", zbierka.id, zbierka.vs)} zverejnene={zbierka.zverejnene} onBack={onBack} spatNazov={spatNazov} onZavriet={onZavriet} onMoznosti={() => setMenu("menu")} />
       <Galeria media={zbierka.media ?? []} nahlady />
-      <NadpisText nazov={zbierka.nazov} text={zbierka.popis} otvoreny={st.text as boolean | undefined} onOtvoreny={(v) => zmenStav({ text: v })} />
+      <NadpisText sledovat={{ refId: zbierka.id, typ: "charita", modul: "charity", nazov: zbierka.nazov, ciel: zbierka.ciel }} nazov={zbierka.nazov} text={zbierka.popis} otvoreny={st.text as boolean | undefined} onOtvoreny={(v) => zmenStav({ text: v })} />
     </div>
   ) : <PodporitDeedObsah registrovany={registrovany} />;
   // OPRAVY 222: farár prispeje za farnosť (SEPA alebo karta), nie na vlastnú zbierku

@@ -18,7 +18,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import { C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { PodporaSekcia, type BonusDaru } from "@/components/platba";
-import { OblubeneBtn } from "@/components/oblubene";
 import { PodporitDeed } from "@/components/podporadeed";
 import { IkonaOpakovat, IkonaRetaz } from "@/components/icons";
 import type { Oblubeny } from "@/types";
@@ -101,7 +100,7 @@ function QrNahlad() {
 export function PlatobnyModul({
   onShare, upvotes = 0, onUpvote, reakcia = "palec",
   onPodpor, onKanal, accent = "var(--a-info)", supLabel, bezDaru = false, zbalene = false, komu, onDarEur, onDarKrypto, krypto,
-  oblubene, toast, bezOblubenych = false, opakovana, dorovnanie, qr, retaz, style, kryptoOtvorene, sumyEur, sumyEurc, bonus,
+  oblubene: _oblubene, toast, bezOblubenych = false, opakovana, dorovnanie, qr, retaz, style, kryptoOtvorene, sumyEur, sumyEurc, bonus,
 }: PlatobnyModulProps) {
   // Pravidelná podpora — zelená a výraznejšia; v zbalenom module sedí hneď pod darmi v eurách
   const pravidelnaEl = opakovana && (
@@ -139,7 +138,7 @@ export function PlatobnyModul({
   // Obľúbené + Podporiť DEED — rovnaká výška oboch tlačidiel
   const oblubeneEl = !bezOblubenych && (
         <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.gutter }}>
-          {oblubene && <OblubeneBtn polozka={oblubene} toast={toast} style={{ flex: 1, minWidth: 0, height: 46 }} />}
+          {/* OPRAVY 429: Obľúbené z platobného modulu preč (Sledovať je vedľa nadpisu detailu) */}
           <PodporitDeed toast={toast} style={{ flex: 1, minWidth: 0, height: 46 }} />
         </div>
       );
