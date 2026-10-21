@@ -9,6 +9,7 @@
 // Pridať Iskru tu nie je — príde v časti 2.
 // OPRAVY 444: ťuk na video = pauza / prehrať (veľká ikona v strede na 1 s), dole tenký posuvník s časom (dá sa ťahať), na PC aj medzerník.
 // ============================================================
+import { overTotoznost } from "@/lib/zamok";
 import { createPortal } from "react-dom";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent as RPointerEvent } from "react";
 import { sZnackou } from "@/components/DeedZnacka";
@@ -236,7 +237,9 @@ function IskryPrud() {
   /** rýchla suma: prihlásený s uloženou platbou = 1 ťuk, inak bežné okno platby */
   const rychly = (v: Iskra, kanal: KanalPlatby, suma: number, sposob?: "karta" | "sepa") => {
     setSheet(null);
-    if (registrovany) zaplatene(v, kanal === "deed" ? suma / 100 : suma, kanalDaru(kanal, sposob));
+    const e = kanal === "deed" ? suma / 100 : suma;
+    // OPRAVY 466 doplnok 3: nad hranicu platby aj rýchly dar overiť (mikro dary pod ňou bez trenia)
+    if (registrovany) void overTotoznost("platba", "Dar je nad hranicou, ktorú ste si nastavili.", e).then((ok) => { if (ok) zaplatene(v, e, kanalDaru(kanal, sposob)); });
     else setPlatba({ v, kanal, suma });
   };
   const simuluj = () => {

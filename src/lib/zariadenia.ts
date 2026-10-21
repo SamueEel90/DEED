@@ -29,14 +29,23 @@ type RiadokZar = { device_id: string; nazov: string; typ: Zariadenie["typ"]; mes
 let zDb: Zariadenie[] | null = null;
 let nacitava = false;
 const kedy = (iso: string) => { const d = new Date(iso); return d.toDateString() === new Date().toDateString() ? `dnes ${d.toLocaleTimeString("sk-SK", { hour: "2-digit", minute: "2-digit" })}` : d.toLocaleDateString("sk-SK"); };
+/** OPRAVY 466 doplnok: id prihlásenia (claim session_id v prístupovom tokene) — podľa neho server odhlási zariadenie na diaľku */
+function relaciaZ(token: string | undefined): string | null {
+  try { const p = JSON.parse(atob((token ?? "").split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))) as { session_id?: string }; return p.session_id ?? null; } catch { return null; }
+}
+const KLUC_ZAPISANE = "deed.zariadenie.zapisane";
 async function nacitajZDb(znova = false) {
   if (!supabase || (nacitava && !znova)) return;
   nacitava = true;
-  if (!(await supabase.auth.getSession()).data.session) { nacitava = false; return; }
+  const ses = (await supabase.auth.getSession()).data.session;
+  if (!ses || ses.user.is_anonymous) { nacitava = false; return; }
   const t = totoZariadenie();
   const id = deviceId();
-  const { data: je } = await supabase.from("zariadenie_uctu").update({ posledne: new Date().toISOString(), nazov: t.nazov }).eq("device_id", id).select("device_id");
-  if (!je?.length) await supabase.from("zariadenie_uctu").insert({ device_id: id, nazov: t.nazov, typ: t.typ, mesto: t.mesto }); // 6. zariadenie server odmietne (limit 5)
+  const relacia = relaciaZ(ses.access_token);
+  const { data: je } = await supabase.from("zariadenie_uctu").update({ posledne: new Date().toISOString(), nazov: t.nazov, ...(t.mesto ? { mesto: t.mesto } : {}), ...(relacia ? { relacia } : {}) }).eq("device_id", id).select("device_id");
+  let ok = !!je?.length;
+  if (!ok) ok = !(await supabase.from("zariadenie_uctu").insert({ device_id: id, nazov: t.nazov, typ: t.typ, mesto: t.mesto, ...(relacia ? { relacia } : {}) })).error; // 6. zariadenie server odmietne (limit 5)
+  try { if (ok) localStorage.setItem(KLUC_ZAPISANE, ses.user.id); } catch { /* LS */ }
   const { data, error } = await supabase.from("zariadenie_uctu").select("device_id, nazov, typ, mesto, potvrdene, prve, posledne").order("posledne", { ascending: false });
   if (error) return;
   zDb = ((data ?? []) as RiadokZar[]).filter((r) => r.device_id !== id).map((r) => ({
@@ -94,14 +103,38 @@ function ostatne(): Zariadenie[] {
 const ulozOstatne = (z: Zariadenie[]) => { try { localStorage.setItem(KLUC, JSON.stringify(z)); } catch { /* LS */ } zmena(); };
 
 export const zariadenia = (): Zariadenie[] => [totoZariadenie(), ...ostatne()];
-export const odhlas = (id: string) => {
-  if (zDb && supabase) { zDb = zDb.filter((z) => z.id !== id); zmena(); void supabase.from("zariadenie_uctu").delete().eq("device_id", id).then(() => nacitajZDb(true)); return; }
-  ulozOstatne(ostatne().filter((z) => z.id !== id));
-};
-export const odhlasOstatne = () => {
-  if (zDb && supabase) { zDb = []; zmena(); void supabase.from("zariadenie_uctu").delete().neq("device_id", deviceId()).then(() => nacitajZDb(true)); return; }
-  ulozOstatne([]);
-};
+/** OPRAVY 466 doplnok: naozaj odhlási (server zmaže riadok aj prihlásenie toho zariadenia); vráti chybu alebo null */
+export async function odhlas(id: string): Promise<string | null> {
+  if (zDb && supabase) {
+    const { error } = await supabase.rpc("zariadenie_odhlas", { p_device: id });
+    if (error) return /^[A-ZÁČĎÉÍĽĹŇÓÔŔŠŤÚÝŽ]/.test(error.message) ? error.message : "Nepodarilo sa odhlásiť. Skúste znova.";
+    zDb = zDb.filter((z) => z.id !== id); zmena(); void nacitajZDb(true); return null;
+  }
+  ulozOstatne(ostatne().filter((z) => z.id !== id)); return null;
+}
+export async function odhlasOstatne(): Promise<string | null> {
+  if (zDb && supabase) {
+    const { error } = await supabase.rpc("zariadenie_odhlas_ostatne");
+    if (error) return "Nepodarilo sa odhlásiť. Skúste znova.";
+    await supabase.auth.signOut({ scope: "others" }).catch(() => undefined);
+    zDb = []; zmena(); void nacitajZDb(true); return null;
+  }
+  ulozOstatne([]); return null;
+}
+/** zapíše toto zariadenie do zoznamu hneď po prihlásení (nie až pri otvorení Prihlásených zariadení) */
+export const zapisToZariadenie = () => nacitajZDb(true);
+/** odhlásili toto zariadenie z iného? (bolo v zozname a riadok zmizol) */
+export async function odhlaseneNaDialku(): Promise<boolean> {
+  if (!supabase) return false;
+  const ses = (await supabase.auth.getSession()).data.session;
+  let zap: string | null = null;
+  try { zap = localStorage.getItem(KLUC_ZAPISANE); } catch { /* LS */ }
+  if (!ses || !zap || zap !== ses.user.id) return false;
+  const { data, error } = await supabase.from("zariadenie_uctu").select("device_id").eq("device_id", deviceId()).maybeSingle();
+  if (error) return false; // sieť — skúsi neskôr
+  if (!data) { try { localStorage.removeItem(KLUC_ZAPISANE); } catch { /* LS */ } return true; }
+  return false;
+}
 /** DEV: doplň 5 ďalších zariadení — toto by bolo šieste */
 export function naplnDoLimitu() {
   const zoz = ostatne(), extra: Zariadenie[] = [

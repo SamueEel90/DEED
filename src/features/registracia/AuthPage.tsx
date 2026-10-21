@@ -20,6 +20,9 @@ import { PotvrdNoveZariadenie, LimitZariadeni } from "@/features/profil/Bezpecno
 import { zariadenia, odKedy, MAX_ZARIADENI, OVERENIE_ZARIADENIA, nazovZariadenia, ulozMestoZariadenia } from "@/lib/zariadenia";
 import { DeedQr } from "@/components/deedqr";
 import { zalozQr, stavQr, prihlasOdkazom, odkazPrihlasenia, type QrPc } from "@/lib/qrPrihlasenie";
+import { odhlasenyPreNecinnost, NECINNOST_MIN } from "@/features/bezpecnost/StrazcaNecinnosti";
+import { odhlasenyNaDialku } from "@/features/bezpecnost/StrazOdhlasenia";
+import { SvetlusikKarta } from "@/components/SvetlusikInfo";
 
 // 5 zlých pokusov o prihlásenie → 15 minút čakanie. Zadanie 3 · 3.5: počíta to LEN server
 // (Auth hook, migrácia 0042) — appka zobrazí jeho hlášku, sama nič nepočíta.
@@ -45,6 +48,8 @@ export function AuthPage({ onAuthed, onGuest, onPasivny, onRegistrovat, uvodnyRe
   const [overit, setOverit] = useState<null | { login: boolean }>(null);
   // OPRAVY 466: prihlásenie počítača QR kódom z mobilu
   const [mobilom, setMobilom] = useState(false);
+  const [necinnost] = useState(odhlasenyPreNecinnost);
+  const [naDialku] = useState(odhlasenyNaDialku);
 
   const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim());
   const hesloOk = heslo.length >= 6;
@@ -151,6 +156,8 @@ export function AuthPage({ onAuthed, onGuest, onPasivny, onRegistrovat, uvodnyRe
           })}
         </div>}
 
+        {naDialku && jeLogin && <SvetlusikKarta style={{ marginBottom: SPACE.md }}>Toto zariadenie ste odhlásili z iného zariadenia (Prihlásené zariadenia).</SvetlusikKarta>}
+        {necinnost && jeLogin && <SvetlusikKarta style={{ marginBottom: SPACE.md }}>Z bezpečnosti sme vás po {NECINNOST_MIN} minútach nečinnosti odhlásili. Rozpísané máte uložené.</SvetlusikKarta>}
         {/* formulár — Enter v ľubovoľnom poli odošle (submit) */}
         <form onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate>
         {/* email */}

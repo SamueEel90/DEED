@@ -8,6 +8,9 @@ import { C } from "@/theme";
 import { OverenieHost, OverenieVrstva } from "@/features/overenie/OverenieHost";
 import { OsobaVrstva, PozvankaSkutkuHost, PozvankaSkutkuVrstva, PripojenieAkcieHost, PripojenieAkcieVrstva, PrihlaseniePcHost, PrihlaseniePcVrstva } from "@/features/pozvanky/Pozvanky";
 import { usePrihlaseniePc } from "@/lib/qrPrihlasenie";
+import { StrazcaNecinnosti } from "@/features/bezpecnost/StrazcaNecinnosti";
+import { StrazOdhlasenia } from "@/features/bezpecnost/StrazOdhlasenia";
+import { ZamokHost } from "@/features/bezpecnost/Zamok";
 import { usePripojenie } from "@/lib/akciaCharity";
 import { usePozvanka } from "@/lib/pozvankaSkutku";
 import { prisloSOdkazomOsoby } from "@/lib/odkazOsoby";
@@ -522,6 +525,8 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
         <PozvankaSkutkuVrstva onPrihlasit={() => setAktivacia("login")} onRegistrovat={() => setAktivacia("aktivny")} />
         <PripojenieAkcieVrstva onPrihlasit={() => setAktivacia("login")} onRegistrovat={() => setAktivacia("aktivny")} />
         <PrihlaseniePcVrstva />
+        {/* OPRAVY 466 doplnok: na počítači po 15 min nečinnosti „Ste tu ešte?“ (len skutočný účet, nie demo ani hosť) */}
+        {!("demo" in session && session.demo) && session.typ !== "pasivny" && <><StrazcaNecinnosti /><StrazOdhlasenia /><ZamokHost /></>}
         <OsobaVrstva />
         {/* overlay aktívnej registrácie (po kliku „Stať sa aktívnym") */}
         {/* OPRAVY 385: nad detailom zbierky a parte (1000–1250), inak by registrácia ostala pod nimi */}

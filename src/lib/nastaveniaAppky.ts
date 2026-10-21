@@ -14,6 +14,9 @@ export type NastaveniaAppky = {
   okruh: Okruh;
   biometria: boolean;
   hranicaPlatby: number;  // nad túto sumu tvár / odtlačok / PIN (20 | 50 | 100 | 200 · 0 = každú platbu)
+  /** OPRAVY 466 doplnok 3 (mobil): overiť tvárou / odtlačkom / PIN pri otvorení Peňaženky (predvolene áno) a pri vstupe do Správy */
+  zamokPenazenka: boolean;
+  zamokSprava: boolean;
   kontakty: boolean;
   /** ukážky pre začiatok (Moje skutky, neskôr peňaženka, priatelia, záujmy) */
   ukazky: boolean;
@@ -33,7 +36,7 @@ export type NastaveniaAppky = {
   suhlasy: { pers: boolean; stat: boolean; news: boolean; part: boolean; zaznam: { k: string; on: boolean; cas: string; verzia: string }[] };
 };
 const KLUC = "deed.nastavenia.appky";
-const ZAKLAD: NastaveniaAppky = { pismo: 100, obmedzAnim: false, vibracie: true, titulky: true, tichyCas: true, poloha: true, okruh: "mesto", biometria: false, hranicaPlatby: 50, kontakty: false, ukazky: true, tichyOd: "22:00", tichyDo: "7:00", oznamy: { master: true, zmeny: {}, strop: true, vecer: false }, odPolohy: false, jazyk: "Slovenčina", firmaPredvolba: "anonym", zatras: false, suhlasy: { pers: true, stat: true, news: false, part: false, zaznam: [] } };
+const ZAKLAD: NastaveniaAppky = { pismo: 100, obmedzAnim: false, vibracie: true, titulky: true, tichyCas: true, poloha: true, okruh: "mesto", biometria: false, hranicaPlatby: 50, zamokPenazenka: true, zamokSprava: false, kontakty: false, ukazky: true, tichyOd: "22:00", tichyDo: "7:00", oznamy: { master: true, zmeny: {}, strop: true, vecer: false }, odPolohy: false, jazyk: "Slovenčina", firmaPredvolba: "anonym", zatras: false, suhlasy: { pers: true, stat: true, news: false, part: false, zaznam: [] } };
 let verzia = 0;
 const posluchaci = new Set<() => void>();
 

@@ -1,5 +1,6 @@
 // KARTA 07 · Platobné okno — Suma → Spôsob → Zhrnutie → Podrž a zaplať → Spracovanie → (Hotovo = karta 09).
 // Hárok nad detailom (mobil zdola, tablet 640 px na stred, PC 560 px na stred). Bez blur. Platba sa do cesty Späť nezapisuje.
+import { overTotoznost } from "@/lib/zamok";
 import { usePoplatok } from "@/lib/poplatky";
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
@@ -154,7 +155,9 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
     if (krok === "suma") { if (eur && suma < KARTA_OD_EUR) { setSposob("sepa"); setKrok("zhrnutie"); } else setKrok(eur ? "sposob" : "zhrnutie"); }
   };
   const spat = () => { const i = kroky.indexOf(krok as Krok); if (i > 0) setKrok(kroky[i - 1]); else zatvor(); };
-  const zaplat = () => {
+  const zaplat = async () => {
+    // OPRAVY 466 doplnok 3: platba nad hranicu (Nastavenia → Potvrdiť platbu nad) — v mobile tvár / odtlačok / PIN
+    if (!(await overTotoznost("platba", `Platba ${eur ? `${eurHodnota.toLocaleString("sk-SK", { maximumFractionDigits: 2 })} €` : ""} je nad hranicou, ktorú ste si nastavili.`, eurHodnota))) return;
     if (registrovany) { ulozPredvolbu(volba); ulozSposob(sposob); }
     const meno = registrovany && volba.verzia !== 4 ? volbyMena(ja, volbaBezMena(sektor)).find(([v]) => v === volba.verzia)?.[1] : undefined;
     setKrok("spracovanie");

@@ -1,6 +1,7 @@
 // KARTA 24 · Nastavenia: Potvrdiť platbu, Predvolený okruh, Prihlásené zariadenia, E-mail / telefón / heslo,
 // Zablokovaní ľudia, Súhlasy (+ detail povinného súhlasu) a hlášky pri prihlásení (6. zariadenie, nové zariadenie,
 // 24 h obmedzenie). Overovanie kódov, zoznam zariadení a znenia súhlasov bude držať server — tu je appková časť.
+import { overTotoznost } from "@/lib/zamok";
 import { EMAIL_PODPORA, EMAIL_OCHRANA_UDAJOV } from "@/lib/kontakty";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { kartaVolby, FajkaVolby } from "@/components/Volby";
@@ -19,6 +20,7 @@ import { zariadenia, odhlas, odhlasOstatne, naplnDoLimitu, useZmenyZariadeni, ho
 import { zablokovani, odblokuj, useZmenyBlokovania } from "@/lib/blokovanie";
 import { useT, tTeraz } from "@/i18n";
 import "@/styles/platba.css";
+import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 
 const Ik = ({ d, s = 18, w = 2 }: { d: string; s?: number; w?: number }) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} /></svg>;
 const IK = {
@@ -77,7 +79,12 @@ export function PotvrditPlatbuHarok({ onClose }: { onClose: () => void }) {
   const MOZ: [number, string, string][] = [[20, t.eur(20), ""], [50, t.eur(50), t("bezpecnost.odporucame")], [100, t.eur(100), ""], [200, t.eur(200), ""], [0, t("bezpecnost.kazduPlatbu"), t("bezpecnost.kazduPlatbuS")]];
   return (
     <Harok onClose={onClose} hlavicka={<span style={{ flex: 1, display: "flex", alignItems: "center", gap: 12 }}><span style={{ width: 46, height: 46, borderRadius: 14, background: "var(--gSoft)", color: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Ik d={IK.zamok} s={22} /></span><span style={{ fontSize: 20, fontWeight: 800 }}>{t("nastavenia.platba")}</span></span>}
-      paticka={<button type="button" onClick={() => { zmenNastavenia({ hranicaPlatby: v }); toast(t("bezpecnost.ulozene")); onClose(); }} style={hlavne}>{t("sp.ulozit")}</button>}>
+      paticka={<button type="button" onClick={() => void (async () => {
+        // OPRAVY 466 doplnok 3: zvýšiť hranicu (menej overovania) len po overení
+        const volnejsie = n.hranicaPlatby === 0 ? v !== 0 : v !== 0 && v > n.hranicaPlatby;
+        if (volnejsie && !(await overTotoznost("nastavenie", t("nastavenia.zamokVypnut")))) return;
+        zmenNastavenia({ hranicaPlatby: v }); toast(t("bezpecnost.ulozene")); onClose();
+      })()} style={hlavne}>{t("sp.ulozit")}</button>}>
       <div style={{ fontSize: 15, lineHeight: 1.55, color: "var(--ink2)" }}>{t("bezpecnost.platba.text")}</div>
       <div role="radiogroup" aria-label={t("nastavenia.platba")} style={{ display: "flex", flexDirection: "column", gap: 6 }}>{MOZ.map(([h, l, s]) => <Volba key={h} on={v === h} onClick={() => setV(h)} t={l} s={s} />)}</div>
       <div style={{ padding: "10px 12px", borderRadius: 13, background: "var(--field)", border: "1px solid var(--cardBd)", fontSize: 13, lineHeight: 1.5, color: "var(--ink2)" }}>{t("bezpecnost.platba.mikro")}</div>
@@ -150,20 +157,29 @@ export function OkruhHarok({ onClose, onZmenitMiesto }: { onClose: () => void; o
 }
 
 // ======================= 2 · PRIHLÁSENÉ ZARIADENIA =======================
-function ZoznamZariadeni({ onOdhlas }: { onOdhlas?: (z: Zariadenie) => void }) {
+// OPRAVY 466 doplnok: Odhlásiť naozaj odhlási — ťuk otvorí pod riadkom „Podržte a odhláste“ (1,5 s)
+function ZoznamZariadeni({ onOdhlas }: { onOdhlas?: (z: Zariadenie) => Promise<string | null> | void }) {
   const t = useT();
   const zoz = zariadenia();
+  const [otv, setOtv] = useState<string | null>(null);
+  const [chyba, setChyba] = useState<{ id: string; t: string } | null>(null);
+  const [busy, setBusy] = useState(false);
   return (
     <div style={karta}>
       {zoz.map((z, i) => (
-        <div key={z.id} className="pf-rise" style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 72, borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
+        <div key={z.id} className="pf-rise" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, minHeight: 72, borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
           <span aria-hidden="true" style={{ width: 42, height: 42, borderRadius: 12, background: z.toto ? "var(--gSoft)" : "var(--bSoft)", color: z.toto ? "var(--green)" : "var(--blue)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Ik d={IK[z.typ]} s={20} /></span>
           <span style={{ flex: 1, minWidth: 0 }}>
             <span style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}><span style={{ fontSize: 15, fontWeight: 700 }}>{z.nazov}</span>{z.toto && <span style={{ padding: "2px 7px", borderRadius: 7, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 11, fontWeight: 800, color: "var(--gInk)", whiteSpace: "nowrap" }}>{t("bezpecnost.zar.toto")}</span>}</span>
             <span style={{ display: "block", fontSize: 13, color: "var(--ink3)", marginTop: 2 }}>{[z.mesto, z.posledna, z.potvrdene].filter(Boolean).join(" · ")}</span>
             {z.nove && <span style={{ display: "block", marginTop: 4, fontSize: 12.5, fontWeight: 700, color: "var(--gold)" }}>{t("bezpecnost.zar.nove", { eur: t.eur(NOVE_LIMIT_EUR) })}</span>}
           </span>
-          {!z.toto && onOdhlas && <button type="button" onClick={() => onOdhlas(z)} style={{ flex: "none", minHeight: 44, padding: "0 12px", borderRadius: 11, border: "1px solid var(--cardBd)", background: "var(--btn)", fontSize: 14, fontWeight: 700, color: "var(--ink)", cursor: "pointer", fontFamily: "inherit" }}>{t("bezpecnost.zar.odhlasit")}</button>}
+          {!z.toto && onOdhlas && <button type="button" aria-expanded={otv === z.id} onClick={() => { setOtv(otv === z.id ? null : z.id); setChyba(null); }} style={{ flex: "none", minHeight: 44, padding: "0 12px", borderRadius: 11, border: "1px solid var(--cardBd)", background: "var(--btn)", fontSize: 14, fontWeight: 700, color: "var(--ink)", cursor: "pointer", fontFamily: "inherit" }}>{t("bezpecnost.zar.odhlasit")}</button>}
+          {otv === z.id && onOdhlas && <div style={{ flex: "1 1 100%", display: "flex", flexDirection: "column", gap: 8, paddingBottom: 12 }}>
+            <PodrzTlacidlo label={busy ? "Odhlasuje sa…" : "Podržte a odhláste"} farba="cervena" trvanie={1500} disabled={busy}
+              onConfirm={() => { setBusy(true); void Promise.resolve(onOdhlas(z)).then((e) => { setBusy(false); if (e) setChyba({ id: z.id, t: e }); else setOtv(null); }); }} />
+            {chyba?.id === z.id && <span role="alert" style={{ fontSize: 14, fontWeight: 700, color: "var(--cRed, #A34A2A)" }}>{chyba.t}</span>}
+          </div>}
         </div>))}
     </div>);
 }
@@ -179,8 +195,9 @@ export function PrihlaseneZariadenia({ onBack }: { onBack: () => void }) {
     <ObrazovkaSprava titul={t("nastavenia.zariadenia")} onBack={onBack}>
       <div style={{ fontSize: 15, lineHeight: 1.55, color: "var(--ink2)" }}>{t("bezpecnost.zar.intro")}</div>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", padding: "0 2px" }}><h2 style={lbl}>{t("bezpecnost.zar.nadpis")}</h2><span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink3)" }}>{t("bezpecnost.zar.pocet", { n: zoz.length, max: MAX_ZARIADENI })}</span></div>
-      <ZoznamZariadeni onOdhlas={(z) => { odhlas(z.id); setSprava(t("bezpecnost.zar.odhlaseny", { nazov: z.nazov })); }} />
-      {zoz.length > 1 && <button type="button" onClick={() => { odhlasOstatne(); setSprava(t("bezpecnost.zar.ostatneOdhlasene")); }} style={{ ...vedlajsie, fontWeight: 800 }}>{t("bezpecnost.zar.odhlasitOstatne")}</button>}
+      <ZoznamZariadeni onOdhlas={async (z) => { const e = await odhlas(z.id); if (!e) setSprava(t("bezpecnost.zar.odhlaseny", { nazov: z.nazov })); return e; }} />
+      {zoz.length > 1 && <PodrzTlacidlo label="Podržte a odhláste všetky ostatné" farba="cervena" trvanie={1500}
+        onConfirm={() => void odhlasOstatne().then((e) => setSprava(e ?? t("bezpecnost.zar.ostatneOdhlasene")))} />}
       {sprava && <Hotovo>{sprava}</Hotovo>}
       <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "14px 18px", borderRadius: 20, background: "var(--d-card, var(--card))", border: "1px solid var(--sek-bBd)", boxShadow: "var(--d-hl, none)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ color: "var(--green)", display: "flex" }}><Ik d={IK.stit} /></span><span style={{ fontSize: 15.5, fontWeight: 800 }}>{t("bezpecnost.zar.ako")}</span></div>
