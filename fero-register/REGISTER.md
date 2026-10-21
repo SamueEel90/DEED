@@ -211,3 +211,7 @@
 - Trvá: číselník cirkví je v kóde dvakrát (viera/mock.ts + lib/mojeFarnosti.ts) — zjednotiť na jeden zdroj pri registrácii farnosti.
 - Kóder dieru poznal (Odkaz pre Samuela 4, 21. 9.: „doplniť pri registrácii farnosti"), nahlásil len Samuelovi, ďalej nesledovaná.
 - **ČAKÁ NA MARTINA:** či robiť registráciu farnosti ako ďalší bod. Ak áno, pred zadaním rozhodnúť: kto ju zakladá (z osobného účtu ako organizáciu?); IČO z registra ako pri charite?; výber cirkvi z jedného číselníka; overený IBAN ako podmienka; platca ≠ vlastník (Stakčín) už pri registrácii, alebo až v Správe; štart trialu (2 mes od zverejnenia).
+
+## Parkované — tester charity (Martin 21. 10.)
+
+- Martin má známu — šéfku charity, o projekte vie, čaká na testovanie. Až keď bude charita dokončená a vyladená, pripraví sa jej testovacia cesta (obdoba zadania registrácie farnosti pre testera). Teraz NErobiť, len nestratiť.
