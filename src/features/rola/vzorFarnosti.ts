@@ -44,7 +44,7 @@ const menaZ = (l: string[], mena: string[]) => Object.fromEntries(mena.map((m, i
 // ---- profil ----
 export const VZOR_PROFIL: ProfilStranky = {
   meno: VZOR_MENO,
-  onas: "<p>Farnosť vzorová pri hlavnom námestí. Patrí k nej farský kostol Narodenia Panny Márie, kláštorný kostol a kaplnka sv. Anny. Radi privítame každého, kto hľadá ticho, spoveď alebo len chce prísť pozrieť.</p>",
+  onas: "<p>Farnosť vzorová pri hlavnom námestí. Patrí k nej farský kostol sv. Michala, kostol Panny Márie a kaplnka sv. Anny. Radi privítame každého, kto hľadá ticho, spoveď alebo len chce prísť pozrieť.</p>",
   onas2: "",
   kontakt: {
     sidlo: "Farské námestie 1", adresaVerejna: "Farské námestie 1",
@@ -58,8 +58,8 @@ export const VZOR_PROFIL: ProfilStranky = {
 
 // ---- kostoly a omše ----
 const miesta: Miesto[] = [
-  { id: "0", druh: "farsky", nazov: "Narodenia Panny Márie", adresa: "Farské námestie 1", media: [foto(1, F_KOSTOL)], popis: "Najcennejšia a najstaršia sakrálna pamiatka v meste.", historia: "", vytvorene: d(-400) },
-  { id: "k1", druh: "kostol", nazov: "Notre Dame", adresa: "Kláštorná 2", media: [], popis: "Postavený v roku 1909 ako kláštorný kostol.", historia: "", vytvorene: d(-400) },
+  { id: "0", druh: "farsky", nazov: "Svätého Michala", adresa: "Farské námestie 1", media: [foto(1, F_KOSTOL)], popis: "Najcennejšia a najstaršia sakrálna pamiatka v meste.", historia: "", vytvorene: d(-400) },
+  { id: "k1", druh: "kostol", nazov: "Panny Márie", adresa: "Mariánska 2", media: [], popis: "Menší kostol, ranná omša vo štvrtok.", historia: "", vytvorene: d(-400) },
   { id: "k2", druh: "kaplnka", nazov: "Svätej Anny", adresa: "Nemocničná 3", media: [], popis: "Spätá so stredovekým mestským špitálom.", historia: "", vytvorene: d(-400) },
 ];
 const kostol = (k: Partial<KalKostol>): KalKostol => ({ casy: [["6:30", "7:00", "7:30"], ["18:00"], ["10:30"]], casyOk: true, vzor: {}, zrus: {}, posun: {}, extra: {}, ...k });
