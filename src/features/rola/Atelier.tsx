@@ -13,6 +13,8 @@ import type { ProfilStranky } from "@/lib/profilStranky";
 import { toast } from "@/components/toast";
 import { usePrihlaseniePc } from "@/lib/qrPrihlasenie";
 import { LayoutContext } from "@/components/context";
+import { AtelierMoja } from "./AtelierMoja";
+import { AtelierZverejnit } from "./AtelierZverejnit";
 import { VZOR_ID, VZOR_MENO, VZOR_PROFIL, VZOR_USPORIADANIE } from "./vzorFarnosti";
 
 const QrSkener = lazy(() => import("@/components/qrskener").then((m) => ({ default: m.QrSkener })));
@@ -37,7 +39,7 @@ export function Atelier({ strankaId, meno, profil, onZavri, onPoradie }: { stran
   if (uzka) return createPortal(<AtelierMobil onZavri={onZavri} onPoradie={onPoradie} />, document.body);
 
   const skusobny = koncept?.rozlozenie ?? naostro;
-  const vyberVzor = (k: Rozlozenie) => { ulozKonceptAtelieru({ rozlozenie: k, usporiadanie: koncept?.usporiadanie ?? usp }); setKrok("moja"); };
+  const vyberVzor = (k: Rozlozenie) => { ulozKonceptAtelieru({ rozlozenie: k, usporiadanie: koncept?.usporiadanie ?? usp, naplanovane: koncept?.naplanovane }); setKrok("moja"); };
   const KROKY: [Krok, string][] = [["vzory", "Vzory"], ["moja", "Moja stránka"], ["zver", "Zverejniť"]];
   const tl: CSSProperties = { minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--card)", color: "var(--ink)", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer" };
   return createPortal(
@@ -47,14 +49,14 @@ export function Atelier({ strankaId, meno, profil, onZavri, onPoradie }: { stran
         <button type="button" onClick={onZavri} style={tl}>‹ Odísť z ateliéru</button>
         <b style={{ fontSize: 19 }}>Ateliér stránky</b>
         <nav aria-label="Kroky" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
-          {KROKY.map(([k, t], i) => { const on = k === krok, mozno = k === "vzory" || (k === "moja" && !!koncept); return (
+          {KROKY.map(([k, t], i) => { const on = k === krok, mozno = k === "vzory" || !!koncept; return (
             <button key={k} type="button" aria-current={on ? "step" : undefined} disabled={!mozno || on} onClick={() => setKrok(k)}
               style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 44, padding: "0 12px", borderRadius: 22, border: on ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: on ? "var(--gSoft)" : "transparent", color: on ? "var(--gInk)" : "var(--ink2)", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, cursor: mozno && !on ? "pointer" : "default", opacity: mozno || on ? 1 : 0.5 }}>
               <span style={{ width: 24, height: 24, borderRadius: "50%", background: on ? "var(--green)" : "var(--btn)", color: on ? "#fff" : "var(--ink2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>{i + 1}</span>{t}</button>); })}
         </nav>
       </header>
-      <main style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
-        {krok === "vzory" && <div style={{ maxWidth: 1180, margin: "0 auto", padding: "28px 24px 40px", display: "flex", flexDirection: "column", gap: 18 }}>
+      {krok === "vzory" && <main style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
+        <div style={{ maxWidth: 1180, margin: "0 auto", padding: "28px 24px 40px", display: "flex", flexDirection: "column", gap: 18 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             <b style={{ fontSize: 26 }}>Vyberte vzor</b>
             <span style={{ fontSize: 15.5, lineHeight: 1.5, color: "var(--ink2)" }}>Takto vyzerajú hotové stránky. Ťuknite na vzor a vyskúšate ho na svojej stránke. Nikto to neuvidí.</span>
@@ -70,17 +72,10 @@ export function Atelier({ strankaId, meno, profil, onZavri, onPoradie }: { stran
                 <span style={{ fontSize: 14.5, color: "var(--ink2)" }}>{POPIS_VZORU[r.k]}</span>
               </button>))}
           </div>
-        </div>}
-        {krok === "moja" && koncept && <div style={{ display: "flex", flexDirection: "column", minHeight: "100%" }}>
-          <div role="status" style={{ position: "sticky", top: 0, zIndex: 5, flex: "none", display: "flex", alignItems: "center", gap: 14, padding: "12px 24px", background: "#2A2214", borderBottom: `2px solid ${ZLATA}`, color: "#F3EBDD" }}>
-            <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-              <b style={{ fontSize: 16 }}>Skúšobný režim · {nazovVzhladu(koncept.rozlozenie)}</b>
-              <span style={{ fontSize: 13.5, color: "#D9D2C4" }}>Ľudia vidia vašu doterajšiu stránku ({nazovVzhladu(naostro)}). Toto vidíte len vy.</span>
-            </span>
-          </div>
-          <div style={{ flex: 1 }}><NastenkaFarnosti bezVidenych strankaId={strankaId} meno={meno} profil={profil} stit="Silver" atelier={{ rozlozenie: koncept.rozlozenie, usporiadanie: koncept.usporiadanie }} /></div>
-        </div>}
-      </main>
+        </div>
+      </main>}
+      {krok !== "vzory" && koncept && <AtelierMoja strankaId={strankaId} meno={meno} profil={profil} koncept={koncept} naostro={naostro} uspNaostro={usp} onZverejnit={() => setKrok("zver")} />}
+      {krok === "zver" && <AtelierZverejnit strankaId={strankaId} koncept={koncept} naostro={naostro} uspNaostro={usp} onSpat={() => setKrok(koncept ? "moja" : "vzory")} onHotovo={onZavri} />}
     </div>, document.body);
 }
 
