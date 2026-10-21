@@ -8,6 +8,7 @@ import { supabase } from "./supabase";
 import { idZbierkyDB } from "./darZbierky";
 import { UKAZKOVE_STRANKY } from "./mojeStranky";
 import { TESTOVACIA } from "./testovacia";
+import { jeVzor } from "@/lib/vzorStranky";
 
 export interface MojaFarnost { id: string; meno: string }
 let ver = 0;
@@ -17,7 +18,7 @@ const useZmena = () => useSyncExternalStore((f) => { posl.add(f); return () => {
 const farar = new Map<string, boolean>();
 const nacitavaFarar = new Set<string>();
 async function nacitajFarara(stranka: string) {
-  if (!supabase || nacitavaFarar.has(stranka)) return;
+  if (!supabase || jeVzor(stranka) || nacitavaFarar.has(stranka)) return;
   nacitavaFarar.add(stranka);
   const { data, error } = await supabase.rpc("som_farar", { p_stranka: stranka });
   if (!error) { farar.set(stranka, data === true); zmena(); }
@@ -47,7 +48,7 @@ const prispela = new Map<string, Prispevok[]>(), prispievatelia = new Map<string
 
 
 async function nacitajPrispela(stranka: string) {
-  if (!supabase) return;
+  if (!supabase || jeVzor(stranka)) return;
   const { data, error } = await supabase.rpc("stranka_prispela", { p_stranka: stranka, p_limit: 50 });
   if (error || !Array.isArray(data)) return;
   prispela.set(stranka, (data as { zbierka: string; nazov: string; kto: string; suma: number; cas: string; vs?: number; rodina: boolean }[])

@@ -15,6 +15,7 @@ import { zapisDarZbierky, idZbierkyDB, naviazObjekt, nacitajDaryZbierky, zdrojDa
 import { toast } from "@/components/toast";
 import { naZmenuTestStavu } from "./testStav";
 import { sumaEur } from "@/lib/suma";
+import { jeVzor, vzorData } from "@/lib/vzorStranky";
 
 // ---- CONFIG (spec §6) — všetky čísla ŠTARTOVACIE, žijú tu, nie v kóde ----
 export const DARCOVIA_CFG = {
@@ -82,6 +83,7 @@ export function ulozMestoVerejne(on: boolean) {
 
 // ---- store (mock, in-memory) — zoznam + počítadlo rastú z JEDNÉHO miesta ----
 const sklad = new Map<string, DarRiadok[]>();
+const BEZ_DAROV: DarRiadok[] = [];
 const posluchaci = new Set<() => void>();
 let verzia = 0;
 const emit = () => { verzia++; posluchaci.forEach((f) => f()); };
@@ -161,6 +163,7 @@ function sOmsami(refId: string, r: DarRiadok[]): DarRiadok[] {
 /** OPRAVY 294: znovu načítať dary zbierky z ledgera (po zavretí omše) */
 export function obnovDaryZbierky(refId: string) { const id = ledgerId(refId); if (id) obnovZLedgera(refId, id); }
 function riadkyPre(refId: string): DarRiadok[] {
+  if (jeVzor(refId)) return vzorData<Record<string, DarRiadok[]>>("vzor:dary")?.[refId] ?? BEZ_DAROV; // OPRAVY 467: ukážkové dary vzoru, nikdy do skladu
   const id = ledgerId(refId);
   if (id) {
     if (!ledgerBezi.has(refId) && Date.now() - (zLedgera.get(refId) ?? 0) > CERSTVE_DARY_MS) { zLedgera.set(refId, Date.now()); queueMicrotask(() => obnovZLedgera(refId, id)); }

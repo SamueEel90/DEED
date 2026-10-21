@@ -9,6 +9,7 @@
 // ============================================================
 import { supabase } from "@/lib/supabase";
 import { zmensiPreZariadenie, uvolniKoncepty } from "@/lib/uploadFoto";
+import { jeVzor, vzorOblast } from "@/lib/vzorStranky";
 
 function nacitaj<T>(kluc: string, fallback: T): T {
   try { const s = localStorage.getItem(kluc); return s ? (JSON.parse(s) as T) : fallback; } catch { return fallback; }
@@ -25,9 +26,11 @@ const kluc = (oblast: string, id: string) => `deed.naboz.${oblast}.${id}`;
 const LOKALNE = new Set(["prispevky", "dbsync"]);
 
 export function nacitajStav<T>(oblast: string, id: string, fallback: T): T {
+  if (jeVzor(id)) { const v = vzorOblast(id, oblast); return v === undefined ? fallback : (v as T); } // OPRAVY 467: vzor len z pamäte
   return nacitaj<T>(kluc(oblast, id), fallback);
 }
 export function ulozStav(oblast: string, id: string, val: unknown): boolean {
+  if (jeVzor(id)) return true;
   const ok = uloz(kluc(oblast, id), val);
   if (supabase && !LOKALNE.has(oblast)) {
     void supabase.from("naboz_stav")
@@ -37,9 +40,10 @@ export function ulozStav(oblast: string, id: string, val: unknown): boolean {
   return ok;
 }
 /** OPRAVY 372: len do zariadenia — na server to zapíše serverová funkcia (veriaci nemá právo zapisovať stav farnosti) */
-export function ulozStavLokalne(oblast: string, id: string, val: unknown): boolean { return uloz(kluc(oblast, id), val); }
+export function ulozStavLokalne(oblast: string, id: string, val: unknown): boolean { return jeVzor(id) || uloz(kluc(oblast, id), val); }
 /** OPRAVY 273: zápis, na ktorý sa čaká — s DB rozhoduje server, bez DB zariadenie. Vráti chybu ako text alebo null. */
 export async function ulozStavIsto(oblast: string, id: string, val0: unknown): Promise<string | null> {
+  if (jeVzor(id)) return null;
   // OPRAVY 335: bez servera fotky zmenšené ako pre Storage; keď miesto nestačí, uvoľnia sa staré rozpísané koncepty
   const val = supabase ? val0 : await zmensiPreZariadenie(val0);
   const ok = uloz(kluc(oblast, id), val) || (!supabase && uvolniKoncepty() > 0 && uloz(kluc(oblast, id), val));
@@ -52,7 +56,7 @@ export async function ulozStavIsto(oblast: string, id: string, val0: unknown): P
 
 /** Stiahne KV stav farnosti z DB do LS. Vráti true, ak niečo prišlo. */
 export async function synchronizujStav(id: string): Promise<boolean> {
-  if (!supabase) return false;
+  if (!supabase || jeVzor(id)) return false;
   const { data, error } = await supabase.from("naboz_stav").select("oblast,data").eq("id", id);
   if (error || !data?.length) return false;
   for (const r of data) if (!LOKALNE.has(r.oblast)) uloz(kluc(r.oblast, id), r.data);
@@ -61,7 +65,7 @@ export async function synchronizujStav(id: string): Promise<boolean> {
 
 /** OPRAVY 178: stiahne jednu oblasť z DB do LS (čerstvý stav pred zápisom). Vráti true, ak prišla. */
 export async function obnovOblast(oblast: string, id: string): Promise<boolean> {
-  if (!supabase || LOKALNE.has(oblast)) return false;
+  if (!supabase || LOKALNE.has(oblast) || jeVzor(id)) return false;
   const { data, error } = await supabase.from("naboz_stav").select("data").eq("oblast", oblast).eq("id", id).maybeSingle();
   if (error || !data) return false;
   uloz(kluc(oblast, id), data.data);

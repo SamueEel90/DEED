@@ -3,7 +3,7 @@
 // Celá obrazovka bez menu Správy: ‹ Odísť z ateliéru · Ateliér stránky · kroky 1 Vzory · 2 Moja stránka · 3 Zverejniť.
 // Úzka obrazovka (rozhoduje šírka, nie zariadenie): ateliér sa neotvára, povie, ako sa dostať na počítač (aj QR prihlásenie 466).
 // ============================================================
-import { lazy, Suspense, useEffect, useState, type CSSProperties } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { ROZLOZENIA, useRozlozenie, type Rozlozenie } from "@/lib/rozlozenieFarnosti";
 import { useUsporiadanie } from "@/lib/usporiadanieStranky";
@@ -12,6 +12,8 @@ import { NastenkaFarnosti } from "@/features/verejny-profil/NastenkaFarnosti";
 import type { ProfilStranky } from "@/lib/profilStranky";
 import { toast } from "@/components/toast";
 import { usePrihlaseniePc } from "@/lib/qrPrihlasenie";
+import { LayoutContext } from "@/components/context";
+import { VZOR_ID, VZOR_MENO, VZOR_PROFIL, VZOR_USPORIADANIE } from "./vzorFarnosti";
 
 const QrSkener = lazy(() => import("@/components/qrskener").then((m) => ({ default: m.QrSkener })));
 /** pod touto šírkou je obrazovka na ateliér primalá */
@@ -23,7 +25,6 @@ export function useUzkaObrazovka(): boolean {
 }
 
 const ZLATA = "#C9A24A";
-const VZOR_BG: Record<Rozlozenie, string> = Object.fromEntries(ROZLOZENIA.map((r) => [r.k, r.bg])) as Record<Rozlozenie, string>;
 type Krok = "vzory" | "moja" | "zver";
 
 export function Atelier({ strankaId, meno, profil, onZavri, onPoradie }: { strankaId: string; meno: string; profil: ProfilStranky | null; onZavri: () => void; /** mobil: Poradie blokov (platí hneď) */ onPoradie: () => void }) {
@@ -83,23 +84,24 @@ export function Atelier({ strankaId, meno, profil, onZavri, onPoradie }: { stran
     </div>, document.body);
 }
 
-/** zmenšená ukážka vzhľadu (OPRAVY 467: kým nie sú prototypy farskej stránky s „Farnosť vzorová“, náhľad tvaru stránky) */
+/** OPRAVY 467: zmenšená skutočná stránka vo vzhľade — ukážkové dáta „Farnosť vzorová“ (vzorFarnosti.ts), nikdy skutočná farnosť.
+ *  Vykreslí sa v šírke počítača a zmenší sa na kartu; ťuk ide na celú kartu (stránka vo vnútri je neaktívna). */
+const SIRKA_VZORU = 1280;
+/** vzor je vždy v podobe pre počítač, aj keď je okno užšie */
+const LAYOUT_PC = { wide: true, desktop: true };
 function VzorNahlad({ k }: { k: Rozlozenie }) {
-  const blok = (w: string, h = 10, o = 0.85) => <span style={{ display: "block", width: w, height: h, borderRadius: 4, background: `rgba(255,255,255,${o})` }} />;
-  const karta = (h: number) => <span style={{ display: "block", height: h, borderRadius: 8, background: "rgba(255,255,255,.18)", border: "1px solid rgba(255,255,255,.25)" }} />;
-  const bok = k === "kronika" || k === "konzervativny";
+  const ram = useRef<HTMLSpanElement>(null);
+  const [m, setM] = useState(0);
+  useEffect(() => {
+    const el = ram.current; if (!el) return;
+    const f = () => setM(el.clientWidth / SIRKA_VZORU); f();
+    const ro = new ResizeObserver(f); ro.observe(el); return () => ro.disconnect();
+  }, []);
   return (
-    <span aria-hidden="true" style={{ display: "flex", flexDirection: "column", gap: 10, aspectRatio: "16 / 10", borderRadius: 14, background: VZOR_BG[k], padding: 16, boxSizing: "border-box", overflow: "hidden" }}>
-      <span style={{ display: "flex", flexDirection: "column", gap: 6 }}>{blok("44%", 14, 0.95)}{blok("26%", 8, 0.6)}</span>
-      <span style={{ flex: 1, display: "grid", gridTemplateColumns: bok ? "30% 1fr" : "1fr", gap: 10, minHeight: 0 }}>
-        {bok && <span style={{ display: "flex", flexDirection: "column", gap: 8 }}>{karta(40)}{karta(54)}</span>}
-        <span style={{ display: "grid", gridTemplateColumns: k === "moderne" ? "repeat(3,1fr)" : "1fr", gap: 8, alignContent: "start" }}>
-          {k === "konzervativny" ? <>{blok("90%", 10, 0.7)}{blok("80%", 10, 0.7)}{blok("85%", 10, 0.7)}{blok("60%", 10, 0.7)}</>
-            : k === "moderne" ? <>{karta(70)}{karta(70)}{karta(70)}{karta(40)}{karta(40)}{karta(40)}</>
-            : <>{karta(30)}{karta(30)}{karta(30)}</>}
-        </span>
-      </span>
-      <span style={{ fontSize: 12, fontWeight: 800, color: "rgba(255,255,255,.9)" }}>Farnosť vzorová</span>
+    <span ref={ram} aria-hidden="true" style={{ display: "block", position: "relative", aspectRatio: "16 / 10", borderRadius: 14, overflow: "hidden", border: "1px solid var(--cardBd)", background: "var(--bg)" }}>
+      {m > 0 && <span ref={(el) => el?.setAttribute("inert", "")} style={{ display: "block", position: "absolute", top: 0, left: 0, width: SIRKA_VZORU, transform: `scale(${m})`, transformOrigin: "0 0", pointerEvents: "none", userSelect: "none" }}>
+        <LayoutContext.Provider value={LAYOUT_PC}><NastenkaFarnosti bezVidenych nahlad strankaId={VZOR_ID} meno={VZOR_MENO} profil={VZOR_PROFIL} stit="Silver" atelier={{ rozlozenie: k, usporiadanie: VZOR_USPORIADANIE }} /></LayoutContext.Provider>
+      </span>}
     </span>);
 }
 

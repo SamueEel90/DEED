@@ -8,6 +8,7 @@ import { useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
 import { bezDataUrl } from "./uploadFoto";
 import { toast } from "@/components/toast";
+import { jeVzor } from "@/lib/vzorStranky";
 
 export const SPRAVA_ZBIERKY_CFG = {
   /** štandardná dĺžka zbierky (kalendárne dni) */
@@ -177,7 +178,7 @@ export async function ulozStavIsto(id: string, s: StavZbierky): Promise<string |
 const stiahnute = new Set<string>();
 const ceka = new Set<string>(); // lokálna zmena ešte neodišla → server ju neprepíše
 async function stiahni(id: string) {
-  if (!supabase || stiahnute.has(id)) return;
+  if (!supabase || jeVzor(id) || stiahnute.has(id)) return;
   stiahnute.add(id);
   const { data, error } = await supabase.from("zbierka_sprava").select("data").eq("zbierka", id).maybeSingle();
   if (error) { stiahnute.delete(id); return; } // tabuľka ešte nebeží → len lokálne

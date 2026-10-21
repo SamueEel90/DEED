@@ -16,6 +16,7 @@ import { DEED_ZA_EUR, naviazObjekt } from "./darZbierky";
 import { darcoviaPre, identitaDarcu, refIdySDarmi, sucetDarov, useZmenyDarov, nastavDoplnokHlavnej, obnovDaryZbierky, type DarRiadok } from "./darcovia";
 import { vsetkyMiesta } from "./miestaFarnosti";
 import { CAS_OK, DNI_K, dvt, iso, kostolKal, useKalendar, zIso, type KalKostol } from "./kalendarFarnosti";
+import { jeVzor } from "@/lib/vzorStranky";
 
 export interface ZvOkno {
   /** refId darov okna */ id: string; kostol: string;
@@ -108,7 +109,7 @@ const zDB = (x: OknoDB): ZvOkno => ({ id: x.ref, kostol: x.kostol, den: x.den, c
 const nacitava = new Set<string>();
 function obnovServer(stranka: string, kostol: string) {
   const kl = `${stranka}|${kostol}`;
-  if (!supabase || nacitava.has(kl)) return;
+  if (!supabase || jeVzor(stranka) || nacitava.has(kl)) return;
   nacitava.add(kl);
   void Promise.all([
     supabase.rpc("zvoncek_okno", { p_stranka: stranka, p_kostol: kostol, p_cas: new Date(teraz(stranka)).toISOString() }),
