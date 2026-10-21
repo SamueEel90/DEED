@@ -12,6 +12,7 @@ import { cielSpravyPre } from "@/lib/mojeStranky";
 import { UsporiadatStranku } from "./UsporiadatStranku";
 import { FarbaLinii } from "./FarbaLinii";
 import { VzhladStranky } from "./VzhladStranky";
+import { Atelier } from "./Atelier";
 import { KostolyMiesta } from "./KostolyMiesta";
 import { useMiesta } from "@/lib/miestaFarnosti";
 import { ZdrojFotiekKontext, zdrojFarnosti } from "@/components/VyberZGalerie";
@@ -183,6 +184,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const naDen = (den?: string) => { setOmseStart((o) => ({ den, n: o.n + 1 })); go("omse"); };
   // OPRAVY 186: obrazovka Nastavení (ako pri charite) — n:<id>
   const [nId, setNId] = useState("");
+  const [atelier, setAtelier] = useState(false); // OPRAVY 467: Ateliér stránky (celá obrazovka)
   useEffect(() => { void nacitajNastavenia(strankaId); }, [strankaId]);
   const go = (k: Sub) => { if (pomocnik && (k === "nast" || k === "penazenka" || k === "n")) return; setDet(null); setQrZ(null); setNavratQr(false); setZbStart(undefined); setSub(k); setPridat(false); setPinOtv(false); setOznamyHore(0); };
 
@@ -768,7 +770,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const nastroje = dlazdice("nastroje", "Štatistiky, poradie stránky, QR a výpis", lNas);
   // OPRAVY 344: Nastavenia = dlaždice (ťuk = detail, hore ‹ Späť na Nastavenia)
   const nn = (id: string) => () => { setNId(id); go("n"); };
-  const vzhladEl = <FarbaLinii strankaId={strankaId} pred={<VzhladStranky strankaId={strankaId} sektor="farnost" kto="veriaci" zadarmo={false} onPozriet={verejny} />} />;
+  const vzhladEl = <FarbaLinii strankaId={strankaId} pred={<VzhladStranky strankaId={strankaId} sektor="farnost" kto="veriaci" zadarmo={false} onPozriet={verejny} onAtelier={() => setAtelier(true)} />} />;
   const lNast: Dl[] = [
     { k: "penazenka", t: "Peňaženka", s: "zostatok, výplaty na účet farnosti · súkromné", d: IC.penazenka, tap: () => go("penazenka") },
     { k: "predplatne", t: "Predplatné a platba", s: "2 mesiace zadarmo, potom mesačne alebo ročne", d: IC.zbierky, tap: nn("predplatne") },
@@ -865,6 +867,8 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     const aktivna = sub === "hlavna" || sub === "zbierka" || sub === "nova" || sub === "zvoncek" ? "zbierky" : sub === "penazenka" || sub === "n" ? "nast" : sub;
     return (
       <div className="sprava-charity" data-stit="silver" style={{ minHeight: "100dvh", boxSizing: "border-box", padding: "20px 32px", display: "flex", gap: 24, alignItems: "flex-start" }}>
+        {atelier && <Atelier strankaId={strankaId} meno={cistyNazov(prof.ulozeny?.meno ?? nazov) || "Vaša farnosť"} profil={prof.ulozeny} onZavri={() => setAtelier(false)}
+          onPoradie={() => { setAtelier(false); go("nastroje"); otvorDet("usporiadat"); }} />}
         <aside style={{ width: 244, flex: "none", display: "flex", flexDirection: "column", gap: 12, paddingRight: 16, borderRight: "2px solid", borderImage: "var(--metal) 1", position: "sticky", top: 20, alignSelf: "flex-start", minHeight: "calc(100dvh - 40px)", boxSizing: "border-box" }}>
           {kartaProfilu(false)}
           <button type="button" onClick={verejny} style={{ flex: "none", height: 56, padding: "0 14px", borderRadius: 18, background: "var(--tBg)", border: "1px solid var(--tBd)", cursor: "pointer", display: "flex", alignItems: "center", gap: 11, textAlign: "left", fontFamily: "inherit", boxShadow: "none" }}>
@@ -905,6 +909,8 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const mTitul = detTitul ?? (sub === "n" ? NAST_T[nId] ?? titul : titul);
   return (
     <div className="sprava-charity" data-stit="silver" style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
+      {atelier && <Atelier strankaId={strankaId} meno={cistyNazov(prof.ulozeny?.meno ?? nazov) || "Vaša farnosť"} profil={prof.ulozeny} onZavri={() => setAtelier(false)}
+        onPoradie={() => { setAtelier(false); go("nastroje"); otvorDet("usporiadat"); }} />}
       <header style={{ position: "sticky", top: 0, zIndex: 5, flex: "none", display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", background: "var(--metal) left bottom/100% var(--mH,3px) no-repeat, var(--bg)" }}>
         {spatTl(nazpat)}
         <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>

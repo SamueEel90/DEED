@@ -11,7 +11,7 @@ import { useVecneZbierky, vecneZbierky, fotoVecnej, doKedyText, cakajZapisPoPrih
 import { VecnaDetail, VecnaDarca, STITOK_VECNEJ } from "./VecnaZbierkaStranka";
 import { useZamokVrstvy } from "@/lib/zamokVrstvy";
 import { useFarbaLinie, useVolbaLinie } from "@/lib/liniaStranky";
-import { useRozlozenie } from "@/lib/rozlozenieFarnosti";
+import { useRozlozenie, type Rozlozenie } from "@/lib/rozlozenieFarnosti";
 import { SERIF_KRONIKY, KNadpis, KDatum, ZbierkaStvorec, PomozKarta, SvateOmse, ArchivRokov, KronikaHladat, KronikaLista, useSerifKroniky, type RokArchivu, type ZapisArchivu, type NajdenePolozka } from "./KronikaFarnosti";
 import { useStretnutia, skoncilo } from "@/lib/detiMladez";
 import { useMiesta, nazovDruhu, type Miesto } from "@/lib/miestaFarnosti";
@@ -23,7 +23,7 @@ import { KartaMiesta, najblizsiaOmsa, NaseKostolyBlok, PodstrankaMiesta, otvorKo
 import { uradneUdaje } from "@/lib/uradneUdaje";
 import { OknoUpozorneni, useCoChodi, type CielUpozorneni } from "./OknoUpozorneni";
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
-import { useUsporiadanie, nadpisBloku as nadpisUsp, viditelne, radyVedla, type BlokStranky } from "@/lib/usporiadanieStranky";
+import { useUsporiadanie, nadpisBloku as nadpisUsp, viditelne, radyVedla, type BlokStranky, type Usporiadanie } from "@/lib/usporiadanieStranky";
 import { useZvoncek, nazovZvoncek, ZVONCEK_TEXT } from "@/lib/zvoncekZbierka";
 import { createPortal } from "react-dom";
 import type { ProfilStranky } from "@/lib/profilStranky";
@@ -151,6 +151,8 @@ export interface NastenkaProps {
   bezVidenych?: boolean;
   /** štít stránky (riadok „kto za zbierku zodpovedá“ v module) */
   stit: StitLevel;
+  /** OPRAVY 468: Ateliér — skúšobný vzhľad a rozloženie namiesto zverejnených (obsah je ten istý) */
+  atelier?: { rozlozenie: Rozlozenie; usporiadanie: Usporiadanie };
 }
 
 /** OPRAVY 205: položka Spomíname — parte (farár, veriaci) a k nemu zbierka rodiny */
@@ -222,7 +224,7 @@ function ObsahTvaru({ t, velky }: { t: Tes; velky?: boolean }) {
 /** kľúč na zväčšenie: obrázok alebo šablóna farára */
 type Velke = { src: string } | { it: VieraFeedItem };
 
-export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit: stitStranky, doOznamu, bezVidenych }: NastenkaProps) {
+export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit: stitStranky, doOznamu, bezVidenych, atelier }: NastenkaProps) {
   const kal = useKalendar(strankaId);
   useZmenyPrihovoru(); useZmenyCentralnej(); useZmenyZbierok(); useOdFarnikov(); useReakcieF();
   useCerstveOdFarnikov(strankaId); useCerstveReakcieF(strankaId); usePrispevkySync(strankaId);
@@ -383,7 +385,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   const SLF = useSlovaFarnosti(strankaId);
   const farbaLinie = useFarbaLinie(strankaId, SLF.cirkev); // OPRAVY 243
   // KARTA 64 · OPRAVY 244: rozloženie stránky (Nástenka · Kronika) a voľba línií (Bordová je v Kronike matná)
-  const rozlozenie = useRozlozenie(strankaId);
+  const rozlozenie0 = useRozlozenie(strankaId);
+  const rozlozenie = atelier?.rozlozenie ?? rozlozenie0;
   const volbaLinie = useVolbaLinie(strankaId, SLF.cirkev);
   const stretnutiaF = useStretnutia(strankaId);
   useSerifKroniky(rozlozenie === "kronika");
@@ -746,7 +749,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   // OPRAVY 292 (7): telefón návštevníka si pamätá, ktoré bloky mal naposledy otvorené (lokálne v zariadení)
   const { otv, prepni, otvor } = useZbaleneBloky(`deed.zbalene.${strankaId}`);
   // OPRAVY 292: Usporiadať stránku — jedno poradie, skrytie a nadpisy blokov pre všetky vzhľady (Správa → Nástroje)
-  const US = useUsporiadanie(strankaId);
+  const US0 = useUsporiadanie(strankaId);
+  const US = atelier?.usporiadanie ?? US0;
   const nzB = (id: BlokStranky, t: string) => nadpisUsp(US, id, t);
   /** krátky názov v lište: premenovaný blok nesie nový nadpis */
   const nzL = (id: string, t: string) => (US.nazvy[id as BlokStranky] ? nadpisUsp(US, id as BlokStranky, t) : t);

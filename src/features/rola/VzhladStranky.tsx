@@ -4,16 +4,20 @@
 import { vzhladyPre, ulozVzhlad, useVzhlad, ulozKlasik, useVybranyVzhlad } from "@/lib/vzhladStranky";
 import { toast } from "@/components/toast";
 import { ROZLOZENIA, nastavRozlozenie, useRozlozenie } from "@/lib/rozlozenieFarnosti";
+import { useKonceptAtelieru, nazovVzhladu } from "@/lib/atelier";
 
 const ZAMOK = "M6 11h12v10H6zM8.5 11V8a3.5 3.5 0 0 1 7 0v3";
 
 /** OPRAVY 244: farnosť — Rozloženie stránky (Nástenka · Kronika · Moderné), ukladá sa zvlášť od vzhľadu profilu */
-function RozlozenieFarnosti({ strankaId, onPozriet }: { strankaId: string; onPozriet?: () => void }) {
+function RozlozenieFarnosti({ strankaId, onPozriet, onAtelier }: { strankaId: string; onPozriet?: () => void; onAtelier?: () => void }) {
   const vyb = useRozlozenie(strankaId);
-  return (
-    <section aria-label="Rozloženie stránky" style={{ flex: "none", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
-      <span style={{ fontSize: 15, fontWeight: 700 }}>Rozloženie stránky</span>
-      <span style={{ fontSize: 12.5, color: "var(--ink3)", marginTop: -6 }}>Ako vidia veriaci váš verejný profil. Zmena sa uloží hneď.</span>
+  const koncept = useKonceptAtelieru();
+  return (<>
+    <section aria-label="Vzhľad stránky" style={{ flex: "none", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
+      {/* OPRAVY 467 (1): naostro — zmena hneď pre všetkých */}
+      <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><span style={{ fontSize: 15, fontWeight: 700 }}>Vzhľad stránky</span>
+        <span style={{ padding: "3px 8px", borderRadius: 8, background: "var(--gSoft)", border: "1px solid var(--gBd)", color: "var(--gInk)", fontSize: 11.5, fontWeight: 800, letterSpacing: ".04em" }}>NAOSTRO</span></span>
+      <span style={{ fontSize: 12.5, color: "var(--ink3)", marginTop: -6 }}>Toto teraz vidia ľudia. Ťuk na iný vzhľad zmení stránku hneď pre všetkých.</span>
       <div role="radiogroup" aria-label="Rozloženie stránky" style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>{/* KARTA 66: štyri vzhľady = 2 × 2 */}
         {ROZLOZENIA.map((z) => {
           const on = z.k === vyb, zamk = z.zamknute && !on;
@@ -32,14 +36,24 @@ function RozlozenieFarnosti({ strankaId, onPozriet }: { strankaId: string; onPoz
         })}
       </div>
       {onPozriet && <button type="button" onClick={onPozriet} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--gInk)" }}>Pozrieť verejný profil ›</button>}
-    </section>);
+    </section>
+    {/* OPRAVY 467 (2): Ateliér stránky — skúšobný režim, nikto nevidí, kým nepodržíte Zverejniť */}
+    {onAtelier && <section aria-label="Ateliér stránky" style={{ flex: "none", borderRadius: 18, background: "#2A2214", border: "2px solid #C9A24A", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10, color: "#F3EBDD" }}>
+      <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><b style={{ fontSize: 17 }}>Ateliér stránky</b>
+        <span style={{ padding: "3px 8px", borderRadius: 8, border: "1px solid #C9A24A", color: "#E6C878", fontSize: 11.5, fontWeight: 800, letterSpacing: ".04em" }}>SKÚŠOBNÝ REŽIM</span></span>
+      <span style={{ fontSize: 14, lineHeight: 1.5, color: "#D9D2C4" }}>Tu si v pokoji vyskúšate iný vzhľad aj poradie blokov na svojej stránke. Nikto to nevidí, kým nepodržíte Zverejniť.</span>
+      {koncept && <span style={{ fontSize: 13.5, fontWeight: 700, color: "#E6C878" }}>Rozpracované: {nazovVzhladu(koncept.rozlozenie)} · uložené, nikto to nevidí</span>}
+      <button type="button" onClick={onAtelier} style={{ alignSelf: "flex-start", minHeight: 52, padding: "0 22px", borderRadius: 14, border: "none", background: "#C9A24A", color: "#2A2214", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" }}>{koncept ? "Pokračovať v rozpracovanom ›" : "Otvoriť ateliér ›"}</button>
+    </section>}
+  </>);
 }
 
-export function VzhladStranky({ strankaId, zadarmo, kto = "darcovia", onPozriet, sektor }: {
+export function VzhladStranky({ strankaId, zadarmo, kto = "darcovia", onPozriet, sektor, onAtelier }: {
+  /** OPRAVY 467: farnosť — karta Ateliér stránky */ onAtelier?: () => void;
   strankaId: string; zadarmo: boolean; /** kto si profil pozerá (veriaci, darcovia…) */ kto?: string; onPozriet?: () => void;
   /** KARTA 56D §4: farnosť — názvy Kronika · Nástenka · Moderné, profil sa pozrie tlačidlom Náhľad */ sektor?: string;
 }) {
-  if (sektor === "farnost") return <RozlozenieFarnosti strankaId={strankaId} onPozriet={onPozriet} />;
+  if (sektor === "farnost") return <RozlozenieFarnosti strankaId={strankaId} onPozriet={onPozriet} onAtelier={onAtelier} />;
   return <VzhladProfilu strankaId={strankaId} zadarmo={zadarmo} kto={kto} onPozriet={onPozriet} sektor={sektor} />;
 }
 function VzhladProfilu({ strankaId, zadarmo, kto, onPozriet, sektor }: { strankaId: string; zadarmo: boolean; kto: string; onPozriet?: () => void; sektor?: string }) {
