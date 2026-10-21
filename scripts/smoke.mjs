@@ -71,34 +71,49 @@ page.on("console", (m) => {
   if (m.type() === "error") chyby.push(`console: ${m.text()}`);
 });
 
-/** Prejde na URL a vráti počet chýb, ktoré pri tom pribudli. */
-async function otvor(cesta) {
+const text = async () => (await page.locator("body").innerText()).replace(/\s+/g, " ").trim();
+/** karta feedu alebo poctivý prázdny stav (EmptyState má data-prazdny-stav) */
+const KARTA = ".good-card";
+const PRAZDNY = "[data-prazdny-stav]";
+const pocet = async (sel) => page.locator(sel).count();
+
+/** Prejde na URL a vráti počet chýb, ktoré pri tom pribudli.
+ *  Martin 21. 10.: nečaká pevný čas — čaká, kým sa modul naozaj ukáže (prvé otvorenie so živou DB trvá dlhšie,
+ *  kým beží úvodná obrazovka D+), najviac 20 s. Moduly s feedom čakajú na kartu ALEBO prázdny stav. */
+async function otvor(cesta, feed = false) {
   const pred = chyby.length;
   await page.goto(`${zaklad}${cesta}`, { waitUntil: "networkidle", timeout: 30_000 });
-  await page.waitForTimeout(900); // dobehnutie lazy chunku + prvého renderu
+  const koniec = Date.now() + 20_000;
+  while (Date.now() < koniec) {
+    if (feed ? (await pocet(KARTA)) + (await pocet(PRAZDNY)) > 0 : (await text()).length > 60) break;
+    await page.waitForTimeout(250);
+  }
+  await page.waitForTimeout(600); // dobehnutie prvého renderu
   return chyby.length - pred;
 }
-
-const text = async () => (await page.locator("body").innerText()).replace(/\s+/g, " ").trim();
 
 try {
   console.log("\nModuly:");
   for (const modul of MODULY) {
-    const nove = await otvor(`/m/${modul}`);
+    const feed = S_DETAILOM.includes(modul);
+    const nove = await otvor(`/m/${modul}`, feed);
     const obsah = await text();
-    // Prázdna obrazovka = biely screen po chybe v lazy chunku.
-    zapis(obsah.length > 60 && nove === 0, `/m/${modul} sa vykreslil (${obsah.length} znakov, ${nove} chýb)`);
+    // Prázdna obrazovka = biely screen po chybe v lazy chunku. Feed: karta ALEBO prázdny stav, nie menej.
+    const karty = await pocet(KARTA), prazdny = await pocet(PRAZDNY);
+    const ok = obsah.length > 60 && nove === 0 && (!feed || karty + prazdny > 0);
+    zapis(ok, `/m/${modul} sa vykreslil (${obsah.length} znakov, ${nove} chýb${feed ? `, ${karty ? `${karty} kariet` : prazdny ? "prázdny stav" : "ani karta, ani prázdny stav"}` : ""})`);
   }
 
   console.log("\nDetail príspevku (platobný modul):");
   for (const modul of S_DETAILOM) {
-    await otvor(`/m/${modul}`);
+    await otvor(`/m/${modul}`, true);
     const pred = chyby.length;
 
-    // Prvá fotka vo feede je karta príspevku (nultá býva avatar v hlavičke).
-    const karta = page.locator("img").nth(1);
+    const karta = page.locator(KARTA).first();
     if ((await karta.count()) === 0) {
-      zapis(false, `/m/${modul}: vo feede nie je žiadna karta na otvorenie`);
+      // prázdny feed (nová DB, nové mesto): detail nie je čo otvoriť — v poriadku, len keď je poctivý prázdny stav
+      const prazdny = (await pocet(PRAZDNY)) > 0;
+      zapis(prazdny, prazdny ? `/m/${modul}: feed je prázdny, ukazuje prázdny stav (detail nie je čo otvoriť)` : `/m/${modul}: vo feede nie je karta ani prázdny stav`);
       continue;
     }
     await karta.click({ timeout: 5_000 }).catch(() => {});

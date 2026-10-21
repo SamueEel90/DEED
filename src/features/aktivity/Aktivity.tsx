@@ -297,16 +297,13 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
         } />
 
       {/* live ticker — odráža poslednú reálnu akciu */}
-      <Ticker>
-        {tick
-          ? <>{tick.who} <b style={{ color: C.greenL }}>{tick.what}</b>{tick.to ? ` ${tick.to}` : ""}</>
-          : <>Cyklo TN <b style={{ color: C.greenL }}>práve dostal 100 DeeD</b> → Marek</>}
-      </Ticker>
+      {/* Martin 21. 10.: len skutočná posledná akcia, žiadna ukážková veta */}
+      {tick && <Ticker>{tick.who} <b style={{ color: C.greenL }}>{tick.what}</b>{tick.to ? ` ${tick.to}` : ""}</Ticker>}
 
       {/* filter hore na stránke + štatistický riadok — na desktope na jednom riadku */}
       <FiltreStat filtre={filterBar}
         stat={
-          <StatRiadok inline={desktop} pocet={feed.length} jednotka="aktivít" mesiac="9 480"
+          <StatRiadok inline={desktop} pocet={feed.length} jednotka="aktivít"
             okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} />
         }
       />

@@ -6,7 +6,7 @@ import { NahlasitSheet } from "@/components/nahlasit";
 import { useState, useEffect, useRef, memo } from "react";
 import { SIRKA, C, inp, btn, GRAD, SPACE, RADIUS } from "@/theme";
 import { HostPruh } from "./HostPruh";
-import { ModulHlavicka, Hlavicka, AvatarUroven, PlatobnyModul, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, Oslava, useScrollPamat, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackChip, ProgresBox, SwipeBack, obalSiroky, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, SplitQrSheet, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, FormatovanyText, RozbalitelnyText, ZoznamDarcov } from "@/shared";
+import { ModulHlavicka, Hlavicka, AvatarUroven, PlatobnyModul, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, Oslava, useScrollPamat, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, pocetTentoMesiac, MoniBar, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackChip, ProgresBox, SwipeBack, obalSiroky, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, SplitQrSheet, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, FormatovanyText, RozbalitelnyText, ZoznamDarcov } from "@/shared";
 import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { pripravFeed, FEED_CFG, type FeedUser } from "@/lib/feed";
 import { tint, tagChip, jeHrdina, HRDINA_COL, rovnakeOkremFunkcii } from "@/lib/ui";
@@ -244,7 +244,7 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
 
   // štatistický riadok — počet vo zvolenom okruhu + klikateľný výber okruhu
   const statRiadok = (
-    <StatRiadok pocet={feed.length} jednotka="skutkov" mesiac="9 480" miesto={nastavenia.odPolohy ? `${lokalita.mesto} · podľa polohy` : ja.mesto}
+    <StatRiadok pocet={feed.length} jednotka="skutkov" mesiac={pocetTentoMesiac(feed, !maDalsie)} miesto={nastavenia.odPolohy ? `${lokalita.mesto} · podľa polohy` : ja.mesto}
       okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} onIskry={otvorIskry} />
   );
 
@@ -259,7 +259,12 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
   ) : isLoading ? (
     <FeedSkeleton count={4} />
   ) : feed.length === 0 && !vyzvaKarty.length ? (
-    <EmptyState emoji="🤝" title="Vo zvolenom okruhu zatiaľ nie sú skutky" text="Skús väčší okruh alebo sa vráť neskôr." />
+    // Martin 21. 10.: poctivý prázdny stav (nový user v novom meste) — povie prečo a čo môže urobiť
+    <EmptyState emoji="🤝" title="Vo zvolenom okruhu zatiaľ nie sú skutky" text="Buďte prvý, kto tu pridá dobrý skutok, alebo si zväčšite okruh."
+      action={<div style={{ display: "flex", gap: SPACE.xs, flexWrap: "wrap", justifyContent: "center" }}>
+        <button type="button" onClick={onAdd} style={{ minHeight: 48, padding: "0 20px", borderRadius: 14, border: "none", background: "var(--a-green, #4B7A35)", color: "#fff", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>Pridať skutok</button>
+        {radius !== "krajina" && <button type="button" onClick={() => setVyberOkruh(true)} style={{ minHeight: 48, padding: "0 20px", borderRadius: 14, border: `1.5px solid ${C.line}`, background: "transparent", color: C.text, fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>Väčší okruh</button>}
+      </div>} />
   ) : desktop ? (
     <FeedGrid cols={3} cards={[...vyzvaKarty, ...feed.map(karta)]} />
   ) : (

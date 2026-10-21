@@ -263,7 +263,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard }: Feed
           </div>
         }
         stat={
-          <StatRiadok inline={desktop} pocet={feed.length} jednotka="zbierok" mesiac="—"
+          <StatRiadok inline={desktop} pocet={feed.length} jednotka="zbierok"
             okruh={(FEED_CFG.radiusy as any)[radius].krat} onOkruh={() => setVyberOkruh(true)} />
         }
       />

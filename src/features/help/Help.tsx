@@ -1,4 +1,5 @@
 import { PracaKarta } from "@/components/PracaKarta";
+import { supabase } from "@/lib/supabase";
 import { Emo } from "@/components/icons";
 import { useState, useEffect, memo, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -205,7 +206,8 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd, onBoard, radius, setRadi
       } />
 
       {/* živý ticker */}
-      <Ticker key={tick}><b style={{ color: C.text }}>{dar.kto}</b> práve poslal <b style={{ color: C.greenL }}>{dar.co}</b> → {dar.komu}</Ticker>
+      {/* Martin 21. 10.: ukážkové „práve poslal“ len bez databázy (vývoj), na webe nie */}
+      {!supabase && <Ticker key={tick}><b style={{ color: C.text }}>{dar.kto}</b> práve poslal <b style={{ color: C.greenL }}>{dar.co}</b> → {dar.komu}</Ticker>}
 
       {/* filter typu pomoci + štatistický riadok — na desktope na jednom riadku */}
       <FiltreStat
@@ -217,7 +219,7 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd, onBoard, radius, setRadi
           </div>
         }
         stat={
-          <StatRiadok inline={desktop} pocet={feed.length} jednotka={view === "ponuka" ? "ponúk" : view === "ziadost" ? "žiadostí" : "príspevkov"} mesiac="8 421"
+          <StatRiadok inline={desktop} pocet={feed.length} jednotka={view === "ponuka" ? "ponúk" : view === "ziadost" ? "žiadostí" : "príspevkov"}
             okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} />
         }
       />
