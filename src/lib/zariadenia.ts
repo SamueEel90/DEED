@@ -66,12 +66,21 @@ export function nastavNoveZariadenie(nove: boolean) {
   zmena();
 }
 
-function totoZariadenie(): Zariadenie {
+/** OPRAVY 466: názov tohto zariadenia („Windows · Chrome“) — aj pre QR prihlásenie počítača */
+export function nazovZariadenia(): { nazov: string; typ: Zariadenie["typ"] } {
   const ua = navigator.userAgent;
   const typ: Zariadenie["typ"] = /iPhone|Android.*Mobile|Mobile/.test(ua) ? "telefon" : "pocitac";
-  const system = /iPhone/.test(ua) ? "iPhone" : /iPad/.test(ua) ? "iPad" : /Android/.test(ua) ? "Android" : /Mac/.test(ua) ? "Mac" : /Windows/.test(ua) ? "Windows" : "Počítač";
+  const system = /iPhone/.test(ua) ? "iPhone" : /iPad/.test(ua) ? "iPad" : /Android/.test(ua) ? "Android" : /Mac/.test(ua) ? "Mac" : /Windows/.test(ua) ? "Windows" : /Linux/.test(ua) ? "Linux" : "Počítač";
   const prehliadac = /Edg\//.test(ua) ? "Edge" : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : /Firefox\//.test(ua) ? "Firefox" : "";
-  return { id: "toto", nazov: typ === "pocitac" && prehliadac ? `${system} · ${prehliadac}` : system, typ, mesto: "Trenčín", posledna: "teraz aktívny", toto: true, nove: hodinNovehoZariadenia() > 0 };
+  return { nazov: typ === "pocitac" && prehliadac ? `${system} · ${prehliadac}` : system, typ };
+}
+/** OPRAVY 466: mesto tohto zariadenia (podľa IP pri QR prihlásení); nevieme ho = prázdne, nič vymyslené */
+const KLUC_MESTO = "deed.zariadenie.mesto";
+export function ulozMestoZariadenia(m: string | null) { try { if (m) localStorage.setItem(KLUC_MESTO, m); } catch { /* LS */ } }
+const mestoZariadenia = () => { try { return localStorage.getItem(KLUC_MESTO) ?? ""; } catch { return ""; } };
+function totoZariadenie(): Zariadenie {
+  const { nazov, typ } = nazovZariadenia();
+  return { id: "toto", nazov, typ, mesto: mestoZariadenia(), posledna: "teraz aktívny", toto: true, nove: hodinNovehoZariadenia() > 0 };
 }
 const DEMO: Zariadenie[] = [
   { id: "d2", nazov: "MacBook · Safari", typ: "pocitac", mesto: "Trenčín", posledna: "dnes 13:05", nove: true, potvrdene: "potvrdené kódom" },

@@ -12,6 +12,7 @@ import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { profilOsoby, useOtvorenaOsoba, zavriOsobu, type ProfilOsoby } from "@/lib/odkazOsoby";
 import { usePozvanka, infoPozvanky, prijmiPozvanku, zavriPozvanku, type InfoPozvanky } from "@/lib/pozvankaSkutku";
 import { usePripojenie, infoAkcie, pripojSaKAkcii, zavriPripojenie, usePoloha, type InfoAkcie } from "@/lib/akciaCharity";
+import { usePrihlaseniePc, zavriPrihlaseniePc, infoPc, potvrdPc, zrusPc, type InfoPc } from "@/lib/qrPrihlasenie";
 
 const tlO: CSSProperties = { minHeight: 52, padding: "0 20px", borderRadius: 14, border: "1.5px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "var(--ink)" };
 const tlZ: CSSProperties = { ...tlO, border: "none", background: "var(--green)", color: "#fff" };
@@ -165,4 +166,77 @@ export function PripojenieAkcieVrstva({ onPrihlasit, onRegistrovat }: { onPrihla
   const ja = usePouzivatel();
   if (!t || typeof document === "undefined") return null;
   return createPortal(<PripojenieAkcieHost prihlaseny={!ja.demo && !!ja.ucetId} onPrihlasit={onPrihlasit} onRegistrovat={onRegistrovat} />, document.body);
+}
+
+// ---------------- OPRAVY 466: mobil potvrdí prihlásenie počítača (sken QR z prihlasovacej obrazovky PC) ----------------
+const cas = (iso?: string) => { if (!iso) return ""; const d = new Date(iso); return d.toLocaleTimeString("sk-SK", { hour: "2-digit", minute: "2-digit" }); };
+export function PrihlaseniePcHost({ prihlaseny }: { prihlaseny: boolean }) {
+  const t = usePrihlaseniePc();
+  const [i, setI] = useState<InfoPc | { chyba: string } | "nacitava">("nacitava");
+  const [chyba, setChyba] = useState<string | null>(null);
+  const [hint, setHint] = useState(false);
+  const [posiela, setPosiela] = useState(false);
+  const [hotovo, setHotovo] = useState(false);
+  useEffect(() => {
+    if (!t || !prihlaseny) return;
+    let z = true; setI("nacitava"); setHotovo(false); setChyba(null);
+    void infoPc(t).then((x) => { if (z) setI(x); });
+    return () => { z = false; };
+  }, [t, prihlaseny]);
+  useEffect(() => { if (!hint) return; const x = window.setTimeout(() => setHint(false), 2500); return () => window.clearTimeout(x); }, [hint]);
+  if (!t) return null;
+  const karta: CSSProperties = { display: "flex", flexDirection: "column", gap: 12, padding: 18, borderRadius: 20, background: "var(--card)", border: "1px solid var(--cardBd)" };
+  const sedy = { fontSize: 14.5, lineHeight: 1.5, color: "var(--ink3)" } as const;
+  const zrus = () => { if (i !== "nacitava" && !("chyba" in i) && i.plati && !hotovo) void zrusPc(t); zavriPrihlaseniePc(); };
+  const potvrd = async () => {
+    if (posiela) return;
+    setPosiela(true); setChyba(null);
+    const e = await potvrdPc(t);
+    setPosiela(false);
+    if (e) setChyba(e); else setHotovo(true);
+  };
+  return (
+    <Ram onZavri={zrus} label="Prihlásiť počítač">
+      {!prihlaseny ? <section style={karta}>
+          <b style={{ fontSize: 20 }}>Najprv sa prihláste v mobile</b>
+          <span style={sedy}>Počítač prihlási len mobil, v ktorom ste prihlásený. Prihláste sa a QR na počítači naskenujte znova v Môj QR → Naskenovať.</span>
+          <button type="button" onClick={zavriPrihlaseniePc} style={tlO}>Zavrieť</button>
+        </section>
+        : i === "nacitava" ? <span style={{ fontSize: 15, color: "var(--ink3)" }}>Načítava sa…</span>
+        : "chyba" in i ? <section style={karta}>
+            <b style={{ fontSize: 19 }}>{i.chyba}</b>
+            <button type="button" onClick={zavriPrihlaseniePc} style={tlO}>Zavrieť</button>
+          </section>
+        : hotovo ? <section style={karta}>
+            <div role="status" style={{ display: "flex", flexDirection: "column", gap: 6, padding: "14px 16px", borderRadius: 16, background: "var(--gSoft)", border: "1px solid var(--gBd)" }}>
+              <b style={{ fontSize: 19, color: "var(--gInk)" }}>Počítač je prihlásený ✓</b>
+              <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Nájdete ho v Nastavenia → Prihlásené zariadenia. Tam ho môžete aj odhlásiť.</span>
+            </div>
+            <button type="button" onClick={zavriPrihlaseniePc} style={tlO}>Hotovo</button>
+          </section>
+        : !i.plati ? <section style={karta}>
+            <b style={{ fontSize: 19 }}>{i.pouzite ? "Tento QR už bol použitý" : "QR už neplatí"}</b>
+            <span style={sedy}>QR na počítači platí 2 minúty a potom sa sám vymení. Naskenujte ten, ktorý je tam teraz.</span>
+            <button type="button" onClick={zavriPrihlaseniePc} style={tlO}>Zavrieť</button>
+          </section>
+        : <section style={karta}>
+            <b style={{ fontSize: 22, lineHeight: 1.25 }}>Prihlásiť počítač?</b>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4, padding: "12px 14px", borderRadius: 14, background: "var(--btn)" }}>
+              <b style={{ fontSize: 17 }}>{[i.zariadenie, i.mesto || (i.ip ? `IP ${i.ip}` : "mesto neznáme")].filter(Boolean).join(" · ")}</b>
+              <span style={{ fontSize: 14, color: "var(--ink2)" }}>QR vytvorený o {cas(i.vytvorene)}</span>
+            </div>
+            <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Potvrďte, len ak pred týmto počítačom sedíte vy. Kto by vám poslal svoj QR, dostal by prístup k vášmu účtu.</span>
+            <PodrzTlacidlo label={posiela ? "Prihlasuje sa…" : "Podržte a prihláste"} trvanie={1500} disabled={posiela} onConfirm={() => void potvrd()} onHint={() => setHint(true)} />
+            {hint && !posiela && <span role="status" style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)" }}>Podržte tlačidlo</span>}
+            {chyba && <span role="alert" style={{ fontSize: 14.5, fontWeight: 700, color: "var(--cRed, #A34A2A)" }}>{chyba}</span>}
+            <button type="button" onClick={zrus} style={tlO}>Nie · Zrušiť</button>
+          </section>}
+    </Ram>);
+}
+/** po prihlásení: vrstva nad appkou, kým je okno otvorené */
+export function PrihlaseniePcVrstva() {
+  const t = usePrihlaseniePc();
+  const ja = usePouzivatel();
+  if (!t || typeof document === "undefined") return null;
+  return createPortal(<PrihlaseniePcHost prihlaseny={!ja.demo && !!ja.ucetId} />, document.body);
 }
