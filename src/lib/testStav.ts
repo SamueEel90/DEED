@@ -41,5 +41,14 @@ export function vyprazdni<T>(o: T, hlbka = 2): T {
 
 /** Ukážkové dáta v Správe stránky: len testovacia verzia a len pri „Profil: Vyplnený".
  *  „Prázdny" = Správa ukáže iba skutočné dáta stránky (čo sa naozaj vytvorí a uloží), bez ukážok. */
-export const ukazkyTeraz = (): boolean => TESTOVACIA && !nacitajTestStav().prazdny;
-export function useUkazky(): boolean { const ts = useTestStav(); return TESTOVACIA && !ts.prazdny; }
+// OPRAVY 445 (1): skutočná stránka (charita z registrácie, nie testovací profil) NIKDY neukáže vymyslené dáta —
+// ani ukážkové sektory, čísla, darcov či texty. Kým je otvorená jej Správa alebo verejný profil, ukážky sú vypnuté.
+let realnych = 0;
+/** Správa / profil skutočnej stránky sa otvoril — vráti funkciu na zatvorenie */
+export function otvorenaRealnaStranka(): () => void {
+  realnych++; posl.forEach((f) => f());
+  let hotovo = false;
+  return () => { if (hotovo) return; hotovo = true; realnych = Math.max(0, realnych - 1); posl.forEach((f) => f()); };
+}
+export const ukazkyTeraz = (): boolean => TESTOVACIA && !nacitajTestStav().prazdny && realnych === 0;
+export function useUkazky(): boolean { const ts = useTestStav(); return TESTOVACIA && !ts.prazdny && realnych === 0; }

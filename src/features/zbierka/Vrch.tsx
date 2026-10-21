@@ -71,10 +71,17 @@ function VideoNahlad({ src, onDlzka }: { src: string; onDlzka: (s: number) => vo
 }
 
 // ---------------- 2 · Galéria ----------------
-export function Galeria({ media, vyska: vyskaP, radius: radiusP, okraj, prekrytie, bezBodiek, nahlady }: {
+// OPRAVY 441: jedna galéria v celej appke — posun fotiek inline, nezávisí od rodičovskej triedy (.deed-platba / .vp)
+const SNAP: CSSProperties = { display: "flex", height: "100%", overflowX: "auto", overflowY: "hidden", scrollSnapType: "x mandatory", overscrollBehaviorX: "contain", scrollbarWidth: "none" };
+const SNAP_DIETA: CSSProperties = { flex: "none", width: "100%", height: "100%", position: "relative", scrollSnapAlign: "start", scrollSnapStop: "always" };
+export function Galeria({ media, vyska: vyskaP, radius: radiusP, okraj, prekrytie, bezBodiek, nahlady, bezCelej, neorezat }: {
   media: Medium[];
-  /** 5. 10. · galéria aj v náhľade „Posielaš do …" (iná výška, rám, bez okraja) */
-  vyska?: number; radius?: number | string; okraj?: string;
+  /** 5. 10. · galéria aj v náhľade „Posielaš do …" (iná výška, rám, bez okraja) · OPRAVY 441: aj „100%“ (karta feedu) */
+  vyska?: number | string; radius?: number | string; okraj?: string;
+  /** OPRAVY 441: na karte feedu — fotky sa prepínajú potiahnutím / šípkami, ťuk otvorí detail (prebuble na kartu), nie celú obrazovku */
+  bezCelej?: boolean;
+  /** OPRAVY 441: plagát / ponuka — fotka sa neoreže (celá, so zvyškom pozadia) */
+  neorezat?: boolean;
   /** štítky nad fotkou (napr. „Posielaš do · …"), neklikateľné */
   prekrytie?: ReactNode;
   bezBodiek?: boolean;
@@ -104,11 +111,11 @@ export function Galeria({ media, vyska: vyskaP, radius: radiusP, okraj, prekryti
   return (
     <>
       <div onMouseEnter={() => setNad(true)} onMouseLeave={() => setNad(false)} style={{ position: "relative", margin: okraj ?? (wide ? "0 0 16px" : "0 -16px 14px"), height: vyska, background: "#2A2620", overflow: "hidden", borderRadius: radius }}>
-        <div ref={ref} className="zb-snap" onScroll={naScroll} onClick={() => setCela(true)} role="button" aria-label="Otvoriť galériu na celú obrazovku" style={{ cursor: "zoom-in" }}>
+        <div ref={ref} className="zb-snap" onScroll={naScroll} onClick={bezCelej ? undefined : () => setCela(true)} role={bezCelej ? undefined : "button"} aria-label={bezCelej ? undefined : "Otvoriť galériu na celú obrazovku"} style={{ ...SNAP, cursor: bezCelej ? "inherit" : "zoom-in" }}>
           {media.map((m, i) => (
-            <div key={i}>
+            <div key={i} style={SNAP_DIETA}>
               {m.typ === "foto"
-                ? <span role="img" aria-label={m.popis || undefined} style={{ position: "absolute", inset: 0, background: `url(${m.src}) center/cover no-repeat` }} />
+                ? <span role="img" aria-label={m.popis || undefined} style={{ position: "absolute", inset: 0, background: `url(${m.src}) center/${neorezat ? "contain" : "cover"} no-repeat` }} />
                 : <VideoNahlad src={m.src} onDlzka={setSekundy} />}
             </div>
           ))}
@@ -127,11 +134,11 @@ export function Galeria({ media, vyska: vyskaP, radius: radiusP, okraj, prekryti
             <span style={{ padding: "3px 8px", borderRadius: 7, background: TMAVA, color: "#fff", fontSize: 12, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{dlzka(sekundy)}</span>
           )}
         </div>
-        <span style={{ position: "absolute", right: 10, bottom: 10, width: 30, height: 30, borderRadius: 9, background: "rgba(20,18,14,.6)", display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+        {!bezCelej && <span style={{ position: "absolute", right: 10, bottom: 10, width: 30, height: 30, borderRadius: 9, background: "rgba(20,18,14,.6)", display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
-        </span>
+        </span>}
       </div>
-      {nahlady && viac && <div style={{ display: "flex", gap: desktop ? 8 : 6, margin: wide ? "-6px 0 16px" : "-4px 0 14px" }}>
+      {nahlady && viac && <div style={{ display: "flex", gap: desktop ? 8 : 6, margin: okraj === "0" ? "10px 16px 4px" : wide ? "-6px 0 16px" : "-4px 0 14px" }}>
         {media.slice(1, 6).map((m, j) => <button key={j} type="button" onClick={() => { setIndex(j + 1); setCela(true); }} aria-label={`Fotka ${j + 2} z ${media.length}${m.popis ? `: ${m.popis}` : ""}`} style={{ position: "relative", ...(desktop ? { width: 72, height: 72, flex: "none" } : { flex: "1 1 0", minWidth: 0, maxWidth: 56, aspectRatio: "1" }), padding: 0, border: "none", borderRadius: 10, overflow: "hidden", background: "#2A2620", cursor: "zoom-in", boxShadow: "none" }}>
           {m.typ === "foto" ? <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: `url(${m.src}) center/cover no-repeat` }} /> : <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}><PlayKruh size={28} /></span>}
         </button>)}
@@ -143,7 +150,7 @@ export function Galeria({ media, vyska: vyskaP, radius: radiusP, okraj, prekryti
 }
 
 // ---------------- 3 + 4 · Nadpis a text ----------------
-const RIADKY = 3, RIADOK = 21; // 14 px × 1,5
+const RIADKY = 5, RIADOK = 21; // 14 px × 1,5 · OPRAVY 435: dlhý text na 5 riadkov
 
 /** OPRAVY 429: ☆ Sledovať ↔ Sledujete ✓ — ten istý stav ako hviezdička na karte a Domov → Obľúbené (tabuľka oblubene) */
 export function SledovatTlacidlo({ polozka }: { polozka: Oblubeny }) {
@@ -209,12 +216,12 @@ export function NadpisText({ nazov, text, otvoreny: otvorenyZvonka, onOtvoreny, 
             </div>
             {dlhy && !otvoreny && (
               <button type="button" onClick={() => setOtvoreny(true)}
-                style={{ ...odkaz, position: "absolute", right: 0, bottom: 0, height: RIADOK, lineHeight: `${RIADOK}px`, padding: "0 0 0 44px", background: "linear-gradient(90deg, rgba(0,0,0,0), var(--bg) 40px)" }}>… viac</button>
+                style={{ ...odkaz, position: "absolute", right: 0, bottom: 0, height: RIADOK, lineHeight: `${RIADOK}px`, padding: "0 0 0 44px", background: "linear-gradient(90deg, rgba(0,0,0,0), var(--bg) 40px)" }}>Čítať ďalej ›</button>
             )}
           </div>
           {dlhy && otvoreny && (
-            <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <button type="button" onClick={zbal} style={{ ...odkaz, background: "transparent", padding: "2px 0", minHeight: 44 }}>Zbaliť ⌃</button>
+            <div style={{ display: "flex" }}>
+              <button type="button" onClick={zbal} style={{ ...odkaz, background: "transparent", padding: "2px 0", minHeight: 44 }}>Zbaliť ^</button>
             </div>
           )}
         </div>

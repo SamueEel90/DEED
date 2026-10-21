@@ -1,17 +1,17 @@
 import { Emo } from "@/components/icons";
 import { cisloObjektu, typPrispevku } from "@/lib/cisloObjektu";
 import { CisloVHlavicke, nazovCisla } from "@/components/CisloObjektu";
-import { TitulSoSledovat } from "@/features/zbierka/Vrch";
+import { TitulSoSledovat, Galeria } from "@/features/zbierka/Vrch";
 import { StityRad, type StitLevel as StitLv } from "@/components/stit";
 import { stityOblastiSubjektu } from "@/lib/stityOblasti";
 const naStitLevelOpt = (k: string): StitLv | null => ((["Bronze", "Silver", "Gold", "Platinum", "Legend"] as string[]).includes(k) ? (k as StitLv) : null);
 import { useState, useMemo, useEffect, memo } from "react";
-import { FormatovanyText, RichTextInput } from "@/shared";
-import { ModulHlavicka, Hlavicka, PlatobnyModul, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, TypBadge, BackChip, SwipeBack, obalSiroky, OkruhVyber, Lupa, IkonaMoznosti, Zdielanie, IkonaPlay, IkonaDoska, IkonaPin, IkonaObalka, FotoPrispevku, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, EntityHero, BtnAkcia, Overene, KontextMenu, IkonaOdkaz, IkonaVlajka, FotoProfiluSheet } from "@/shared";
+import { FormatovanyText, RichTextInput, RozbalitelnyText } from "@/shared";
+import { ModulHlavicka, Hlavicka, PlatobnyModul, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, TypBadge, BackChip, SwipeBack, obalSiroky, OkruhVyber, Lupa, IkonaMoznosti, Zdielanie, IkonaPlay, IkonaDoska, IkonaPin, IkonaObalka, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, EntityHero, BtnAkcia, Overene, KontextMenu, IkonaOdkaz, IkonaVlajka, FotoProfiluSheet } from "@/shared";
 import { FOTO_TEST_REZIM, klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { SIRKA, C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
-import { MEDIA_AR } from "@/lib/cardSize";
+
 import type { AktivitaItem, OkruhKod } from "@/types";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { A, DOM, ORDER, tint } from "./domeny";
@@ -67,10 +67,6 @@ const secLbl: React.CSSProperties = { fontSize: 11.5, letterSpacing: ".4px", col
 
 function Chip({ bg, c, children }: { bg: string; c: string; children: React.ReactNode }) {
   return <span style={{ display: "inline-flex", alignItems: "center", fontSize: 10, fontWeight: 600, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.xs, background: bg, color: c }}>{children}</span>;
-}
-function Play({ big }: { big?: boolean }) {
-  const s = big ? 58 : 54;
-  return <span style={{ width: s, height: s, borderRadius: "50%", background: "rgba(255,255,255,.16)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)", border: "1px solid rgba(255,255,255,.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: "#fff", paddingLeft: SPACE.xxs }}>▶</span>;
 }
 
 // ===================== MODUL =====================
@@ -301,16 +297,13 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
         } />
 
       {/* live ticker — odráža poslednú reálnu akciu */}
-      <Ticker>
-        {tick
-          ? <>{tick.who} <b style={{ color: C.greenL }}>{tick.what}</b>{tick.to ? ` ${tick.to}` : ""}</>
-          : <>Cyklo TN <b style={{ color: C.greenL }}>práve dostal 100 DeeD</b> → Marek</>}
-      </Ticker>
+      {/* Martin 21. 10.: len skutočná posledná akcia, žiadna ukážková veta */}
+      {tick && <Ticker>{tick.who} <b style={{ color: C.greenL }}>{tick.what}</b>{tick.to ? ` ${tick.to}` : ""}</Ticker>}
 
       {/* filter hore na stránke + štatistický riadok — na desktope na jednom riadku */}
       <FiltreStat filtre={filterBar}
         stat={
-          <StatRiadok inline={desktop} pocet={feed.length} jednotka="aktivít" mesiac="9 480"
+          <StatRiadok inline={desktop} pocet={feed.length} jednotka="aktivít"
             okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} />
         }
       />
@@ -410,7 +403,6 @@ function TitulAkt({ it, typ, titul, style }: { it: AktItem; typ: string; titul: 
   return <TitulSoSledovat wide={wide} style={style} titul={titul} polozka={{ refId: it.id, typ, modul: "aktivity", nazov: it.title, lok: it.loc }} />;
 }
 function DetailHero({ it, onBack, children }: { it: AktItem; onBack: () => void; children?: React.ReactNode }) {
-  const { wide } = useLayout();
   const [menu, setMenu] = useState(false);
   const [nahlasit, setNahlasit] = useState(false);
   const maFoto = !!(it.fotky && it.fotky.length);
@@ -456,12 +448,9 @@ function DetailHero({ it, onBack, children }: { it: AktItem; onBack: () => void;
         {cislo}
         {menuBtn(false)}
       </div>
-      <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: heroGrad(it.dom), ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : { height: 150 }) }}>
-        <div style={{ position: "absolute", inset: 0 }}><FotoPrispevku fotky={it.fotky} h="100%" disableGaleria prednost alt={it.title} /></div>
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(0,0,0,.42), transparent 46%)", pointerEvents: "none" }} />
-        {it.media === "video" && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}><Play big /></div>}
-        {children && <div style={{ position: "absolute", bottom: 12, left: 14, right: 14, zIndex: 2, display: "flex", flexWrap: "wrap", gap: SPACE.xs }}>{children}</div>}
-      </div>
+      {/* OPRAVY 441: jedna galéria všade — doteraz sa ďalšie fotky nedali otvoriť */}
+      <Galeria media={(it.fotky ?? []).map((src: string) => ({ typ: "foto" as const, src }))} okraj="0" radius={0} nahlady
+        prekrytie={children ? <div style={{ position: "absolute", top: 12, left: 14, right: 14, display: "flex", flexWrap: "wrap", gap: SPACE.xs }}>{children}</div> : undefined} />
       {overlaye}
     </>
   );
@@ -475,16 +464,16 @@ function Detail({ it, liked, like, support, votes, vote, toast, celebrate, home,
 /** detail skutku — ten istý vo feede Aktivít aj na verejných profiloch (kronika, roky).
  *  5. 10.: bezPodpory = staré roky (bez drobnej podpory a darov, ostane Zdieľať a Páči sa mi);
  *  it.split = komu išla podpora („Podpora išla: …"), bez splitu sa riadok neukáže; it.pomahali = kto pomáhal (profil charity). */
-export function DeedDetail({ it, support, votes, vote, toast, home, openPerson, bezPodpory = false }: any) {
+export function DeedDetail({ it, support, votes, vote, toast, home, openPerson, bezPodpory = false, charita = false, onPomocnik }: any) {
   const a = DOM[it.dom];
   const [platba, setPlatba] = useState<string | null>(null); // "EUR" | "DEED"
   const isTalent = it.type === "talent", isCase = it.type === "case";
   const pct = isCase ? Math.min(100, Math.round(it.raised / it.goal * 100)) : 0;
   const supLabel = isTalent ? "OCEŇ TVORCU — klik a hneď odíde" : isCase ? "PRIDAJ SA K MAREKOVI" : "DROBNÁ PODPORA — klik a hneď odíde";
-  // overovanie skutku — základ + tvoj hlas
+  // overovanie skutku — OPRAVY 447 (1): len skutočné hlasy (vymyslený základ z id preč); pri skutku charity vôbec nie (442 bod 3)
   const myVote = votes[it.id];
-  const okCount = (it.mine ? 0 : 4 + ((it.id * 3) % 9)) + (myVote === "ok" ? 1 : 0);
-  const noCount = (it.mine ? 0 : (it.id * 2) % 3) + (myVote === "no" ? 1 : 0);
+  const okCount = myVote === "ok" ? 1 : 0;
+  const noCount = myVote === "no" ? 1 : 0;
 
   return (
     <div style={{ paddingBottom: SPACE.lg }}>
@@ -493,7 +482,8 @@ export function DeedDetail({ it, support, votes, vote, toast, home, openPerson, 
       </DetailHero>
       <div style={{ padding: `${SPACE.gutter}px ${SPACE.md}px` }}>
         <div onClick={() => openPerson(it.author)} style={{ ...rowTopS, cursor: "pointer" }}>
-          <div style={pfpS(it.pfp)}>{it.ini}</div>
+          {/* OPRAVY 447 (2): logo z profilu, iniciály len bez loga */}
+          {it.logo ? <img src={it.logo} alt="" style={{ ...pfpS("#fff"), objectFit: "cover", border: "1px solid var(--cardBd)" }} /> : <div style={pfpS(it.pfp)}>{it.ini}</div>}
           <div>
             <div style={{ ...nameS, display: "flex", alignItems: "center", gap: SPACE.xs }}>{it.author} <span style={{ color: C.textTer, fontSize: 13 }}>›</span></div>
             <div style={{ display: "flex", alignItems: "center", gap: SPACE.xxs, fontSize: 12, color: A.txt2, marginTop: 1 }}><IkonaPin size={12} color={A.txt2} />{it.loc}</div>
@@ -501,8 +491,17 @@ export function DeedDetail({ it, support, votes, vote, toast, home, openPerson, 
           {it.verified && <span style={{ marginLeft: "auto", display: "inline-flex" }}><Overene size={15} label="Overené komunitou" /></span>}
         </div>
         <TitulAkt it={it} typ={isCase ? "ziadost" : isTalent ? "talent" : "skutok"} style={{ marginTop: SPACE.sm }} titul={<div style={{ ...titleS, fontSize: 14 }}>{it.title}</div>} />
-        <FormatovanyText text={it.desc} style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs, color: A.txt2 }} />
+        <div style={{ marginTop: SPACE.xs }}><RozbalitelnyText text={it.desc} style={{ fontSize: 14.5, lineHeight: 1.6, color: A.txt2 }} /></div>
         {it.pomahali && <div style={{ fontSize: 13.5, marginTop: SPACE.xs, color: A.txt2 }}>Pomáhali: <b style={{ color: A.txt }}>{it.pomahali}</b></div>}
+        {/* OPRAVY 447 (3): od P1 zoznam pomocníkov — meno, ako si ho nastavil, a čas na akcii; ťuk = profil */}
+        {it.pomocnici?.length > 0 && <div style={{ display: "flex", flexDirection: "column", marginTop: SPACE.xs }}>
+          {it.pomocnici.map((u: { meno: string; cas?: string; ucet?: string }, i: number) => {
+            const obsah = <><b style={{ color: A.txt, fontWeight: 700 }}>{u.meno}</b>{u.cas ? <span style={{ color: A.txt2 }}> · {u.cas}</span> : null}</>;
+            return u.ucet && onPomocnik
+              ? <button key={i} type="button" onClick={() => onPomocnik(u)} style={{ minHeight: 40, padding: 0, border: "none", background: "none", boxShadow: "none", textAlign: "left", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5 }}>{obsah} <span style={{ color: C.textTer }}>›</span></button>
+              : <span key={i} style={{ minHeight: 32, display: "flex", alignItems: "center", fontSize: 13.5 }}><span>{obsah}</span></span>;
+          })}
+        </div>}
         {it.split?.length > 0 && <div style={{ fontSize: 13.5, lineHeight: 1.5, marginTop: SPACE.xs, color: A.txt2 }}>Podpora išla: <b style={{ color: A.txt }}>{it.split.map((s: { komu: string; pct: number }) => `${s.komu} ${s.pct} %`).join(" · ")}</b></div>}
 
         {isCase && (
@@ -522,7 +521,7 @@ export function DeedDetail({ it, support, votes, vote, toast, home, openPerson, 
           oblubene={{ refId: it.id, typ: isCase ? "ziadost" : isTalent ? "talent" : "skutok", modul: "aktivity", nazov: it.title, lok: it.loc }} toast={toast}
           qr={bezPodpory ? undefined : { label: `QR ${isCase ? "tejto akcie" : isTalent ? "tejto Iskry" : "tohto skutku"}`, popis: "Zväčšiť · kopírovať · zdieľať", cta: "Zdieľať", onClick: () => zdielaj({ titul: it.title, text: it.title, url: aktualnaUrl() }, toast) }} />
 
-        <div style={{ textAlign: "center", fontSize: 10, color: A.txt3, marginTop: SPACE.md }}>
+        {!charita && <><div style={{ textAlign: "center", fontSize: 10, color: A.txt3, marginTop: SPACE.md }}>
           {myVote ? (myVote === "ok" ? "Označil(a) si tento skutok ako overený. Ďakujeme." : "Podal(a) si námietku — preverí ju AI + komunita.") : "Bol si pri tom? Komunita preveruje skutky."}
         </div>
         <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.gutter }}>
@@ -534,7 +533,7 @@ export function DeedDetail({ it, support, votes, vote, toast, home, openPerson, 
             if (myVote) return toast("Už si hlasoval(a) o tomto skutku");
             vote(it.id, "no"); toast("Námietka odoslaná — preverí ju AI + overenie");
           }} />
-        </div>
+        </div></>}
       </div>
       {platba && <PlatbaModal kanal={platba} komu={it.author} onClose={() => setPlatba(null)}
         onDone={(s: number) => support(s, it.author, it)} />}
@@ -556,7 +555,7 @@ function WorkshopDetail({ it, toast, celebrate, home, openPerson }: any) {
       </DetailHero>
       <div style={{ padding: `${SPACE.gutter}px ${SPACE.md}px` }}>
         <TitulAkt it={it} typ="ponuka" titul={<div style={{ ...titleS, fontSize: 15 }}>{it.title}</div>} />
-        <FormatovanyText text={it.desc} style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs, color: A.txt2 }} />
+        <div style={{ marginTop: SPACE.xs }}><RozbalitelnyText text={it.desc} style={{ fontSize: 14.5, lineHeight: 1.6, color: A.txt2 }} /></div>
 
         <div onClick={() => openPerson(it.author)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: A.surface2, border: `1px solid ${A.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginTop: SPACE.gutter, cursor: "pointer" }}>
           <div style={{ width: 44, height: 44, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 16, color: "#fff", flex: "none", background: it.pfp }}>{it.ini}</div>
@@ -607,7 +606,7 @@ function HelpDetail({ it, toast, celebrate, home, openPerson }: any) {
           <div><div style={{ ...nameS, display: "flex", alignItems: "center", gap: SPACE.xs }}>{it.author} <span style={{ color: C.textTer, fontSize: 13 }}>›</span></div><div style={{ fontSize: 12, color: A.txt3 }}>{it.loc}</div></div>
         </div>
         <TitulAkt it={it} typ="ziadost" style={{ marginTop: SPACE.sm }} titul={<div style={{ ...titleS, fontSize: 14 }}>{it.title}</div>} />
-        <FormatovanyText text={it.desc} style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs, color: A.txt2 }} />
+        <div style={{ marginTop: SPACE.xs }}><RozbalitelnyText text={it.desc} style={{ fontSize: 14.5, lineHeight: 1.6, color: A.txt2 }} /></div>
         <InfoBox>{it.helpers} ľudí sa už zapojilo. Po prijatí sa otvorí chat, dohodnete sa. Po dokončení: hodnotenie + tip + reťaz dobra.</InfoBox>
         <Btn green onClick={gate(() => { celebrate("Ozval si sa!", `Otvorili sme chat s ${it.author}. Dohodnite si detaily.`); setTimeout(home, 1700); })}>✋ Môžem pomôcť</Btn>
         {/* podpora — pomôcť sa dá aj peniazmi (karta / SEPA prevod / peňaženka), nielen časom */}

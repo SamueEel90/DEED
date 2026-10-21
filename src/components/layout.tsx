@@ -227,6 +227,13 @@ export function Rebricky({ ocenenia = [], ludia = [], pred = null }: { ocenenia?
 //   [počet v okruhu] · [mesačná štatistika] · [poloha + výber okruhu]
 // rovnaký dizajn aj poloha (hneď pod rebríčkom) vo všetkých moduloch
 // ============================================================
+/** Martin 21. 10. „iba skutočné“: koľko položiek vo feede vzniklo tento mesiac — len keď je feed celý načítaný
+ *  a každá položka má čas vzniku zo servera; inak nič (segment sa skryje, žiadne vymyslené číslo) */
+export function pocetTentoMesiac(items: { vytvorene?: string }[], celyNacitany: boolean): number | undefined {
+  if (!celyNacitany || !items.length || items.some((x) => !x.vytvorene)) return undefined;
+  const d = new Date(), od = new Date(d.getFullYear(), d.getMonth(), 1).getTime();
+  return items.filter((x) => Date.parse(x.vytvorene!) >= od).length;
+}
 export function StatRiadok({ pocet, jednotka, mesiac, miesto, okruh = "2 km", onOkruh, inline, onIskry }: { pocet?: ReactNode; jednotka?: string; mesiac?: ReactNode; miesto?: ReactNode; okruh?: ReactNode; onOkruh?: () => void; inline?: boolean; /** KARTA 41: 4. políčko „Iskry" (len Domov) */ onIskry?: () => void }) {
   // segmentovaný panel: [počet v okruhu] · [mesačná štatistika] · [poloha + výber okruhu]
   // jednotná výška, vnútorné deliace čiary, jediný interaktívny segment = poloha
@@ -249,11 +256,11 @@ export function StatRiadok({ pocet, jednotka, mesiac, miesto, okruh = "2 km", on
           </div>
           <div style={popis}>v okruhu</div>
         </div>
-        {/* segment 2 — mesačná štatistika */}
-        <div style={{ flex: "1 1 0", minWidth: 0, padding: segPad, borderLeft: `1px solid ${C.line}` }}>
+        {/* segment 2 — mesačná štatistika (len skutočné číslo; bez neho sa neukáže) */}
+        {mesiac != null && mesiac !== "—" && <div style={{ flex: "1 1 0", minWidth: 0, padding: segPad, borderLeft: `1px solid ${C.line}` }}>
           <div style={cislo}>{mesiac}</div>
           <div style={popis}>tento mesiac</div>
-        </div>
+        </div>}
         {/* segment 3 — poloha + výber okruhu (jediný interaktívny, akcentové pozadie) */}
         <div {...pressable(onOkruh, "Zmeniť okruh")} title="Zmeniť okruh" style={{ flex: "1.25 1 0", minWidth: 0, padding: segPad, borderLeft: `1px solid ${C.line}`, background: "var(--a-info-bg)", cursor: "pointer", display: "flex", flexDirection: "column", justifyContent: "center" }}>
           <div style={{ display: "flex", alignItems: "center", gap: SPACE.xxs, minWidth: 0 }}>

@@ -5,7 +5,7 @@
 // · HTML z editora → sanitizované cez whitelist (lib/richtext.ts)
 // · odkazy: rel=noopener nofollow, otvárajú sa mimo appky s upozornením
 // ============================================================
-import { useMemo } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, MouseEvent } from "react";
 import { sanitizujHtml, jeHtmlText } from "@/lib/richtext";
 
@@ -53,4 +53,37 @@ export function FormatovanyText({ text, style }: { text?: string | null; style?:
   };
 
   return <div className="ftext" style={style} onClick={klik} dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
+// ============================================================
+// OPRAVY 435 · dlhý text všade rovnako: nad `riadky` (predvolene 5) sa zbalí na `riadky` + „Čítať ďalej ›“,
+// po rozbalení celý (odseky, tučné, odrážky) a na KONCI „Zbaliť ^“ (po zbalení späť na začiatok textu).
+// ============================================================
+export function RozbalitelnyText({ text, riadky = 5, style, farbaOdkazu = "var(--green)" }: {
+  text?: string | null; riadky?: number; style?: CSSProperties; farbaOdkazu?: string;
+}) {
+  const obal = useRef<HTMLDivElement>(null), vnutro = useRef<HTMLDivElement>(null);
+  const [otv, setOtv] = useState(false);
+  const [dlhy, setDlhy] = useState(false);
+  const lh = typeof style?.lineHeight === "number" ? style.lineHeight : 1.5;
+  const fs = typeof style?.fontSize === "number" ? style.fontSize : 15;
+  const vyska = Math.round(riadky * lh * fs);
+  useLayoutEffect(() => {
+    const meraj = () => { const v = vnutro.current; if (v) setDlhy(v.scrollHeight > vyska + 2); };
+    meraj();
+    if (typeof ResizeObserver === "undefined" || !vnutro.current) return;
+    const ro = new ResizeObserver(meraj); ro.observe(vnutro.current);
+    return () => ro.disconnect();
+  }, [text, vyska]);
+  if (!text?.trim()) return null;
+  const tl: CSSProperties = { alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "none", boxShadow: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: farbaOdkazu };
+  const zbal = () => { setOtv(false); requestAnimationFrame(() => { const el = obal.current; if (el && el.getBoundingClientRect().top < 0) el.scrollIntoView({ block: "start" }); }); };
+  return (
+    <div ref={obal} style={{ display: "flex", flexDirection: "column", scrollMarginTop: 12, minWidth: 0 }}>
+      <div style={{ maxHeight: otv || !dlhy ? "none" : vyska, overflow: "hidden" }}>
+        <div ref={vnutro}><FormatovanyText text={text} style={{ fontSize: fs, lineHeight: lh, overflowWrap: "break-word", ...style }} /></div>
+      </div>
+      {dlhy && !otv && <button type="button" onClick={() => setOtv(true)} aria-expanded={false} style={tl}>Čítať ďalej ›</button>}
+      {dlhy && otv && <button type="button" onClick={zbal} aria-expanded style={tl}>Zbaliť ^</button>}
+    </div>);
 }

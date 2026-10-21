@@ -105,6 +105,7 @@ export function EmptyState({
 }) {
   return (
     <div
+      data-prazdny-stav=""
       style={{
         display: "flex",
         flexDirection: "column",

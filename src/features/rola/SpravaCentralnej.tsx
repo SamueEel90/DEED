@@ -10,6 +10,7 @@
 // náhľad = skutočná karta modulu z profilu, Spustiť = kontrola Názov · Text · Titulná fotka + podržať 1,5 s,
 // po spustení na tom istom mieste „Hlavná zbierka beží" a ďalší krok (QR plagát).
 // ============================================================
+import { naviazObjekt } from "@/lib/darZbierky";
 import { SumyPriDarcoch } from "./SumyPriDarcoch";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -25,38 +26,27 @@ import { useSlovaFarnosti } from "@/lib/mojeFarnosti";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { Prepinac } from "@/features/profil/nastUi";
 import {
-  useSektory, cislaSektora, obsahSektora, ulozObsahSektora, pridajSektor, zmazSektor, premenujSektor, ziadostUctu, poziadajOZmenuUctu,
+  useSektory, obsahSektora, ulozObsahSektora, pridajSektor, zmazSektor, premenujSektor, ziadostUctu, poziadajOZmenuUctu,
   zavretaCentralna, zavriCentralnu, otvorCentralnu, vyberCentralnej, nastavVyberCentralnej, useZmenySektorov,
-  CENTRALNA_CISLA, NULA, SEKTORY_MAX, SEKTORY_OD_TIERU, STANOVY_CINNOSTI, type SektorCharity,
+  NULA, SEKTORY_MAX, SEKTORY_OD_TIERU, STANOVY_CINNOSTI, type SektorCharity,
 } from "@/lib/sektoryCharity";
-import { nacitajStav, ulozStav, OVERENY_SKEN, type StavZbierky } from "@/lib/zbierkaSprava";
+import { nacitajStav, ulozStav, type StavZbierky } from "@/lib/zbierkaSprava";
 import { nastavCiste, sucetDarov, darcoviaPre, identitaDarcu, relCas, zobrazenaSuma, useZmenyDarov, useSektorDarcu } from "@/lib/darcovia";
 import { beziaceDorovnanieNaCiel, zostatok } from "@/lib/dorovnanie";
 import { cisloObjektu } from "@/lib/cisloObjektu";
 import { overIban, formatujIban } from "./segmenty";
 import { TextovePolia, GaleriaEditor } from "./obsahZbierky";
 import { DokladyCharity } from "./SpravaZbierky";
-import { kartaK, nadpisK, textK, drobneK, obrysK, zelenyK, ZAMOK, SpatZbierky, UkladaSa, DorovnaniePas, useUkladanie, UlozenePri, PasUlozene, Taby, CislaKarta, AkoDarovat, QrKarta, Statistiky, type DataStatistik } from "./spravaCasti";
+import { kartaK, nadpisK, textK, drobneK, obrysK, zelenyK, ZAMOK, SpatZbierky, UkladaSa, DorovnaniePas, useUkladanie, UlozenePri, PasUlozene, Taby, CislaKarta, AkoDarovat, QrKarta, Statistiky } from "./spravaCasti";
 import { sumaEur } from "@/lib/suma";
 
 const eur = (n: number) => `${sumaEur(n)}`;
 const inic = (t: string) => t.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 const dnes = (iso: string) => { const d = new Date(iso); return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`; };
 
-const DARY_TEST: [string, string, string][] = [["Lucia B.", "pred 4 min", "10 €"], ["Anonymný darca", "pred 11 min · mesačne", "25 €"], ["ZŠ Hodžova", "pred 1 h", "45 €"]];
-const DOKLADY_TEST: StavZbierky["doklady"] = [
-  { id: "c1", druh: "Faktúra", nazov: "Obedy pre seniorov", dodavatel: "Jedáleň Sihoť", suma: 620, datum: new Date().toISOString(), foto: OVERENY_SKEN, overene: true },
-  { id: "c2", druh: "Bloček", nazov: "Zimné deky", dodavatel: "Tesco Trenčín", suma: 310, datum: new Date().toISOString(), foto: OVERENY_SKEN, overene: true },
-  { id: "c3", druh: "Bloček", nazov: "Lieky", dodavatel: "Lekáreň Dr. Max", suma: 250, datum: new Date().toISOString(), foto: OVERENY_SKEN },
-];
-const statTest = (jeS: boolean, nazov: string): DataStatistik => ({
-  obdobie: "október", od: "5. 9.", dni: [3, 5, 2, 6, 4, 8, 5, 3, 7, 9, 4, 6, 5, 10, 7, 4, 6, 8, 5, 7, 9, 6, 4, 8, 10, 7, 5, 9, 6, 8],
-  cez: jeS ? [["Priamo na profile", 640, `ťuk na dlaždicu ${nazov}`], ["Pekáreň Dobrota · dorovnanie", 380, "1 : 1 k darom ľudí"], ["QR plagát · Sihoť", 220, "14 darov"], ["Martin Konaľ · split", 160, "tvorca, 20 % z podpory"], ["Reťaz dobra", 80, "3 ľudia"]]
-    : [["Priamo na profile", 1460, "ťuk na Celá činnosť"], ["Pekáreň Dobrota · dorovnanie", 690, "1 : 1 k darom ľudí"], ["Martin Konaľ · stream a split", 560, "stream 3. 10. + 20 % z podpory"], ["QR plagát a pokladnička", 250, "31 darov"], ["Reťaz dobra a skutky", 160, "split zo skutkov"]],
-  split: [["MK", "Martin Konaľ · tvorca", "20 % z podpory fanúšikov · od 21. 9. 2026", "412 €"], ["JK", "Jana K. · skutok „300 teplých jedál“", "30 % z drobnej podpory skutku · 2. 10.", "84 €"], ["LB", "Lucia B. · Reťaz dobra", "10 % z každej platby · od 1. 9.", "36 €"]],
-  darcovia: [[jeS ? "96" : "214", "darcov tento mesiac"], [jeS ? "22" : "61", "nových"], [jeS ? "61" : "143", "dáva mesačne"], ["38 %", "darovalo znova"]],
-  dary: [["Lucia B.", "10 € · cez QR plagát · pred 4 min", "10 €"], ["Anonymný darca", "mesačne · priamo na profile", "25 €"], ["Pekáreň Dobrota", "dorovnanie k daru Lucie B.", "10 €"], ["Martin Konaľ", "split 20 % · z podpory fanúšikov", "6 €"]],
-});
+// OPRAVY 442: ukážkové dary, doklady a štatistiky (Lucia B., Jana K., Pekáreň Dobrota …) zmazané — na stránke len skutočné.
+// id starých ukážkových dokladov, ktoré mohli ostať uložené v zariadení → pri otvorení sa vyhodia
+const STARE_UKAZKOVE_DOKLADY = new Set(["c1", "c2", "c3"]);
 
 function novyStav(id: string, _farnost = false): StavZbierky { return { stav: "aktivna", koniec: new Date(Date.now() + 3650 * 86400000).toISOString(), predlzenia: 0, lehota: "30", text: "", fotky: [], doklady: [] /* OPRAVY 403 doplnok: bez ukážkových dokladov */, spravy: [] }; }
 
@@ -77,7 +67,9 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const h = sek ? String(typ) : "0";
   const kluc = sek ? sek.id : "centralna";
   const idZbierky = `${strankaId}-${kluc}`;
-  const [tab, setTab] = useState(startQr && farnost ? 5 : 0);
+  // OPRAVY 445 (2): centrálna charity = dary z ledgera (stranka:hlavna), ten istý zdroj ako profil a zoznam v Správe
+  if (!farnost && !sek) naviazObjekt(idZbierky, { stranka: strankaId, hlavna: true, nazov: "Celá činnosť" });
+  const [tab, setTab] = useState(startQr ? 5 : 0); // OPRAVY 453: aj charita
   // OPRAVY 347: plagát hlavnej = jeden plagát pre všetky QR (QR farnosti)
   const qrFar = usePolozkyQr(strankaId, nazov).find((x) => x.id === "farnost");
   const [plOkno, setPlOkno] = useState(false);
@@ -106,7 +98,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
 
   // ---- doklady (dobrovoľné) ----
   // OPRAVY 311: farnosť nikdy ukážkové doklady (aj keď už ostali uložené zo skoršieho otvorenia)
-  const bezUkazok = (x: StavZbierky): StavZbierky => farnost ? { ...x, doklady: x.doklady.filter((dk) => !DOKLADY_TEST.some((t) => t.id === dk.id)) } : x;
+  const bezUkazok = (x: StavZbierky): StavZbierky => ({ ...x, doklady: x.doklady.filter((dk) => !STARE_UKAZKOVE_DOKLADY.has(dk.id)) });
   const [stav, setStav] = useState<StavZbierky>(() => bezUkazok(nacitajStav(idZbierky) ?? novyStav(idZbierky, !!farnost)));
   useEffect(() => { setStav(bezUkazok(nacitajStav(idZbierky) ?? novyStav(idZbierky, !!farnost))); }, [idZbierky]); // eslint-disable-line react-hooks/exhaustive-deps
   const zmenStav = (p: Partial<StavZbierky>) => setStav((x) => { const n = { ...x, ...p }; ulozStav(idZbierky, n); return n; });
@@ -115,8 +107,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   // OPRAVY 311: farnosť (Hlavná zbierka) nikdy ukážkové čísla — len skutočné súčty zo servera (ledger, 0096 s omšami)
   if (farnost) nastavCiste([idZbierky]); // ani ukážkoví darcovia
   // OPRAVY 403 doplnok: žiadne ukážkové čísla, dary ani dorovnanie (vymyslené prepojenia s Pekárňou a tvorcom zmazané) — len skutočné
-  const ukazky = false;
-  const c = ukazky ? (sek ? cislaSektora(sek.id) : CENTRALNA_CISLA) : NULA;
+  const c = NULA;
   const darov = sucetDarov(idZbierky);
   const hlavnaSuma = farnost ? suhrnHlavnej(strankaId, idZbierky).suma : darov.suma; // farnosť: okná sú v hlavnej (jedno číslo)
   const zacMes = (() => { const x = new Date(); x.setDate(1); x.setHours(0, 0, 0, 0); return x.getTime(); })();
@@ -139,7 +130,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
       : [identitaDarcu(r, ja, "viera"), relCas(r.cas), ""]),
   ].slice(0, 3);
   const realne: [string, string, string][] = farnost ? farnostDary : darcoviaPre(idZbierky).slice(0, 3).map((r) => [identitaDarcu(r, undefined, sektor), relCas(r.cas), zobrazenaSuma(r) ?? ""]);
-  const dary = realne.length ? realne : ukazky ? (farnost ? DARY_TEST.map(([m, k]) => [m === "Anonymný darca" ? "Bohu známy veriaci" : m, k.replace(" · mesačne", ""), ""] as [string, string, string]) : DARY_TEST) : [];
+  const dary = realne;
   const nazovPol = sek ? sek.nazov : farnost ? nazovHlavnej(d) : "Celá činnosť";
   const chip = sek ? `SEKTOR ${typ}` : farnost ? "HLAVNÁ ZBIERKA" : "CENTRÁLNA ZBIERKA";
   const podnadpis = sek ? "jedna téma · peniaze idú len sem · bez cieľa a konca" : farnost ? "stála zbierka farnosti · hore na profile" /* OPRAVY 350 */ : "na celú činnosť · stále hore na profile · nikdy vo verejnom feede";
@@ -152,7 +143,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   // ---- dorovnanie ----
   const dor = beziaceDorovnanieNaCiel(sek ? idZbierky : `${strankaId}-centralna`);
   const dorPas = farnost ? null : dor ? <DorovnaniePas ini={inic(dor.firma)} firma={dor.firma} pomer={`1 : ${dor.pomer}`} pod={`ešte ${eur(zostatok(dor))}${dor.doVycerpania ? " · do vyčerpania" : ` · do ${dnes(new Date(dor.do).toISOString())}`}`} onClick={onDorovnanie} />
-    : ukazky ? <DorovnaniePas ini="PD" firma="Pekáreň Dobrota" pomer="1 : 1" pod="ešte 4 380 € · do 27. 10. 2026" onClick={onDorovnanie} /> : null;
+    : null;
 
   // ---- účet: zamknutý, zmena len žiadosťou ----
   const [ucOtv, setUcOtv] = useState(false);
@@ -186,7 +177,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
     </section>);
 
   // ---- karty Nastavenia ----
-  const tentoMesiac = <CislaKarta nadpis="Tento mesiac" dary={dary} cisla={farnost ? [[eur(mesiac), "tento mesiac · cez DEED+"], [String(c.mesacne), "ľudí dáva mesačne"], [eur(spolu), "od začiatku · cez DEED+"]] : [[eur(mesiac), "tento mesiac"], [String(c.mesacne), "ľudí dáva mesačne"], [eur(spolu), "od začiatku"]]}>
+  const tentoMesiac = <CislaKarta nadpis="Tento mesiac" dary={dary} cisla={farnost ? [[eur(mesiac), "tento mesiac · cez DEED+"], [String(c.mesacne), "ľudí dáva mesačne"], [eur(spolu), "od začiatku · cez DEED+"]] : [[eur(mesiac), "tento mesiac"], [eur(spolu), "od začiatku"]]}>
     <button type="button" onClick={onDarcovia} style={obrysK}>Všetci darcovia ›</button>
   </CislaKarta>;
   const textKarta = <section data-pole="text" style={kartaK}><span style={nadpisK}>Text pre darcov</span>
@@ -217,7 +208,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const sektorKarta = sek && (
     <section style={kartaK}>
       <span style={nadpisK}>Sektor</span>
-      <span style={textK}>Podľa stanov: <b style={{ color: "var(--ink)" }}>{sek.stanovy}</b> · overené pri registrácii. Názov sektora na profile zmeníte tu.</span>
+      <span style={textK}>Téma: <b style={{ color: "var(--ink)" }}>{sek.stanovy}</b>. Názov sektora na profile zmeníte tu.</span>{/* OPRAVY 442 doplnok 3: stanovy appka nepozná, bez „overené pri registrácii“ */}
       <input value={sek.nazov} maxLength={30} onChange={(e) => premenujSektor(sek.id, e.target.value)} onBlur={(e) => { if (!e.target.value.trim()) premenujSektor(sek.id, STANOVY_CINNOSTI.find((x) => x.stanovy === sek.stanovy)?.nazov ?? "Sektor"); }} aria-label="Názov sektora"
         style={{ height: 48, padding: "0 14px", borderRadius: 12, border: "1.5px solid var(--cardBd)", background: "var(--field)", fontFamily: "inherit", fontSize: 15, fontWeight: 700, color: "var(--ink)", outline: "none", width: "100%", boxSizing: "border-box" }} />
     </section>);
@@ -332,7 +323,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const novyPanel = novySek && (
     <div style={{ borderRadius: 18, background: "var(--panel)", border: "1px solid var(--cardBd)", padding: "14px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
       <b style={{ fontSize: 15 }}>Nový sektor</b>
-      <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>Len téma, ktorú máte v stanovách. Najviac {SEKTORY_MAX} sektory, od programu Akcia. Dostane farbu podľa poradia a vlastné QR.</span>
+      <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>Vyberte tému. Najviac {SEKTORY_MAX} sektory, od programu Akcia. Dostane farbu podľa poradia a vlastné QR.</span>
       {smieSektory && <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         {volne.map((o) => <button key={o.nazov} type="button" aria-disabled={plno} onClick={() => { if (plno) return; const s = pridajSektor(o); if (s) { prepni(sektory.length + 1); toast(`Sektor ${s.nazov} je pridaný`); } }} style={{ height: 44, padding: "0 14px", borderRadius: 22, border: "1px solid var(--cardBd)", background: "var(--field)", cursor: plno ? "default" : "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--ink)", opacity: plno ? 0.5 : 1, boxShadow: "none" }}>{o.nazov}</button>)}
       </div>}
@@ -368,7 +359,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
       </div>
     </div>}
     {dorPas}
-    <Taby akt={tab} onTab={setTab} odsadenie={16} skryte={farnost ? [1] : []} qr={!!farnost} />
+    <Taby akt={tab} onTab={setTab} odsadenie={16} skryte={farnost ? [1] : []} qr />
     {pasZav && <div role="status" style={{ borderRadius: 18, background: "#1D211B", color: "#fff", padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
       <span style={{ flex: 1, minWidth: 200, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15.5 }}>{pasZav.t}</b><span style={{ fontSize: 13, opacity: .8 }}>Pravidelným darcom pošleme správu o 15 minút. Dovtedy to môžete vrátiť.</span></span>
       <button type="button" onClick={pasZav.vrat} style={{ height: 46, padding: "0 18px", border: "none", borderRadius: 14, background: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "#1D211B" }}>Vrátiť späť</button>
@@ -376,9 +367,11 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
     {tab === 0 && stlpce(vlavo, vpravo)}
     {tab === 0 && <PasUlozene u={u} onSpat={onZbierky} mobil={mobil} />}
     {tab === 1 && <DokladyCharity zbierkaId={idZbierky} s={stav} zmen={zmenStav} vyzbierane={spolu} teraz={Date.now()} mobil={mobil} toast={toast} nepovinne />}
-    {tab === 2 && <Statistiky d={ukazky ? statTest(!!sek, nazovPol) : { obdobie: "tento mesiac", od: "", dni: farnost ? dniReal : Array.from({ length: 30 }, () => 0), cez: [["Priamo na profile", mesiac, ""]], split: [], darcovia: farnost ? [[String(darcovReal), "darcov"], [String(c.mesacne), "dáva mesačne"]] : [[String(c.mesacne), "dáva mesačne"]], dary: realne }} tier={tier} mobil={mobil} toast={toast} />}
+    {tab === 2 && <Statistiky d={{ obdobie: "tento mesiac", od: "", dni: dniReal, cez: [["Priamo na profile", mesiac, ""]], split: [], darcovia: farnost ? [[String(darcovReal), "darcov"], [String(c.mesacne), "dáva mesačne"]] : [[String(darcovReal), "darcov"]] /* OPRAVY 442 doplnok 3: charita bez „0 dáva mesačne“, dni zo skutočných darov */, dary: realne }} tier={tier} mobil={mobil} toast={toast} />}
     {tab === 3 && ukoncenie}
     {tab === 5 && farnost && <QrZalozka strankaId={strankaId} meno={nazov} id="farnost" mobil={mobil} onTlac={onTlacQr} />}
+    {/* OPRAVY 453: charita — centrálna aj sektor majú QR charity (sektor nemá vlastnú verejnú adresu) */}
+    {tab === 5 && !farnost && <QrZalozka strankaId={strankaId} meno={nazov} id="charita" mobil={mobil} onTlac={onTlacQr} charita />}
     {plOkno && qrFar && <PlagatOkno strankaId={strankaId} meno={nazov} p={qrFar} format="a4" mobil={mobil} onZavri={() => setPlOkno(false)} />}
     {harok && <ZavrietHarok mobil={mobil} sektor={sek?.nazov ?? null} farnost={!!farnost} mesacne={c.mesacne} onPotvrd={potvrd} onZavri={() => setHarok(false)} />}
   </>);
@@ -413,7 +406,7 @@ function ZavrietHarok({ mobil, sektor, farnost, mesacne, onPotvrd, onZavri }: { 
         <span style={sekcia}>ČO SA STANE</span>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 14, lineHeight: 1.45, color: "var(--ink2)" }}>
           <span>· {farnost ? "Zmazať ju môžete, len keď nebeží žiadna iná zbierka farnosti." : `Dary sem sa zastavia. Konkrétne zbierky ${sektor ? "a ostatné sektory" : "a sektory"} bežia ďalej.`}</span>
-          <span>· <b style={{ color: "var(--ink)" }}>{mesacne}</b> pravidelných darcov dostane správu, ich mesačný dar sa zastaví{sektor ? " a ponúkneme im presun na centrálnu" : ""}.</span>
+          {mesacne > 0 && <span>· <b style={{ color: "var(--ink)" }}>{mesacne}</b> pravidelných darcov dostane správu, ich mesačný dar sa zastaví{sektor ? " a ponúkneme im presun na centrálnu" : ""}.</span>}
           <span>· Vyzbierané peniaze ostávajú na účte, nič sa nevracia.</span>
         </div>
         <button type="button" aria-disabled={dovod == null} onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); zacni(); }} onPointerUp={pusti} onPointerCancel={pusti}

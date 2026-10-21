@@ -6,9 +6,9 @@ import { NahlasitSheet } from "@/components/nahlasit";
 import { useState, useEffect, useRef, memo } from "react";
 import { SIRKA, C, inp, btn, GRAD, SPACE, RADIUS } from "@/theme";
 import { HostPruh } from "./HostPruh";
-import { Foto, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PlatobnyModul, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, Oslava, useGaleria, useScrollPamat, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackChip, ProgresBox, SwipeBack, obalSiroky, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, SplitQrSheet, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, FormatovanyText, ZoznamDarcov } from "@/shared";
+import { ModulHlavicka, Hlavicka, AvatarUroven, PlatobnyModul, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, Oslava, useScrollPamat, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, pocetTentoMesiac, MoniBar, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackChip, ProgresBox, SwipeBack, obalSiroky, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, SplitQrSheet, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, FormatovanyText, RozbalitelnyText, ZoznamDarcov } from "@/shared";
 import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
-import { pripravFeed, vzdialenostKm, FEED_CFG, type FeedUser } from "@/lib/feed";
+import { pripravFeed, FEED_CFG, type FeedUser } from "@/lib/feed";
 import { tint, tagChip, jeHrdina, HRDINA_COL, rovnakeOkremFunkcii } from "@/lib/ui";
 import { pressable } from "@/components/pressable";
 import { useVrstva } from "@/lib/urlnav";
@@ -18,14 +18,20 @@ import { nahrajSubory } from "@/lib/uploadFoto";
 import { Tip } from "@/components/tooltip";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { useLokalita } from "@/lib/lokalita";
-import { zobrazVelkost, MEDIA_AR } from "@/lib/cardSize";
+import { zobrazVelkost } from "@/lib/cardSize";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import { CisloVHlavicke, nazovCisla } from "@/components/CisloObjektu";
 import { typPrispevku } from "@/lib/cisloObjektu";
-import { TitulSoSledovat } from "@/features/zbierka/Vrch";
+import { useQuery } from "@tanstack/react-query";
+import { vyzvyDomov, type VyzvaVoFeede } from "@/data/vyzvy.supabase";
+import { OznamDetail, VyzvaKarta } from "@/features/rola/OznamDetail";
+import { nacitajUcasti } from "@/lib/oznamUcast";
+import { otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
+import { casOd } from "@/components/feedcard";
+import { TitulSoSledovat, Galeria } from "@/features/zbierka/Vrch";
 import type { GoodPolozka, Subjekt, Udalost, OkruhKod, Oblubeny, MojaZbierka, MojDoklad } from "@/types";
-import { useGoodFeed, useGoodUdalosti, useTopPrispevky } from "@/data";
+import { useGoodFeed, useGoodUdalosti } from "@/data";
 import { usePersonalizacia } from "@/lib/personalizacia";
 import { KAT, SRC_COL, NASTENKA_TEMY, TEMA_FARBA } from "./mock";
 import { PridatVyber } from "@/features/iskry/PridatIskru";
@@ -74,6 +80,7 @@ export default function ModulDomov({ wide, otvorModul, otvorId, onOtvorene }: { 
   const { okruh: radius, nastavOkruh: setRadius } = useLokalita();
   const [aktId, setAktId] = useState<string | number | null>(null);
   const [aktEvent, setAktEvent] = useState<string | null>(null);
+  const [aktVyzva, setAktVyzva] = useState<VyzvaVoFeede | null>(null); // OPRAVY 431
   const [aktSubjekt, setAktSubjekt] = useState<Subjekt | null>(null); // cudzí profil (§6)
   const [predtym, setPredtym] = useState("home");     // kam sa vrátiť z cudzieho profilu
   const [verifyMode, setVerifyMode] = useState("ok");
@@ -110,12 +117,18 @@ export default function ModulDomov({ wide, otvorModul, otvorId, onOtvorene }: { 
         <Home wide={wide} toast={toast} otvorModul={otvorModul}
           pohlad={pohlad} setPohlad={setPohlad} radius={radius} setRadius={setRadius}
           onDetail={(id) => { setAktId(id); setScreen("detail"); }}
+          onVyzva={(v) => { setAktVyzva(v); setScreen("vyzva"); }}
           onHladaj={() => setHladaj(true)}
           onBoard={() => setScreen("board")}
           onAdd={() => setPridatVyber(true)} />
       )}
       {screen === "cudzi" && aktSubjekt && obal(
         <CudziProfil subjekt={aktSubjekt as any} toast={toast} onBack={() => setScreen(predtym)} />
+      )}
+      {screen === "vyzva" && aktVyzva && obal(
+        <SwipeBack onBack={() => setScreen("home")}>
+          <OznamDetail o={aktVyzva.o} org={aktVyzva.org} toast={toast} onBack={() => setScreen("home")} onProfil={() => otvorVerejnyProfil(aktVyzva.o.stranka)} />
+        </SwipeBack>
       )}
       {screen === "board" && (
         <DomovBoard onBack={() => setScreen("home")} onEvent={(id) => { setAktEvent(id); setScreen("event"); }} />
@@ -127,7 +140,7 @@ export default function ModulDomov({ wide, otvorModul, otvorId, onOtvorene }: { 
         <SwipeBack onBack={() => setScreen("home")}>
           <DomovDetail it={akt} toast={toast} oslavuj={oslavuj}
             onBack={() => setScreen("home")}
-            onAutor={() => otvorProfil(autorSubjekt(akt), "detail")}
+            onAutor={() => (akt.stranka ? otvorVerejnyProfil(akt.stranka) : otvorProfil(autorSubjekt(akt), "detail"))}
             onVerify={(mode) => gate(() => { setVerifyMode(mode); setScreen("verify"); })()} />
         </SwipeBack>
       )}
@@ -171,6 +184,7 @@ export default function ModulDomov({ wide, otvorModul, otvorId, onOtvorene }: { 
 
 type HomeProps = {
   wide?: boolean;
+  /** OPRAVY 431: ťuk na výzvu charity vo feede */ onVyzva: (v: VyzvaVoFeede) => void;
   toast: (m: string) => void;
   otvorModul?: (m: string) => void;
   pohlad: "okolie" | "mojdeed";
@@ -184,7 +198,7 @@ type HomeProps = {
 };
 
 // ===================== HOME / FEED =====================
-function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, onDetail, onHladaj, onBoard, onAdd }: HomeProps) {
+function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, onDetail, onVyzva, onHladaj, onBoard, onAdd }: HomeProps) {
   const { data: POLOZKY = [], isLoading, isError, refetch, maDalsie, nacitajDalsie } = useGoodFeed();
   // Zadanie 5 · 5.4: ďalšia stránka feedu (najviac 50) sa načíta, keď sa koniec zoznamu priblíži k obrazovke
   const koniecFeedu = useRef<HTMLDivElement | null>(null);
@@ -212,6 +226,12 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
   // Lacné: pracuje len s uloženým skóre, žiadne AI. (Neskôr: GET /feed na backende.)
   const feed = pripravFeed(POLOZKY as any, user).map((it: any) => ({ ...it, velkost: zobrazVelkost(it) })) as GoodPolozka[];
   const karta = (it: GoodPolozka) => <DomovKarta key={it.id} it={it} wide={wide} onDetail={() => onDetail(it.id)} />;
+  // OPRAVY 431: výzvy charít na súrnu pomoc — hore vo feede, v meste charity (Celá SR = všetky) a tým, čo charitu sledujú
+  const { data: VYZVY = [] } = useQuery({ queryKey: ["vyzvy-domov"], queryFn: vyzvyDomov, staleTime: 60_000 });
+  useEffect(() => { void nacitajUcasti(VYZVY.map((v) => v.o.id)); }, [VYZVY]);
+  const mesto = (s?: string) => (s ?? "").trim().toLocaleLowerCase("sk-SK");
+  const vyzvy = VYZVY.filter((v) => radius === "krajina" || !v.org.mesto || mesto(v.org.mesto) === mesto(lok.mesto) || sledovaniMena.has(v.org.nazov));
+  const vyzvaKarty = vyzvy.map((v) => <VyzvaKarta key={`vyzva-${v.o.id}`} o={v.o} org={v.org} wide={wide} onClick={() => onVyzva(v)} onProfil={() => otvorVerejnyProfil(v.o.stranka)} />);
 
   // kontextové akcie stránky → plávajúce „+ Pridať" dole + sekcia „Na tejto stránke" v menu (☰)
   useStrankaAkcie(() => ({
@@ -224,29 +244,35 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
 
   // štatistický riadok — počet vo zvolenom okruhu + klikateľný výber okruhu
   const statRiadok = (
-    <StatRiadok pocet={feed.length} jednotka="skutkov" mesiac="9 480" miesto={nastavenia.odPolohy ? `${lokalita.mesto} · podľa polohy` : ja.mesto}
+    <StatRiadok pocet={feed.length} jednotka="skutkov" mesiac={pocetTentoMesiac(feed, !maDalsie)} miesto={nastavenia.odPolohy ? `${lokalita.mesto} · podľa polohy` : ja.mesto}
       okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} onIskry={otvorIskry} />
   );
 
   // „TOP DNES" — vodorovný pruh najvýznamnejších skutkov (rovnaký zdroj ako modul Top).
   // Highlight nad feedom; klik → detail. Skryje sa, kým nie sú dáta (žiadny prázdny flash).
-  const topPruh = <TopPruh radius={radius} onDetail={onDetail} />;
+  // OPRAVY 442 (4): Top aj zoznam z jedného zdroja a okruhu (pripravený feed), nie z iného dotazu
+  const topPruh = <TopPruh feed={isLoading || isError ? [] : feed} onDetail={onDetail} />;
 
   // telo Okolia — desktop: jednotný 3-stĺpcový grid (masonry); mobil/tablet: 1–2 stĺpce
   const okolieFeed = isError ? (
     <ErrorState onRetry={() => refetch()} />
   ) : isLoading ? (
     <FeedSkeleton count={4} />
-  ) : feed.length === 0 ? (
-    <EmptyState emoji="🤝" title="Vo zvolenom okruhu zatiaľ nie sú skutky" text="Skús väčší okruh alebo sa vráť neskôr." />
+  ) : feed.length === 0 && !vyzvaKarty.length ? (
+    // Martin 21. 10.: poctivý prázdny stav (nový user v novom meste) — povie prečo a čo môže urobiť
+    <EmptyState emoji="🤝" title="Vo zvolenom okruhu zatiaľ nie sú skutky" text="Buďte prvý, kto tu pridá dobrý skutok, alebo si zväčšite okruh."
+      action={<div style={{ display: "flex", gap: SPACE.xs, flexWrap: "wrap", justifyContent: "center" }}>
+        <button type="button" onClick={onAdd} style={{ minHeight: 48, padding: "0 20px", borderRadius: 14, border: "none", background: "var(--a-green, #4B7A35)", color: "#fff", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>Pridať skutok</button>
+        {radius !== "krajina" && <button type="button" onClick={() => setVyberOkruh(true)} style={{ minHeight: 48, padding: "0 20px", borderRadius: 14, border: `1.5px solid ${C.line}`, background: "transparent", color: C.text, fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>Väčší okruh</button>}
+      </div>} />
   ) : desktop ? (
-    <FeedGrid cols={3} cards={feed.map(karta)} />
+    <FeedGrid cols={3} cards={[...vyzvaKarty, ...feed.map(karta)]} />
   ) : (
     <FeedStlpce wide={wide}
       labelSkutky="Skutky" labelZiadosti="Žiadosti & charita"
-      jednoStlpec={feed.map(karta)}
+      jednoStlpec={[...vyzvaKarty, ...feed.map(karta)]}
       skutky={feed.filter((it) => it.typ === "skutok").map(karta)}
-      ziadosti={feed.filter((it) => it.typ !== "skutok").map(karta)}
+      ziadosti={[...vyzvaKarty, ...feed.filter((it) => it.typ !== "skutok").map(karta)]}
     />
   );
   const feedSDalsimi = <>{okolieFeed}{maDalsie && <div ref={koniecFeedu} aria-hidden="true" style={{ height: 1 }} />}</>;
@@ -640,14 +666,11 @@ function ZdrojTag({ it }: { it: GoodPolozka }) {
 // ===================== TOP DNES — pruh najvýznamnejších skutkov =====================
 // Vodorovný carousel nad feedom Domov. Zdroj = `useTopPrispevky` (rovnaké skutky ako
 // modul Top, zoradené podľa skóre). Highlight, ktorý ťahá pozornosť na špičku; klik → detail.
-function TopPruh({ radius, onDetail }: { radius: OkruhKod; onDetail: (id: string | number) => void }) {
+function TopPruh({ feed, onDetail }: { feed: GoodPolozka[]; onDetail: (id: string | number) => void }) {
   const { wide } = useLayout();
-  const { data: top = [], isLoading } = useTopPrispevky();
-  const lok = useLokalita();
-  // rovnaké pravidlo ako modul Top: haversine ≤ dosah okruhu; národné/bez-geo prebíjajú prah.
-  const km = FEED_CFG.radiusy[radius].km;
-  const vidno = top.filter((x) => x.narodne || x.lat == null || vzdialenostKm(lok, x) <= km);
-  if (isLoading || vidno.length === 0) return null; // bez dát / nič v okruhu → pruh sa nezobrazí
+  // skutky z toho istého feedu (okruh aj prah už prešli), najvyššie skóre hore, pri rovnosti novšie
+  const vidno = feed.filter((x) => x.typ === "skutok").sort((a, b) => (b.skore ?? 0) - (a.skore ?? 0) || (b.vytvorene ?? "").localeCompare(a.vytvorene ?? "")).slice(0, 10);
+  if (vidno.length === 0) return null; // nič v okruhu → pruh sa nezobrazí
   const inset = `0 ${SPACE.gutter}px`;
   return (
     <div style={{ marginBottom: SPACE.sm }}>
@@ -659,7 +682,8 @@ function TopPruh({ radius, onDetail }: { radius: OkruhKod; onDetail: (id: string
       {wide ? (
         /* tablet/desktop: kompaktné mini-karty */
         <div style={{ display: "flex", gap: SPACE.sm, overflowX: "auto", padding: `0 ${SPACE.gutter}px ${SPACE.xs}px` }}>
-          {vidno.map((it, i) => <TopPruhKarta key={it.id} it={it} rank={i + 1} onClick={() => onDetail(it.id)} />)}
+          {/* OPRAVY 442 (1): rovnaká karta ako vo feede (skutok charity = 426), nie mini-karta */}
+          {vidno.map((it) => <div key={it.id} style={{ flex: "0 0 320px", minWidth: 0 }}><DomovKarta it={it} wide onDetail={() => onDetail(it.id)} /></div>)}
         </div>
       ) : (
         /* mobil: dominantné karty (veľké ako bežné príspevky) v horizontálnom snap-carousele.
@@ -676,28 +700,6 @@ function TopPruh({ radius, onDetail }: { radius: OkruhKod; onDetail: (id: string
   );
 }
 
-function TopPruhKarta({ it, rank, onClick }: { it: GoodPolozka; rank: number; onClick: () => void }) {
-  const thumb = it.fotky?.[0];
-  const prvy = rank === 1;
-  return (
-    <div {...pressable(onClick, `Otvoriť: ${it.titul}`)} style={{ width: 172, flex: "0 0 auto", background: C.surface2, border: `1px solid ${prvy ? tint(C.gold, .5) : C.line}`, borderRadius: RADIUS.md, overflow: "hidden", cursor: "pointer", boxShadow: prvy ? `0 4px 16px ${tint(C.gold, .14)}` : undefined }}>
-      <div style={{ position: "relative", height: 96, background: thumb ? `center/cover no-repeat url("${thumb}")` : heroGrad(it.kat), display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(0,0,0,.42), transparent 55%)", pointerEvents: "none" }} />
-        <span style={{ position: "absolute", top: 7, left: 7, fontSize: 10.5, fontWeight: 800, color: prvy ? "#1b1407" : "#fff", background: prvy ? "var(--a-gold)" : "rgba(8,11,18,.62)", borderRadius: RADIUS.xs, padding: `1px ${SPACE.xs}px`, border: prvy ? "none" : "1px solid rgba(255,255,255,.22)" }}>{prvy ? "🏆 1" : `#${rank}`}</span>
-        {it.media === "video" && <span style={{ position: "absolute", top: 7, right: 7, fontSize: 9, fontWeight: 700, color: "#fff", background: "rgba(8,11,18,.62)", borderRadius: RADIUS.xs, padding: `1px ${SPACE.xs}px` }}>▶</span>}
-        {it.overene && <span style={{ position: "absolute", bottom: 7, left: 7, fontSize: 9, fontWeight: 800, color: "#fff", background: "rgba(46,125,82,.85)", borderRadius: RADIUS.xs, padding: `1px ${SPACE.xs}px` }}>✓ overené</span>}
-      </div>
-      <div style={{ padding: `${SPACE.xs}px ${SPACE.sm}px ${SPACE.sm}px` }}>
-        <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", minHeight: 31 }}>{it.titul}</div>
-        <div style={{ display: "flex", alignItems: "center", gap: SPACE.xxs, marginTop: 4, minWidth: 0 }}>
-          <span style={{ width: 16, height: 16, borderRadius: "50%", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8.5, fontWeight: 700, color: "#fff", background: it.pfp || "var(--a-info)" }}>{it.ini || it.autor?.[0]}</span>
-          <span style={{ fontSize: 10.5, color: C.textTer, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{it.autor}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // JEDNOTNÁ karta = zdieľaná FeedCard (rovnaká anatómia ako Help/Charita/Aktivity);
 // Good mapuje skutok/charitu/žiadosť do slotov. Exportovaná — Top renderuje identickú kartu.
 // memo: karta sa re-renderuje len keď sa zmení JEJ položka/wide (inline onDetail
@@ -710,6 +712,14 @@ function DomovKartaBase({ it, wide, onDetail }: { it: GoodPolozka; wide?: boolea
   const jeCharita = it.typ === "charita";
   const overCol = svetly ? "#0F8A5E" : "var(--a-green)";
   const accent = jeZiadost ? C.red : jeCharita ? C.gold : kat.c;
+  // OPRAVY 442 (1): skutok charity = karta ako 426 (pás a štítok Skutok, tvorca pod fotkou s logom a štítom, čas zverejnenia)
+  if (it.stranka && it.typ === "skutok") return (
+    <FeedCard wide={wide} onClick={onDetail} label={`Otvoriť: ${it.titul}`} typ="skutok"
+      media={{ fotky: it.fotky, video: it.video, overlay: <OblubeneHviezda polozka={oblubenyZGood(it)} style={{ top: "auto", bottom: 10 }} /> }}
+      cas={it.vytvorene ? casOd(it.vytvorene) : it.cas}
+      tvorca={{ meno: it.autor, logo: it.org?.logo, ini: it.org?.ini ?? it.ini, mesto: it.org?.mesto, stit: it.org?.stit ?? "Bronze", onProfil: () => otvorVerejnyProfil(it.stranka!) }}
+      title={it.titul} text={it.popis} />
+  );
   return (
     <FeedCard wide={wide} onClick={onDetail} label={`Otvoriť: ${it.titul}`} typ={typKluc(it.typ)}
       accent={jeZiadost ? C.red : undefined} ring={it.topovane ? C.gold : undefined}
@@ -759,7 +769,6 @@ export function DomovDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: G
   const [split, setSplit] = useState(false);  // split QR — reťaz dobra §10 × §9
   const [moznosti, setMoznosti] = useState(false); // „⋯" menu — zdieľať/kopírovať/uložiť/QR/nahlásiť
   const [nahlasit, setNahlasit] = useState(false); // OPRAVY 51
-  const otvorGaleriu = useGaleria();
   const { wide } = useLayout();
   const ja = usePouzivatel();
   const { pridajPodporu, jeOblubene, toggleOblubene } = usePersonalizacia(); // podpora → „Čo podporujem" v Môj DEED
@@ -790,20 +799,15 @@ export function DomovDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: G
           <CisloVHlavicke cislo={cisloObjektu(typPrispevku(it.typ), String(it.id), it.vs)} zverejnene={it.vytvorene} nazov={nazovCisla(typPrispevku(it.typ))} />
           <button type="button" aria-label="Ďalšie možnosti" onClick={() => setMoznosti(true)} style={{ width: 44, height: 44, margin: -5, padding: 5, border: "none", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><span style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.textSec }}><IkonaMoznosti size={18} color={C.textSec} /></span></button>
         </div>
-      {maHero && (
-        <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: heroGrad(it.kat), ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : (it.video ? {} : { height: 150 })) }}>
-          {it.video
-            ? <Video src={it.video} poster={it.fotky?.[0]} h={wide ? "100%" : 220} badge={false} />
-            : <Foto src={it.fotky![0]} emoji={it.emoji} h={wide ? "100%" : 150} w={wide ? "100%" : undefined} style={{ position: "absolute", inset: 0 }} onClick={() => otvorGaleriu(it.fotky ?? [], 0)} prednost alt={it.titul} />}
-          <span style={{ position: "absolute", bottom: 12, left: 14, pointerEvents: "none" }}><ZdrojTag it={it} /></span>
-          {(it.fotky?.length ?? 0) > 1 && <span style={{ position: "absolute", bottom: 12, right: 14, background: "rgba(0,0,0,.6)", borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.xs}px`, fontSize: 10, color: "#fff", pointerEvents: "none" }}>⧉ {it.fotky?.length} · klikni na foto</span>}
-        </div>
-      )}
-      <MiniFotky fotky={it.fotky} />
+      {/* OPRAVY 441: jedna galéria všade (bodky, 1 / N, šípky, potiahnutie, zväčšenie, náhľady) */}
+      {maHero && <Galeria media={[...(it.video ? [{ typ: "video" as const, src: it.video }] : []), ...(it.fotky ?? []).map((src) => ({ typ: "foto" as const, src }))]}
+        okraj="0" radius={0} nahlady prekrytie={<span style={{ position: "absolute", top: 12, left: 14 }}><ZdrojTag it={it} /></span>} />}
 
       <div style={{ padding: `${SPACE.gutter}px ${SPACE.md}px` }}>
         <div onClick={onAutor} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, cursor: "pointer" }}>
-          <div style={{ width: 32, height: 32, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, color: "#fff", background: it.pfp, flex: "none" }}>{it.ini}</div>
+          {/* skutok charity: logo z profilu (iniciály len bez loga) */}
+          {it.org?.logo ? <img src={it.org.logo} alt="" style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover", background: "#fff", border: `1px solid ${C.line}`, flex: "none" }} />
+            : <div style={{ width: 32, height: 32, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, color: "#fff", background: it.pfp, flex: "none" }}>{it.org?.ini ?? it.ini}</div>}
           <div>
             <div style={{ fontWeight: 700, fontSize: 15.5 }}>{it.autor} <span style={{ fontSize: 11, color: C.textTer, fontWeight: 500 }}>›</span></div>
             <div style={{ display: "flex", alignItems: "center", gap: SPACE.xxs, fontSize: 12.5, color: C.textSec, marginTop: 1 }}><IkonaPin size={12} color={C.textSec} />{it.lok}{it.karma ? ` · ${it.karma}` : ""}</div>
@@ -812,7 +816,8 @@ export function DomovDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: G
         </div>
         {/* OPRAVY 429: Sledovať pri nadpise (uloží do Obľúbených) */}
         <TitulSoSledovat wide={wide} polozka={oblubenyZGood(it)} style={{ marginTop: SPACE.sm }} titul={<div style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.4 }}>{it.titul}</div>} />
-        <FormatovanyText text={it.popis} style={{ color: C.textSec, fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs }} />
+        {/* OPRAVY 435: dlhý text zbalený na 5 riadkov + Čítať ďalej › / Zbaliť ^ */}
+        <div style={{ marginTop: SPACE.xs }}><RozbalitelnyText text={it.popis} style={{ color: C.textSec, fontSize: 14.5, lineHeight: 1.6 }} /></div>
 
         {maProgres && it.ciel && (
           <div style={{ marginTop: SPACE.xs }}>
@@ -830,11 +835,13 @@ export function DomovDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: G
           qr={{ label: "QR tohto skutku", onClick: () => setQr(true) }}
           retaz={{ onClick: () => setSplit(true) }} />
 
+        {/* OPRAVY 442 (3): Overujem / Namietam len pri skutkoch userov, pri skutku charity nie (Nahlásiť ostáva v ⋯) */}
+        {!it.stranka && <>
         <div style={{ textAlign: "center", fontSize: 10, color: C.textTer, marginTop: SPACE.md }}>Bol si pri tom? Komunita preveruje skutky.</div>
         <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.gutter }}>
           <VerifyBtn ok onClick={() => onVerify("ok")} />
           <VerifyBtn onClick={() => onVerify("no")} />
-        </div>
+        </div></>}
 
         {/* zoznam darcov — pri skutkoch až pod Overujem/Namietam */}
         <div style={{ marginTop: SPACE.gutter }}>

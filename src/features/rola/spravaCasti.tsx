@@ -276,6 +276,7 @@ export function Statistiky({ d, tier, mobil, toast }: { d: DataStatistik; tier: 
         <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><b style={{ fontSize: 14.5 }}>{n}</b><span style={drobneK}>{s}</span></span>
         <b style={{ fontSize: 15, color: "var(--gInk)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{v}</b>
       </div>)}
+      {!d.split.length && <span style={{ display: "block", fontSize: 13, color: "var(--ink3)", padding: "7px 0", borderTop: "1px solid var(--cardBd)" }}>Zatiaľ žiadny split.</span>}
     </section>);
   const darcovia = (
     <section style={kartaK}>

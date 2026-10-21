@@ -134,7 +134,8 @@ export function filtrujPodlaRadiusu<T extends FeedItem>(skutky: T[], user: FeedU
   // 3) nad prahom významnosti. Kríza (SOS) aj národné kampane prah PREBÍJAJÚ —
   //    národné už prešli geo filtrom (sú v okruhu „celá SR"), takže ich nesmie zhltnúť
   //    adaptívny prah pri širokom okruhu (kde je hustota vysoká → prah až ~10).
-  return vOkruhu.filter((s) => s.typSituacie === "kriza" || s.narodne || (s.skore ?? 0) >= prah);
+  // OPRAVY 442 (4): skutok charity (stránka, 0141) nemá AI skóre — prah (významnosť z AI) naň neplatí, okruh áno
+  return vOkruhu.filter((s) => s.typSituacie === "kriza" || s.narodne || !!(s as { stranka?: string }).stranka || (s.skore ?? 0) >= prah);
 }
 
 // ---- B.6 Frekvenčný strop (anti-šum) ----

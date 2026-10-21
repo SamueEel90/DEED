@@ -14,6 +14,7 @@ import { supabase } from "@/lib/supabase";
 import { bezDataUrl, nahrajSuborUrl, zmensiPreZariadenie, uvolniKoncepty } from "@/lib/uploadFoto";
 import { nacitajStav, ulozStav, synchronizujStav } from "./stav";
 import type { VieraFeedItem } from "./mock";
+import { jeVzor } from "@/lib/vzorStranky";
 
 function oznacVDb(fid: string, id: string) {
   const s = new Set(nacitajStav<string[]>("dbsync", fid, []));
@@ -105,6 +106,7 @@ export async function upravPrispevokDB(id: string, it: VieraFeedItem, fid?: stri
  * Vráti true, keď prebehla synchronizácia (→ UI si má znova prečítať LS).
  */
 export async function synchronizujPrispevky(fid: string): Promise<boolean> {
+  if (jeVzor(fid)) return false;
   const zDb = await nacitajPrispevkyDB(fid);
   if (zDb === null) return false; // mock režim / DB nedostupná → LS ostáva
   const dbIds = new Set(zDb.map((it) => it.id));

@@ -1,7 +1,8 @@
 // KARTA 55 · F — jednotný znak druhu (2a): farby v styles/druhy.css (svetlá aj tmavá téma).
 import "@/styles/druhy.css";
-export type Druh = "zbierka" | "ziadost" | "skutok" | "ponuka" | "akcia" | "hladame";
-export const DRUH_NAZOV: Record<Druh, string> = { zbierka: "Zbierka", ziadost: "Žiadosť", skutok: "Skutok", ponuka: "Ponuka", akcia: "Akcia", hladame: "Hľadáme" };
+export type Druh = "zbierka" | "ziadost" | "skutok" | "ponuka" | "akcia" | "hladame" | "vyzva";
+/** OPRAVY 431: výzva na súrnu pomoc (charita) = jantárová, len vo feede Domov */
+export const DRUH_NAZOV: Record<Druh, string> = { zbierka: "Zbierka", ziadost: "Žiadosť", skutok: "Skutok", ponuka: "Ponuka", akcia: "Akcia", hladame: "Hľadáme", vyzva: "Výzva" };
 /** farba štítku a ľavého okraja */
 export const druhF = (d: Druh) => `var(--dr-${d})`;
 /** OPRAVY 427: ľavý pás karty (v tmavom režime svetlejší) */

@@ -10,14 +10,19 @@
 // Auth je zatiaľ mock (bez reálneho backendu) — overuje len formát polí.
 // ============================================================
 import { DeedZnacka } from "@/components/DeedZnacka";
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { C, GRAD, SPACE, RADIUS } from "@/theme";
 import { toast, Znacka, IkonaObalka, IkonaZamok, IkonaOko, IkonaOkoOff, IkonaSipVpravo } from "@/shared";
 import { signIn, signUp, resolveSession, resetHeslo, zmenHeslo, jeNeoverenyEmail, posliEmailKod } from "@/lib/auth";
 import { useOverenieEmailu, OverteEmailTelo } from "./OverteEmail";
 import type { TypUctu } from "@/types";
 import { PotvrdNoveZariadenie, LimitZariadeni } from "@/features/profil/Bezpecnost24";
-import { zariadenia, odKedy, MAX_ZARIADENI, OVERENIE_ZARIADENIA } from "@/lib/zariadenia";
+import { zariadenia, odKedy, MAX_ZARIADENI, OVERENIE_ZARIADENIA, nazovZariadenia, ulozMestoZariadenia } from "@/lib/zariadenia";
+import { DeedQr } from "@/components/deedqr";
+import { zalozQr, stavQr, prihlasOdkazom, odkazPrihlasenia, type QrPc } from "@/lib/qrPrihlasenie";
+import { odhlasenyPreNecinnost, NECINNOST_MIN } from "@/features/bezpecnost/StrazcaNecinnosti";
+import { odhlasenyNaDialku } from "@/features/bezpecnost/StrazOdhlasenia";
+import { SvetlusikKarta } from "@/components/SvetlusikInfo";
 
 // 5 zlých pokusov o prihlásenie → 15 minút čakanie. Zadanie 3 · 3.5: počíta to LEN server
 // (Auth hook, migrácia 0042) — appka zobrazí jeho hlášku, sama nič nepočíta.
@@ -41,6 +46,10 @@ export function AuthPage({ onAuthed, onGuest, onPasivny, onRegistrovat, uvodnyRe
   const [brana, setBrana] = useState<null | { krok: "nove" | "limit"; dokonci: () => Promise<void> }>(null);
   // OPRAVY 378: neoverený e-mail (registrácia aj prihlásenie) → obrazovka Overte e-mail (6 číslic)
   const [overit, setOverit] = useState<null | { login: boolean }>(null);
+  // OPRAVY 466: prihlásenie počítača QR kódom z mobilu
+  const [mobilom, setMobilom] = useState(false);
+  const [necinnost] = useState(odhlasenyPreNecinnost);
+  const [naDialku] = useState(odhlasenyNaDialku);
 
   const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim());
   const hesloOk = heslo.length >= 6;
@@ -112,6 +121,7 @@ export function AuthPage({ onAuthed, onGuest, onPasivny, onRegistrovat, uvodnyRe
           cursor: ovE.kod.length === 6 && !ovE.busy ? "pointer" : "not-allowed", background: ovE.kod.length === 6 && !ovE.busy ? GRAD : "rgba(var(--glass-rgb),.06)", color: ovE.kod.length === 6 && !ovE.busy ? "#fff" : C.textTer }}>{ovE.busy ? "Overujem…" : "Overiť"}</button>
       </div>
     </div>);
+  if (mobilom) return <PrihlasenieMobilom onSpat={() => setMobilom(false)} onPrihlasene={() => void poPrihlaseni()} />;
   if (brana?.krok === "nove") return <PotvrdNoveZariadenie onZrusit={() => setBrana(null)} onPotvrdene={() => { odKedy(); if (zariadenia().length > MAX_ZARIADENI) setBrana({ ...brana, krok: "limit" }); else { setBrana(null); void brana.dokonci(); } }} />;
   if (brana?.krok === "limit") return <LimitZariadeni onPokracovat={() => { if (zariadenia().length > MAX_ZARIADENI) return; setBrana(null); void brana.dokonci(); }} />;
 
@@ -146,6 +156,8 @@ export function AuthPage({ onAuthed, onGuest, onPasivny, onRegistrovat, uvodnyRe
           })}
         </div>}
 
+        {naDialku && jeLogin && <SvetlusikKarta style={{ marginBottom: SPACE.md }}>Toto zariadenie ste odhlásili z iného zariadenia (Prihlásené zariadenia).</SvetlusikKarta>}
+        {necinnost && jeLogin && <SvetlusikKarta style={{ marginBottom: SPACE.md }}>Z bezpečnosti sme vás po {NECINNOST_MIN} minútach nečinnosti odhlásili. Rozpísané máte uložené.</SvetlusikKarta>}
         {/* formulár — Enter v ľubovoľnom poli odošle (submit) */}
         <form onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate>
         {/* email */}
@@ -205,6 +217,12 @@ export function AuthPage({ onAuthed, onGuest, onPasivny, onRegistrovat, uvodnyRe
           {busy ? "Moment…" : <>{jeLogin ? "Prihlásiť sa" : "Vytvoriť účet"} <IkonaSipVpravo size={18} color="#fff" /></>}
         </button>
         </form>
+
+        {/* OPRAVY 466: na počítači prihlásenie QR kódom z mobilu */}
+        {jeLogin && nazovZariadenia().typ === "pocitac" && <button type="button" onClick={() => { setChyba(null); setMobilom(true); }} style={{
+          width: "100%", padding: `${SPACE.md}px 0`, marginTop: SPACE.sm, borderRadius: RADIUS.md, fontFamily: "inherit",
+          fontSize: 14.5, fontWeight: 700, cursor: "pointer", background: "transparent", color: C.text, border: `1.5px solid ${C.line}`,
+        }}>Prihlásiť sa mobilom ›</button>}
 
         {/* sekundárna akcia — vstup bez prihlásenia (pasívny režim, bez účtu).
             V upgrade kontexte (pasívny → aktívny) sa nezobrazuje — handler nie je odovzdaný. */}
@@ -328,3 +346,71 @@ export function NoveHeslo({ onDone }: { onDone: () => void }) {
   );
 }
 
+
+// ============================================================
+// OPRAVY 466 · Prihlásiť sa mobilom: veľký QR (jednorazový, 2 min, potom sa sám vymení), PC sa každú 1,5 s pýta,
+// či mobil potvrdil; potom sa sám prihlási („Prihlásené ✓“) a pokračuje tam, kam išiel.
+// ============================================================
+function PrihlasenieMobilom({ onSpat, onPrihlasene }: { onSpat: () => void; onPrihlasene: () => void }) {
+  const [q, setQ] = useState<QrPc | null>(null);
+  const [chyba, setChyba] = useState<string | null>(null);
+  const [pozn, setPozn] = useState<string | null>(null);
+  const [hotovo, setHotovo] = useState(false);
+  const [teraz, setTeraz] = useState(() => Date.now());
+  const ziva = useRef(true);
+  const novy = async (veta?: string) => {
+    setChyba(null); setPozn(veta ?? null);
+    try { const x = await zalozQr(nazovZariadenia().nazov); if (ziva.current) setQ(x); }
+    catch (e) { if (ziva.current) { setQ(null); setChyba((e as Error).message); } }
+  };
+  useEffect(() => { ziva.current = true; void novy(); return () => { ziva.current = false; }; }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { const t = window.setInterval(() => setTeraz(Date.now()), 1000); return () => window.clearInterval(t); }, []);
+  // QR po 2 minútach sám vymení
+  useEffect(() => { if (q && !hotovo && teraz >= q.platiDo) void novy(); }, [teraz, q, hotovo]); // eslint-disable-line react-hooks/exhaustive-deps
+  // počúva stav (každú 1,5 s)
+  useEffect(() => {
+    if (!q || hotovo) return;
+    let bezi = false;
+    const t = window.setInterval(async () => {
+      if (bezi) return; bezi = true;
+      try {
+        const s = await stavQr(q);
+        if (!ziva.current) return;
+        if (s.stav === "potvrdene") {
+          window.clearInterval(t);
+          const e = await prihlasOdkazom(s.tokenHash);
+          if (e) { setChyba(e); void novy(); return; }
+          ulozMestoZariadenia(s.mesto);
+          setHotovo(true);
+          window.setTimeout(onPrihlasene, 900);
+        } else if (s.stav === "zrusene") { window.clearInterval(t); void novy("V mobile ste prihlásenie zrušili. Toto je nový QR."); }
+        else if (s.stav === "vyprsal" || s.stav === "pouzite" || s.stav === "nenajdene") { window.clearInterval(t); void novy(); }
+        else if (s.stav === "bez_emailu") { window.clearInterval(t); setChyba("Tento účet nemá e-mail. Prihláste sa na počítači e-mailom a heslom."); }
+      } catch { /* sieť — skúsi znova o 1,5 s */ } finally { bezi = false; }
+    }, 1500);
+    return () => window.clearInterval(t);
+  }, [q, hotovo]); // eslint-disable-line react-hooks/exhaustive-deps
+  const zostava = q ? Math.max(0, Math.ceil((q.platiDo - teraz) / 1000)) : 0;
+  return (
+    <div style={{ height: "100%", overflowY: "auto", background: "transparent" }}>
+      <div style={{ minHeight: "100%", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", gap: 18, padding: "36px 22px 26px", maxWidth: 520, margin: "0 auto", boxSizing: "border-box", textAlign: "center" }}>
+        <button type="button" onClick={onSpat} style={{ ...linkBtn, alignSelf: "flex-start", fontSize: 14.5, fontWeight: 800, color: C.green, minHeight: 44 }}>‹ Späť na prihlásenie e-mailom</button>
+        <div style={{ fontSize: 27, fontWeight: 800, letterSpacing: "-.01em" }}>Prihlásiť sa mobilom</div>
+        {hotovo ? <div role="status" style={{ display: "flex", flexDirection: "column", gap: 6, padding: "18px 22px", borderRadius: 18, background: "var(--gSoft, rgba(75,122,53,.12))", border: "1px solid var(--gBd, #A9C08F)" }}>
+            <b style={{ fontSize: 22, color: "var(--gInk, #3F6E2A)" }}>Prihlásené ✓</b>
+          </div>
+          : <>
+            <div style={{ padding: 14, borderRadius: 22, background: "#FFFFFF", border: `1px solid ${C.line}`, lineHeight: 0, minWidth: 300, minHeight: 300, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {q ? <DeedQr data={odkazPrihlasenia(q.token)} odznak="D+" variant="svetly" size={300} /> : <span style={{ fontSize: 14, color: "#555", lineHeight: 1.4 }}>{chyba ? "" : "Pripravujem QR…"}</span>}
+            </div>
+            <div style={{ fontSize: 16, lineHeight: 1.55, color: C.text, maxWidth: 400 }}>Otvorte <DeedZnacka /> v mobile → <b>Môj QR</b> → <b>Naskenovať</b> a namierte na tento kód.</div>
+            {q && <div style={{ fontSize: 13.5, color: C.textTer }}>Platí ešte {Math.floor(zostava / 60)}:{String(zostava % 60).padStart(2, "0")}, potom sa sám vymení. Platí len raz a len na tomto počítači.</div>}
+            {pozn && <div role="status" style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{pozn}</div>}
+            {chyba && <div role="alert" style={{ display: "flex", flexDirection: "column", gap: 10, padding: "14px 16px", borderRadius: 16, border: "1.5px solid #8E2F1E", fontSize: 14.5, color: C.text, maxWidth: 400 }}>
+              {chyba}
+              <button type="button" onClick={() => void novy()} style={{ minHeight: 44, borderRadius: 12, border: "none", background: "var(--a-green, #4B7A35)", color: "#fff", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, cursor: "pointer" }}>Skúsiť znova</button>
+            </div>}
+          </>}
+      </div>
+    </div>);
+}

@@ -13,8 +13,9 @@ import { pridajPodporu, firmaAkoDarca } from "./podpory";
 import { zapisCin } from "./vyzvy";
 import { zapisDarZbierky, idZbierkyDB, naviazObjekt, nacitajDaryZbierky, zdrojDaru, type ObjektZbierky } from "./darZbierky";
 import { toast } from "@/components/toast";
-import { ukazkyTeraz, naZmenuTestStavu } from "./testStav";
+import { naZmenuTestStavu } from "./testStav";
 import { sumaEur } from "@/lib/suma";
+import { jeVzor, vzorData } from "@/lib/vzorStranky";
 
 // ---- CONFIG (spec §6) — všetky čísla ŠTARTOVACIE, žijú tu, nie v kóde ----
 export const DARCOVIA_CFG = {
@@ -53,6 +54,8 @@ export interface DarRiadok {
   /** OPRAVY 294: skončená zvončeková omša v Hlavnej zbierke = jeden riadok („Ranná omša 6:00 · Pán Boh zaplať · 138 €“),
    *  jediný riadok so sumou v zozname darcov farnosti; stranka = kvôli poďakovaniu farnosti */
   omsa?: { nazov: string; stranka: string };
+  /** OPRAVY 438 (3): dar prišiel cez skutok charity — názov skutku (riadok „Cez skutok“) */
+  cezSkutok?: string;
   // zapečené polia LEN pre mock cudzích darcov (v produkcii render cez userId):
   meno?: string; inicialovo?: string; nick?: string; mesto?: string; mestoVerejne?: boolean;
 }
@@ -80,6 +83,7 @@ export function ulozMestoVerejne(on: boolean) {
 
 // ---- store (mock, in-memory) — zoznam + počítadlo rastú z JEDNÉHO miesta ----
 const sklad = new Map<string, DarRiadok[]>();
+const BEZ_DAROV: DarRiadok[] = [];
 const posluchaci = new Set<() => void>();
 let verzia = 0;
 const emit = () => { verzia++; posluchaci.forEach((f) => f()); };
@@ -87,7 +91,7 @@ const emit = () => { verzia++; posluchaci.forEach((f) => f()); };
 export function useZmenyDarov(): number { return useSyncExternalStore(subscribe, () => verzia); }
 function subscribe(f: () => void) { posluchaci.add(f); return () => { posluchaci.delete(f); }; }
 
-// deterministický seed per refId (mock „posledné dary" — ako keby prišli z enginu)
+// mená pre DEV „cudzí dar“ (len testovacie tlačidlo, nie zoznam darcov)
 const POOL = [
   { meno: "Jana Kováčová", inicialovo: "Jana K.", nick: "janka_zl", mesto: "Žilina" },
   { meno: "Peter Baláž", inicialovo: "Peter B.", nick: "petob", mesto: "Prešov" },
@@ -96,46 +100,11 @@ const POOL = [
   { meno: "Zuzana Malá", inicialovo: "Zuzana M.", nick: "zuzka", mesto: "Martin" },
   { meno: "Ondrej Vlk", inicialovo: "Ondrej V.", nick: "ondro77", mesto: "Snina" },
 ];
-function hashRef(s: string): number { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; }
-
-function seed(refId: string): DarRiadok[] {
-  const h = hashRef(refId);
-  const teraz = Date.now();
-  // mix verzií, kanálov a súm — anonym, pod prahom, nad prahom so sumou aj bez
-  const vzor: Array<Partial<DarRiadok> & { minPred: number }> = [
-    { minPred: 4, suma: 10, kanal: "psp", verzia: 2, zobrazSumu: true, mestoVerejne: true },
-    { minPred: 22, suma: 2, kanal: "psp", registrovany: false },
-    { minPred: 51, suma: 25, kanal: "sepa", verzia: 1, zobrazSumu: true, mestoVerejne: true },
-    { minPred: 60 * 3, suma: 4, kanal: "deed", verzia: 3, zobrazSumu: true }, // pod prahom → suma sa NEukáže
-    { minPred: 60 * 9, suma: 15, kanal: "psp", verzia: 4 },
-    { minPred: 60 * 26, suma: 8, kanal: "psp", verzia: 2, zobrazSumu: false },
-    { minPred: 60 * 24 * 2, suma: 50, kanal: "sepa", verzia: 1, zobrazSumu: true, mestoVerejne: false },
-  ];
-  return vzor.map((v, i) => {
-    const d = POOL[(h + i) % POOL.length];
-    return {
-      id: `${refId}-seed-${i}`, refId, cas: teraz - v.minPred * 60000,
-      suma: v.suma!, kanal: v.kanal!,
-      registrovany: v.registrovany !== false,
-      verzia: (v.verzia ?? 4) as VerziaIdentity,
-      zobrazSumu: !!v.zobrazSumu,
-      mestoVerejne: !!v.mestoVerejne,
-      ...d,
-    };
-  });
-}
-
 // zbierky na ukážku klientovi: začínajú bez vymyslených darov — pribúdajú len skutočné (simulované) platby
 const ciste = new Set<string>();
-const OMSA_REF = /-omsa-\d{4}-\d{2}-\d{2}$|-zv-[^-]+-\d{4}-\d{2}-\d{2}-\d{4}$/; // OPRAVY 289: aj zvončeková omše
-/** KARTA 56D: zbierka spustená z účtu (zb-…, novaZbierka.spustiZbierku) je skutočná — nikdy nemá vymyslené dary */
-const ZBIERKA_Z_UCTU = /^zb-/;
 export function nastavCiste(ids: string[]) { ids.forEach((i) => ciste.add(i)); }
 
-// sklad = len skutočné (simulované) dary; vymyslené dary (seed) len pri ukážkach — testovacia verzia
-// a „Profil: Vyplnený". Pri „Prázdny" a mimo testovacej verzie žiadne vymyslené mená (pravidlo placebo).
-const skladSeed = new Map<string, DarRiadok[]>();
-const zlozene = new Map<string, { r: DarRiadok[]; z: DarRiadok[] }>();
+// OPRAVY 442 (2): zoznam darcov = len skutočné dary (ledger, inak dary zapísané v appke). Vymyslené mená (seed) nikde.
 naZmenuTestStavu(emit);
 function realneDary(refId: string): DarRiadok[] {
   let r = sklad.get(refId);
@@ -151,7 +120,13 @@ const CERSTVE_DARY_MS = 20_000;
 /** zbierky rodiny, ktorých sumu server nepošle (0075b · KARTA 57 A.7): refId → počet darov */
 const skrytaSuma = new Map<string, number>();
 /** id zbierky v ledgeri, ak má appka databázu a dar patrí zbierke stránky */
-function ledgerId(refId: string): string | null { return supabase ? idZbierkyDB(refId) : null; }
+// OPRAVY 442 doplnok: skutok vo feede Domov („good-<uuid príspevku>“) — dary z ledgera (0142), nie z tohto zariadenia
+const PRISPEVOK_REF = /^good-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
+function ledgerId(refId: string): string | null {
+  if (!supabase) return null;
+  const p = refId.match(PRISPEVOK_REF);
+  return p ? `prispevok:${p[1]}` : idZbierkyDB(refId);
+}
 function obnovZLedgera(refId: string, id: string) {
   if (ledgerBezi.has(refId)) return;
   ledgerBezi.add(refId); zLedgera.set(refId, Date.now());
@@ -164,6 +139,7 @@ function obnovZLedgera(refId: string, id: string) {
       id: d.id, refId, cas: d.cas, suma: d.eur, kanal: d.kanal, registrovany: d.registrovany,
       verzia: d.meno ? 1 : 4, zobrazSumu: true, moj: d.moj, zLedgera: true, ...(d.meno ? { meno: d.meno } : {}),
       ...(d.omsa ? { omsa: { nazov: (d.meno ?? "Svätá omša").trim(), stranka } } : {}),
+      ...(d.cezSkutok ? { cezSkutok: d.cezSkutok } : {}),
     }));
     sklad.set(refId, [...firmy, ...dary].sort((a, b) => b.cas - a.cas));
     emit();
@@ -187,24 +163,22 @@ function sOmsami(refId: string, r: DarRiadok[]): DarRiadok[] {
 /** OPRAVY 294: znovu načítať dary zbierky z ledgera (po zavretí omše) */
 export function obnovDaryZbierky(refId: string) { const id = ledgerId(refId); if (id) obnovZLedgera(refId, id); }
 function riadkyPre(refId: string): DarRiadok[] {
+  if (jeVzor(refId)) return vzorData<Record<string, DarRiadok[]>>("vzor:dary")?.[refId] ?? BEZ_DAROV; // OPRAVY 467: ukážkové dary vzoru, nikdy do skladu
   const id = ledgerId(refId);
   if (id) {
     if (!ledgerBezi.has(refId) && Date.now() - (zLedgera.get(refId) ?? 0) > CERSTVE_DARY_MS) { zLedgera.set(refId, Date.now()); queueMicrotask(() => obnovZLedgera(refId, id)); }
     return realneDary(refId);
   }
-  const r = sOmsami(refId, realneDary(refId));
-  // KARTA 56D · OPRAVY 289: zvončeková omše (…-zv-…) nikdy nemá vymyslené dary
-  if (ciste.has(refId) || !ukazkyTeraz() || OMSA_REF.test(refId) || ZBIERKA_Z_UCTU.test(refId)) return r;
-  let s = skladSeed.get(refId);
-  if (!s) { s = seed(refId); skladSeed.set(refId, s); }
-  const c = zlozene.get(refId);
-  if (c && c.r === r) return c.z; // stabilná referencia pre useSyncExternalStore
-  const z = [...r, ...s];
-  zlozene.set(refId, { r, z });
-  return z;
+  return sOmsami(refId, realneDary(refId));
 }
 /** kľúče zbierok so skutočnými darmi podľa začiatku (omšové okná farnosti) */
 export function refIdySDarmi(zaciatok: string): string[] { return [...sklad.keys()].filter((k) => k.startsWith(zaciatok) && (sklad.get(k)?.length ?? 0) > 0); }
+
+/** OPRAVY 440 (2): dary zbierky už prišli z ledgera — vtedy sú riadky CELÝ súčet a „základ“ zo zbierky
+ *  (pohľad v_zbierky_na_pripnutie, ten istý ledger) sa k nim už nepripočíta. Inak sa sumy zdvojili (40 € + 40,10 €). */
+export function zLedgeraNacitane(refId: string): boolean { return ledgerId(refId) != null && sklad.has(refId); }
+/** základ zbierky mimo živých riadkov: 0, keď riadky prišli z ledgera */
+export const zakladMimoRiadkov = (refId: string, zaklad: number) => (zLedgeraNacitane(refId) ? 0 : zaklad);
 
 /** súčet a počet darov zbierky (eurá; EURC 1 : 1) — jeden zdroj pre ukazovateľ aj hlavičku.
  *  `skryta` = zbierka rodiny, sumu server neposlal (0075b · KARTA 57 A.7): suma je 0, počet zo servera. */
@@ -251,7 +225,11 @@ export function pridajDar(vstup: {
     ...(vstup.cezTvorcu ? { cezTvorcu: vstup.cezTvorcu } : {}),
     ...(zdrojDaru(vstup.refId) ? { zdroj: zdrojDaru(vstup.refId) } : {}),
   };
-  if (lid && !vstup.firma) {
+  if (lid?.startsWith("prispevok:")) {
+    // dar na skutok zapisuje platba_create (zaznamenajPodporu → pridajPodporuDB); zoznam sa obnoví z ledgera, keď tam je
+    window.setTimeout(() => obnovZLedgera(vstup.refId, lid), 2500);
+    window.setTimeout(() => obnovZLedgera(vstup.refId, lid), 8000);
+  } else if (lid && !vstup.firma) {
     // 0066/0067: dar sa ukáže až keď vznikne v ledgeri
     void zapisDarZbierky(vstup.refId, vstup.suma, vstup.kanal, vstup.objekt, reg && volba.verzia !== 4 ? vstup.menoDarcu : undefined)
       .then(() => obnovZLedgera(vstup.refId, lid))

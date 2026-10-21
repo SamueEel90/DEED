@@ -6,6 +6,14 @@ import "@/styles/sprava.css";
 import { LazyMotion, domAnimation, MotionConfig } from "motion/react";
 import { C } from "@/theme";
 import { OverenieHost, OverenieVrstva } from "@/features/overenie/OverenieHost";
+import { OsobaVrstva, PozvankaSkutkuHost, PozvankaSkutkuVrstva, PripojenieAkcieHost, PripojenieAkcieVrstva, PrihlaseniePcHost, PrihlaseniePcVrstva } from "@/features/pozvanky/Pozvanky";
+import { usePrihlaseniePc } from "@/lib/qrPrihlasenie";
+import { StrazcaNecinnosti } from "@/features/bezpecnost/StrazcaNecinnosti";
+import { StrazOdhlasenia } from "@/features/bezpecnost/StrazOdhlasenia";
+import { ZamokHost } from "@/features/bezpecnost/Zamok";
+import { usePripojenie } from "@/lib/akciaCharity";
+import { usePozvanka } from "@/lib/pozvankaSkutku";
+import { prisloSOdkazomOsoby } from "@/lib/odkazOsoby";
 import { useOverenieStav } from "@/lib/overeniePrijemcu";
 import { aplikujNastavenia } from "@/lib/nastaveniaAppky";
 import type { Tema } from "@/components/context";
@@ -234,6 +242,13 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   // OPRAVY 338: QR farnosti (/overenie/…) otvorený bez prihlásenia → Prihlásiť / Zaregistrovať a potom späť na overenie
   const ovp = useOverenieStav();
   const [ovpReg, setOvpReg] = useState<false | "aktivny" | "login">(false);
+  // OPRAVY 449: pozvánka ku skutku z odkazu — bez účtu prihlásenie / registrácia a hneď späť na pozvánku
+  const pzv = usePozvanka();
+  const [pzvReg, setPzvReg] = useState<false | "aktivny" | "login">(false);
+  // OPRAVY 446 (2): QR charity na akcii — rovno okno „Pripojiť sa k akcii …?“, bez úvodu appky
+  const pak = usePripojenie();
+  const pcq = usePrihlaseniePc(); // OPRAVY 466
+  const [pakReg, setPakReg] = useState<false | "aktivny" | "login">(false);
   if (aktivacia === "login" && session && !("demo" in session && session.demo) && session.typ !== "pasivny") setAktivacia(false); // prihlásený → vrstva preč, appka ostala tam, kde bola
   const [intro, setIntro] = useState(false); // prvé spustenie — 3-kartový sprievodca
   const [akoFunguje, setAkoFunguje] = useState(false); // „Ako DEED funguje" z menu Viac
@@ -351,7 +366,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   }, []);
 
   // OPRAVY 385: QR / odkaz s cieľom (/p/…, /z/…, /i/…, deep-link) bez prihlásenia → rovno cieľ ako hosť, žiadny úvod ani registrácia
-  const hostZQr = !booting && !session && !resumeInfo && !ovp && (prisloZQr() || !!startIskry() || !!dl);
+  const hostZQr = !booting && !session && !resumeInfo && !ovp && !pzv && !pak && !pcq && (prisloZQr() || prisloSOdkazomOsoby() || !!startIskry() || !!dl);
   useEffect(() => { if (hostZQr) setSession({ typ: "pasivny", meno: "Hosť" }); }, [hostZQr]);
 
   // splash počas auth-boot reconciliation (aj kým vznikne hosť z QR)
@@ -375,6 +390,11 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   if (!session) {
     if (ovp && !ovpReg && !resumeInfo) return <OverenieHost prihlaseny={false} onPrihlasit={() => setOvpReg("login")} onRegistrovat={() => setOvpReg("aktivny")} />;
     if (ovp && ovpReg) return <Registracia start={ovpReg} onHotovo={() => {}} />;
+    if (pzv && !pzvReg && !resumeInfo) return <PozvankaSkutkuHost prihlaseny={false} onPrihlasit={() => setPzvReg("login")} onRegistrovat={() => setPzvReg("aktivny")} />;
+    if (pzv && pzvReg) return <Registracia start={pzvReg} onHotovo={() => {}} />;
+    if (pak && !pakReg && !resumeInfo) return <PripojenieAkcieHost prihlaseny={false} onPrihlasit={() => setPakReg("login")} onRegistrovat={() => setPakReg("aktivny")} />;
+    if (pak && pakReg) return <Registracia start={pakReg} onHotovo={() => {}} />;
+    if (pcq) return <PrihlaseniePcHost prihlaseny={false} />; // OPRAVY 466: mobil bez prihlásenia QR počítača nespracuje
     if (!uvodVideny && !resumeInfo) {
       return (
         <div style={{ height: "100%", position: "relative" }}>
@@ -502,6 +522,12 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
 
         {/* OPRAVY 338: overenie príjemcu zbierky (sken QR farnosti / upozornenie s kódom) */}
         <OverenieVrstva onPrihlasit={() => setAktivacia("login")} onRegistrovat={() => setAktivacia("aktivny")} />
+        <PozvankaSkutkuVrstva onPrihlasit={() => setAktivacia("login")} onRegistrovat={() => setAktivacia("aktivny")} />
+        <PripojenieAkcieVrstva onPrihlasit={() => setAktivacia("login")} onRegistrovat={() => setAktivacia("aktivny")} />
+        <PrihlaseniePcVrstva />
+        {/* OPRAVY 466 doplnok: na počítači po 15 min nečinnosti „Ste tu ešte?“ (len skutočný účet, nie demo ani hosť) */}
+        {!("demo" in session && session.demo) && session.typ !== "pasivny" && <><StrazcaNecinnosti /><StrazOdhlasenia /><ZamokHost /></>}
+        <OsobaVrstva />
         {/* overlay aktívnej registrácie (po kliku „Stať sa aktívnym") */}
         {/* OPRAVY 385: nad detailom zbierky a parte (1000–1250), inak by registrácia ostala pod nimi */}
         {aktivacia && createPortal(

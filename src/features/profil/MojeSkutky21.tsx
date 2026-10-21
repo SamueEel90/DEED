@@ -1,5 +1,8 @@
 // KARTA 21 · Moje skutky — zoznam po mesiacoch, filtre 3 × 2, hľadanie, (ročný súhrn na zdieľanie je v Štatistikách, karta 27),
 // prázdny stav = tá istá obrazovka s ukážkami. Pridať skutok = spoločný komponent (otvorPridatSkutok).
+import { Galeria } from "@/features/zbierka/Vrch";
+import { useQuery } from "@tanstack/react-query";
+import { skutkyKdeSomPomahal } from "@/lib/skutkyStranky";
 import { ADRESA } from "@/lib/adresa";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { SpatTlacidlo } from "@/components/cesta";
@@ -64,7 +67,9 @@ export function MojeSkutky21({ onBack, oblastStitu }: { onBack: () => void; /** 
   const { desktop } = useLayout();
   const session = useSession() as { demo?: boolean } | null;
   const nast = useNastaveniaAppky();
-  const vsetky = mojeSkutky();
+  // OPRAVY 448 (3): aj skutky charít, pri ktorých som bol (sken Môj QR alebo potvrdená pozvánka) — zo servera
+  const { data: pomahal = [] } = useQuery({ queryKey: ["skutky-pomahal"], queryFn: skutkyKdeSomPomahal, staleTime: 60_000 });
+  const vsetky = [...mojeSkutky(), ...pomahal];
   const [f, setF] = useState<Filter>("vsetky");
   const [hlad, setHlad] = useState(false);
   const [q, setQ] = useState("");
@@ -114,7 +119,9 @@ export function MojeSkutky21({ onBack, oblastStitu }: { onBack: () => void; /** 
           <span aria-hidden="true" style={{ display: "flex", flex: "none", color: "var(--ink3)", transform: o ? "rotate(180deg)" : "none", transition: "transform .25s ease" }}><Ik d="M6 9l6 6 6-6" /></span>
         </button>
         {o && <div className="pf-rise" style={{ padding: "0 0 14px", display: "flex", flexDirection: "column", gap: 10 }}>
-          <span aria-hidden="true" style={{ height: 180, borderRadius: 14, ...img }} />
+          {/* OPRAVY 441: jedna galéria všade — všetky fotky skutku, nie len prvá */}
+          {(k.fotky?.length ?? 0) > 1 ? <Galeria media={k.fotky.map((src) => ({ typ: "foto" as const, src }))} vyska={180} radius={14} okraj="0" />
+            : <span aria-hidden="true" style={{ height: 180, borderRadius: 14, ...img }} />}
           <div style={{ fontSize: 13, color: "var(--ink3)" }}>{datumTxt(t, k.datum)} · {oblastTxt(t, k.oblast)} · {pr.p(k.miesto)}</div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <span style={{ flex: "none", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6, height: 30, padding: "0 10px", borderRadius: 9, fontSize: 13, fontWeight: 800, background: S[1], border: `1px solid ${S[2]}`, color: S[3] }}><Ik d={S[4]} s={14} />{t(S[0])}</span>

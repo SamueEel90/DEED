@@ -1,4 +1,5 @@
 // Dôkaz použitia zbierky — fotky PRED/PO, text a doklady (verejný profil aj oznam darcovi)
+import { Galeria } from "@/features/zbierka/Vrch";
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { useState } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
@@ -25,14 +26,9 @@ export function DokazBlok({ dokaz, vyzbierane, odberatel = "" }: { dokaz: Dokaz;
   return (
     <div style={{ marginBottom: SPACE.sm }}>
       <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: C.textTer, marginBottom: SPACE.xs }}>DÔKAZ — TAKTO SME POMOHLI</div>
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(3, Math.max(1, dokaz.fotky.length))}, 1fr)`, gap: SPACE.xs, marginBottom: SPACE.sm }}>
-        {dokaz.fotky.map((f) => (
-          <div key={f.src} style={{ position: "relative", borderRadius: RADIUS.sm, overflow: "hidden" }}>
-            <MediaNahlad src={f.src} popis={f.popis} ovladanie style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }} />
-            <span style={{ position: "absolute", left: 6, top: 6, fontSize: 11, fontWeight: 800, letterSpacing: ".05em", color: "#fff", background: f.popis === "PRED" ? "rgba(0,0,0,.65)" : "var(--a-green)", borderRadius: RADIUS.xs, padding: "2px 7px" }}>{f.popis}</span>
-          </div>
-        ))}
-      </div>
+      {/* OPRAVY 441: jedna galéria všade (popis PRED / PO a ďalšie sa ukáže na celej obrazovke) */}
+      {dokaz.fotky.length > 0 && <div style={{ marginBottom: SPACE.sm }}><Galeria okraj="0" radius={RADIUS.sm} nahlady
+        media={dokaz.fotky.map((f) => ({ typ: jeVideo(f.src) ? "video" as const : "foto" as const, src: f.src, popis: f.popis || undefined }))} /></div>}
       <div style={{ fontSize: 14, fontWeight: 600, color: C.text, lineHeight: 1.5, marginBottom: SPACE.sm }}>{dokaz.text}</div>
       <div style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, overflow: "hidden" }}>
         {dokaz.doklady.map((d, i) => (

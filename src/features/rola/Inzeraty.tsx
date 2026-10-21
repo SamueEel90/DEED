@@ -5,6 +5,7 @@
 // Pravidlo ako pri oznamoch: musí to zvládnuť človek, čo v živote nič
 // nepublikoval — dve otázky, náhľad, hotovo.
 // ============================================================
+import { Galeria } from "@/features/zbierka/Vrch";
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { useState, type CSSProperties } from "react";
 import { zaregistrujKluc, zmenene } from "@/lib/mojeData";
@@ -113,7 +114,9 @@ export function InzeratKarta({ o, autor, logo, deti }: { o: Oznam; autor: string
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, background: tint(ZLATA, .14), padding: `${SPACE.xxs}px ${SPACE.sm}px` }}>
         <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".05em", color: ZLATA }}>PRACOVNÁ PONUKA</span>
       </div>
-      {fotky[0] && (
+      {/* OPRAVY 441: viac fotiek → tá istá galéria; fotka sa neoreže (býva to plagát) */}
+      {fotky.length > 1 ? <Galeria neorezat vyska={380} radius={0} okraj="0" nahlady media={fotky.map((src) => ({ typ: "foto" as const, src }))} />
+      : fotky[0] && (
         <span {...pressable(() => setFotka(0), "Otvoriť fotku")} style={{ display: "block", cursor: "pointer" }}>
           {/* v ozname/ponuke sa fotka nikdy neoreže — býva to plagát a text v ňom musí byť vidieť */}
           <FotkaObsahu src={fotky[0]} maxVyska={380} cela />
@@ -128,12 +131,6 @@ export function InzeratKarta({ o, autor, logo, deti }: { o: Oznam; autor: string
         <UdajePonuky o={o} />
         {!bezTextu && (
           <FormatovanyText text={o.text} style={{ fontSize: 13.5, color: C.textSec, lineHeight: 1.5, marginTop: 4 }} />
-        )}
-        {fotky.length > 1 && (
-          <div style={{ display: "flex", alignItems: "center", gap: SPACE.xxs, marginTop: SPACE.xs, overflowX: "auto" }}>
-            {fotky.slice(1).map((f, i) => <Miniatura key={i} src={f} onClick={() => setFotka(i + 1)} />)}
-            <span style={{ flex: "none", fontSize: 11, color: C.textTer, paddingLeft: 2 }}>{fotky.length} fotky — klikni</span>
-          </div>
         )}
         <PrilohaPonuky o={o} />
         <AkoSaPrihlasit o={o} />

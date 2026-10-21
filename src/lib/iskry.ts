@@ -9,6 +9,7 @@
 import { ADRESA } from "@/lib/adresa";
 import { useSyncExternalStore } from "react";
 import { nacitajIskryZoServera } from "./iskryServer";
+import { supabase } from "./supabase";
 import { najdiTestProfil, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 
 export const ISKRY_CFG = {
@@ -55,6 +56,8 @@ export interface Iskra {
   zverejnene?: string;
   /** OPRAVY 135 · druh Zbierky: video k vlastnej zbierke toho, kto ju vedie (stránka = kľúč testProfily) */
   zb?: IskraZbierky;
+  /** OPRAVY 444: stránka autora a jej logo z profilu (namiesto iniciál) */
+  strankaAutora?: string; logo?: string;
 }
 /** výzva / priebeh = bežiaca zbierka (Darovať = platba do nej) · ďakujeme = ukončená (doklady) · firme = poďakovanie firme */
 export interface IskraZbierky { typ: "vyzva" | "dakujeme" | "firme"; stitok: string; stranka: string; zbierkaId: string; firma?: string }
@@ -104,7 +107,8 @@ export function nacitajPrud() {
 /** celý prúd: najnovšie pridané hore, potom zo servera, potom ukážkové */
 export const iskryVsetky = (): Iskra[] => {
   const ids = new Set(pridane.map((x) => x.id));
-  return [...pridane, ...zoServera.filter((x) => !ids.has(x.id)), ...ISKRY_MOCK];
+  // OPRAVY 444: ukážkové videá len bez databázy (vývoj); na webe len skutočné Iskry
+  return [...pridane, ...zoServera.filter((x) => !ids.has(x.id)), ...(supabase ? [] : ISKRY_MOCK)];
 };
 export const najdiIskru = (id: string): Iskra | undefined => iskryVsetky().find((x) => x.id === id);
 export function pridajIskru(i: Omit<Iskra, "id" | "iskry" | "zverejnene">): Iskra {

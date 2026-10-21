@@ -5,6 +5,7 @@
 // bez DB spojenia (mock/offline) drží appka výber len v pamäti relácie.
 import { useEffect, useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
+import { jeVzor } from "@/lib/vzorStranky";
 
 export type Vzhlad = "kronika" | "vyklad" | "pirat";
 export const VZHLADY: { k: Vzhlad; t: string; s: string; bg: string }[] = [
@@ -32,7 +33,7 @@ const nacitane = new Map<string, number>();
 const zapisane = new Map<string, number>();
 
 export async function nacitajVzhlad(stranka: string): Promise<Vzhlad | null> {
-  if (supabase && Date.now() - (nacitane.get(stranka) ?? 0) > 15_000) {
+  if (supabase && !jeVzor(stranka) && Date.now() - (nacitane.get(stranka) ?? 0) > 15_000) {
     const zac = Date.now();
     nacitane.set(stranka, zac);
     const { data, error } = await supabase.from("profil_stranky_verejny").select("vzhlad").eq("stranka", stranka).maybeSingle().then((x) => x, () => ({ data: null, error: { message: "siet" } }));

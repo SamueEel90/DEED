@@ -1,6 +1,8 @@
 // KARTA 29 · Priatelia — záložky Priatelia | Sledujem | Podporujem, žiadosti, Kam idú tvoji priatelia (+ Pridať sa),
 // moji priatelia so štítom, Pridať priateľa (4 cesty), hárok Čo o mne vidia priatelia. Anonymný profil = len meno.
 // Priateľ = vzájomný súhlas · Sledovanie = jednostranné · Podporujem = pravidelné dary. Údaje sú zatiaľ ukážkové.
+import { QrNaUkazanie } from "@/components/qrNaUkazanie";
+import { useMojOdkaz } from "@/lib/odkazOsoby";
 import { DOMENA } from "@/lib/adresa";
 import { sZnackou } from "@/components/DeedZnacka";
 import { useEffect, useRef, useState } from "react";
@@ -8,7 +10,6 @@ import { SpatTlacidlo } from "@/components/cesta";
 import { toast } from "@/components/toast";
 import { StitObr, type StitLevel } from "@/components/stit";
 import type { IScannerControls } from "@zxing/browser";
-import { DeedQr } from "@/components/deedqr";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { useNastaveniaAppky, zmenNastavenia } from "@/lib/nastaveniaAppky";
 import { Harok } from "@/features/zbierka/Zdielat";
@@ -304,7 +305,8 @@ function Pozvanka({ onClose }: { onClose: () => void }) {
   const t = useT();
   const [kop, setKop] = useState(false);
   const handle = (ja.nick || `${ja.meno}-${(ja.priezvisko || "")[0] ?? ""}`).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "ja";
-  const odkaz = `${DOMENA}/p/${handle}`;
+  const odkazU = useMojOdkaz(handle, !ja.demo && !!ja.ucetId); // OPRAVY 449 (1): /u/<odkaz> otvorí profil usera
+  const odkaz = `${DOMENA}/u/${odkazU}`;
   const kopiruj = async () => { try { await navigator.clipboard.writeText(`https://${odkaz}`); setKop(true); } catch { toast(tTeraz()("priatelia.odkazChyba")); } };
   const zdielaj = async () => {
     const tn = tTeraz();
@@ -314,7 +316,7 @@ function Pozvanka({ onClose }: { onClose: () => void }) {
   return (
     <Harok onClose={onClose} zatvorText={t("priatelia.zavriet")} hlavicka={nadpisH(t("priatelia.pozvanka"))}>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: 16, borderRadius: 18, background: "#fff", border: "1px solid var(--cardBd)" }}>
-        <DeedQr data={`https://${odkaz}`} bezOdznaku size={200} />
+        <QrNaUkazanie qr={{ data: `https://${odkaz}`, bezOdznaku: true }} size={200} popis={`Pozvánka do DEED+${ja.celeMeno ? ` · ${ja.celeMeno}` : ""} · naskenujte fotoaparátom`} />
         <span style={{ fontSize: 14, fontWeight: 700, color: "#1D211B" }}>{ja.celeMeno}</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 8px 8px 14px", borderRadius: 14, background: "var(--field)", border: "1px solid var(--cardBd)" }}>

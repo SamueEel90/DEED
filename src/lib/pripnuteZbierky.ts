@@ -11,6 +11,7 @@ import { UKAZKOVE_STRANKY } from "./mojeStranky";
 import { zbierkyStrankyZPamate, cielCislo } from "./novaZbierka";
 import { darcoviaPre, sucetDarov, useZmenyDarov, type DarRiadok } from "./darcovia";
 import { TESTOVACIA } from "./testovacia";
+import { jeVzor } from "@/lib/vzorStranky";
 
 export interface ZbierkaNaPripnutie { id: string; nazov: string; stranka: string; kto: string; zdroj: "charita" | "help"; ciel: number | null; vyzbierane: number; darov: number;
   /** OPRAVY 199: ukážková zbierka testovacej verzie — darovať sa na ňu nedá */ ukazkova?: true;
@@ -54,6 +55,7 @@ export async function hladajZbierky(): Promise<ZbierkaNaPripnutie[]> {
 }
 
 async function nacitaj(stranka: string) {
+  if (jeVzor(stranka)) { pamat.set(stranka, []); zmena(); return; }
   if (!supabase) {
     const ids = lsCitaj()[stranka] ?? [];
     pamat.set(stranka, lokalneZbierky().filter((z) => ids.includes(z.id))); zmena(); return;

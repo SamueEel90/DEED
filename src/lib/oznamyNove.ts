@@ -1,7 +1,8 @@
 // ============================================================
 // KARTA 40 · Oznamy charity (nový oznam — jeden pre celú appku, nahrádza starý rola/Oznamy.tsx).
 // Tri druhy: Oznam (od P1, profil + sledujúci o 5 min) · Oznam vo verejnom záujme (od P1, nástenka mesta
-// hneď, akcia najviac 2 mesiace dopredu) · Výzva na súrnu pomoc (všetky programy, nástenka hneď, najviac 10 dní).
+// hneď, akcia najviac 2 mesiace dopredu) · Výzva na súrnu pomoc (všetky programy, OPRAVY 431: feed Domov v meste
+// charity + sledujúcim, do dátumu „Pomoc treba do“, najviac 10 dní; nie nástenka, nie feed Charity).
 // Forma: text a fotky (textové polia + galéria) alebo vlastný plagát. Pozvať ľudí: bez · nezáväzne · záväzne.
 // DB: oznam_charity (migrácia 0033). Bez DB drží appka oznamy v pamäti relácie.
 // TODO (server): oznámenie sledujúcim po 5 min, správy prihláseným (zmena, zrušenie, pripomienka),
@@ -44,6 +45,8 @@ export interface OznamCharity {
   kategoria?: (typeof KATEGORIE_OZNAMU)[number];
   /** akcia: deň (YYYY-MM-DD) a čas (HH:MM, nepovinný); výzva: pomoc treba do (YYYY-MM-DD) */
   datum?: string; cas?: string; miesto?: string;
+  /** OPRAVY 434: oznam — platí do (YYYY-MM-DD, vrátane); bez = Bez konca. Po ňom sa sám presunie do Skončených */
+  koniec?: string;
   pozvanie: Pozvanie; limit?: number;
   /** „Pri akcii zbierame na …" — Nič · Centrálna · bežiaca zbierka (na ozname karta zbierky s pruhom a Darovať) */
   zbierka?: ZbierkaPriAkcii;
@@ -65,6 +68,8 @@ const posluchaci = new Set<() => void>();
 const zmena = () => { verzia++; posluchaci.forEach((f) => f()); };
 export const useZmenyOznamovCharity = () => useSyncExternalStore((f) => { posluchaci.add(f); return () => posluchaci.delete(f); }, () => verzia);
 
+/** OPRAVY 431: všetky oznamy v pamäti (feed Domov bez DB) */
+export const vsetkyOznamyZPamate = (): OznamCharity[] => [...pamat.values()].flat();
 export const oznamyStranky = (stranka: string): OznamCharity[] => [...(pamat.get(stranka) ?? [])].sort((a, b) => b.zverejnene.localeCompare(a.zverejnene));
 export const nastaveniaOznamov = (stranka: string): NastaveniaOznamov => nast.get(stranka) ?? { pripomienka: true, spravaPriZmene: true };
 export function ulozNastaveniaOznamov(stranka: string, n: NastaveniaOznamov) { nast.set(stranka, n); zmena(); }
@@ -98,7 +103,11 @@ export const maxVyzva = () => iso(new Date(Date.now() + OZNAMY_CFG.vyzvaDni * DE
 /** oznam je ešte v 5-minútovej lehote — sledujúcim nič neprišlo, dá sa upraviť / zrušiť bez stopy */
 export const vLehote = (o: OznamCharity, teraz = Date.now()) => o.druh === "oznam" && !o.zrusene && teraz - Date.parse(o.zverejnene) < OZNAMY_CFG.oneskorenieMin * 60000;
 /** beží = nezrušený a ešte nie po dátume (akcia / výzva) */
-export const bezi = (o: OznamCharity, dnes = dnesIso()) => !o.zrusene && (!o.datum || o.druh === "oznam" || o.datum >= dnes);
+export const bezi = (o: OznamCharity, dnes = dnesIso()) => !o.zrusene && (o.druh === "oznam" ? !o.koniec || o.koniec >= dnes : !o.datum || o.datum >= dnes);
+/** OPRAVY 434: počet bežiacich oznamov a výziev stránky (dlaždica Oznamy v Obsahu) */
+export const aktivnychOznamov = (stranka: string) => oznamyStranky(stranka).filter((o) => bezi(o)).length;
+/** „1 aktívny oznam“ · „3 aktívne oznamy“ · „5 aktívnych oznamov“ */
+export const aktivneOznamyText = (n: number) => n === 1 ? "1 aktívny oznam" : n >= 2 && n <= 4 ? `${n} aktívne oznamy` : `${n} aktívnych oznamov`;
 export const beziaceVerejne = (stranka: string) => oznamyStranky(stranka).filter((o) => o.druh === "verejny" && bezi(o));
 
 export async function zverejniOznam(o: Omit<OznamCharity, "id" | "zverejnene" | "prihlaseni" | "zucastniSa">): Promise<OznamCharity> {
@@ -122,10 +131,4 @@ export async function zrusOznamCharity(o: OznamCharity): Promise<string | null> 
     pamat.set(o.stranka, (pamat.get(o.stranka) ?? []).filter((x) => x.id !== o.id)); zmena(); return null;
   }
   try { await zapis({ ...o, zrusene: new Date().toISOString() }); return null; } catch (e) { return e instanceof Error ? e.message : "Nepodarilo sa zrušiť. Skúste znova."; }
-}
-/** DEV — prihlásenie / účasť na skúšku (v produkcii klik človeka pri ozname) */
-export async function simulujUcast(o: OznamCharity) {
-  const MENA = ["Jana K.", "Peter M.", "Lucia B.", "Martin Š.", "Eva H.", "Tomáš R."];
-  try { if (o.pozvanie === "zavazne") { if (o.limit && o.prihlaseni.length >= o.limit) return; await zapis({ ...o, prihlaseni: [...o.prihlaseni, { meno: MENA[o.prihlaseni.length % MENA.length], cas: new Date().toISOString() }] }); }
-  else if (o.pozvanie === "nezavazne") await zapis({ ...o, zucastniSa: o.zucastniSa + 1 }); } catch { /* DEV simulácia */ }
 }

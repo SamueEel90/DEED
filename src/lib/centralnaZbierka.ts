@@ -7,6 +7,7 @@ import { bezDataUrl } from "./uploadFoto";
 import { useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
 import type { MediumZbierky } from "./novaZbierka";
+import { jeVzor, vzorData } from "@/lib/vzorStranky";
 
 export interface CentralnaZbierka {
   /** textové polia: hlavný text + pokračovanie po „… viac" */
@@ -40,13 +41,14 @@ const posluchaci = new Set<() => void>();
 const zmena = () => { verzia++; posluchaci.forEach((f) => f()); };
 export const useZmenyCentralnej = () => useSyncExternalStore((f) => { posluchaci.add(f); return () => posluchaci.delete(f); }, () => verzia);
 
-export const centralnaZPamate = (stranka: string): CentralnaZbierka | null => pamat.get(stranka) ?? null;
+export const centralnaZPamate = (stranka: string): CentralnaZbierka | null => (jeVzor(stranka) ? vzorData<CentralnaZbierka>(`${stranka}:centralna`) ?? null : pamat.get(stranka) ?? null);
 
 /** OPRAVY 307: profil_stranky číta len správca (RLS) — iný účet aj neprihlásený čítajú pohľad profil_stranky_verejny (bez IBAN).
  *  Predtým iný účet dostal prázdny riadok bez chyby → Hlavná (a s ňou zvončeková) u neho nebola. Zlyhanie = centralnaChyba(). */
 const chyby = new Set<string>();
 export const centralnaChyba = (stranka: string) => chyby.has(stranka);
 export async function nacitajCentralnuZbierku(stranka: string): Promise<CentralnaZbierka | null> {
+  if (jeVzor(stranka)) return centralnaZPamate(stranka);
   if (supabase) {
     const vlastna = await supabase.from("profil_stranky").select("centralna").eq("stranka", stranka).maybeSingle().then((x) => x, () => ({ data: null, error: { message: "siet" } }));
     let c: CentralnaZbierka | null = !vlastna.error && vlastna.data ? (vlastna.data.centralna as CentralnaZbierka | null) ?? null : null;

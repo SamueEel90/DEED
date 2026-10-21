@@ -41,6 +41,11 @@ const zdroje = new Map<string, string>();
 export function nastavZdrojDaru(refId: string, stranka: string | null) { if (stranka) zdroje.set(refId, stranka); else zdroje.delete(refId); }
 export const zdrojDaru = (refId: string): string | undefined => zdroje.get(refId);
 
+// OPRAVY 438 (3) · 0140: dar z detailu skutku charity ide 100 % na zbierku skutku a platba si pamätá skutok (platba.cez_skutok).
+// Detail skutku nastaví skutok, kým je otvorený.
+const skutky = new Map<string, string>();
+export function nastavSkutokDaru(refId: string, skutok: string | null) { if (skutok) skutky.set(refId, skutok); else skutky.delete(refId); }
+
 /** 0084: meno darcu (voľba „Meno z profilu“, inak bez mena) a v testovacom režime platba naoko — dar sa zapíše ako testovací */
 export async function zapisDarZbierky(refId: string, eur: number, kanal: KanalDaru, objekt?: ObjektZbierky, menoDarcu?: string): Promise<void> {
   const id = idZbierkyDB(refId, objekt);
@@ -57,6 +62,13 @@ export async function zapisDarZbierky(refId: string, eur: number, kanal: KanalDa
   }
   const zaklad = { p_zbierka: id, p_idem: idem, p_suma: suma, p_mena: mena, p_kanal: dbKanal,
     p_stranka: objekt?.stranka ?? null, p_nazov: objekt?.nazov ?? null, p_zdroj: zdroje.get(refId) ?? null };
+  const skutok = skutky.get(refId);
+  if (skutok) {
+    const { error: es } = await supabase.rpc("zbierka_dar_skutok", { p_skutok: skutok, ...zaklad, p_meno_darcu: menoDarcu ?? null, p_test: TESTOVACIA });
+    if (!es) return;
+    // databáza ešte bez 0140: dar ide na zbierku bez väzby na skutok
+    if (!(es.code === "PGRST202" || /zbierka_dar_skutok/.test(es.message ?? ""))) throw es;
+  }
   const { error } = await supabase.rpc("zbierka_dar_volba", { ...zaklad, p_meno_darcu: menoDarcu ?? null, p_test: TESTOVACIA });
   if (!error) return;
   // databáza ešte bez 0084: starý zápis (bez mena, nie testovací)
@@ -70,22 +82,43 @@ export async function zapisDarZbierky(refId: string, eur: number, kanal: KanalDa
 
 /** dar zbierky tak, ako je v ledgeri (rpc zbierka_dary, 0067) */
 export interface DarZLedgera { id: string; cas: number; eur: number; kanal: KanalDaru; meno: string | null; registrovany: boolean; moj: boolean;
-  /** OPRAVY 294 (0096): skončená zvončeková omša v Hlavnej zbierke = jeden riadok, meno = „Ranná omša 6:00“ */ omsa?: boolean }
+  /** OPRAVY 294 (0096): skončená zvončeková omša v Hlavnej zbierke = jeden riadok, meno = „Ranná omša 6:00“ */ omsa?: boolean;
+  /** OPRAVY 438 (3) · 0140: dar prišiel cez skutok charity (názov skutku) */ cezSkutok?: string }
 /** dary zbierky z ledgera; `skryte` = zbierka rodiny a ja nie som príjemca ani darca (0075b, KARTA 57 A.7) —
  *  server poslal len počet darov, žiadne sumy ani mená */
 export interface DaryZbierky { dary: DarZLedgera[]; skryte: boolean; pocet: number }
 
 export async function nacitajDaryZbierky(id: string): Promise<DaryZbierky> {
   if (!supabase) return { dary: [], skryte: false, pocet: 0 };
-  const { data, error } = await supabase.rpc("zbierka_dary", { p_zbierka: id, p_limit: 200 });
+  // OPRAVY 442 doplnok (0142): skutok usera (príspevok) — dary z ledgera podľa príspevku
+  const pr = id.match(/^prispevok:(.+)$/);
+  const { data, error } = pr ? await supabase.rpc("prispevok_dary", { p_prispevok: pr[1], p_limit: 200 })
+    : await supabase.rpc("zbierka_dary", { p_zbierka: id, p_limit: 200 });
   if (error) throw error;
   const odp = (data ?? {}) as { dary?: unknown[]; skryte?: boolean; pocet?: number };
-  const dary = (odp.dary ?? []) as { id: string; cas: string; mena: string; kanal: string; meno: string | null; registrovany: boolean; moj: boolean; suma: number; omsa?: boolean }[];
+  const dary = (odp.dary ?? []) as { id: string; cas: string; mena: string; kanal: string; meno: string | null; registrovany: boolean; moj: boolean; suma: number; omsa?: boolean; skutok_nazov?: string | null }[];
   return {
     skryte: !!odp.skryte, pocet: Number(odp.pocet ?? dary.length),
     dary: dary.map((d) => ({
       id: d.id, cas: new Date(d.cas).getTime(), eur: d.mena === "DEED" ? Number(d.suma) / DEED_ZA_EUR : Number(d.suma),
       kanal: d.kanal === "deed" ? "deed" : d.kanal === "sepa" ? "sepa" : "psp", meno: d.meno, registrovany: d.registrovany, moj: d.moj, ...(d.omsa ? { omsa: true } : {}),
+      ...(d.skutok_nazov ? { cezSkutok: d.skutok_nazov } : {}),
     })),
   };
+}
+
+/** OPRAVY 438 (3) · 0140: koľko prišlo cez skutky (skutok → € a počet darov); bez databázy prázdne */
+export async function nacitajDarySkutkov(ids: string[]): Promise<Map<string, { eur: number; pocet: number }>> {
+  const m = new Map<string, { eur: number; pocet: number }>();
+  const l = [...new Set(ids)].filter(Boolean);
+  if (!supabase || !l.length) return m;
+  const { data, error } = await supabase.rpc("skutok_dary", { p_skutky: l });
+  if (error || !data) return m;
+  for (const r of data as { skutok: string; mena: string; suma: number; pocet: number }[]) {
+    const o = m.get(r.skutok) ?? { eur: 0, pocet: 0 };
+    o.eur += r.mena === "DEED" ? Number(r.suma) / DEED_ZA_EUR : Number(r.suma);
+    o.pocet += Number(r.pocet) || 0;
+    m.set(r.skutok, o);
+  }
+  return m;
 }

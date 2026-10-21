@@ -9,6 +9,8 @@
 // Názov pri človeku (kaplán, sestra Mária, dobrovoľník …) si farár napíše sám, je to len popis („p“). Server dá práva podľa
 // e-mailu v zozname, kým tam človek je. Pomocník tu zoznam len vidí.
 // ============================================================
+import { QrNaUkazanie } from "@/components/qrNaUkazanie";
+import { KartaNastavenia, IK_PRIDAT_CLOVEKA } from "@/features/rola/KartaNastavenia";
 import { odkazPozvanky } from "@/lib/pozvankaSpravy";
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { kartaVolby, FajkaVolby } from "@/components/Volby";
@@ -17,7 +19,6 @@ import { citajNastavenie, maNastavenie, zapisNastavenie, useZmenyNastaveni } fro
 import { useSlovaFarnosti } from "@/lib/mojeFarnosti";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { zdielaj, kopiruj } from "@/lib/zdielanie";
-import { DeedQr } from "@/components/deedqr";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
 import { nacitajProfil, zapisDuchovneho } from "@/lib/profilStranky";
 import { obnovFarara } from "@/lib/farnostPrispela";
@@ -154,7 +155,7 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children, 
           <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>Appka vytvorí QR a odkaz pre jedného človeka s rolou, ktorú ste vybrali. Platí 48 hodín.</span>
         </> : <div style={{ ...karta, padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
-            <span style={{ flex: "none", borderRadius: 14, overflow: "hidden", border: "1px solid var(--cardBd)", lineHeight: 0 }}><DeedQr data={odkaz} size={112} /></span>
+            <QrNaUkazanie qr={{ data: odkaz }} size={112} popis={`Pozvánka do správy stránky · ${poz.r}`} ram={{ border: "1px solid var(--cardBd)", overflow: "hidden" }} />
             <span style={{ flex: 1, minWidth: 160, display: "flex", flexDirection: "column", gap: 4 }}><b style={{ fontSize: 15.5 }}>Pozvánka · {poz.r}</b><span style={{ fontSize: 13.5, color: "var(--ink3)" }}>Platí do {poz.do}. Naskenuje QR alebo ťukne na odkaz.</span></span>
           </div>
           <span style={kick}>TAKTO PRÍDE SPRÁVA</span>
@@ -266,10 +267,8 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children, 
         ulozL(L.filter((y) => !z.includes(y)));
         return ost < 1 ? `Odobratí: ${z.length} ✓ · ${T} musí ostať aspoň jeden` : `Odobratí: ${z.length} ✓`; }} />
     {!farar && <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink3)" }}>{`Ľudí do správy pridáva a mení ${tl}.`}</span>}
-    {farar && <button type="button" onClick={() => { setPrid(true); setDOtv(false); }} style={{ minHeight: 56, padding: "8px 16px", borderRadius: 16, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2, textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
-      <b style={{ fontSize: 15 }}>Potrebujete pridať ďalších ľudí do správy? ›</b>
-      <span style={{ fontSize: 13, color: "var(--ink3)" }}>Nemusíte. Stránku zvládnete spravovať aj sám.</span>
-    </button>}
+    {farar && <KartaNastavenia nadpis="Pridať človeka do správy" stav="Nemusíte. Stránku zvládnete spravovať aj sám." tlacidlo="Pridať" ikona={IK_PRIDAT_CLOVEKA} mobil={mobil}
+      onClick={() => { setPrid(true); setDOtv(false); }} />}
     {farar && <span style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)" }}>{SL.dozorca ? `${T} alebo dozorca musí ostať aspoň jeden.` : `${T} musí ostať aspoň jeden.`} Pri preložení dajte rolu nástupcovi, potom sa môžete odobrať. Odobrať treba podržať.</span>}
     {children}
   </>);

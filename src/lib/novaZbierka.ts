@@ -8,6 +8,7 @@ import { bezDataUrl } from "./uploadFoto";
 import { useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
 import type { Vyrez } from "@/components/orezfotky";
+import { jeVzor, vzorData } from "@/lib/vzorStranky";
 
 /** 5. 10. · popis = nepovinný popis fotky (najviac 80 znakov), darca ho vidí pod fotkou na celej obrazovke, čítačka ako alt */
 export type MediumZbierky = { id: number; typ: "foto" | "video"; src: string; sek?: number; w?: number; vyrez?: Vyrez; popis?: string;
@@ -134,7 +135,7 @@ const zmena = () => { verzia++; posluchaci.forEach((f) => f()); };
 export const useZmenyZbierok = () => useSyncExternalStore((f) => { posluchaci.add(f); return () => posluchaci.delete(f); }, () => verzia);
 
 export const konceptZbierkyZPamate = (stranka: string): NovaZbierkaData | null => koncepty.get(stranka) ?? null;
-export const zbierkyStrankyZPamate = (stranka: string): SpustenaZbierka[] => spustene.get(stranka) ?? [];
+export const zbierkyStrankyZPamate = (stranka: string): SpustenaZbierka[] => (jeVzor(stranka) ? vzorData<SpustenaZbierka[]>(`${stranka}:zbierky`) ?? [] : spustene.get(stranka) ?? []);
 
 export async function nacitajKonceptZbierky(stranka: string): Promise<NovaZbierkaData | null> {
   if (supabase) {
@@ -158,6 +159,7 @@ export async function strankaZbierky(id: string): Promise<string | null> {
 }
 
 export async function nacitajZbierkyStranky(stranka: string): Promise<SpustenaZbierka[]> {
+  if (jeVzor(stranka)) return zbierkyStrankyZPamate(stranka);
   if (supabase) {
     const dotaz = (stlpce: string) => supabase!.from("zbierka").select(stlpce).eq("stranka", stranka).order("vytvorene", { ascending: false });
     let { data, error } = await dotaz("id, vs, nastavenie, zapecatena, stav, koniec");

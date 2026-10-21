@@ -8,6 +8,7 @@ import { useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
 import { bezDataUrl } from "./uploadFoto";
 import { toast } from "@/components/toast";
+import { jeVzor } from "@/lib/vzorStranky";
 
 export const SPRAVA_ZBIERKY_CFG = {
   /** štandardná dĺžka zbierky (kalendárne dni) */
@@ -74,6 +75,10 @@ export interface PolozkaDokladu {
   foto?: string;       // sken/fotka dokladu (data-URL)
   /** KARTA 48: doklad skontroloval DEED+ (na profile len „Overené DEED+", doklady sa nezverejňujú) */
   overene?: boolean;
+  /** OPRAVY 456: ďalšie strany dokladu (viac súborov naraz) a názov súboru */
+  strany?: string[]; subor?: string;
+  /** OPRAVY 456: kedy išla položka na overenie · DEED+ vrátil (dôvod) · zamietol */
+  odoslane?: string; vratene?: string; zamietnute?: boolean;
 }
 /** fotka / video dokladu použitia — 5. 10.: popis = voľný popis fotky (najviac 80 znakov), žiadne PRED / PO */
 export interface FotkaPouzitia { src: string; popis: string; typ?: "foto" | "video"; sek?: number }
@@ -104,6 +109,10 @@ export interface StavZbierky {
   vratitDo?: string;
   /** 5. 10. · prečo charita ukončila (Cieľ je splnený · Už to nepotrebujeme · Iný dôvod) */
   dovodUkoncenia?: string;
+  /** OPRAVY 459 (4): „Iný dôvod“ — krátky text, vidí ho len DEED (štatistiky), darcovia nie */
+  dovodIny?: string;
+  /** OPRAVY 459 (1): jediné poďakovanie darcom (HTML z TextovePolia) — odíde po 15 minútach spolu s výsledkom */
+  podakovanieDarcom?: string;
   /** KARTA 37 · bod 7: dlhodobá zbierka — kedy charita zavrela upozornenie po 90 dňoch bez doloženia („Teraz nie") */
   upozornenie90Zavrete?: string;
   /** KARTA 39 · bod 1: posledné vytiahnutie dlhodobej hore (priebežné doloženie), ISO */
@@ -169,7 +178,7 @@ export async function ulozStavIsto(id: string, s: StavZbierky): Promise<string |
 const stiahnute = new Set<string>();
 const ceka = new Set<string>(); // lokálna zmena ešte neodišla → server ju neprepíše
 async function stiahni(id: string) {
-  if (!supabase || stiahnute.has(id)) return;
+  if (!supabase || jeVzor(id) || stiahnute.has(id)) return;
   stiahnute.add(id);
   const { data, error } = await supabase.from("zbierka_sprava").select("data").eq("zbierka", id).maybeSingle();
   if (error) { stiahnute.delete(id); return; } // tabuľka ešte nebeží → len lokálne
@@ -225,13 +234,18 @@ export function kdeJeDlhodoba(o: { zaciatok: string; dary30: number; vytiahnute?
 export const dniDo = (iso: string, teraz: number) => Math.ceil((new Date(iso).getTime() - teraz) / DEN);
 export const pridajDni = (iso: string | number, dni: number) => new Date(new Date(iso).getTime() + dni * DEN).toISOString();
 
+/** OPRAVY 456: suma overených dokladov */
+export const sumaOverenych = (s: StavZbierky) => s.doklady.filter((d) => d.overene).reduce((a, d) => a + d.suma, 0);
+/** OPRAVY 456: odoslané, čakajú na overenie */
+export const dokladyCakaju = (s: StavZbierky) => s.doklady.some((d) => d.odoslane && !d.overene && !d.vratene && !d.zamietnute);
 export function sumaDokladov(s: StavZbierky, lenSFotkou = false) {
   return s.doklady.filter((d) => !lenSFotkou || !!d.foto).reduce((a, d) => a + d.suma, 0);
 }
 /** „doložené X % použitia" — rátajú sa len položky so skenom dokladu */
 export function percentoDolozenia(s: StavZbierky, vyzbierane: number): number {
-  if (!vyzbierane) return s.doklady.some((d) => d.foto) ? 100 : 0;
-  return Math.min(100, Math.round((sumaDokladov(s, true) / vyzbierane) * 100));
+  // OPRAVY 456 (4): rátajú sa len doklady, ktoré DEED+ overil (nie hneď po pridaní)
+  if (!vyzbierane) return s.doklady.some((d) => d.overene) ? 100 : 0;
+  return Math.min(100, Math.round((sumaOverenych(s) / vyzbierane) * 100));
 }
 export function splnene(p: Poziadavka, s: StavZbierky, vyzbierane: number): boolean {
   switch (p) {

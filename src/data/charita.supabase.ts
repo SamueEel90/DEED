@@ -18,8 +18,8 @@ export function mestoZoSidla(sidlo?: string): string | undefined {
 }
 const UROVNE = ["Bronze", "Silver", "Gold", "Platinum", "Legend"] as const;
 /** štít stránky z verejných nastavení (OPRAVY 412) — nová charita = Bronzový */
-const stitZ = (v?: unknown) => { const s = String(v ?? "").toLowerCase(); return UROVNE.find((u) => u.toLowerCase() === s) ?? "Bronze"; };
-const iniZ = (m: string) => m.replace(/,?\s*(o\.\s?z\.|n\.\s?o\.)\s*$/i, "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("") || "?";
+export const stitZ = (v?: unknown) => { const s = String(v ?? "").toLowerCase(); return UROVNE.find((u) => u.toLowerCase() === s) ?? "Bronze"; };
+export const iniZ = (m: string) => m.replace(/,?\s*(o\.\s?z\.|n\.\s?o\.)\s*$/i, "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("") || "?";
 
 const DEN = 86_400_000;
 const dniZ = (ts?: string): number => (ts ? Math.max(0, Math.floor((Date.now() - new Date(ts).getTime()) / DEN)) : 0);
@@ -64,7 +64,7 @@ export const charitaSupabase = {
     if (st.error) throw st.error;
     if (nas.error) throw nas.error;
     const charity = new Set((st.data ?? []).filter((s: any) => s.typ === "charita" && !s.testovacia).map((s: any) => s.id as string));
-    const nastavenie = new Map<string, { popis?: string; media?: Media; typ?: string; mesiace?: number; komu?: { oblast: string; pod: string[] } }>((nas.data ?? []).map((n: any) => [n.id as string, n.nastavenie ?? {}] as const));
+    const nastavenie = new Map<string, { popis?: string; media?: Media; typ?: string; mesiace?: number; komu?: { oblast: string; pod: string[] }; prav?: boolean }>((nas.data ?? []).map((n: any) => [n.id as string, n.nastavenie ?? {}] as const));
     const vsZbierok = new Map<string, string>((nas.data ?? []).map((n: any) => [n.id as string, n.vs as string] as const));
     const karty: CharitaFeedItem[] = zbierky.filter((z: any) => charity.has(z.stranka)).map((z: any) => {
       const n = nastavenie.get(z.id) ?? {};
@@ -81,6 +81,7 @@ export const charitaSupabase = {
         vyzbierane: Number(z.vyzbierane) || 0, ciel: ciel > 0 ? ciel : undefined, darov: Number(z.darov) || 0,
         konciDni: Math.max(0, Math.ceil((koniec.getTime() - Date.now()) / DEN)), vs: vsZbierok.get(z.id) || undefined, komu: n.komu?.oblast ? { oblast: n.komu.oblast, pod: Array.isArray(n.komu.pod) ? n.komu.pod.slice(0, 2) : [] } : undefined,
         orgNazov: meno, stranka: z.stranka, casVytvorenia: z.vytvorene,
+        pravidelna: n.prav === true, // OPRAVY 440 (3): pravidelná len keď ju zbierka má (Zadarmo nikdy)
         org: { logo: pr.bezLoga ? undefined : pr.logo || undefined, ini: pr.bezLoga && pr.inicialy ? pr.inicialy : iniZ(meno), mesto: mestoZoSidla(reg.sidlo), stit: stitZ(v.stit), ico: reg.ico || undefined, sidlo: reg.sidlo || undefined },
       } as CharitaFeedItem;
     });
@@ -90,12 +91,39 @@ export const charitaSupabase = {
 
   async adresar(): Promise<OrgAdresar[]> {
     if (!supabase) return [];
-    const { data, error } = await supabase.from("stranka").select("id, nazov").eq("typ", "charita").eq("testovacia", false).order("nazov").limit(500);
+    const { data, error } = await supabase.from("stranka").select("id, nazov, ucet_id").eq("typ", "charita").eq("testovacia", false).order("nazov").limit(500);
     if (error) throw error;
     const ids = (data ?? []).map((s: any) => s.id as string);
-    const ver = ids.length ? await supabase.from("nastavenia_stranky_verejne").select("stranka, verejne").in("stranka", ids) : { data: [], error: null };
+    const ucty = [...new Set((data ?? []).map((s: any) => s.ucet_id as string).filter(Boolean))];
+    const [ver, seg, tv] = await Promise.all([
+      ids.length ? supabase.from("nastavenia_stranky_verejne").select("stranka, verejne").in("stranka", ids) : Promise.resolve({ data: [], error: null }),
+      // OPRAVY 458: sektory z registrácie (verejne čitateľné) — delenie adresára ako pred 403
+      ucty.length ? supabase.from("segmenty").select("org_ucet_id, sektor").in("org_ucet_id", ucty) : Promise.resolve({ data: [], error: null }),
+      tvorcoviaStranok(ids),
+    ]);
     if (ver.error) throw ver.error;
     const reg = new Map<string, { nazov?: string; sidlo?: string }>((ver.data ?? []).map((v: any) => [v.stranka as string, v.verejne?.registra ?? {}] as const));
-    return (data ?? []).map((s: any) => ({ id: s.id, nazov: reg.get(s.id)?.nazov || s.nazov, sidlo: reg.get(s.id)?.sidlo ?? "" }));
+    const sek = new Map<string, string[]>();
+    for (const r of (seg.error ? [] : seg.data ?? []) as { org_ucet_id: string; sektor: string }[]) sek.set(r.org_ucet_id, [...(sek.get(r.org_ucet_id) ?? []), r.sektor]);
+    return (data ?? []).map((s: any) => { const t = tv.get(s.id); return { id: s.id, nazov: reg.get(s.id)?.nazov || s.nazov, sidlo: reg.get(s.id)?.sidlo ?? "", sektory: sek.get(s.ucet_id) ?? [], logo: t?.logo, ini: t?.ini, mesto: t?.mesto, stit: t?.stit }; });
   },
 };
+
+/** OPRAVY 442: tvorca (logo, iniciály, mesto, štít) pre stránky — skutky charity vo feede Domov */
+export async function tvorcoviaStranok(ids: string[]): Promise<Map<string, { meno?: string; logo?: string; ini: string; mesto?: string; stit: ReturnType<typeof stitZ> }>> {
+  const m = new Map<string, { meno?: string; logo?: string; ini: string; mesto?: string; stit: ReturnType<typeof stitZ> }>();
+  const l = [...new Set(ids)].filter(Boolean);
+  if (!supabase || !l.length) return m;
+  const [ver, prof] = await Promise.all([
+    supabase.from("nastavenia_stranky_verejne").select("stranka, verejne").in("stranka", l),
+    supabase.from("profil_stranky_verejny").select("stranka, ulozeny").in("stranka", l),
+  ]);
+  const verejne = new Map<string, any>(((ver.error ? [] : ver.data) ?? []).map((v: any) => [v.stranka as string, v.verejne ?? {}] as const));
+  const profily = new Map<string, any>(((prof.error ? [] : prof.data) ?? []).map((v: any) => [v.stranka as string, v.ulozeny ?? {}] as const));
+  for (const id of l) {
+    const v = verejne.get(id) ?? {}, reg = v.registra ?? {}, pr = profily.get(id) ?? {};
+    const meno: string | undefined = reg.nazov || undefined;
+    m.set(id, { meno, logo: pr.bezLoga ? undefined : pr.logo || undefined, ini: pr.bezLoga && pr.inicialy ? pr.inicialy : iniZ(meno ?? "?"), mesto: mestoZoSidla(reg.sidlo), stit: stitZ(v.stit) });
+  }
+  return m;
+}

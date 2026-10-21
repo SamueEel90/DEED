@@ -10,6 +10,7 @@ import { videneOdV } from "./odVeriacichVidene";
 import { zaregistrujKluc, zmenene } from "./mojeData";
 import { ukazChybuPriTuku } from "./chybaPriTuku";
 import { supabase } from "./supabase";
+import { jeVzor } from "@/lib/vzorStranky";
 
 export type DruhFarnika = "parte" | "svadba" | "ine" | "oznam" | "udalost" | "umysel" | "fotky" | "modlitba";
 /** k · názov · popis v Správe · popis vo výbere veriaceho · vždy zadarmo */
@@ -147,7 +148,7 @@ async function obnovUmysly(id: string): Promise<boolean> {
 }
 /** stiahne moje čakajúce (autor) alebo všetky čakajúce stránky (farár); server pustí len tieto · OPRAVY 373: aj úmysly */
 export async function obnovCakajuce(id: string): Promise<boolean> {
-  if (!supabase) return false;
+  if (!supabase || jeVzor(id)) return false;
   const [{ data, error }, um] = await Promise.all([supabase.from("odfarnikov_caka").select("id,data,stav,rozhodnute").eq("stranka", id), obnovUmysly(id).catch(() => false)]);
   if (error || !data) return um;
   ulozCakaLok(id, (data as { id: string; data: PolozkaFarnika; stav: string; rozhodnute: string | null }[])

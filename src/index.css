@@ -286,3 +286,6 @@ html.dark .podrzte-napoveda { background: #8DB866; color: #14210E; box-shadow: 0
 
 /* OPRAVY 387: vrstva dostane zameranie pri otvorení — bez obrysu okolo celej vrstvy */
 [role="dialog"][tabindex="-1"]:focus { outline: none; }
+
+/* OPRAVY 441: jedna galéria všade — posuvník fotiek bez lišty aj mimo platby a profilu */
+.zb-snap::-webkit-scrollbar { display: none; }

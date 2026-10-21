@@ -5,6 +5,7 @@ import { useEffect, useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
 import { toast } from "@/components/toast";
 import { pripojTestovaciuStranku } from "./stranka";
+import { jeVzor } from "@/lib/vzorStranky";
 
 type Verejne = Record<string, unknown>;
 const pamat = new Map<string, Verejne>();
@@ -22,7 +23,7 @@ const lokalne = new Map<string, Set<string>>(); // kľúče zapísané tu, kým 
 const CERSTVE_MS = 15_000;
 /** načíta verejné nastavenia stránky; súbežné volania čakajú na ten istý dotaz, čerstvé (15 s) sa nečítajú znova */
 export function nacitajVerejne(stranka: string, nanovo = false): Promise<void> {
-  if (!supabase) return Promise.resolve();
+  if (!supabase || jeVzor(stranka)) return Promise.resolve();
   const bezi = nacitava.get(stranka);
   if (bezi) return bezi;
   if (!nanovo && Date.now() - (nacitane.get(stranka) ?? 0) < CERSTVE_MS) return Promise.resolve();

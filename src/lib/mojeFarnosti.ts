@@ -8,6 +8,7 @@ import { useEffect, useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
 import { UKAZKOVE_STRANKY } from "./mojeStranky";
 import { zaregistrujKluc, zmenene } from "./mojeData";
+import { jeVzor } from "@/lib/vzorStranky";
 
 /** KARTA 62: sledovaný kostol = miesto konkrétnej farnosti (moje_kostoly, 0086) */
 export interface SledovanyKostol { stranka: string; miesto: string; /** KARTA 63 */ bloky?: string[] }
@@ -187,6 +188,7 @@ export function useAdresarOtvoreny(): string | null {
 const cirkevPamat = new Map<string, string>();
 /** cirkev farnosti (kód z CIRKVI); kým nie je načítaná, RKC ako v DB */
 export async function nacitajCirkevFarnosti(stranka: string): Promise<string> {
+  if (jeVzor(stranka)) return "RKC";
   if (supabase) {
     const { data } = await supabase.from("farnost_adresar").select("cirkev").eq("stranka", stranka).maybeSingle();
     const c = (data as { cirkev?: string } | null)?.cirkev;

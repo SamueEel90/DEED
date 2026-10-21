@@ -1,4 +1,6 @@
-import { useState, memo } from "react";
+import { useState, useEffect, memo } from "react";
+import { SegTabs } from "@/components/segtabs";
+import { useLokalita } from "@/lib/lokalita";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { UDALOST_ZALOZ_CHARITU } from "@/lib/aktivnaCharita";
 import { SIRKA, C, SPACE, RADIUS } from "@/theme";
@@ -17,8 +19,9 @@ import { otvorPridatSkutok } from "@/features/skutok/otvor";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { usePersonalizacia } from "@/lib/personalizacia";
 import { oblastKluc } from "@/lib/personalizaciaStore";
-import { pribehZbierky, useZmenyPribehov } from "@/lib/pribehZbierky";
+import { pribehZbierky, useZmenyPribehov, nacitajPribehy } from "@/lib/pribehZbierky";
 import { otvorPribeh, otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
+import { useZmenyDarov, sucetDarov, zLedgeraNacitane } from "@/lib/darcovia";
 import { casOd } from "@/components/feedcard";
 import { StitOkno } from "@/features/verejny-profil/casti";
 import { prazdnaCharita } from "@/lib/testProfily";
@@ -76,6 +79,7 @@ type ZbierkaDetail = {
   stranka?: string;
   /** OPRAVY 428: VS zbierky a čas zverejnenia (hlavička detailu) */
   vs?: string; zverejnene?: string;
+  /** OPRAVY 440 (3): zbierka má pravidelnú podporu (od P1) */ pravidelna?: boolean;
 };
 
 // dátovo riadená karta (comp: "data") → detail
@@ -83,6 +87,7 @@ const zoItem = (it: CharitaFeedItem): ZbierkaDetail => ({
   id: String(it.id), nazov: it.nazov || "Zbierka", accent: K.gold,
   overena: it.overena, popis: it.popis || "", vyzbierane: it.vyzbierane, ciel: it.ciel,
   ludia: it.podpora, fotky: it.fotky, lok: it.lok, org: it.orgNazov, stranka: it.stranka, volunteer: it.typ === "skutok", vs: it.vs, zverejnene: it.casVytvorenia,
+  ...(it.comp === "data" && it.typ === "charita" ? { pravidelna: !!it.pravidelna } : {}),
 });
 
 // ZbierkaDetail → záznam obľúbených (bookmark)
@@ -125,7 +130,7 @@ export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
     return (<SwipeBack onBack={cesta.spat}><ZbierkaModul key={krok.id}
       zbierka={{ id: z.id ?? z.nazov, nazov: z.nazov, popis: z.pribeh ?? z.popis, overena: z.overena,
         media: (z.fotky ?? []).map((src) => ({ typ: "foto" as const, src })),
-        vyzbierane: z.vyzbierane, ciel: z.ciel, ludia: z.ludia, vs: z.vs, zverejnene: z.zverejnene }}
+        vyzbierane: z.vyzbierane, ciel: z.ciel, ludia: z.ludia, vs: z.vs, zverejnene: z.zverejnene, ...(z.pravidelna !== undefined ? { pravidelna: z.pravidelna } : {}) }}
       onBack={cesta.spat} spatNazov={spatNazov} onZavriet={cesta.zavri}
       onOtvorOrg={z.stranka ? () => otvorVerejnyProfil(z.stranka!) : undefined}
       stav={krok.stav} onStav={(zm) => cesta.ulozStav(krok.id, zm)} /></SwipeBack>);
@@ -185,6 +190,8 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard }: Feed
   const { desktop } = useLayout();
   // OPRAVY 403: feed = len zbierky a skutky z databázy, od najnovšieho (všetko je zatiaľ v jednom meste)
   const { data: feed0 = [], isLoading, isError, refetch } = useCharitaFeed();
+  const idFeedu = feed0.filter((x) => x.typ === "charita").map((x) => String(x.id)).join(",");
+  useEffect(() => { if (idFeedu) void nacitajPribehy(idFeedu.split(",")); }, [idFeedu]);
   // OPRAVY 430: najprv zbierky, ktorých oblasť alebo podpoložka sedí so záujmami prihláseného (v rámci okruhu), potom ostatné; bez záujmov od najnovšieho
   const { zaujmy } = usePersonalizacia();
   const sedi = (it: CharitaFeedItem) => !!it.komu && zaujmy.some((z) => oblastKluc(z.oblast) === it.komu!.oblast || it.komu!.pod.includes(z.pod_polozka));
@@ -197,17 +204,19 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard }: Feed
   const karta = (it: CharitaFeedItem) => {
     const zd = zoItem(it);
     // KARTA 55 · E: zverejnený príbeh → pod fotkou krátky text (max 3 riadky) a odkaz na stránku Príbeh
-    const pr = it.pribehZbierky ? pribehZbierky(it.pribehZbierky) : null;
+    // OPRAVY 455 (8): príbeh patrí každej zbierke (id zbierky); feed ho doteraz nemal nastavený, preto sa krátky text neukázal
+    const idPr = it.pribehZbierky ?? (it.typ === "charita" ? String(it.id) : undefined);
+    const pr = idPr ? pribehZbierky(idPr) : null;
     return (
-      <CharitaKarta key={it.id} wide={wide} onClick={() => onDetail(zd)}
+      <CharitaKarta key={it.id} refId={it.typ === "charita" ? String(it.id) : undefined} wide={wide} onClick={() => onDetail(zd)}
         fotky={it.fotky} accent={K.gold}
         typ={it.typ === "skutok" ? "skutok" : "charita"} stav={it.konciDni != null ? { konciDni: it.konciDni } : undefined}
         doplnky={it.dorovnanie ? <DoplnokDorovnanie ini={it.dorovnanie.ini} text={it.dorovnanie.text} /> : undefined} zFirmy={it.zFirmy}
         nazov={it.nazov} darov={it.darov} cas={casOd(it.casVytvorenia)} cipy={it.komu?.pod}
         tvorca={it.stranka ? { meno: it.orgNazov ?? "Organizácia", logo: it.org?.logo, ini: it.org?.ini, mesto: it.org?.mesto, stit: it.org?.stit ?? "Bronze",
           onProfil: () => otvorVerejnyProfil(it.stranka!), onStit: () => setStitOkno(it) } : undefined}
-        popis={pr ? <span style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{pr.kratky}</span> : it.popis}
-        pribehOdkaz={pr ? { text: `Celý príbeh na stránke ${it.orgNazov ?? "organizácie"} ›`, onClick: () => otvorPribeh(it.pribehZbierky!) } : undefined}
+        popis={pr ? <span style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden", whiteSpace: "pre-line" }}>{pr.kratky}</span> : it.popis}
+        pribehOdkaz={pr ? { text: `Celý príbeh na stránke ${it.orgNazov ?? "organizácie"} ›`, onClick: () => otvorPribeh(idPr!) } : undefined}
         vyzbierane={it.vyzbierane} ciel={it.ciel} oblubena={oblubenyZo(zd)} />
     );
   };
@@ -254,7 +263,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard }: Feed
           </div>
         }
         stat={
-          <StatRiadok inline={desktop} pocet={feed.length} jednotka="zbierok" mesiac="—"
+          <StatRiadok inline={desktop} pocet={feed.length} jednotka="zbierok"
             okruh={(FEED_CFG.radiusy as any)[radius].krat} onOkruh={() => setVyberOkruh(true)} />
         }
       />
@@ -294,7 +303,13 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard }: Feed
 // memo: re-render len pri zmene dát karty (oblubena/vyzbierane/…); inline onClick sa ignoruje
 const CharitaKarta = memo(CharitaKartaBase, rovnakeOkremFunkcii);
 // KARTA 55 · F (2a): druh = štítok na fotke + ľavý okraj, stav vpravo hore, doplnky pod názvom. Kategória nie je štítok.
-function CharitaKartaBase({ wide, onClick, fotky, emoji, typ, stav, doplnky, zFirmy, nazov, popis, vyzbierane, ciel, darov, oblubena, pribehOdkaz, tvorca, cas, cipy }: any) {
+function CharitaKartaBase({ refId, wide, onClick, fotky, emoji, typ, stav, doplnky, zFirmy, nazov, popis, vyzbierane: vyz0, ciel, darov: darov0, oblubena, pribehOdkaz, tvorca, cas, cipy }: any) {
+  // OPRAVY 440 (2): jeden zdroj s detailom — keď sú dary zbierky z ledgera načítané, karta berie ich súčet
+  // (ten istý ako detail, aj s darmi v DeeD); po dare sa obnoví sama. Kým nie sú, číslo zo servera.
+  useZmenyDarov();
+  const s = refId ? sucetDarov(refId) : null;
+  const zL = !!refId && zLedgeraNacitane(refId);
+  const vyzbierane = zL && s ? s.suma : vyz0, darov = zL && s ? s.pocet : darov0;
   // OPRAVY 426: rozloženie 1b — tvorca pod fotkou so štítom (obrázok), bez modrej fajky; text bez HTML, 2 riadky
   return (
     <FeedCard wide={wide} onClick={onClick} label={nazov} typ={typ} stav={stav} doplnky={doplnky} tvorca={tvorca} cas={cas} cipy={cipy}
@@ -361,20 +376,50 @@ function SheetPridat({ toast, otvorModul, onClose }: { toast: (m: string) => voi
 }
 
 // OPRAVY 403: len skutočne zaregistrované organizácie z databázy; ťuk = ich verejný profil
+// OPRAVY 458: delenie adresára ako pred 403 (sekcie + filter oblasti), len so skutočnými organizáciami.
+// Sekcia podľa sektora z registrácie (tabuľka segmenty) + „<mesto> a okolie“ podľa sídla. Prázdna sekcia sa neukazuje.
+const ADR_SEKCIE: { sekcia: string; chipy: string[]; sektory: RegExp }[] = [
+  { sekcia: "Zdravie & pacienti", chipy: ["Zdravie"], sektory: /zdrav|pacient|onko|hospic/i },
+  { sekcia: "Deti & mládež", chipy: ["Deti"], sektory: /deti|mláde|mlade/i },
+  { sekcia: "Zvieratá", chipy: ["Zvieratá"], sektory: /zviera|útul|utul/i },
+  { sekcia: "Príroda & ekológia", chipy: ["Príroda"], sektory: /príro|priro|ekol|klím|klim/i },
+  { sekcia: "Sociálne & humanitárna", chipy: ["Sociálne", "Humanitárna"], sektory: /sociál|social|humanit|bez domova/i },
+  { sekcia: "Nevidiaci & hendikep", chipy: ["Sociálne"], sektory: /nevid|hendik|postih/i },
+  { sekcia: "Seniori & rodina", chipy: ["Sociálne", "Seniori"], sektory: /senior|rodin/i },
+];
+const ADR_CHIPY = ["Všetko", "Zdravie", "Deti", "Zvieratá", "Príroda", "Sociálne", "Humanitárna"];
+const STIT_FARBA: Record<string, string> = { Bronze: "#B0703E", Silver: "#8A8F96", Gold: "var(--a-gold)", Platinum: "var(--a-info)", Legend: "var(--a-plum)" };
+const STIT_SK: Record<string, string> = { Bronze: "Bronzový", Silver: "Strieborný", Gold: "Zlatý", Platinum: "Platinový", Legend: "Legenda" };
+
 function SheetAdresar({ onClose }: { onClose: () => void }) {
   const { data: ADRESAR = [], isLoading, isError, refetch } = useCharitaAdresar();
+  const lok = useLokalita();
+  const [chip, setChip] = useState("Všetko");
   const [hladaj, setHladaj] = useState("");
   const q = hladaj.trim().toLowerCase();
-  const filtrovane = ADRESAR.filter((o) => !q || `${o.nazov} ${o.sidlo}`.toLowerCase().includes(q));
   const ini = (n: string) => n.replace(/,?\s*(o\.\s?z\.|n\.\s?o\.)\s*$/i, "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
+  const mesto = lok?.mesto && lok.mesto !== "—" ? lok.mesto : null;
+  const sekcie = [
+    ...ADR_SEKCIE.map((d) => ({ sekcia: d.sekcia, chipy: d.chipy, org: ADRESAR.filter((o) => (o.sektory ?? []).some((x) => d.sektory.test(x))) })),
+    ...(mesto ? [{ sekcia: `${mesto} a okolie`, chipy: [mesto, "Sociálne"], org: ADRESAR.filter((o) => o.mesto === mesto) }] : []),
+    { sekcia: "Ďalšie organizácie", chipy: [] as string[], org: ADRESAR.filter((o) => !(o.sektory ?? []).some((x) => ADR_SEKCIE.some((d) => d.sektory.test(x))) && o.mesto !== mesto) },
+  ];
+  const chipy = ADR_CHIPY.filter((c) => c === "Všetko" || sekcie.some((s) => s.chipy.includes(c) && s.org.length));
+  const filtrovane = sekcie
+    .filter((s) => chip === "Všetko" || s.chipy.includes(chip))
+    .map((s) => ({ ...s, org: s.org.filter((o) => !q || `${o.nazov} ${o.sidlo} ${(o.sektory ?? []).join(" ")}`.toLowerCase().includes(q)) }))
+    .filter((s) => s.org.length);
 
   return (
     <SheetObal title="Charita & OZ" onClose={onClose}>
       {ADRESAR.length > 0 && <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, background: K.card, border: `1px solid ${K.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.sm}px`, marginBottom: SPACE.sm }}>
         <span style={{ display: "flex", color: K.txt3 }}><Lupa size={16} color={K.txt3} /></span>
-        <input value={hladaj} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHladaj(e.target.value)} placeholder="Hľadať organizáciu alebo mesto…" aria-label="Hľadať organizáciu"
+        <input value={hladaj} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHladaj(e.target.value)} placeholder="Hľadať charitu, oblasť, mesto…" aria-label="Hľadať organizáciu"
           style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: K.txt, fontSize: 15, padding: `${SPACE.xs}px 0`, minHeight: 40 }} />
       </div>}
+      {ADRESAR.length > 0 && chipy.length > 2 && <SegTabs options={chipy} value={chip} onChange={setChip} ariaLabel="Filter charít podľa oblasti"
+        style={{ display: "flex", gap: SPACE.xs, overflowX: "auto", paddingBottom: SPACE.xs, marginBottom: SPACE.xxs }}
+        render={(c, on) => <span style={{ whiteSpace: "nowrap", fontSize: 13.5, minHeight: 36, display: "inline-flex", alignItems: "center", padding: `0 ${SPACE.sm}px`, borderRadius: 99, cursor: "pointer", background: on ? K.txt : K.card, color: on ? "var(--c-bg)" : K.txt2, fontWeight: on ? 700 : 500, border: `1px solid ${on ? K.txt : K.line}` }}>{c}</span>} />}
 
       {isError ? (
         <ErrorState onRetry={() => refetch()} />
@@ -384,14 +429,20 @@ function SheetAdresar({ onClose }: { onClose: () => void }) {
         <div style={{ textAlign: "center", color: K.txt, fontSize: 15, fontWeight: 700, padding: "44px 16px" }}>Zatiaľ tu nie je žiadna organizácia</div>
       ) : (
         <>
-          {filtrovane.map((o) => (
-            <div key={o.id} {...pressable(() => { onClose(); otvorVerejnyProfil(o.id); }, o.nazov)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.xxs}px`, borderBottom: `1px solid ${K.line}`, cursor: "pointer", minHeight: 56 }}>
-              <span style={{ width: 40, height: 40, borderRadius: RADIUS.round, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: K.blueBg, color: K.blue, fontSize: 14, fontWeight: 800 }}>{ini(o.nazov) || "?"}</span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 15, fontWeight: 600 }}>{o.nazov}</div>
-                {o.sidlo && <div style={{ fontSize: 12.5, color: K.txt2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.sidlo}</div>}
-              </div>
-              <span style={{ color: K.txt3, fontSize: 16 }}>›</span>
+          {filtrovane.map((s) => (
+            <div key={s.sekcia}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: K.blue, textTransform: "uppercase", letterSpacing: ".04em", margin: `${SPACE.gutter}px 0 ${SPACE.xxs}px` }}>{s.sekcia}</div>
+              {s.org.map((o) => (
+                <div key={o.id} {...pressable(() => { onClose(); otvorVerejnyProfil(o.id); }, o.nazov)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.xxs}px`, borderBottom: `1px solid ${K.line}`, cursor: "pointer" }}>
+                  {o.logo ? <img src={o.logo} alt="" loading="lazy" style={{ width: 40, height: 40, borderRadius: RADIUS.round, objectFit: "cover", flexShrink: 0, background: "#fff", border: `1px solid ${K.line}` }} />
+                    : <span style={{ width: 40, height: 40, borderRadius: RADIUS.round, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: K.blueBg, color: K.blue, fontSize: 14, fontWeight: 800 }}>{o.ini || ini(o.nazov) || "?"}</span>}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 15, fontWeight: 600 }}>{o.nazov}</div>
+                    <div style={{ fontSize: 12.5, color: K.txt2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{[(o.sektory ?? []).join(", "), o.mesto].filter(Boolean).join(" · ") || o.sidlo}</div>
+                  </div>
+                  {o.stit && <span style={{ flexShrink: 0, fontSize: 12, fontWeight: 800, color: STIT_FARBA[o.stit] ?? K.txt3 }}>{STIT_SK[o.stit] ?? o.stit}</span>}
+                </div>
+              ))}
             </div>
           ))}
           {!filtrovane.length && <div style={{ textAlign: "center", color: K.txt3, fontSize: 13, padding: SPACE.xl }}>Nič sa nenašlo pre „{hladaj}“</div>}

@@ -6,6 +6,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
 import { reakcieF, prepniReakciuF } from "./reakcieFarnosti";
+import { jeVzor } from "@/lib/vzorStranky";
 
 type Riadok = { ref: string; ucet: string; meno: string | null };
 const pocty = new Map<string, Record<string, number>>();
@@ -15,7 +16,7 @@ const posl = new Set<() => void>();
 const zmena = () => { ver++; posl.forEach((f) => f()); };
 
 export async function obnovDeti(stranka: string): Promise<void> {
-  if (!supabase) return;
+  if (!supabase || jeVzor(stranka)) return;
   const [p, r] = await Promise.all([
     supabase.rpc("deti_pocty", { p_stranka: stranka }),
     supabase.from("deti_prihlasenie").select("ref,ucet,meno").eq("stranka", stranka),

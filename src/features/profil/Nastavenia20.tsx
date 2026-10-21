@@ -1,5 +1,7 @@
 // KARTA 20 · Nastavenia appky — všetko o appke, nič o profile (fotky, režim profilu a Ochrana osoby sú v Upraviť profil).
 // Poradie: Vzhľad · Prístupnosť · Oznámenia · Poloha · Bezpečnosť · Súkromie a údaje · Účet · Pomoc · [Odhlásiť sa].
+import { PinHarok } from "@/features/bezpecnost/Zamok";
+import { overBio, overTotoznost } from "@/lib/zamok";
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { useState } from "react";
 import { useMotiv, type Tema } from "@/components/context";
@@ -27,6 +29,7 @@ export function Nastavenia20({ onBack, onNotif, onUpravProfil, desktop }: { onBa
   const n = useNastaveniaAppky();
   const [tuk, setTuk] = useState(potvrditTuknutim);
   const [harok, setHarok] = useState<null | "okruh" | "platba" | "zrusit" | "uvod">(null);
+  const [pinOtv, setPinOtv] = useState(false);
   const [detail, setDetail] = useState<null | "pod" | "ud">(null); // OPRAVY 34: detail súhlasu (karta 24 · 2f)
   const [obr, setObr] = useState<null | "zariadenia" | "kontakt" | "blokovani" | "suhlasy" | "jazyk" | "udaje" | "faq" | "podpora" | "problem">(null); // obrazovky sprava (karta 24)
   useZmenyZariadeni(); useZmenyBlokovania();
@@ -89,7 +92,20 @@ export function Nastavenia20({ onBack, onNotif, onUpravProfil, desktop }: { onBa
       </Sekcia>
 
       <Sekcia nadpis={t("nastavenia.sek.bezpecnost")} k="b">
-        <Riadok prvy d={IK.finger} t={t("nastavenia.bio")} prepinac={n.biometria} onClick={() => zmenNastavenia({ biometria: !n.biometria })} />
+        {/* OPRAVY 466 doplnok 3: zámok citlivých akcií v mobile — vypnúť ochranu ide len po overení (zlodej s odomknutým telefónom ju nevypne) */}
+        <Riadok prvy d={IK.finger} t={t("nastavenia.bio")} s={t("nastavenia.bioS")} prepinac={n.biometria} onClick={() => void (async () => {
+          if (!n.biometria) { if (await overBio()) zmenNastavenia({ biometria: true }); else toast(t("nastavenia.bioNie")); return; }
+          if (await overTotoznost("nastavenie", t("nastavenia.zamokVypnut"))) zmenNastavenia({ biometria: false });
+        })()} />
+        <Riadok d={IK.check} t={t("nastavenia.pin")} s={t("nastavenia.pinS")} onClick={() => setPinOtv(true)} />
+        <Riadok d={IK.wallet} t={t("nastavenia.zamokPen")} s={t("nastavenia.zamokS")} prepinac={n.zamokPenazenka} onClick={() => void (async () => {
+          if (!n.zamokPenazenka) { zmenNastavenia({ zamokPenazenka: true }); return; }
+          if (await overTotoznost("nastavenie", t("nastavenia.zamokVypnut"))) zmenNastavenia({ zamokPenazenka: false });
+        })()} />
+        <Riadok d={IK.brief} t={t("nastavenia.zamokSpr")} s={t("nastavenia.zamokS")} prepinac={n.zamokSprava} onClick={() => void (async () => {
+          if (!n.zamokSprava) { zmenNastavenia({ zamokSprava: true }); return; }
+          if (await overTotoznost("nastavenie", t("nastavenia.zamokVypnut"))) zmenNastavenia({ zamokSprava: false });
+        })()} />
         <Riadok d={IK.shield} t={t("nastavenia.platba")} s={t("nastavenia.platbaS")} hodnota={<b style={{ color: "var(--ink)", whiteSpace: "nowrap" }}>{hranicaText(n.hranicaPlatby)}</b>} onClick={() => setHarok("platba")} />
         <Riadok d={IK.phone} t={t("nastavenia.zariadenia")} hodnota={t.cislo(zariadenia().length)} onClick={() => setObr("zariadenia")} />
         <Riadok d={IK.mail} t={t("nastavenia.kontakt")} onClick={() => setObr("kontakt")} />
@@ -121,6 +137,7 @@ export function Nastavenia20({ onBack, onNotif, onUpravProfil, desktop }: { onBa
 
       {harok === "okruh" && <OkruhHarok onClose={() => setHarok(null)} onZmenitMiesto={() => { setHarok(null); onUpravProfil?.(); }} />}
       {harok === "platba" && <PotvrditPlatbuHarok onClose={() => setHarok(null)} />}
+      {pinOtv && <PinHarok onClose={() => setPinOtv(false)} />}
       {obr === "zariadenia" && <PrihlaseneZariadenia onBack={() => setObr(null)} />}
       {obr === "kontakt" && <EmailTelefonHeslo onBack={() => setObr(null)} />}
       {obr === "blokovani" && <ZablokovaniLudia onBack={() => setObr(null)} />}

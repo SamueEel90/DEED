@@ -49,12 +49,16 @@ export interface TestSektor {
   stitok?: string; dlazdicaText?: string; typ?: string; typ2?: string; info?: string;
   /** OPRAVY 155/4: popis sektora (2 až 4 vety) — Pirát pod názvom vybraného sektora a hore v module */
   popis?: string;
+  /** OPRAVY 435: celý text s formátovaním (HTML z TextovePolia: text + pokračovanie) — v module zbalený na 5 riadkov */
+  popisHtml?: string;
 }
 
 export interface TestZbierka {
   id: string;
   nazov: string;
   popis: string;
+  /** OPRAVY 435: celý text s formátovaním (detail zbierky) — popis je čistý text pre karty */
+  popisHtml?: string;
   mesto: Mesto;
   cast?: string;              // mestská časť pod mestom
   foto: string;
@@ -87,11 +91,14 @@ export interface TestSkutok {
   mesto: Mesto;
   kedy: string;               // „Včera", „29. 9."
   foto: string;
+  /** OPRAVY 441: všetky fotky skutku (detail = jedna galéria) */ fotky?: string[];
   dobrovolnici?: number;
   /** 5. 10. · komu išla podpora (split), bez splitu sa riadok „Podpora išla" neukáže */
   split?: { komu: string; pct: number }[];
   /** bod 150 / 122 · platobný modul pri skutku: na centrálnu, na zbierku (100 % tam) alebo bez modulu (chýba) */
-  podpora?: { na: "centralna" } | { na: "zbierka"; zbierkaId: string };
+  podpora?: { na: "centralna" } | { na: "zbierka"; zbierkaId: string; /** OPRAVY 438 (3): zbierka uložená pri skutku (aj zbierka inej charity) */ nazov?: string; org?: string; cislo?: string };
+  /** OPRAVY 447 (3): od P1 pomocníci z akcie — meno a čas na akcii („1 h 20 min“), účet na profil */
+  pomocnici?: { meno: string; cas?: string; ucet?: string }[];
   /** dátum v kronike: „29." · „SEP" · 2026 */
   d?: string; m?: string; rok?: number;
   /** KARTA 55 · 1 – 2 vety, čo sa stalo (Čo sme dokázali) */
@@ -109,6 +116,8 @@ export interface TestOznam {
   mesiac: string;             // „OKT"
   tlacidlo: string;           // „Prihlásiť sa"
   pod: string;                // „23 ľudí už pomáha"
+  /** OPRAVY 431: prvá fotka oznamu (náhľad na karte) */ foto?: string;
+  /** OPRAVY 431: nad dňom v dlaždici — výzva „do“ (Pomoc treba do), nie deň udalosti */ predDnom?: string;
 }
 
 export interface TestPraca {
@@ -162,6 +171,8 @@ export interface TestProfil {
   meno: string;
   iniciala: string;
   veta: string;
+  /** OPRAVY 435: O nás · pokračovanie (HTML z Upraviť profil) — pod hlavným textom zbalené na 2 riadky */
+  onas2?: string;
   mesto: Mesto;               // sídlo
   stit: StitUroven;
   odRoku: number;

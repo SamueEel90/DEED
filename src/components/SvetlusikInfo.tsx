@@ -22,13 +22,14 @@ export function SvetlusikInfo({ otv, onPrepni, okraj = "var(--card)", style }: {
 }
 
 /** krémová karta s vysvetlením */
-export function SvetlusikKarta({ children, style }: { children: ReactNode; style?: CSSProperties }) {
+export function SvetlusikKarta({ children, style, chyba }: { children: ReactNode; style?: CSSProperties;
+  /** Martin 20. 10.: chyba, ktorá niečo zastaví („Zapnite polohu“) — tá istá karta, tmavočervený okraj */ chyba?: boolean }) {
   return (
-    <div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--goldBg)", border: "1px solid var(--goldBd)", display: "flex", gap: 10, alignItems: "flex-start", ...style }}>
+    <div role={chyba ? "alert" : undefined} style={{ padding: "12px 14px", borderRadius: 14, background: "var(--goldBg)", border: chyba ? "1.5px solid #8E2F1E" : "1px solid var(--goldBd)", display: "flex", gap: 10, alignItems: "flex-start", ...style }}>
       <span aria-hidden="true" style={{ flex: "none", position: "relative", width: 26, height: 26, overflow: "hidden" }}>
         <span style={{ position: "absolute", left: 0, top: 0, width: 260, height: 26, background: "url('/svetlusik-let.png') 0 0/100% 100% no-repeat" }} />
       </span>
-      <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink)", textWrap: "pretty" } as CSSProperties}>{children}</span>
+      <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, lineHeight: 1.5, color: "var(--ink)", textWrap: "pretty" } as CSSProperties}>{children}</span>
     </div>
   );
 }

@@ -203,6 +203,8 @@ export function Darcovia({ refId, nadpis = "DARCOVIA", cezTvorcu, bezDorovnania,
             {(ukazSumy || darca.omsa) && sumaVZozname(darca) && <span style={{ fontSize: 14.5, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{sumaVZozname(darca)}</span>}
             <span style={{ width: 70, textAlign: "right", fontSize: 12, color: "var(--ink4)", flex: "none" }}>{relCas(darca.cas)}</span>
           </div>
+          {/* OPRAVY 438 (3): dar prišiel cez skutok charity */}
+          {darca.cezSkutok && <div style={{ marginTop: 2, fontSize: 13, color: "var(--ink3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Cez skutok · {darca.cezSkutok}</div>}
           {firma && (
             <div style={{ display: "flex", gap: 8, marginTop: 3, paddingLeft: 14, fontSize: 14, fontWeight: 700, color: "var(--gold)" }}>
               <span style={{ flex: 1 }}>+ {firma.firma}</span>

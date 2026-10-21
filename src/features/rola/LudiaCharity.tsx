@@ -9,6 +9,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { citajNastavenie, maNastavenie, zapisNastavenie, useZmenyNastaveni } from "@/lib/nastaveniaStranky";
 import { PRAVA, PREDVOLBY, PRACOVNIK, predvolbaZ, smieText, useMojEmail, useMojePrava, type Pravo, type Predvolba } from "@/lib/pravaPracovnika";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
+import { KartaNastavenia, IK_PRIDAT_CLOVEKA } from "@/features/rola/KartaNastavenia";
 
 type Caka = boolean | "odkaz" | "odmietol";
 type Clovek = { id: number; n?: string; k: string; r: string; caka?: Caka; p?: string; prava?: Pravo[] };
@@ -140,7 +141,8 @@ export function LudiaCharity({ mobil }: { mobil: boolean }) {
         })}
       </div>
       {hl?.id === "zoz" && <span role="status" style={hlaskaSt}>{hl.t}</span>}
-      {smiemPridavat && <button type="button" onClick={otvorNovy} style={{ minHeight: 56, borderRadius: 16, border: "none", background: ZELENA, color: "#fff", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer", boxShadow: "none" }}>+ Pridať pracovníka</button>}
+      {smiemPridavat && <KartaNastavenia nadpis="Pridať človeka do správy" stav="Nemusíte. Stránku zvládnete spravovať aj sám." tlacidlo="Pridať" ikona={IK_PRIDAT_CLOVEKA} mobil={mobil} onClick={otvorNovy} />}
+      {smiemPridavat && <span style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)" }}>Štatutár musí ostať aspoň jeden. Pri zmene štatutára dajte rolu nástupcovi, potom sa môžete odobrať. Odobrať treba podržať.</span>}
     </div>);
 }
 

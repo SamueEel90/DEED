@@ -14,7 +14,7 @@ import {
 } from "@/lib/dorovnanie";
 import { darcoviaPre, relCas } from "@/lib/darcovia";
 import { cisloObjektu } from "@/lib/cisloObjektu";
-import { rovnakaFirma, nazovFirmy } from "@/lib/firma";
+import { nazovFirmy } from "@/lib/firma";
 import { nacitajStav, ulozStav } from "@/lib/zbierkaSprava";
 import { nacitajDoklad } from "@/lib/doklad";
 import { TESTOVACIA } from "@/lib/testovacia";
@@ -100,7 +100,8 @@ export function SpravaDorovnania({ entita, hlavnyUcet, mobil, toast, onZbierky, 
   const zmenObm = (o: typeof obm) => { const pred = obm; setObm(o); void ulozObmedzenie(entita, o).then((ok) => { if (!ok) setObm(pred); }); };
   const [q, setQ] = useState("");
   const qq = q.trim().toLowerCase();
-  const navrhy = qq.length < 2 ? [] : REGISTER_FIRIEM.filter((f) => !obm.firmy.some((u) => rovnakaFirma(u, f.ucet)) && f.nazov.toLowerCase().includes(qq)).slice(0, 4);
+  // OPRAVY 442 doplnok 3: testovacie firmy (Pekáreň Dobrota, Elektro Mráz …) sa na skutočnej stránke neponúkajú; register firiem DEED zatiaľ nie je
+  const navrhy: typeof REGISTER_FIRIEM = [];
   const obmPopis = obm.zapnute
     ? `Neprijímate od ${obm.odvetvia.length ? `${obm.odvetvia.length} ${obm.odvetvia.length === 1 ? "odvetvia" : "odvetví"}` : "žiadneho odvetvia"}${obm.firmy.length ? ` a ${obm.firmy.length} ${obm.firmy.length === 1 ? "firmy" : "firiem"}` : ""}. Ostatné firmy môžu dorovnávať.`
     : "Dorovnávať môže každá firma s IČO. Do 24 hodín od jej platby môžete dorovnanie odmietnuť.";
@@ -125,6 +126,7 @@ export function SpravaDorovnania({ entita, hlavnyUcet, mobil, toast, onZbierky, 
         <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 10, borderTop: "1px solid var(--cardBd)" }}>
           <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>NEPRIJÍMAŤ OD FIRIEM</span>
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Zadajte názov alebo IČO firmy" aria-label="Hľadať firmu" style={{ height: 48, padding: "0 14px", borderRadius: 13, border: "1.5px solid var(--cardBd)", background: "var(--field)", color: "var(--ink)", fontFamily: "inherit", fontSize: 14, outline: "none" }} />
+          {qq.length >= 2 && !navrhy.length && <span style={{ fontSize: 13, color: "var(--ink3)" }}>Zatiaľ žiadne firmy v DEED+ s týmto názvom.</span>}
           {navrhy.map((f) => (
             <button key={f.ucet} type="button" onClick={() => { zmenObm({ ...obm, firmy: [...obm.firmy, f.ucet] }); setQ(""); }} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48, padding: "0 12px", borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--field)", cursor: "pointer", textAlign: "left", color: "var(--ink)", fontFamily: "inherit", boxShadow: "none" }}>
               <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}><b style={{ fontSize: 14 }}>{f.nazov}</b><span style={{ fontSize: 12, color: "var(--ink3)" }}>{f.odvetvie} · {f.mesto}</span></span>

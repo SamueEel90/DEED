@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { ZaZamkom } from "@/features/bezpecnost/Zamok"; // OPRAVY 466 doplnok 3
 import { SukromneZbierky } from "./SukromneZbierky";
 import { PravidelneDary } from "./PravidelneDary";
 import { IkonaSrdceLine } from "@/components/icons";
@@ -92,8 +93,8 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
       <ScreenSwitch k={screen}>
       {screen === "profil" && obal(<ProfilHlavny18 naWallet={() => setScreen("wallet")} naSub={sub} naNastavenia={() => setScreen("nastavenia")} naPriatelia={() => priatelia()} naPriatelia2={priatelia} naStranku={spravovat} naFirma={() => setScreen("firma")}
         naUpravit={() => setUprava(true)} naQr={() => setQr(true)} />)}
-      {screen === "wallet" && obal(<Penazenka18 onBack={() => setScreen("profil")} />)}
-      {screen === "sprava" && sprava}
+      {screen === "wallet" && obal(<ZaZamkom oblast="penazenka" dovod="Peňaženku chránime pre prípad, že by sa telefón stratil." onZrus={() => setScreen("profil")}><Penazenka18 onBack={() => setScreen("profil")} /></ZaZamkom>)}
+      {screen === "sprava" && <ZaZamkom oblast="sprava" dovod="Správu stránky chránime pre prípad, že by sa telefón stratil." onZrus={() => setScreen("profil")}>{sprava}</ZaZamkom>}
       {screen === "firemny" && obalSiroky(<MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />, { wide, desktop, max: SIRKA.stlpec })}
       {screen === "sub" && (subNazov === "Moje záujmy" ? obal(<ZaujmyObrazovka onBack={() => setScreen("profil")} />) : subNazov === "Súkromné zbierky" ? obal(<SukromneZbierky onBack={() => setScreen("profil")} />) : subNazov === "Pravidelné dary" ? obal(<PravidelneDary onBack={() => setScreen("profil")} />) : subNazov === "Moje skutky" ? <MojeSkutky21 key={skOblast ?? "vsetky"} oblastStitu={skOblast} onBack={spatZoSkutkov} /> : subNazov === "Karma a štíty" ? obal(<KarmaStity naSkutky={skutkyOblasti} onBack={() => setScreen("profil")} />) : obal(<Statistiky onBack={() => setScreen("profil")} />))}
       {screen === "priatelia" && obal(<Priatelia tab={pTab} onBack={() => setScreen("profil")} />)}
@@ -152,7 +153,7 @@ function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit, pT
   const rozbalene = dl.poradie.filter((id) => dl.rozbalene.includes(id) && !dl.skryte.includes(id) && sekcie[id]);
 
   let obsah: React.ReactNode;
-  if (screen === "wallet") obsah = <Penazenka18 desktop onBack={() => setScreen("profil")} />;
+  if (screen === "wallet") obsah = <ZaZamkom oblast="penazenka" dovod="Peňaženku chránime pre prípad, že by sa telefón stratil." onZrus={() => setScreen("profil")}><Penazenka18 desktop onBack={() => setScreen("profil")} /></ZaZamkom>;
   else if (screen === "firemny") obsah = <MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />;
   else if (screen === "sub") obsah = subNazov === "Moje záujmy" ? <ZaujmyObrazovka desktop onBack={() => setScreen("profil")} /> : subNazov === "Súkromné zbierky" ? <SukromneZbierky desktop onBack={() => setScreen("profil")} /> : subNazov === "Pravidelné dary" ? <PravidelneDary desktop onBack={() => setScreen("profil")} /> : subNazov === "Moje skutky" ? <MojeSkutky21 key={skOblast ?? "vsetky"} oblastStitu={skOblast} onBack={spatZoSkutkov} /> : subNazov === "Karma a štíty" ? <KarmaStity desktop naSkutky={skutkyOblasti} onBack={() => setScreen("profil")} /> : <Statistiky desktop onBack={() => setScreen("profil")} />;
   else if (screen === "priatelia") obsah = <Priatelia key={pTab} tab={pTab} desktop onBack={() => setScreen("profil")} />;

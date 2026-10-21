@@ -1,0 +1,242 @@
+// ============================================================
+// OPRAVY 449 · obrazovky z odkazov na webe
+//  · OsobaVrstva — /u/<odkaz> (osobná pozvánka z Môj QR): profil usera — fotka, meno podľa jeho voľby, mesto.
+//    Bez štítu (server ho zatiaľ nepočíta) a bez „Pridať medzi priateľov“ (priatelia ešte nie sú na serveri) — Martin 20. 10.
+//  · PozvankaHost / PozvankaVrstva — /pozvanka/<token>: „… ťa pozýva ku skutku · Bol som pri tom (podržať)“.
+//    Bez účtu: Prihlásiť sa / Zaregistrovať sa a hneď späť sem (bez úvodu appky).
+// ============================================================
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+import { usePouzivatel } from "@/lib/pouzivatel";
+import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
+import { profilOsoby, useOtvorenaOsoba, zavriOsobu, type ProfilOsoby } from "@/lib/odkazOsoby";
+import { usePozvanka, infoPozvanky, prijmiPozvanku, zavriPozvanku, type InfoPozvanky } from "@/lib/pozvankaSkutku";
+import { usePripojenie, infoAkcie, pripojSaKAkcii, zavriPripojenie, usePoloha, type InfoAkcie } from "@/lib/akciaCharity";
+import { usePrihlaseniePc, zavriPrihlaseniePc, infoPc, potvrdPc, zrusPc, type InfoPc } from "@/lib/qrPrihlasenie";
+
+const tlO: CSSProperties = { minHeight: 52, padding: "0 20px", borderRadius: 14, border: "1.5px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "var(--ink)" };
+const tlZ: CSSProperties = { ...tlO, border: "none", background: "var(--green)", color: "#fff" };
+const MES = ["januára", "februára", "marca", "apríla", "mája", "júna", "júla", "augusta", "septembra", "októbra", "novembra", "decembra"];
+
+function Ram({ children, onZavri, label }: { children: ReactNode; onZavri?: () => void; label: string }) {
+  return (
+    <div className="sprava-charity" role="dialog" aria-modal="true" aria-label={label}
+      style={{ position: "fixed", inset: 0, zIndex: 90, background: "var(--bg)", color: "var(--ink)", overflowY: "auto", display: "flex", justifyContent: "center", padding: "max(16px, env(safe-area-inset-top)) 16px 40px", boxSizing: "border-box" }}>
+      <div style={{ width: "100%", maxWidth: 480, display: "flex", flexDirection: "column", gap: 16 }}>
+        {onZavri && <button type="button" onClick={onZavri} style={{ ...tlO, alignSelf: "flex-start", minHeight: 44, fontSize: 15, padding: "0 14px", background: "var(--btn)" }}>‹ Späť</button>}
+        {children}
+      </div>
+    </div>);
+}
+
+// ---------------- profil usera z odkazu ----------------
+export function OsobaVrstva() {
+  const odkaz = useOtvorenaOsoba();
+  const [p, setP] = useState<ProfilOsoby | null | "nacitava">("nacitava");
+  useEffect(() => { if (!odkaz) return; setP("nacitava"); let z = true; void profilOsoby(odkaz).then((x) => { if (z) setP(x); }); return () => { z = false; }; }, [odkaz]);
+  if (!odkaz || typeof document === "undefined") return null;
+  const meno = p && p !== "nacitava" ? p.meno ?? "Člen DEED+" : "";
+  const ini = meno.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "D+";
+  const od = p && p !== "nacitava" && p.od ? new Date(p.od) : null;
+  return createPortal(
+    <Ram onZavri={zavriOsobu} label="Profil">
+      {p === "nacitava" ? <span style={{ fontSize: 15, color: "var(--ink3)" }}>Načítava sa…</span>
+        : !p ? <section style={{ display: "flex", flexDirection: "column", gap: 8, padding: 18, borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)" }}>
+            <b style={{ fontSize: 18 }}>Profil sa nenašiel</b>
+            <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Odkaz je neplatný alebo ho človek zmenil. Požiadajte ho o nový.</span>
+          </section>
+        : <section style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "24px 18px", borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", textAlign: "center" }}>
+            {p.foto ? <img src={p.foto} alt="" style={{ width: 112, height: 112, borderRadius: "50%", objectFit: "cover", border: "3px solid var(--cardBd)" }} />
+              : <span aria-hidden="true" style={{ width: 112, height: 112, borderRadius: "50%", background: "var(--gSoft)", border: "3px solid var(--gBd)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 38, fontWeight: 800, color: "var(--gInk)" }}>{ini}</span>}
+            <b style={{ fontSize: 24, lineHeight: 1.2 }}>{meno}</b>
+            {(p.mesto || od) && <span style={{ fontSize: 14.5, color: "var(--ink3)" }}>{[p.mesto, od ? `v DEED+ od ${MES[od.getMonth()]} ${od.getFullYear()}` : ""].filter(Boolean).join(" · ")}</span>}
+          </section>}
+    </Ram>, document.body);
+}
+
+// ---------------- pozvánka ku skutku ----------------
+export function PozvankaSkutkuHost({ prihlaseny, onPrihlasit, onRegistrovat }: { prihlaseny: boolean; onPrihlasit?: () => void; onRegistrovat?: () => void }) {
+  const st = usePozvanka();
+  const token = st?.token ?? null;
+  const [i, setI] = useState<InfoPozvanky | null | "nacitava">("nacitava");
+  const [chyba, setChyba] = useState<string | null>(null);
+  const [hotovo, setHotovo] = useState(false);
+  const [posiela, setPosiela] = useState(false);
+  useEffect(() => { if (!token) return; let z = true; void infoPozvanky(token).then((x) => { if (z) { setI(x); if (x?.moja) setHotovo(true); } }, () => { if (z) setI(null); }); return () => { z = false; }; }, [token, prihlaseny]);
+  if (!token) return null;
+  const potvrd = async () => {
+    if (posiela) return;
+    setPosiela(true); setChyba(null);
+    const e = await prijmiPozvanku(token);
+    setPosiela(false);
+    if (e) setChyba(e); else setHotovo(true);
+  };
+  const karta: CSSProperties = { display: "flex", flexDirection: "column", gap: 12, padding: 18, borderRadius: 20, background: "var(--card)", border: "1px solid var(--cardBd)" };
+  return (
+    <Ram onZavri={zavriPozvanku} label="Pozvánka ku skutku">
+      {i === "nacitava" ? <span style={{ fontSize: 15, color: "var(--ink3)" }}>Načítava sa…</span>
+        : !i ? <section style={karta}><b style={{ fontSize: 18 }}>Pozvánka sa nenašla</b><span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Odkaz je neplatný. Požiadajte organizátora o novú pozvánku.</span></section>
+        : <section style={karta}>
+            <span style={{ fontSize: 15, color: "var(--ink2)" }}><b style={{ color: "var(--ink)" }}>{i.od}</b> ťa pozýva ku skutku</span>
+            <b style={{ fontSize: 22, lineHeight: 1.25 }}>{i.nazov}</b>
+            {hotovo ? <div role="status" style={{ display: "flex", flexDirection: "column", gap: 6, padding: "14px 16px", borderRadius: 16, background: "var(--gSoft)", border: "1px solid var(--gBd)" }}>
+                <b style={{ fontSize: 18, color: "var(--gInk)" }}>Si pri skutku ✓</b>
+                <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Keď ho {i.od} zverejní, príde ti do denníka.</span>
+              </div>
+              : i.vlastna ? <span style={{ fontSize: 14.5, color: "var(--ink3)" }}>Toto je vaša pozvánka. Pošlite ju tomu, kto bol pri skutku.</span>
+              : i.prijata ? <span style={{ fontSize: 14.5, color: "var(--ink3)" }}>Túto pozvánku už potvrdil niekto iný. Požiadajte organizátora o novú.</span>
+              : !i.plati ? <span style={{ fontSize: 14.5, color: "var(--ink3)" }}>Pozvánka už neplatí, platí 2 hodiny. Požiadajte organizátora o novú.</span>
+              : !prihlaseny ? <>
+                  <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Aby sme vedeli, že ste to vy, prihláste sa. Kto ešte nemá účet, zaregistruje sa a hneď sa vráti sem.</span>
+                  <button type="button" onClick={onRegistrovat} style={tlZ}>Zaregistrovať sa</button>
+                  <button type="button" onClick={onPrihlasit} style={tlO}>Prihlásiť sa</button>
+                </>
+              : <>
+                  <PodrzTlacidlo label={posiela ? "Potvrdzuje sa…" : "Podržte · Bol som pri tom"} trvanie={1500} disabled={posiela} onConfirm={() => void potvrd()} />
+                  {chyba && <span role="alert" style={{ fontSize: 14, fontWeight: 700, color: "var(--cRed, #A34A2A)" }}>{chyba}</span>}
+                </>}
+          </section>}
+    </Ram>);
+}
+/** po prihlásení: vrstva nad appkou, kým je pozvánka otvorená */
+export function PozvankaSkutkuVrstva({ onPrihlasit, onRegistrovat }: { onPrihlasit: () => void; onRegistrovat: () => void }) {
+  const st = usePozvanka();
+  const ja = usePouzivatel();
+  if (!st || typeof document === "undefined") return null;
+  return createPortal(<PozvankaSkutkuHost prihlaseny={!ja.demo && !!ja.ucetId} onPrihlasit={onPrihlasit} onRegistrovat={onRegistrovat} />, document.body);
+}
+
+// ---------------- OPRAVY 446 (2): pripojenie k akcii charity (sken rotujúceho QR charity) ----------------
+export function PripojenieAkcieHost({ prihlaseny, onPrihlasit, onRegistrovat }: { prihlaseny: boolean; onPrihlasit?: () => void; onRegistrovat?: () => void }) {
+  const pr = usePripojenie();
+  const token = pr?.kod ?? null;
+  const [i, setI] = useState<InfoAkcie | null | "nacitava">("nacitava");
+  const [chyba, setChyba] = useState<string | null>(null);
+  const [hotovo, setHotovo] = useState(false);
+  const [posiela, setPosiela] = useState(false);
+  const poloha = usePoloha(!!token && prihlaseny);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (!pr) return; let z = true; void infoAkcie(pr).then((x) => { if (z) { setI(x); if (x?.som) setHotovo(true); } }); return () => { z = false; }; }, [token, prihlaseny]);
+  if (!token || !pr) return null;
+  const pripoj = async () => {
+    if (posiela) return;
+    setPosiela(true); setChyba(null);
+    const e = await pripojSaKAkcii(pr, poloha.poz);
+    setPosiela(false);
+    if (e) setChyba(e); else setHotovo(true);
+  };
+  const nazov = i && i !== "nacitava" ? i.nazov ?? "charity" : "";
+  const karta: CSSProperties = { display: "flex", flexDirection: "column", gap: 12, padding: 18, borderRadius: 20, background: "var(--card)", border: "1px solid var(--cardBd)" };
+  const sedy = { fontSize: 14.5, lineHeight: 1.5, color: "var(--ink3)" } as const;
+  return (
+    <Ram onZavri={zavriPripojenie} label="Pripojiť sa k akcii">
+      {i === "nacitava" ? <span style={{ fontSize: 15, color: "var(--ink3)" }}>Načítava sa…</span>
+        : hotovo ? <section style={karta}>
+            <div role="status" style={{ display: "flex", flexDirection: "column", gap: 6, padding: "14px 16px", borderRadius: 16, background: "var(--gSoft)", border: "1px solid var(--gBd)" }}>
+              <b style={{ fontSize: 19, color: "var(--gInk)" }}>Si na akcii {nazov} ✓</b>
+              <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Keď organizátor akciu ukončí, skutok ti príde do denníka.</span>
+            </div>
+            <button type="button" onClick={zavriPripojenie} style={tlO}>Hotovo</button>
+          </section>
+        : !i || !i.plati ? <section style={karta}>
+            <b style={{ fontSize: 18 }}>{i?.skoncila ? "Akcia už skončila" : i?.vyprsal ? "Čas vypršal" : "Kód už neplatí"}</b>
+            <span style={sedy}>{i?.skoncila ? "K tejto akcii sa už nedá pripojiť." : i?.vyprsal ? "Miesto sme vám držali 15 minút. Naskenujte QR charity znova." : "QR charity sa mení každých 15 s, snímka obrazovky neplatí. Naskenujte ho znova."}</span>
+          </section>
+        : <section style={karta}>
+            <span style={{ fontSize: 15, color: "var(--ink2)" }}>Pripojiť sa k akcii</span>
+            <b style={{ fontSize: 22, lineHeight: 1.25 }}>{nazov}?</b>
+            {i.organizator ? <span style={sedy}>Túto akciu vediete vy. Účastníci tento QR naskenujú vo svojej appke.</span>
+              : !prihlaseny ? <>
+                  <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Aby sme vedeli, že ste to vy, prihláste sa. Kto ešte nemá účet, zaregistruje sa a hneď sa vráti sem.</span>
+                  <button type="button" onClick={onRegistrovat} style={tlZ}>Zaregistrovať sa</button>
+                  <button type="button" onClick={onPrihlasit} style={tlO}>Prihlásiť sa</button>
+                </>
+              : <>
+                  {poloha.stav === "ok" ? <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--gInk)" }}>Poloha zapnutá ✓</span>
+                    : poloha.stav !== "zistuje" && <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>Poloha je vypnutá. Ak ju akcia vyžaduje, zapnite ju v nastaveniach telefónu.</span>}
+                  <PodrzTlacidlo label={posiela ? "Pripája sa…" : "Podržte a pripojte sa"} trvanie={1500} disabled={posiela} onConfirm={() => void pripoj()} />
+                  {chyba && <span role="alert" style={{ fontSize: 14.5, fontWeight: 700, color: "var(--cRed, #A34A2A)" }}>{chyba}</span>}
+                </>}
+          </section>}
+    </Ram>);
+}
+/** po prihlásení: vrstva nad appkou, kým je okno pripojenia otvorené */
+export function PripojenieAkcieVrstva({ onPrihlasit, onRegistrovat }: { onPrihlasit: () => void; onRegistrovat: () => void }) {
+  const t = usePripojenie();
+  const ja = usePouzivatel();
+  if (!t || typeof document === "undefined") return null;
+  return createPortal(<PripojenieAkcieHost prihlaseny={!ja.demo && !!ja.ucetId} onPrihlasit={onPrihlasit} onRegistrovat={onRegistrovat} />, document.body);
+}
+
+// ---------------- OPRAVY 466: mobil potvrdí prihlásenie počítača (sken QR z prihlasovacej obrazovky PC) ----------------
+const cas = (iso?: string) => { if (!iso) return ""; const d = new Date(iso); return d.toLocaleTimeString("sk-SK", { hour: "2-digit", minute: "2-digit" }); };
+export function PrihlaseniePcHost({ prihlaseny }: { prihlaseny: boolean }) {
+  const t = usePrihlaseniePc();
+  const [i, setI] = useState<InfoPc | { chyba: string } | "nacitava">("nacitava");
+  const [chyba, setChyba] = useState<string | null>(null);
+  const [hint, setHint] = useState(false);
+  const [posiela, setPosiela] = useState(false);
+  const [hotovo, setHotovo] = useState(false);
+  useEffect(() => {
+    if (!t || !prihlaseny) return;
+    let z = true; setI("nacitava"); setHotovo(false); setChyba(null);
+    void infoPc(t).then((x) => { if (z) setI(x); });
+    return () => { z = false; };
+  }, [t, prihlaseny]);
+  useEffect(() => { if (!hint) return; const x = window.setTimeout(() => setHint(false), 2500); return () => window.clearTimeout(x); }, [hint]);
+  if (!t) return null;
+  const karta: CSSProperties = { display: "flex", flexDirection: "column", gap: 12, padding: 18, borderRadius: 20, background: "var(--card)", border: "1px solid var(--cardBd)" };
+  const sedy = { fontSize: 14.5, lineHeight: 1.5, color: "var(--ink3)" } as const;
+  const zrus = () => { if (i !== "nacitava" && !("chyba" in i) && i.plati && !hotovo) void zrusPc(t); zavriPrihlaseniePc(); };
+  const potvrd = async () => {
+    if (posiela) return;
+    setPosiela(true); setChyba(null);
+    const e = await potvrdPc(t);
+    setPosiela(false);
+    if (e) setChyba(e); else setHotovo(true);
+  };
+  return (
+    <Ram onZavri={zrus} label="Prihlásiť počítač">
+      {!prihlaseny ? <section style={karta}>
+          <b style={{ fontSize: 20 }}>Najprv sa prihláste v mobile</b>
+          <span style={sedy}>Počítač prihlási len mobil, v ktorom ste prihlásený. Prihláste sa a QR na počítači naskenujte znova v Môj QR → Naskenovať.</span>
+          <button type="button" onClick={zavriPrihlaseniePc} style={tlO}>Zavrieť</button>
+        </section>
+        : i === "nacitava" ? <span style={{ fontSize: 15, color: "var(--ink3)" }}>Načítava sa…</span>
+        : "chyba" in i ? <section style={karta}>
+            <b style={{ fontSize: 19 }}>{i.chyba}</b>
+            <button type="button" onClick={zavriPrihlaseniePc} style={tlO}>Zavrieť</button>
+          </section>
+        : hotovo ? <section style={karta}>
+            <div role="status" style={{ display: "flex", flexDirection: "column", gap: 6, padding: "14px 16px", borderRadius: 16, background: "var(--gSoft)", border: "1px solid var(--gBd)" }}>
+              <b style={{ fontSize: 19, color: "var(--gInk)" }}>Počítač je prihlásený ✓</b>
+              <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Nájdete ho v Nastavenia → Prihlásené zariadenia. Tam ho môžete aj odhlásiť.</span>
+            </div>
+            <button type="button" onClick={zavriPrihlaseniePc} style={tlO}>Hotovo</button>
+          </section>
+        : !i.plati ? <section style={karta}>
+            <b style={{ fontSize: 19 }}>{i.pouzite ? "Tento QR už bol použitý" : "QR už neplatí"}</b>
+            <span style={sedy}>QR na počítači platí 2 minúty a potom sa sám vymení. Naskenujte ten, ktorý je tam teraz.</span>
+            <button type="button" onClick={zavriPrihlaseniePc} style={tlO}>Zavrieť</button>
+          </section>
+        : <section style={karta}>
+            <b style={{ fontSize: 22, lineHeight: 1.25 }}>Prihlásiť počítač?</b>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4, padding: "12px 14px", borderRadius: 14, background: "var(--btn)" }}>
+              <b style={{ fontSize: 17 }}>{[i.zariadenie, i.mesto || (i.ip ? `IP ${i.ip}` : "mesto neznáme")].filter(Boolean).join(" · ")}</b>
+              <span style={{ fontSize: 14, color: "var(--ink2)" }}>QR vytvorený o {cas(i.vytvorene)}</span>
+            </div>
+            <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Potvrďte, len ak pred týmto počítačom sedíte vy. Kto by vám poslal svoj QR, dostal by prístup k vášmu účtu.</span>
+            <PodrzTlacidlo label={posiela ? "Prihlasuje sa…" : "Podržte a prihláste"} trvanie={1500} disabled={posiela} onConfirm={() => void potvrd()} onHint={() => setHint(true)} />
+            {hint && !posiela && <span role="status" style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)" }}>Podržte tlačidlo</span>}
+            {chyba && <span role="alert" style={{ fontSize: 14.5, fontWeight: 700, color: "var(--cRed, #A34A2A)" }}>{chyba}</span>}
+            <button type="button" onClick={zrus} style={tlO}>Nie · Zrušiť</button>
+          </section>}
+    </Ram>);
+}
+/** po prihlásení: vrstva nad appkou, kým je okno otvorené */
+export function PrihlaseniePcVrstva() {
+  const t = usePrihlaseniePc();
+  const ja = usePouzivatel();
+  if (!t || typeof document === "undefined") return null;
+  return createPortal(<PrihlaseniePcHost prihlaseny={!ja.demo && !!ja.ucetId} />, document.body);
+}

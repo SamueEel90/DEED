@@ -30,6 +30,7 @@ export function naIskru(r: IskraRiadok): Iskra {
     src: verejnaUrl(r.video), bg: r.plagat ? `url('${verejnaUrl(r.plagat)}') center/cover no-repeat #1D211B` : "#1D211B",
     zbierka: r.zbierka ?? undefined, zb: r.zb ?? undefined, iskry: r.iskry, bezDarov: r.bez_darov || undefined,
     retazPct: r.retaz_pct ?? undefined, lenStranka: r.len_stranka || undefined, zverejnene: r.zverejnene,
+    ...(r.stranka ? { strankaAutora: r.stranka } : {}),
   };
 }
 
@@ -120,7 +121,16 @@ export async function nacitajIskryZoServera(limit = 60): Promise<Iskra[] | null>
   const { data, error } = await supabase.from("iskra").select("*").is("zmazane", null)
     .order("zverejnene", { ascending: false }).limit(limit);
   if (error || !data) return null;
-  return (data as IskraRiadok[]).filter((r) => !r.len_stranka || r.autor_ucet === ja).map(naIskru);
+  const l = (data as IskraRiadok[]).filter((r) => !r.len_stranka || r.autor_ucet === ja).map(naIskru);
+  // OPRAVY 444: logo stránky z verejného profilu (bez loga ostanú iniciály)
+  const st = [...new Set(l.map((x) => x.strankaAutora).filter((x): x is string => !!x))];
+  if (st.length) {
+    const { data: pr } = await supabase.from("profil_stranky_verejny").select("stranka, ulozeny").in("stranka", st);
+    const logo = new Map(((pr ?? []) as { stranka: string; ulozeny: { logo?: string | null; bezLoga?: boolean } | null }[])
+      .filter((x) => x.ulozeny?.logo && !x.ulozeny.bezLoga).map((x) => [x.stranka, x.ulozeny!.logo!] as const));
+    for (const x of l) { const g = x.strankaAutora ? logo.get(x.strankaAutora) : undefined; if (g) x.logo = g; }
+  }
+  return l;
 }
 
 /** mesačná kvóta stránky zo servera; bez DB/session alebo pri chybe null (appka použije lokálny odhad) */

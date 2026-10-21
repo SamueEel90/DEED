@@ -12,6 +12,7 @@ import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { BLOKY_STRANKY, PREMENOVAT, NAZOV_MAX, POVODNE, normalizuj, ulozUsporiadanie, useUsporiadanie, nadpisBloku, mozeVedla, radyVedla, type BlokStranky, type Usporiadanie } from "@/lib/usporiadanieStranky";
 import { ROZLOZENIA, rozlozenieZPamate } from "@/lib/rozlozenieFarnosti";
+import { konceptAtelieru, ulozKonceptAtelieru } from "@/lib/atelier";
 
 const M = Object.fromEntries(BLOKY_STRANKY.map((b) => [b.id, b])) as Record<BlokStranky, (typeof BLOKY_STRANKY)[number]>;
 const rovnake = (a: Usporiadanie, b: Usporiadanie) => JSON.stringify(normalizuj(a)) === JSON.stringify(normalizuj(b));
@@ -58,6 +59,8 @@ export function UsporiadatStranku({ strankaId, mobil, onSpat }: { strankaId: str
     if (uklada) return;
     setUklada(true); setHlaska(null);
     const e = await ulozUsporiadanie(strankaId, u);
+    // OPRAVY 468: rozpracovaný koncept v ateliéri dostane to isté poradie
+    const k = konceptAtelieru(); if (!e && k) ulozKonceptAtelieru({ rozlozenie: k.rozlozenie, usporiadanie: u, naplanovane: k.naplanovane });
     setUklada(false);
     setHlaska(e ? { ok: false, t: e } : { ok: true, t: "Uložené ✓ Stránka farnosti má nové poradie vo všetkých vzhľadoch." });
   };

@@ -184,6 +184,9 @@ export interface GoodPolozka extends FeedKartaZaklad {
   /** čas vzniku zo servera — kurzor stránkovania feedu (5.4) */
   vytvorene?: string;
   /** OPRAVY 428: číslo objektu (vs zo servera) */ vs?: string;
+  /** OPRAVY 442 (0141): skutok charity — jej stránka a tvorca na karte (logo, štít, mesto) */
+  stranka?: string;
+  org?: { logo?: string; ini?: string; mesto?: string; stit?: "Bronze" | "Silver" | "Gold" | "Platinum" | "Legend" };
   id: number | string;   // mock = number; Supabase = uuid
   /** Zadanie 3 · 3.1: run_id behu AI (/api/score) — skóre, overené a karmu z neho doplní server */
   scoreRunId?: string;
@@ -300,6 +303,7 @@ export type CharitaComp = "urgent" | "top" | "mala" | "zapoj" | "material" | "da
 /** Metadáta karty Charita feedu (FEED_ITEMS). */
 export interface CharitaFeedItem extends FeedEngineMeta, Partial<GeoBod> {
   id: string;
+  /** OPRAVY 440 (3): zbierka má pravidelnú podporu (od P1) */ pravidelna?: boolean;
   comp: CharitaComp;
   typ: EngineTyp;
   modul: Modul;
@@ -342,6 +346,9 @@ export interface OrgAdresar {
   nazov: string;
   /** sídlo z registra (verejné nastavenia), ak je vyplnené */
   sidlo: string;
+  /** OPRAVY 458: sektory z registrácie (tabuľka segmenty) — delenie adresára */
+  sektory?: string[];
+  logo?: string; ini?: string; mesto?: string; stit?: string;
 }
 
 /** Položka adresára charít & OZ ako tuple: [skratka, názov, popis, level, ponuky]. */

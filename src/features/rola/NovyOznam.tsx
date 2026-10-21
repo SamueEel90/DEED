@@ -5,8 +5,9 @@
 // sú prvé dva zamknuté so štítkom „od P1"). Texty = textové polia, fotky = galéria, ako všade.
 // Zverejnenie vždy podržaním (ten istý diel ako platba). Oznam ide sledujúcim po 5 min, verejný a výzva hneď.
 // ============================================================
+import { Galeria } from "@/features/zbierka/Vrch";
 import { CasPole, sNulou } from "@/components/CasPole";
-import { kartaVolby, FajkaVolby } from "@/components/Volby";
+import { Volby, kartaVolby, FajkaVolby } from "@/components/Volby";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { RichTextInput } from "@/components/richtext";
 import { sanitizujHtml } from "@/lib/richtext";
@@ -15,16 +16,16 @@ import { spracujFotku } from "@/lib/obrazok";
 import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { potvrditTuknutim } from "@/features/zbierka/Platba";
-import { FLAGS } from "./stav";
 import { SUHLAS_FOTKY, SUHLAS_POZNAMKA, SUHLAS_CHYBA } from "@/lib/pravidlaObsahu";
 import { panel, pole, cistyText, Media, Zaskrtnutie, odkaz, PravidlaObsahu, GaleriaEditor } from "./obsahZbierky";
 import type { MediumZbierky } from "@/lib/novaZbierka";
 import {
   OZNAMY_CFG, KATEGORIE_OZNAMU, oznamyStranky, nacitajOznamyStranky, useZmenyOznamovCharity, zverejniOznam, upravOznamCharity, zrusOznamCharity,
-  simulujUcast, nastaveniaOznamov, ulozNastaveniaOznamov, beziaceVerejne, vLehote, bezi, dnesIso, maxAkcia, maxVyzva,
+  nastaveniaOznamov, ulozNastaveniaOznamov, beziaceVerejne, vLehote, bezi, dnesIso, maxAkcia, maxVyzva,
   type OznamCharity, type DruhOznamu, type FormaOznamu, type Pozvanie, type Plagat, type ZbierkaPriAkcii,
 } from "@/lib/oznamyNove";
 import { sucetDarov, useZmenyDarov } from "@/lib/darcovia";
+import { ucast, nacitajUcasti, menaPrihlasenych, useZmenyUcasti } from "@/lib/oznamUcast";
 import { sumaEur } from "@/lib/suma";
 
 const C = { rSoft: "#F2DDD5", rBd: "#D9A796", red: "#A34A2A", goldBg: "#F1E6C8", goldBd: "#D9C17E", gold: "#8A6A12" };
@@ -32,8 +33,11 @@ const fmtD = (v?: string) => { if (!v) return ""; const [y, m, d] = v.split("-")
 const DRUHY: [DruhOznamu, string, string][] = [
   ["oznam", "Oznam", "Na vašom profile a príde tým, čo vás sledujú. Napríklad informácia pre dobrovoľníkov."],
   ["verejny", "Oznam vo verejnom záujme", "Na nástenke mesta. Podujatie pre komunitu, šport, kultúra, organizujeme niečo verejné. Až 2 mesiace vopred."],
-  ["vyzva", "Výzva na súrnu pomoc", "Na nástenke mesta, najviac 10 dní. Povodeň, požiar, hľadá sa krv. Aj v programe Zadarmo."],
+  ["vyzva", "Výzva na súrnu pomoc", "Vo feede Domov vo vašom meste, najviac 10 dní. Povodeň, požiar, hľadá sa krv. Aj v programe Zadarmo."],
 ];
+/** OPRAVY 434: Bez konca · 7 · 14 · 30 dní (ako Krátky oznam vo Viere) */
+const PLATNOST: [string, number][] = [["Bez konca", 0], ["7 dní", 7], ["14 dní", 14], ["30 dní", 30]];
+const poDnoch = (d: number) => { const x = new Date(); x.setDate(x.getDate() + d); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; };
 const POZVANIA: [Pozvanie, string, string][] = [
   ["bez", "Bez prihlásenia", "len informácia"],
   ["nezavazne", "Nezáväzne · Zúčastním sa", "ľudia ťuknú, vy viete, koľko ich asi príde. Napr. kultúrna akcia zadarmo."],
@@ -41,7 +45,7 @@ const POZVANIA: [Pozvanie, string, string][] = [
 ];
 const stitok = (o: { druh: DruhOznamu | null; kategoria?: string; zrusene?: string }): [string, string, string, string] =>
   o.zrusene ? ["ZRUŠENÉ", C.rSoft, C.rBd, C.red]
-  : o.druh === "vyzva" ? ["SÚRNA POMOC", C.rSoft, C.rBd, C.red]
+  : o.druh === "vyzva" ? ["VÝZVA", "var(--dr-vyzva)", "var(--dr-vyzva-p)", "#fff"] // OPRAVY 431: jantárová ako vo feede
   : o.druh === "verejny" ? [(o.kategoria ?? "Verejný").toUpperCase(), C.goldBg, C.goldBd, C.gold]
   : ["OZNAM", "var(--gSoft)", "var(--gBd)", "var(--gInk)"];
 const kedyText = (o: { druh: DruhOznamu | null; datum?: string; cas?: string; miesto?: string }) =>
@@ -94,7 +98,7 @@ export function OznamKartaNova({ o, autor, mesto, inicialy, logo, onProfil, onUc
     <section className="sc-tokeny" style={{ borderRadius: 22, background: "var(--card)", border: `1.5px solid ${stBd}`, overflow: "hidden", minWidth: 0, color: "var(--ink)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px" }}>
         <span style={{ width: 38, height: 38, flex: "none", borderRadius: "50%", background: logo ? `url('${logo}') center/cover no-repeat #fff` : "var(--gSoft)", border: "1px solid var(--gBd)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12.5, fontWeight: 800, color: "var(--gInk)" }}>{logo ? "" : inicialy}</span>
-        <span style={{ flex: 1, minWidth: 0 }}><b style={{ display: "block", fontSize: 14.5, color: "var(--ink)" }}>{autor}</b><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{o.druh === "oznam" ? "oznam · len pre sledujúcich" : `${mesto} · nástenka mesta`}{o.upravene && !o.zrusene ? " · upravené" : ""}</span></span>
+        <span style={{ flex: 1, minWidth: 0 }}><b style={{ display: "block", fontSize: 14.5, color: "var(--ink)" }}>{autor}</b><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{o.druh === "oznam" ? "oznam · len pre sledujúcich" : o.druh === "vyzva" ? `Feed Domov${mesto ? ` · ${mesto}` : ""}` : `${mesto} · nástenka mesta`}{o.upravene && !o.zrusene ? " · upravené" : ""}</span></span>
         <span style={{ flex: "none", whiteSpace: "nowrap", padding: "4px 10px", borderRadius: 9, background: stBg, border: `1px solid ${stBd}`, fontSize: 12, fontWeight: 800, color: stC }}>{stT}</span>
       </div>
       {/* „Za oznam zodpovedá" — ten istý riadok ako pri zbierke, aj nad plagátom */}
@@ -107,6 +111,8 @@ export function OznamKartaNova({ o, autor, mesto, inicialy, logo, onProfil, onUc
           ? <object data={o.plagat.src} type="application/pdf" aria-label="Plagát" style={{ display: "block", width: "100%", height: "min(80vh, 640px)", background: "#fff" }}><a href={o.plagat.src} target="_blank" rel="noreferrer" style={{ display: "block", padding: 16 }}>Otvoriť plagát (PDF)</a></object>
           : <img src={o.plagat.src} alt="Plagát" style={{ display: "block", width: "100%", height: "auto", maxHeight: "80vh", objectFit: "contain", background: "#fff" }} />
         : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", aspectRatio: "3 / 4", maxHeight: 420, background: "repeating-linear-gradient(135deg,#D9D3C7 0 10px,#E4DFD5 10px 20px)", fontSize: 14, fontWeight: 700, color: "var(--ink3)" }}>Tu bude váš plagát</span>)
+      // OPRAVY 441: viac fotiek / video → tá istá galéria (doteraz len prvá fotka)
+      : o.media.length > 1 ? <div style={{ aspectRatio: "16 / 9" }}><Galeria vyska="100%" radius={0} okraj="0" media={o.media.map((m) => ({ typ: m.typ, src: m.src, popis: m.popis?.trim() || undefined }))} /></div>
       : hl ? <span style={{ display: "block", aspectRatio: "16 / 9", overflow: "hidden", background: "#1D211B" }}><Media m={hl} /></span>
       : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", aspectRatio: "16 / 8", background: "var(--gSoft)" }}><span style={{ width: 84, height: 84, borderRadius: 22, background: logo ? `url('${logo}') center/cover no-repeat #fff` : "#fff", border: "1px solid var(--gBd)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 800, color: "var(--gInk)" }}>{logo ? "" : inicialy}</span></span>}
       <div style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
@@ -114,8 +120,8 @@ export function OznamKartaNova({ o, autor, mesto, inicialy, logo, onProfil, onUc
         <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{kedyText(o)}</span>
         {cistyText(o.text) && <div style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }} dangerouslySetInnerHTML={{ __html: sanitizujHtml(o.text) }} />}
         {o.zbierka && o.druh !== "vyzva" && <ZbierkaPriAkciiKarta z={o.zbierka} zrusene={!!o.zrusene} onDarovat={onDarovat ? () => onDarovat(o.zbierka!) : undefined} />}
-        {o.pozvanie !== "bez" && o.druh !== "vyzva" && !o.zrusene && <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6, flexWrap: "wrap" }}>
-          <button type="button" onClick={onUcast} aria-pressed={mojaUcast} style={{ flex: "none", whiteSpace: "nowrap", minHeight: 46, padding: "0 18px", border: "none", borderRadius: 13, background: mojaUcast ? "var(--gSoft)" : "#4B7A35", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: mojaUcast ? "var(--gInk)" : "#fff" }}>{o.pozvanie === "zavazne" ? (mojaUcast ? "Prihlásený" : "Prihlásiť sa") : mojaUcast ? "Zúčastníte sa" : "Zúčastním sa"}</button>
+        {o.pozvanie !== "bez" && !o.zrusene && <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6, flexWrap: "wrap" }}>
+          <button type="button" onClick={onUcast} aria-pressed={mojaUcast} style={{ flex: "none", whiteSpace: "nowrap", minHeight: 46, padding: "0 18px", border: "none", borderRadius: 13, background: mojaUcast ? "var(--gSoft)" : "#4B7A35", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: mojaUcast ? "var(--gInk)" : "#fff" }}>{o.pozvanie === "zavazne" ? (mojaUcast ? "Prihlásený ✓" : "Prihlásiť sa") : mojaUcast ? "Zúčastníte sa ✓" : "Zúčastním sa"}</button>
           <span style={{ fontSize: 13, lineHeight: 1.4, color: "var(--ink3)" }}>{ucastText(o, o.prihlaseni?.length ?? 0, o.zucastniSa ?? 0)}</span>
         </div>}
       </div>
@@ -127,13 +133,14 @@ export function OznamKartaNova({ o, autor, mesto, inicialy, logo, onProfil, onUc
 // ============================================================
 type Form = { druh: DruhOznamu | null; forma: FormaOznamu; nadpis: string; text: string; media: MediumZbierky[]; plagat?: Plagat; kategoria?: (typeof KATEGORIE_OZNAMU)[number];
   datum: string; cas: string; miesto: string; pozvanie: Pozvanie; limit: string; suhlas: boolean; potvrd: boolean;
+  /** OPRAVY 434: oznam platí do (YYYY-MM-DD); "" = Bez konca */ koniec: string;
   /** „Pri akcii zbierame na": "" = Nič, inak id zbierky z ponuky */
   zbierka: string };
 /** KARTA 49: predvyplnenie nového oznamu (Poďakovať firme z Dorovnania daru) — použije sa raz pri najbližšom otvorení */
 let predvyplnene: { nadpis: string; text: string; zbierka?: string } | null = null;
 export const predvyplnOznam = (p: { nadpis: string; text: string; zbierka?: string }) => { predvyplnene = p; };
 const prazdny = (zadarmo: boolean, start?: DruhOznamu): Form => { const p = predvyplnene; predvyplnene = null; return { ...prazdny0(zadarmo, start), ...(p ? { nadpis: p.nadpis, text: p.text, zbierka: p.zbierka ?? "" } : {}) }; };
-const prazdny0 = (zadarmo: boolean, start?: DruhOznamu): Form => ({ druh: start ?? (zadarmo ? null : "oznam"), forma: "text", nadpis: "", text: "", media: [], datum: "", cas: "", miesto: "", pozvanie: "bez", limit: "", suhlas: false, potvrd: false, zbierka: "" });
+const prazdny0 = (zadarmo: boolean, start?: DruhOznamu): Form => ({ druh: start ?? (zadarmo ? null : "oznam"), forma: "text", nadpis: "", text: "", media: [], datum: "", cas: "", miesto: "", pozvanie: start === "vyzva" ? "nezavazne" : "bez", limit: "", suhlas: false, potvrd: false, zbierka: "", koniec: "" });
 
 // OPRAVY 166: oznam nie je zbierka — „Pri akcii zbierame na" je preč, oznam aj udalosť sú bez zbierky
 export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mobil, tablet, toast, onProfil, start, upravitId }: {
@@ -147,12 +154,16 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
   const ph = mobil && !tablet;
   const zadarmo = tier < 1;
   const zamknuty = (d: DruhOznamu) => tier < OZNAMY_CFG.odTieru[d];
-  const [pohlad, setPohlad] = useState<"novy" | "sprava">("novy");
+  // OPRAVY 434: keď charita má oznam alebo výzvu, Oznamy sa otvoria rovno na zozname; inak rovno tvorba
+  const [pohlad, setPohlad] = useState<"novy" | "sprava">(() => start || upravitId || !oznamyStranky(strankaId).length ? "novy" : "sprava");
+  const [hlaska, setHlaska] = useState<string | null>(null);
+  const dotknute = useRef(!!(start || upravitId));
+  const pocetOznamov = oznamyStranky(strankaId).length;
+  useEffect(() => { if (!dotknute.current && pocetOznamov > 0) { dotknute.current = true; setPohlad("sprava"); } }, [pocetOznamov]);
   const [f, setF] = useState<Form>(() => prazdny(zadarmo, start));
-  const zmen = (z: Partial<Form>) => setF((x) => ({ ...x, ...z }));
+  const zmen = (z: Partial<Form>) => { dotknute.current = true; setF((x) => ({ ...x, ...z })); };
   useEffect(() => { if (f.druh && zamknuty(f.druh)) zmen({ druh: null }); }, [tier]); // eslint-disable-line react-hooks/exhaustive-deps
   const [uprava, setUprava] = useState<OznamCharity | null>(null);
-  const [hotovo, setHotovo] = useState<OznamCharity | null>(null);
   const [vyrezId, setVyrezId] = useState<number | null>(null);
   const [pravidla, setPravidla] = useState(false);
   const [plDrag, setPlDrag] = useState(false);
@@ -208,7 +219,8 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
     stranka: strankaId, druh: druh!, forma: druh === "vyzva" ? "text" as const : f.forma, nadpis: f.nadpis.trim(), text: f.text,
     media: sPlagatom ? [] : f.media, plagat: sPlagatom ? f.plagat : undefined,
     kategoria: druh === "verejny" ? f.kategoria : undefined, datum: druh === "oznam" ? undefined : f.datum, cas: druh === "verejny" ? f.cas || undefined : undefined,
-    miesto: druh === "verejny" ? f.miesto.trim() : undefined, pozvanie: druh === "vyzva" ? "bez" as const : f.pozvanie,
+    miesto: druh === "verejny" ? f.miesto.trim() : undefined, pozvanie: f.pozvanie,
+    koniec: druh === "oznam" && f.koniec ? f.koniec : undefined, // OPRAVY 431: aj výzva má Pozvať ľudí
     limit: f.pozvanie === "zavazne" && parseInt(f.limit, 10) > 0 ? parseInt(f.limit, 10) : undefined,
     zbierka: undefined,
   });
@@ -222,15 +234,18 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
     finally { setZverejnuje(false); }
   };
   const zverejniVnutri = async () => {
-    if (uprava) { const n = await upravOznamCharity(uprava, zData()); setUprava(null); setF(prazdny(zadarmo)); toast(n.zmenaPrihlasenym && n.zmenaPrihlasenym !== uprava.zmenaPrihlasenym ? "Uložené. Prihláseným pošleme správu o zmene." : "Uložené."); setPohlad("sprava"); return; }
+    if (uprava) { const n = await upravOznamCharity(uprava, zData()); setUprava(null); setF(prazdny(zadarmo)); setHlaska(n.zmenaPrihlasenym && n.zmenaPrihlasenym !== uprava.zmenaPrihlasenym ? "Uložené ✓ Prihláseným pošleme správu o zmene." : "Uložené ✓"); setPohlad("sprava"); return; }
     const n = await zverejniOznam({ ...zData(), nadLimit: nadLimit || undefined });
-    setHotovo(n); setF(prazdny(zadarmo));
+    // OPRAVY 434: po zverejnení späť na zoznam, nový oznam prvý + zelená hláška
+    setF(prazdny(zadarmo)); setPohlad("sprava");
+    setHlaska(n.druh === "oznam" ? `Zverejnené ✓ Oznámenie sledujúcim pošleme o ${OZNAMY_CFG.oneskorenieMin} minút, dovtedy ho môžete upraviť alebo zrušiť.`
+      : n.druh === "vyzva" ? `Zverejnené ✓ Výzva je vo feede Domov${mesto ? ` · ${mesto}` : ""}.` : "Zverejnené ✓ Akcia je na nástenke mesta.");
     if (nadLimit) toast(`Verejný oznam nad limit · ${OZNAMY_CFG.cenaNadLimit} €`);
   };
   const upravit = (o: OznamCharity) => {
-    setUprava(o); setHotovo(null); setPohlad("novy");
+    dotknute.current = true; setUprava(o); setHlaska(null); setPohlad("novy");
     setF({ druh: o.druh, forma: o.forma, nadpis: o.nadpis, text: o.text, media: o.media, plagat: o.plagat, kategoria: o.kategoria, datum: o.datum ?? "", cas: o.cas ?? "", miesto: o.miesto ?? "",
-      pozvanie: o.pozvanie, limit: o.limit ? String(o.limit) : "", suhlas: true, potvrd: true, zbierka: "" });
+      pozvanie: o.pozvanie, limit: o.limit ? String(o.limit) : "", suhlas: true, potvrd: true, zbierka: "", koniec: o.koniec ?? "" });
     window.setTimeout(() => hore.current?.scrollIntoView({ block: "start" }), 30);
   };
 
@@ -247,16 +262,13 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
       <OrezFotky sprava src={vyrezM.src} pomer={16 / 9} vyrez={vyrezM.vyrez} onZrusit={() => setVyrezId(null)} onVyrez={(v) => { zmen({ media: f.media.map((m) => (m.id === vyrezM.id ? { ...m, vyrez: v } : m)) }); setVyrezId(null); }} />
     </section>);
 
-  const taby = (
-    <div role="tablist" style={{ display: "flex", flexWrap: "wrap", gap: 4, padding: 4, borderRadius: 14, background: "var(--btn)", alignSelf: "flex-start" }}>
-      {([["novy", uprava ? "Upraviť oznam" : "Nový oznam"], ["sprava", "Spravovať oznamy"]] as const).map(([k, t]) => { const on = pohlad === k; return (
-        <button key={k} type="button" role="tab" aria-selected={on} onClick={() => setPohlad(k)} style={{ minHeight: 44, padding: "0 16px", border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: on ? 800 : 700, background: on ? "var(--field)" : "transparent", color: on ? "var(--ink)" : "var(--ink3)" }}>{t}</button>); })}
-    </div>);
   const dva = (l: ReactNode, p: ReactNode) => ph
     ? <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>{l}{p}</div>
     : <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.45fr) minmax(300px,1fr)", gap: 20, alignItems: "start" }}><div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>{l}</div><div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>{p}</div></div>;
 
-  if (pohlad === "sprava") return (<div ref={hore} style={{ display: "flex", flexDirection: "column", gap: 16 }}>{taby}<Spravovat strankaId={strankaId} ph={ph} dva={dva} onUpravit={upravit} toast={toast} /></div>);
+  if (pohlad === "sprava") return (<div ref={hore} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <Spravovat strankaId={strankaId} mesto={mesto} ph={ph} dva={dva} onUpravit={upravit} toast={toast} tier={tier} hlaska={hlaska}
+      onNovy={() => { setHlaska(null); setUprava(null); setF(prazdny(zadarmo)); setPohlad("novy"); window.setTimeout(() => hore.current?.scrollIntoView({ block: "start" }), 30); }} /></div>);
 
   // ---- Nový oznam ----
   const vyber = (on: boolean): CSSProperties => ({ background: on ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${on ? "var(--gBd)" : "#CFC9BC"}` });
@@ -264,9 +276,10 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
   const nadpisPh = druh === "vyzva" ? "Napríklad: Hľadáme darcov krvi skupiny 0 negatívna" : druh === "verejny" ? "Napríklad: Beh pre svetlo · rodinný beh v parku" : "Napríklad: Zajtra výdaj od 14:00";
   const kam: [string, string] = druh === "oznam" ? ["Na váš profil a sledujúcim", "Príde tým, čo vás sledujú. Na nástenku mesta ani do okolia nejde."]
     : druh === "verejny" ? [`Na nástenku mesta ${mesto}`, `Uvidia ho ľudia v meste ${mesto} do ${fmtD(f.datum) || "dňa akcie"}. Aj na vašom profile.`]
-    : druh === "vyzva" ? [`Na nástenku mesta ${mesto}`, `Výrazne, do ${fmtD(f.datum) || "konca pomoci"}, najviac 10 dní. Aj sledujúcim.`] : ["—", "Najprv vyberte druh oznamu."];
+    : druh === "vyzva" ? [`Do feedu Domov${mesto ? ` · ${mesto}` : ""}`, `Na vašom profile a vo feede Domov${mesto ? ` v meste ${mesto}` : " vo vašom meste"} do ${fmtD(f.datum) || "dátumu, ktorý zadáte"} (najviac 10 dní). Príde aj tým, čo vás sledujú.`] : ["—", "Najprv vyberte druh oznamu."];
   const poznDrz = uprava ? (uprava.prihlaseni.length || uprava.zucastniSa ? "Pri zmene dátumu alebo miesta pošleme prihláseným správu." : "")
     : druh === "oznam" ? `Oznámenie sledujúcim pošleme ${OZNAMY_CFG.oneskorenieMin} minút po zverejnení. Dovtedy ho môžete upraviť alebo zrušiť.`
+    : druh === "vyzva" ? `Po zverejnení ju hneď uvidia ľudia vo feede Domov${mesto ? ` v meste ${mesto}` : ""}. Pred zverejnením si ju poriadne skontrolujte.`
     : "Po zverejnení ho hneď uvidí každý na nástenke mesta. Pred zverejnením si ho poriadne skontrolujte.";
   const lblDrz = uprava ? "Podržte a uložte" : nadLimit ? `Podržte a zverejnite · ${OZNAMY_CFG.cenaNadLimit} €` : druh === "vyzva" ? "Podržte a zverejnite výzvu" : "Podržte a zverejnite";
   const tuk = potvrditTuknutim();
@@ -275,7 +288,7 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
     <section style={{ ...panel, gap: 12 }}>
       <span style={{ fontSize: 17, fontWeight: 800 }}>Čo chcete oznámiť</span>
       {DRUHY.map(([k, t, s]) => { const lock = zamknuty(k), on = druh === k && !lock; return (
-        <button key={k} type="button" role="radio" aria-checked={on} aria-disabled={lock} onClick={() => { if (!lock && !uprava) zmen({ druh: k }); }}
+        <button key={k} type="button" role="radio" aria-checked={on} aria-disabled={lock} onClick={() => { if (!lock && !uprava) zmen({ druh: k, ...(k === "vyzva" && druh !== "vyzva" ? { pozvanie: "nezavazne" as const } : {}) }); }}
           style={{ display: "flex", alignItems: "center", gap: 14, minHeight: 64, padding: "10px 36px 10px 14px", borderRadius: 14, cursor: lock || uprava ? "default" : "pointer", opacity: lock ? 0.55 : 1, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", ...kartaVolby(on) }}>
           <FajkaVolby on={on} />
           <span style={{ flex: 1, minWidth: 0 }}>
@@ -322,7 +335,11 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
             <input value={f.miesto} onChange={(e) => zmen({ miesto: e.target.value.slice(0, 80) })} placeholder={`Napríklad: Mierové námestie, ${mesto}`} aria-label="Miesto akcie" style={pole} /></label>
         </div>
       </>}
-      {(druh === "oznam" || druh === "verejny") && <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={lbl}>Pozvať ľudí</span>
+      {/* OPRAVY 434: ako dlho oznam platí — 1 : 1 ako Krátky oznam vo Viere; po uplynutí sa sám presunie do Skončených */}
+      {druh === "oznam" && <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <Volby label="Platí do" value={PLATNOST.findIndex(([, d]) => (d ? poDnoch(d) : "") === f.koniec)} onChange={(i) => zmen({ koniec: PLATNOST[i][1] ? poDnoch(PLATNOST[i][1]) : "" })} moznosti={PLATNOST.map(([t], i) => [i, t] as [number, string])} />
+        {f.koniec && <span style={{ fontSize: 13, color: "var(--ink3)" }}>Platí do {fmtD(f.koniec)}, potom sa sám presunie do Skončených.</span>}</div>}
+      {(druh === "oznam" || druh === "verejny" || druh === "vyzva") && <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={lbl}>Pozvať ľudí</span>
         {POZVANIA.map(([k, t, s]) => { const on = f.pozvanie === k; return (
           <button key={k} type="button" role="radio" aria-checked={on} onClick={() => zmen({ pozvanie: k })} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 56, padding: "8px 36px 8px 14px", borderRadius: 14, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", ...kartaVolby(on) }}>
             <FajkaVolby on={on} /><span style={{ flex: 1, minWidth: 0 }}><b style={{ display: "block", fontSize: 14.5 }}>{t}</b><span style={{ display: "block", fontSize: 13, lineHeight: 1.4, color: "var(--ink3)" }}>{s}</span></span></button>); })}
@@ -333,7 +350,7 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
         <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "14px 16px", borderRadius: 14, background: C.rSoft, border: `1px solid ${C.rBd}` }}>
           {/* OPRAVY 419 (1): ružové pozadie je vždy svetlé → tmavé písmo aj v tmavom režime */}
           <b style={{ fontSize: 15, color: "#2A1A14" }}>Výzva na súrnu pomoc</b>
-          <span style={{ fontSize: 14, lineHeight: 1.5, color: "#4A332A" }}>Len keď ide o náhlu situáciu: povodeň, požiar, hľadá sa krv, nezvestný človek, núdza po nehode. Na nástenke bude do konca pomoci, najviac 10 dní.</span>
+          <span style={{ fontSize: 14, lineHeight: 1.5, color: "#4A332A" }}>Len keď ide o náhlu situáciu: povodeň, požiar, hľadá sa krv, nezvestný človek, núdza po nehode. Vo feede Domov bude do dátumu, ktorý zadáte nižšie, najviac 10 dní.</span>
           <span style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.5, color: C.red }}>Kto výzvu zneužije, napríklad na reklamu alebo bežnú zbierku, stratí možnosť posielať výzvy.</span>
         </div>
         <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={lbl}>Pomoc treba do</span>
@@ -350,8 +367,7 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
       <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: "var(--ink3)" }}>KAM PÔJDE</span><b style={{ fontSize: 16 }}>{kam[0]}</b><span style={{ fontSize: 13.5, lineHeight: 1.45, color: "var(--ink2)" }}>{kam[1]}</span>
     </section>
     {nadLimit && <section style={{ borderRadius: 18, background: C.goldBg, border: `1px solid ${C.goldBd}`, padding: "12px 16px", fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>Máte {verejnych} bežiace verejné oznamy, v cene sú {OZNAMY_CFG.verejneNaraz}. Ďalší stojí <b style={{ color: "var(--ink)" }}>{OZNAMY_CFG.cenaNadLimit} €</b>. Výzva na súrnu pomoc sa nepočíta.</section>}
-    {hotovo ? <Hotovo o={hotovo} onUpravit={() => upravit(hotovo)} onZrusit={async () => { const e = await zrusOznamCharity(hotovo); if (e) { toast(e); return; } setHotovo(null); toast("Oznam je zrušený. Nikomu nič neprišlo."); }} onNovy={() => setHotovo(null)} />
-    : <>
+    {<>
       {chyba && <span role="status" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 13.5, fontWeight: 700, color: C.gold, textAlign: "center" }}><span style={{ width: 8, height: 8, flex: "none", borderRadius: "50%", background: C.gold }} />{chyba}</span>}
       {tuk
         ? <button type="button" onDoubleClick={() => void zverejni()} aria-disabled={!!chyba} style={{ width: "100%", minHeight: 54, border: "none", borderRadius: 16, background: "#4B7A35", opacity: chyba ? 0.5 : 1, cursor: chyba ? "default" : "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "#fff" }}>{uprava ? "Dvakrát kliknite a uložte" : "Dvakrát kliknite a zverejnite"}</button>
@@ -363,75 +379,107 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
   </>);
 
   return (<div ref={hore} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-    {taby}
+    {pocetOznamov > 0 && !uprava && <button type="button" onClick={() => setPohlad("sprava")} style={{ ...odkaz, alignSelf: "flex-start", minHeight: 44, padding: 0 }}>‹ Späť na oznamy</button>}
     {dva(lavy, pravy)}
     {pravidla && <PravidlaObsahu ph={ph} stit="" onZavri={() => setPravidla(false)} />}
   </div>);
 }
 
-function Hotovo({ o, onUpravit, onZrusit, onNovy }: { o: OznamCharity; onUpravit: () => void; onZrusit: () => void; onNovy: () => void }) {
-  const lehota = vLehote(o);
-  const zostava = Math.max(1, Math.ceil((Date.parse(o.zverejnene) + OZNAMY_CFG.oneskorenieMin * 60000 - Date.now()) / 60000));
-  return (
-    <section role="status" style={{ borderRadius: 18, background: "var(--field)", border: "1px solid var(--cardBd)", padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
-      <b style={{ fontSize: 15.5, color: "var(--ink)" }}>{o.druh === "oznam" ? (lehota ? `Zverejnené. Oznámenie sledujúcim pošleme o ${zostava} min.` : "Zverejnené. Sledujúcim sme poslali oznámenie.") : "Zverejnené na nástenke mesta. Vidí ho každý."}</b>
-      {o.druh === "oznam" && lehota && <>
-        <span style={{ fontSize: 13.5, lineHeight: 1.45, color: "var(--ink2)" }}>Dovtedy ho môžete upraviť alebo zrušiť a nikomu nič nepríde.</span>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <button type="button" onClick={onUpravit} style={{ minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1.5px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--ink2)" }}>Upraviť</button>
-          <button type="button" onClick={onZrusit} style={{ minHeight: 44, padding: "0 16px", borderRadius: 12, border: `1.5px solid ${C.rBd}`, background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: C.red }}>Zrušiť</button>
-        </div>
-      </>}
-      <button type="button" onClick={onNovy} style={{ ...odkaz, alignSelf: "flex-start", minHeight: 44 }}>Nový oznam ›</button>
-    </section>);
-}
-
-// ---------- Spravovať oznamy ----------
-function Spravovat({ strankaId, ph, dva, onUpravit, toast, len }: { strankaId: string; ph: boolean; dva: (l: ReactNode, p: ReactNode) => ReactNode; onUpravit: (o: OznamCharity) => void; toast: (m: string) => void;
-  /** OPRAVY 407: len akcie (druh „verejny“) — Ľudia → Akcie a podujatia */ len?: DruhOznamu }) {
+// ---------- Zoznam oznamov (OPRAVY 434: najprv zoznam, BEŽÍ → SKONČENÉ, ťuk na kartu = úprava, zrušenie podržaním) ----------
+const dvaC = (n: number) => String(n).padStart(2, "0");
+const kedyKoniec = (o: OznamCharity) => o.druh === "oznam" ? o.koniec : o.datum;
+const skoncenoText = (o: OznamCharity) => {
+  if (o.zrusene) { const d = new Date(o.zrusene); return `${o.druh === "vyzva" ? "zrušená" : "zrušené"} ${d.getDate()}. ${d.getMonth() + 1}. · ${d.getHours()}:${dvaC(d.getMinutes())}`; }
+  const k = kedyKoniec(o); return k ? `${o.druh === "vyzva" ? "skončila" : "skončilo"} ${fmtD(k)}` : "skončilo";
+};
+const ludiaSaPrihlasilo = (n: number) => `${n} ${n === 1 ? "človek sa prihlásil" : n >= 2 && n <= 4 ? "ľudia sa prihlásili" : "ľudí sa prihlásilo"}`;
+function Spravovat({ strankaId, mesto, ph, dva, onUpravit, toast, len, tier = 1, hlaska, onNovy, nadpis }: { strankaId: string; mesto?: string; ph: boolean; dva: (l: ReactNode, p: ReactNode) => ReactNode; onUpravit: (o: OznamCharity) => void; toast: (m: string) => void;
+  /** OPRAVY 407: len akcie (druh „verejny“) — Ľudia → Akcie a podujatia */ len?: DruhOznamu;
+  /** OPRAVY 434: program — v Zadarmo bez „Verejné oznamy naraz“ a bez Pripomienky deň pred akciou */ tier?: number;
+  /** zelená hláška nad zoznamom (po zverejnení) */ hlaska?: string | null;
+  /** „+ Nový oznam“ vedľa nadpisu */ onNovy?: () => void; nadpis?: string }) {
   const zoznam = oznamyStranky(strankaId).filter((o) => !len || o.druh === len);
-  const n = nastaveniaOznamov(strankaId);
   const [ludiId, setLudiId] = useState<string | null>(null);
-  const [zrId, setZrId] = useState<string | null>(null);
+  const [skoncene, setSkoncene] = useState(false);
+  // OPRAVY 431: počty a mená prihlásených zo servera (oznam_ucast)
+  useZmenyUcasti();
+  const idZoznamu = zoznam.map((o) => o.id).join(",");
+  useEffect(() => { if (idZoznamu) void nacitajUcasti(idZoznamu.split(",")); }, [idZoznamu]);
+  const [mena, setMena] = useState<Record<string, { meno: string }[]>>({});
+  useEffect(() => { if (!ludiId || mena[ludiId]) return; void menaPrihlasenych(ludiId).then((m) => { if (m) setMena((x) => ({ ...x, [ludiId]: m })); }); }, [ludiId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const n = nastaveniaOznamov(strankaId);
   const verejnych = beziaceVerejne(strankaId).length;
-  const tlO: CSSProperties = { flex: "none", minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1.5px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink2)" };
+  const zadarmo = tier < 1;
   const meta = (o: OznamCharity) => o.druh === "verejny" ? `Nástenka mesta · koná sa ${fmtD(o.datum)}${o.cas ? ` o ${o.cas}` : ""}${o.miesto ? ` · ${o.miesto}` : ""}${o.nadLimit ? ` · nad limit ${OZNAMY_CFG.cenaNadLimit} €` : ""}`
-    : o.druh === "vyzva" ? `Nástenka mesta · pomoc treba do ${fmtD(o.datum)}`
-    : `Profil · ${vLehote(o) ? `sledujúcim pôjde o ${Math.max(1, Math.ceil((Date.parse(o.zverejnene) + OZNAMY_CFG.oneskorenieMin * 60000 - Date.now()) / 60000))} min` : "poslané sledujúcim"}`;
+    : o.druh === "vyzva" ? `Feed Domov${mesto ? ` · ${mesto}` : ""} · do ${fmtD(o.datum).replace(/ \d{4}$/, "")}`
+    : `Profil · ${vLehote(o) ? `sledujúcim pôjde o ${Math.max(1, Math.ceil((Date.parse(o.zverejnene) + OZNAMY_CFG.oneskorenieMin * 60000 - Date.now()) / 60000))} min` : "poslané sledujúcim"}${o.koniec ? ` · do ${fmtD(o.koniec).replace(/ \d{4}$/, "")}` : ""}`;
+  // BEŽÍ: výzvy prvé, potom podľa konca (bez konca na koniec) · SKONČENÉ: najnovšie hore
+  const beziace = zoznam.filter((o) => bezi(o)).sort((a, b) => (a.druh === "vyzva" ? 0 : 1) - (b.druh === "vyzva" ? 0 : 1) || (kedyKoniec(a) ?? "9999").localeCompare(kedyKoniec(b) ?? "9999"));
+  const skoncenych = zoznam.filter((o) => !bezi(o)).sort((a, b) => (b.zrusene ?? kedyKoniec(b) ?? b.zverejnene).localeCompare(a.zrusene ?? kedyKoniec(a) ?? a.zverejnene));
+  const kicker: CSSProperties = { fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" };
+  const zrusit = async (o: OznamCharity, pocet: number) => {
+    const lehota = vLehote(o);
+    const e = await zrusOznamCharity(o); if (e) { toast(e); return; }
+    toast(lehota ? "Zrušené. Nikomu nič neprišlo." : pocet ? "Zrušené. Prihláseným posielame správu." : "Zrušené.");
+  };
+  const karta = (o: OznamCharity) => {
+    const [stT, stBg, stBd, stC] = stitok(o);
+    const pocet = Math.max(ucast(o.id).pocet, o.pozvanie === "zavazne" ? o.prihlaseni.length : o.zucastniSa);
+    const menaO = mena[o.id] ?? o.prihlaseni;
+    const foto = o.media.find((m) => m.typ === "foto");
+    const zrusT = o.druh === "vyzva" ? "Podržte a zrušte výzvu" : o.druh === "verejny" ? "Podržte a zrušte akciu" : "Podržte a zrušte oznam";
+    const zrusS = o.druh === "vyzva" ? `Zmizne z feedu Domov aj z profilu.${pocet ? " Prihláseným pošleme správu." : ""}`
+      : o.druh === "verejny" ? `Pri ozname sa ukáže „Zrušené“.${pocet ? " Prihláseným pošleme správu." : ""}`
+      : vLehote(o) ? "Sledujúcim ešte nič neprišlo, oznam zmizne celý." : "Zmizne z vášho profilu.";
+    const stop = (e: { stopPropagation: () => void }) => e.stopPropagation();
+    return (
+      <section key={o.id} role="button" tabIndex={0} aria-label={`Upraviť: ${o.nadpis}`} onClick={() => onUpravit(o)}
+        onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onUpravit(o); } }}
+        style={{ ...panel, gap: 10, padding: "14px 16px", cursor: "pointer" }}>
+        <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+          {foto && <span aria-hidden="true" style={{ flex: "none", width: ph ? 72 : 96, height: ph ? 72 : 72, borderRadius: 12, overflow: "hidden", background: "#1D211B" }}><Media m={foto} /></span>}
+          <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span style={{ flex: "none", whiteSpace: "nowrap", padding: "3px 10px", borderRadius: 9, background: stBg, border: `1px solid ${stBd}`, fontSize: 12, fontWeight: 800, color: stC }}>{stT}</span>
+              {o.upravene && <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>upravené</span>}
+            </span>
+            <b style={{ fontSize: 16, lineHeight: 1.3, overflowWrap: "anywhere" }}>{o.nadpis}</b>
+            <span style={{ fontSize: 13.5, lineHeight: 1.4, color: "var(--ink2)" }}>{[meta(o), o.pozvanie !== "bez" && pocet > 0 ? ludiaSaPrihlasilo(pocet) : ""].filter(Boolean).join(" · ")}</span>
+          </span>
+          <span aria-hidden="true" style={{ flex: "none", fontSize: 18, color: "var(--ink3)", alignSelf: "center" }}>›</span>
+        </div>
+        {o.pozvanie !== "bez" && <div onClick={stop} style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <button type="button" aria-expanded={ludiId === o.id} onClick={() => setLudiId(ludiId === o.id ? null : o.id)} style={{ ...odkaz, minHeight: 44, padding: 0, fontSize: 14 }}>
+            {o.pozvanie === "zavazne" ? `Prihlásení: ${pocet}${o.limit ? ` z ${o.limit}` : ""} · záväzne ›` : `Zúčastní sa: ${pocet} ${pocet === 1 ? "človek" : pocet >= 2 && pocet <= 4 ? "ľudia" : "ľudí"} · nezáväzne ›`}</button>
+          
+        </div>}
+        {ludiId === o.id && <div onClick={stop} style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{menaO.length ? menaO.map((l, i) => <span key={i} style={{ flex: "none", whiteSpace: "nowrap", minHeight: 30, padding: "0 12px", borderRadius: 15, background: "var(--field)", border: "1px solid var(--cardBd)", display: "flex", alignItems: "center", fontSize: 13, color: "var(--ink2)" }}>{l.meno}</span>) : <span style={{ fontSize: 13, color: "var(--ink3)" }}>Zatiaľ nikto.</span>}</div>}
+        <div onClick={stop} onKeyDown={stop} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <PodrzTlacidlo farba="cervena" trvanie={1500} label={zrusT} onConfirm={() => void zrusit(o, pocet)} onHint={() => toast("Zrušíte podržaním tlačidla.")} />
+          <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink3)", textAlign: "center" }}>{zrusS}</span>
+        </div>
+      </section>);
+  };
+  const riadokSkonceny = (o: OznamCharity) => {
+    const [stT, stBg, stBd, stC] = stitok({ ...o, zrusene: undefined });
+    return (
+      <div key={o.id} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 52, padding: "8px 0", borderTop: "1px solid var(--cardBd)", flexWrap: "wrap" }}>
+        <span style={{ flex: "none", whiteSpace: "nowrap", padding: "3px 10px", borderRadius: 9, background: stBg, border: `1px solid ${stBd}`, fontSize: 12, fontWeight: 800, color: stC, opacity: 0.75 }}>{stT}</span>
+        <span style={{ flex: 1, minWidth: 0 }}><b style={{ display: "block", fontSize: 14.5, overflowWrap: "anywhere", color: "var(--ink2)" }}>{o.nadpis}</b><span style={{ display: "block", fontSize: 13, color: "var(--ink3)" }}>{skoncenoText(o)}</span></span>
+      </div>);
+  };
   const lavy = (<>
-    <span style={{ fontSize: 14, color: "var(--ink3)" }}>Verejné oznamy naraz: <b style={{ color: "var(--ink)" }}>{verejnych} z {OZNAMY_CFG.verejneNaraz}</b> · ďalší nad limit za {OZNAMY_CFG.cenaNadLimit} €</span>
-    {!zoznam.length && <section style={{ ...panel, alignItems: "center", textAlign: "center" }}><b style={{ fontSize: 17 }}>{len === "verejny" ? "Zatiaľ žiadna akcia" : "Zatiaľ žiadny oznam"}</b></section>}
-    {zoznam.map((o) => {
-      const [stT, stBg, stBd, stC] = stitok(o);
-      const akcia = o.druh !== "oznam", aktivny = bezi(o) && zrId !== o.id;
-      const pocet = o.pozvanie === "zavazne" ? o.prihlaseni.length : o.zucastniSa;
-      return (
-        <section key={o.id} style={{ ...panel, gap: 10, padding: "16px 18px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <span style={{ flex: "none", whiteSpace: "nowrap", padding: "3px 10px", borderRadius: 9, background: stBg, border: `1px solid ${stBd}`, fontSize: 12, fontWeight: 800, color: stC }}>{stT}</span>
-            <b style={{ flex: 1, minWidth: ph ? 0 : 200, fontSize: 16, textDecoration: o.zrusene ? "line-through" : "none" }}>{o.nadpis}</b>
-            {o.upravene && !o.zrusene && <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>upravené</span>}
-          </div>
-          <span style={{ fontSize: 13.5, color: "var(--ink2)" }}>{meta(o)}</span>
-          {o.pozvanie !== "bez" && <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            {o.pozvanie === "zavazne"
-              ? <button type="button" aria-expanded={ludiId === o.id} onClick={() => setLudiId(ludiId === o.id ? null : o.id)} style={{ ...odkaz, minHeight: 44, padding: 0, fontSize: 14 }}>Prihlásení: {pocet}{o.limit ? ` z ${o.limit}` : ""} · záväzne ›</button>
-              : <span style={{ fontSize: 14, fontWeight: 800, color: "var(--green)" }}>Zúčastní sa: {pocet} {pocet === 1 ? "človek" : pocet >= 2 && pocet <= 4 ? "ľudia" : "ľudí"} · nezáväzne</span>}
-            {FLAGS.dev_tier_switcher && aktivny && <button type="button" onClick={() => void simulujUcast(o)} style={{ minHeight: 32, padding: "0 10px", borderRadius: 10, border: "1px dashed var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, fontWeight: 700, color: "var(--ink3)" }}>+1 (DEV)</button>}
-          </div>}
-          {ludiId === o.id && <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{o.prihlaseni.length ? o.prihlaseni.map((l, i) => <span key={i} style={{ flex: "none", whiteSpace: "nowrap", minHeight: 30, padding: "0 12px", borderRadius: 15, background: "var(--field)", border: "1px solid var(--cardBd)", display: "flex", alignItems: "center", fontSize: 13, color: "var(--ink2)" }}>{l.meno}</span>) : <span style={{ fontSize: 13, color: "var(--ink3)" }}>Zatiaľ nikto.</span>}</div>}
-          {aktivny && <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button type="button" onClick={() => onUpravit(o)} style={tlO}>Upraviť</button>
-            {akcia && <button type="button" onClick={() => setZrId(o.id)} style={{ ...tlO, borderColor: C.rBd, color: C.red }}>{o.druh === "vyzva" ? "Zrušiť výzvu" : "Zrušiť akciu"}</button>}
-          </div>}
-          {zrId === o.id && <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "12px 14px", borderRadius: 14, background: C.rSoft, border: `1px solid ${C.rBd}` }}>
-            <span style={{ fontSize: 14, fontWeight: 700 }}>{o.druh === "vyzva" ? "Zrušiť výzvu? Pri nej sa ukáže „Zrušené“." : `Zrušiť akciu? Pri ozname sa ukáže „Zrušené“${pocet ? ` a ${pocet} ${pocet === 1 ? "prihlásenému" : "prihláseným"} príde správa` : ""}.`}</span>
-            <div style={{ display: "flex", gap: 10 }}><button type="button" onClick={() => setZrId(null)} style={tlO}>Späť</button>
-              <button type="button" onClick={async () => { const e = await zrusOznamCharity(o); if (e) { toast(e); return; } setZrId(null); toast(pocet ? "Zrušené. Prihláseným posielame správu." : "Zrušené."); }} style={{ ...tlO, border: "none", background: C.red, color: "#fff" }}>Áno, zrušiť</button></div>
-          </div>}
-          {o.upravene && !o.zrusene && akcia && <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink3)" }}>Pri úprave dátumu alebo miesta pošleme prihláseným správu. Pri ozname sa ukáže „upravené“.</span>}
-        </section>);
-    })}
+    {(nadpis || onNovy) && <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+      {nadpis && <b style={{ flex: 1, minWidth: 0, fontSize: 22 }}>{nadpis}</b>}
+      {onNovy && <button type="button" onClick={onNovy} style={{ flex: "none", minHeight: 48, padding: "0 20px", border: "none", borderRadius: 14, background: "#4B7A35", color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800 }}>+ Nový oznam</button>}
+    </div>}
+    {hlaska && <div role="status" style={{ padding: "12px 16px", borderRadius: 14, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 14.5, fontWeight: 700, lineHeight: 1.45, color: "var(--gInk)" }}>{hlaska}</div>}
+    {!zadarmo && !len && <span style={{ fontSize: 14, color: "var(--ink3)" }}>Verejné oznamy naraz: <b style={{ color: "var(--ink)" }}>{verejnych} z {OZNAMY_CFG.verejneNaraz}</b> · ďalší nad limit za {OZNAMY_CFG.cenaNadLimit} €</span>}
+    <span style={kicker}>BEŽÍ</span>
+    {beziace.length ? beziace.map(karta) : <span style={{ fontSize: 14.5, color: "var(--ink3)" }}>{len === "verejny" ? "Teraz nebeží žiadna akcia." : "Teraz nebeží žiadny oznam."}</span>}
+    <button type="button" aria-expanded={skoncene} onClick={() => setSkoncene(!skoncene)} style={{ ...kicker, display: "flex", alignItems: "center", gap: 8, minHeight: 44, padding: 0, border: "none", background: "none", cursor: "pointer", fontFamily: "inherit", boxShadow: "none", alignSelf: "flex-start" }}>
+      SKONČENÉ{skoncenych.length ? ` · ${skoncenych.length}` : ""}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true" style={{ transform: `rotate(${skoncene ? 180 : 0}deg)`, transition: "transform .2s ease" }}><path d="M6 9l6 6 6-6" /></svg></button>
+    {skoncene && (skoncenych.length ? <div style={{ display: "flex", flexDirection: "column" }}>{skoncenych.map(riadokSkonceny)}</div> : <span style={{ fontSize: 14, color: "var(--ink3)" }}>Zatiaľ žiadne.</span>)}
   </>);
   const prepinac = (on: boolean, t: string, s: string, tap: () => void) => (
     <button type="button" role="switch" aria-checked={on} onClick={tap} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 52, padding: "6px 12px", borderRadius: 12, border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, background: on ? "var(--gSoft)" : "var(--field)", cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
@@ -440,7 +488,7 @@ function Spravovat({ strankaId, ph, dva, onUpravit, toast, len }: { strankaId: s
     </button>);
   const pravy = (<section style={{ ...panel, gap: 10, padding: "16px 18px" }}>
     <b style={{ fontSize: 16 }}>Nastavenia oznamov</b>
-    {prepinac(n.pripomienka, "Pripomienka deň pred akciou", "prihláseným záväzne aj nezáväzne", () => ulozNastaveniaOznamov(strankaId, { ...n, pripomienka: !n.pripomienka }))}
+    {!zadarmo && prepinac(n.pripomienka, "Pripomienka deň pred akciou", "prihláseným záväzne aj nezáväzne", () => ulozNastaveniaOznamov(strankaId, { ...n, pripomienka: !n.pripomienka }))}
     {prepinac(n.spravaPriZmene, "Správa pri zmene dátumu alebo miesta", "prihláseným, automaticky", () => ulozNastaveniaOznamov(strankaId, { ...n, spravaPriZmene: !n.spravaPriZmene }))}
   </section>);
   return <>{dva(lavy, pravy)}</>;
