@@ -14,7 +14,7 @@ const klucReg = (stranka: string) => `deed.registracia.cas@${stranka}`;
 export function zapisCasRegistracie(stranka: string) { try { localStorage.setItem(klucReg(stranka), new Date().toISOString()); } catch { /* LS */ } }
 export function casRegistracieLokalne(stranka: string): string | null { try { return localStorage.getItem(klucReg(stranka)); } catch { return null; } }
 
-export type LokalnaStranka = { k: string; n: string; typ: "charita" };
+export type LokalnaStranka = { k: string; n: string; typ: "charita" | "farnost" };
 const KLUC = "deed.lokalneStranky";
 export function lokalneStranky(): LokalnaStranka[] {
   try { return JSON.parse(localStorage.getItem(KLUC) ?? "[]") as LokalnaStranka[]; } catch { return []; }

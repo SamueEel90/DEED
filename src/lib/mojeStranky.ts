@@ -33,6 +33,8 @@ export async function nacitajStrankyUctu(): Promise<void> {
   ver++; posl.forEach((f) => f());
 }
 const inicialy = (n: string) => n.replace(/^(Farnosť|Rímskokatolícka farnosť|Gréckokatolícka farnosť)\s+/i, "").split(/[\s—-]+/).filter(Boolean).map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "?";
+/** stránka farnosti pre Moje stránky a Správu (aj práve založená v registrácii) */
+export const strankaFarnosti = (k: string, nazov: string, pomocnik = false): Stranka => ({ k, i: inicialy(nazov), n: nazov, typ: "farnost", rola: pomocnik ? "stranky.rola.pomocnik" : "stranky.rola.farar", pozicia: "charita", bg: "var(--btn)", c: "var(--ink)", info: [] });
 function naStranku(r: RiadokUctu): Stranka | null {
   const vzor = UKAZKOVE_STRANKY.find((s) => s.k === r.id);
   const pomocnik = r.uroven === "pomocnik";
@@ -40,7 +42,7 @@ function naStranku(r: RiadokUctu): Stranka | null {
   // OPRAVY 402: aj skutočné charity (každá registrácia je nová stránka)
   if (r.typ === "charita") return strankaCharity(r.id, r.nazov, pomocnik);
   if (r.typ !== "farnost") return null;
-  return { k: r.id, i: inicialy(r.nazov), n: r.nazov, typ: "farnost", rola: pomocnik ? "stranky.rola.pomocnik" : "stranky.rola.farar", pozicia: "charita", bg: "var(--btn)", c: "var(--ink)", info: [] };
+  return strankaFarnosti(r.id, r.nazov, pomocnik);
 }
 /** OPRAVY 402: stránka charity pre Moje stránky a Správu (bez ukážkových čísel) */
 export const strankaCharity = (k: string, n: string, pomocnik = false): Stranka => ({ k, i: inicialyOrg(n), n, typ: "charita", rola: pomocnik ? "stranky.rola.pomocnik" : "stranky.rola.spravca", pozicia: "charita", bg: "var(--gSoft)", c: "var(--gInk)", info: [] });
@@ -120,6 +122,9 @@ export function vezmiOtvorenieProfilu(): boolean { try { const a = sessionStorag
 /** KARTA 44: organizácia sa pridáva z osobného účtu — po prihlásení / registrácii osoby pokračuj registráciou organizácie */
 const KLUC_ORG = "deed.reg.org";
 export function cakajRegistraciuOrg(a: boolean) { try { if (a) sessionStorage.setItem(KLUC_ORG, "1"); else sessionStorage.removeItem(KLUC_ORG); } catch { /* SS */ } }
+/** Moje stránky → „+ Pridať organizáciu“: App otvorí registráciu organizácie (charita alebo farnosť) z prihláseného účtu */
+export const UDALOST_PRIDAT_ORG = "deed:pridat-organizaciu";
+export const pridatOrganizaciu = () => window.dispatchEvent(new Event(UDALOST_PRIDAT_ORG));
 export function cakaRegistraciaOrg(): boolean { try { return sessionStorage.getItem(KLUC_ORG) === "1"; } catch { return false; } }
 /** OPRAVY 315: ťuk na upozornenie → Profil → Správa stránky na danom mieste (napr. Od veriacich, príspevok zvýraznený) */
 export interface CielSpravy { stranka: string; sub: string; zvyrazni?: string }

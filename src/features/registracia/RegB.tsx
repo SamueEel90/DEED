@@ -1,6 +1,7 @@
 // KARTA 44 · stavebnice registrácie 1b (osoba aj charita) — 1 : 1 podľa prototypu „Registracia - navrhy.dc.html", stĺpec 1b.
 // Obrazovka = hlava (Späť + kapitoly) · obsah (vstup .35 s) · päta (zelené tlačidlo 58 px + druhá voľba 44 px).
 // Svetlúšik: veľký so žiarou (Vitaj, Hotovo s radosťou a iskrami) alebo bublina (najviac 3 na registráciu).
+import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { cipFiltra } from "@/components/Volby";
 import { USE_SUPABASE } from "@/lib/supabase";
@@ -16,6 +17,7 @@ export const U = (id: string) => `url('https://images.unsplash.com/${id}?auto=fo
 export const IK = {
   osoba: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c1.5-4 4.5-6 8-6s6.5 2 8 6",
   org: "M4 21V7l8-4 8 4v14M9 21v-5h6v5M8 10h1M15 10h1",
+  kostol: "M12 2v4M10 4h4M5 21V11l7-5 7 5v10M9 21v-5a3 3 0 0 1 6 0v5M3 21h18",
   doklad: "M3 6h18v12H3zM7 10h4M7 14h6M15 10h2v4h-2z",
   tvar: "M12 13a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3",
   subor: "M14 3H6v18h12V7zM14 3v4h4M9 13h6M9 17h4",
@@ -38,9 +40,10 @@ export function kapitoly(def: [string, string[]][], krok: string): Kapitola[] {
 }
 
 /** celá obrazovka registrácie */
-export function Obrazovka({ kluc, spat, kap, cta, onCta, ctaOff, ctaBusy, alt, onAlt, children }: {
+export function Obrazovka({ kluc, spat, kap, cta, onCta, ctaOff, ctaBusy, alt, onAlt, podrz, children }: {
   kluc: string; spat?: () => void; kap?: Kapitola[] | null;
-  cta: string; onCta: () => void; ctaOff?: boolean; ctaBusy?: boolean; alt?: string; onAlt?: () => void; children: ReactNode;
+  cta: string; onCta: () => void; ctaOff?: boolean; ctaBusy?: boolean; alt?: string; onAlt?: () => void;
+  /** záväzná akcia: potvrdenie podržaním 1,5 s (krátky ťuk ukáže nápovedu) */ podrz?: boolean; children: ReactNode;
 }) {
   const scr = useRef<HTMLDivElement>(null);
   useEffect(() => { scr.current?.scrollTo(0, 0); }, [kluc]);
@@ -67,9 +70,10 @@ export function Obrazovka({ kluc, spat, kap, cta, onCta, ctaOff, ctaBusy, alt, o
           <div key={kluc} className="rg-vstup" style={{ padding: hlava ? "6px 22px 24px" : "max(16px, env(safe-area-inset-top)) 22px 24px", display: "flex", flexDirection: "column", gap: 16 }}>{children}</div>
         </div>
         <div style={{ flex: "none", padding: "12px 22px max(26px, env(safe-area-inset-bottom))", background: "var(--bg)", borderTop: `1px solid ${hlava ? "var(--cardBd)" : "transparent"}`, display: "flex", flexDirection: "column", gap: 6 }}>
+          {podrz ? <div style={{ ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo label={ctaBusy ? "Chvíľu…" : cta} trvanie={1500} disabled={off} onConfirm={onCta} /></div> :
           <button type="button" onClick={onCta} disabled={off} aria-busy={ctaBusy || undefined}
             style={{ height: 58, border: "none", borderRadius: 18, background: "var(--gGrad)", cursor: off ? "not-allowed" : "pointer", fontSize: 17, fontWeight: 800, color: "#fff", boxShadow: off ? "none" : "0 10px 24px rgba(75,122,53,.28)", opacity: ctaOff && !ctaBusy ? 0.45 : 1, transition: "opacity .2s ease", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontFamily: "inherit" }}>
-            {ctaBusy && <span aria-hidden="true" style={{ width: 18, height: 18, borderRadius: 9, border: "2.5px solid rgba(255,255,255,.4)", borderTopColor: "#fff", animation: "rgToc .8s linear infinite" }} />}{cta}</button>
+            {ctaBusy && <span aria-hidden="true" style={{ width: 18, height: 18, borderRadius: 9, border: "2.5px solid rgba(255,255,255,.4)", borderTopColor: "#fff", animation: "rgToc .8s linear infinite" }} />}{cta}</button>}
           {alt && <button type="button" onClick={onAlt} style={{ height: 44, border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", fontSize: 15, fontWeight: 700, color: "var(--ink2)", fontFamily: "inherit" }}>{alt}</button>}
         </div>
       </div>

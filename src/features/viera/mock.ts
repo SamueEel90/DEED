@@ -10,6 +10,7 @@ import { U } from "@/theme";
 import type { CharitaFeedItem, HladanieZaznam } from "@/types";
 import type { SplitVariant } from "@/shared";
 import { nacitajStav, ulozStav } from "./stav";
+import { CIRKVI, RODINY_CIRKVI } from "@/lib/mojeFarnosti";
 import { vytvorPrispevokDB, zmazPrispevokDB, upravPrispevokDB } from "./prispevkyDB";
 
 // ---- typ obsahu (chips = TYP obsahu, NIE porovnávanie cirkví) ----
@@ -96,42 +97,7 @@ export function oznamAktivny(it: VieraFeedItem): boolean {
 // kontextový význam — pri úmrtí/pohrebe „kondolencia", pri prosbe o modlitbu „modlím sa".
 export type ReakciaTyp = "kondolencia" | "modlitba" | "blahozelanie" | "srdce";
 
-// ---- ADRESÁR: všetkých 18 registrovaných cirkví SR (abecedne v rámci rodín) ----
-// Kritérium = registrácia štátom (register MK SR). Radenie podľa rodín, badge „overená" pre všetky.
-export interface CirkevPolozka { skratka: string; meno: string; rodina: string; }
-export interface CirkevSekcia { rodina: string; polozky: CirkevPolozka[]; }
-
-export const CIRKVI: CirkevSekcia[] = [
-  { rodina: "Katolícke a východné", polozky: [
-    { skratka: "RKC", meno: "Rímskokatolícka cirkev v SR", rodina: "kresťanská — katolícka" },
-    { skratka: "GKC", meno: "Gréckokatolícka cirkev na Slovensku", rodina: "kresťanská — katolícka (vých. obrad)" },
-    { skratka: "PC", meno: "Pravoslávna cirkev na Slovensku", rodina: "kresťanská — pravoslávna" },
-  ]},
-  { rodina: "Evanjelické a protestantské", polozky: [
-    { skratka: "ECAV", meno: "Evanjelická cirkev augsburského vyznania na Slovensku", rodina: "kresťanská — luteránska" },
-    { skratka: "RKC-r", meno: "Reformovaná kresťanská cirkev na Slovensku", rodina: "kresťanská — reformovaná" },
-    { skratka: "ECM", meno: "Evanjelická cirkev metodistická, Slovenská oblasť", rodina: "kresťanská — protestantská" },
-    { skratka: "BJB", meno: "Bratská jednota baptistov v SR", rodina: "kresťanská — protestantská" },
-    { skratka: "CB", meno: "Cirkev bratská v SR", rodina: "kresťanská — protestantská" },
-    { skratka: "ACS", meno: "Apoštolská cirkev na Slovensku", rodina: "kresťanská — letničná" },
-    { skratka: "KZ", meno: "Kresťanské zbory na Slovensku", rodina: "kresťanská — protestantská" },
-  ]},
-  { rodina: "Ostatné kresťanské", polozky: [
-    { skratka: "CASD", meno: "Cirkev adventistov siedmeho dňa", rodina: "kresťanská — protestantská" },
-    { skratka: "CČSH", meno: "Cirkev československá husitská na Slovensku", rodina: "kresťanská" },
-    { skratka: "LDS", meno: "Cirkev Ježiša Krista Svätých neskorších dní v SR", rodina: "kresťanská — LDS" },
-    { skratka: "JS", meno: "Náboženská spoločnosť Jehovovi svedkovia v SR", rodina: "kresťanská — reštauracionistická" },
-    { skratka: "NAC", meno: "Novoapoštolská cirkev v SR", rodina: "kresťanská" },
-    { skratka: "SKC", meno: "Starokatolícka cirkev na Slovensku", rodina: "kresťanská" },
-  ]},
-  { rodina: "Nekresťanské", polozky: [
-    { skratka: "ÚZŽNO", meno: "Ústredný zväz židovských náboženských obcí v SR", rodina: "židovská" },
-    { skratka: "BS", meno: "Bahájske spoločenstvo v SR", rodina: "bahájska" },
-  ]},
-];
-
-// plochý zoznam (výber „mojej cirkvi" + hľadanie)
-export const CIRKVI_FLAT: CirkevPolozka[] = CIRKVI.flatMap((s) => s.polozky);
+// ---- ADRESÁR cirkví: jediný číselník je lib/mojeFarnosti (CIRKVI, 18 registrovaných v SR) ----
 
 // ---- FEED: obsah komunít ----
 // engine typ: zbierka → "charita" (stĺpec Zbierky) · ostatné → "skutok" (stĺpec Komunita).
@@ -586,11 +552,8 @@ export const farnostStat = (fid: string): FarnostStat => {
 // parser orientačnej vzdialenosti "X,Y km" → číslo (zoradenie adresára „najbližšie ku mne")
 export const kmNum = (v: string): number => parseFloat(v.replace(",", ".")) || 0;
 
-// vyznanie (skratka jednej z 18 cirkví) → rodina/faseta v adresári (mapovanie z CIRKVI)
-export const rodinaCirkvi = (cirkevMeno: string): string =>
-  CIRKVI.find((s) => s.polozky.some((p) => p.meno === cirkevMeno))?.rodina ?? "Ostatné";
-export const rodinaZoSkratky = (skratka: string): string =>
-  CIRKVI.find((s) => s.polozky.some((p) => p.skratka === skratka))?.rodina ?? "";
+// vyznanie (kód jednej z 18 cirkví) → rodina v adresári (jediný číselník lib/mojeFarnosti)
+export const rodinaZoSkratky = (kod: string): string => { const c = CIRKVI.find((x) => x[0] === kod); return c ? RODINY_CIRKVI[c[3]] : ""; };
 
 // ---- index pre vyhľadávanie (obsah feedu + konkrétne kostoly/farnosti + adresár vyznaní) ----
 // Hľadanie NÁJDE čokoľvek naprieč vierami (§5 mäkká stena: default skrýva, hľadanie nájde).
@@ -603,8 +566,8 @@ export const HLADAJ_DATA: HladanieZaznam[] = [
   ...FARNOSTI.map((f) => ({
     id: "farnost-" + f.id, titul: f.nazov, podtitul: `${f.cirkev} · ${f.obec}`, kat: "Kostoly", emoji: "⛪", tag: "overená",
   })),
-  ...CIRKVI_FLAT.map((c) => ({
-    id: "cirkev-" + c.skratka, titul: c.meno, podtitul: c.rodina, kat: "Cirkvi", emoji: "⛪", tag: "overená",
+  ...CIRKVI.map(([kod, nazov, popis]) => ({
+    id: "cirkev-" + kod, titul: nazov, podtitul: popis, kat: "Cirkvi", emoji: "⛪", tag: "overená",
   })),
 ];
 

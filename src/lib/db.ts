@@ -193,6 +193,13 @@ export async function zalozStrankuOrganizacie(orgUcetId: string, nazov: string):
   return data as string;
 }
 
+/** registrácia farnosti (0154, testovacia verzia): stránka typu farnosť, zakladateľ = Farár; vráti id stránky */
+export async function zalozFarnost(f: { nazov: string; obec: string; cirkev: string; kostol: string; iban: string | null }): Promise<string> {
+  const { data, error } = await db().rpc("zaloz_farnost", { p_nazov: f.nazov, p_obec: f.obec, p_cirkev: f.cirkev, p_kostol: f.kostol, p_iban: f.iban });
+  if (error) throw error;
+  return data as string;
+}
+
 export async function dokonciRegistraciu(ucetId: string) {
   const { error } = await db().from("ucet").update({ stav_registracie: "hotovo", aktualizovane: teraz() }).eq("id", ucetId);
   if (error) throw error;
