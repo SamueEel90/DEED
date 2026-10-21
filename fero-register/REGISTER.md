@@ -100,7 +100,7 @@
 4. Zbierky fara vs. charita: „otvorené" (06) — čo presne ostalo otvorené?
 5. Fiškálny sponzor — parkovaný, ale Martin ho považuje za dôležitý pre charitu (05). Nestratiť.
 6. Kvóta Iskier charity mesačne P1/P4 (05) — nedotiahnuté.
-7. Registrácia cirkvi: zvyšok je starý modul, „zúbky" v inom chate (06) — ktorý chat? Vypýtať výpis.
+7. ~~Registrácia cirkvi: zvyšok je starý modul, „zúbky" v inom chate (06)~~ POTVRDENÉ kontrolou kódu 21. 10. (registrácia farnosti neexistuje) → zadanie-registracia-farnosti.md. Cieľový tok zo zdroja 06: cirkev → názov+obec → IČO+štatutár → IBAN overenie; testovacia verzia IBAN vedome preskakuje (Martin 21. 10.).
 
 ## Postrehy zo zdroja 07 (Farnosť v3, 5.–7. 10.)
 
