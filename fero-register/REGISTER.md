@@ -203,3 +203,11 @@
 
 - `DIZAJN-DOHODNUTE.md` v1.0 — HOTOVÉ 21. 10. (10 sekcií: značka, UI, peniaze, číslovanie, feed+farby, karma, sektory, procesy, čaká-na-Martina, pasce)
 - `dohodnute/` — balík pre kódera do repa (ešte nevyrobený; vyrobiť po Martinových rozhodnutiach zo sekcie 9)
+
+## Kontrola 21. 10. večer — registrácia farnosti (kóder potvrdil na 9a5ab44)
+
+- **POTVRDENÉ (Fero + kóder):** registrácia farnosti v kóde NEEXISTUJE. Registrácia pozná len Osobu a Organizáciu (charita/OZ/nadácia), CharitaB ukladá typ „charita". Výber cirkvi ani overený IBAN nie sú podmienkou registrácie (cirkev aj overenie účtu až v Správe). Farnosti žijú z mock dát / ručne vložených riadkov `stranka` typ `farnost`. Platca ≠ vlastník sa nerieši.
+- **OPRAVA môjho nálezu o tituloch:** tituly per cirkev EXISTUJÚ — DB tabuľka `cirkev` (migrácie 0078 a 0091: titul, titul_2p, oslovenie, dozorca, podakovanie), appka číta cez `useSlovaFarnosti`, záloha SLOVA_ZALOHA; dozorca sa zobrazuje len cirkvám, ktoré ho majú. „Kazateľ" v mock dátach je navyše. Môj zápis vyššie „config s titulmi chýba" NEPLATÍ.
+- Trvá: číselník cirkví je v kóde dvakrát (viera/mock.ts + lib/mojeFarnosti.ts) — zjednotiť na jeden zdroj pri registrácii farnosti.
+- Kóder dieru poznal (Odkaz pre Samuela 4, 21. 9.: „doplniť pri registrácii farnosti"), nahlásil len Samuelovi, ďalej nesledovaná.
+- **ČAKÁ NA MARTINA:** či robiť registráciu farnosti ako ďalší bod. Ak áno, pred zadaním rozhodnúť: kto ju zakladá (z osobného účtu ako organizáciu?); IČO z registra ako pri charite?; výber cirkvi z jedného číselníka; overený IBAN ako podmienka; platca ≠ vlastník (Stakčín) už pri registrácii, alebo až v Správe; štart trialu (2 mes od zverejnenia).
