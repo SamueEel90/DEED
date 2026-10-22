@@ -252,3 +252,11 @@
 - Mazanie testov jedným príkazom (vzor 0135): doklady so stornami, platby, retaz_platba, dorovnania, zbierka_vklad, podpora, platba_split, upozornenia darcom; počítadlá sa prepočítajú z ledgera samy. Dvojkrokovo: najprv výpis počtov, zmazanie až pri druhom spustení s potvrdením.
 - Rozoznávanie testov podľa sumy/kurzu (nápad 1 DeeD = 1 €) ZAMIETNUTÉ — kurz 100 DeeD = 1 € sa nemení, testy rozlišuje výhradne príznak.
 - Súvisí: pri plnení reťazí platí blokovanie platby na verzii u tvorcu, kým delenie (bod 1) nebeží — hláška, nie tiché zlé delenie.
+
+## Rozhodnuté 22. 10. neskoro večer — výmaz testu a ostrý štart (0158, Martin schválil)
+
+- Na konci testu jeden výmaz zoberie VŠETKY peniaze, ktoré vznikli do ostrého štartu, u každého — aj u ostrých účtov; k tomu vráti stav reťazí a zbierok (naplnená/preskočená/ukončená testom sa vráti) a zmaže všetky upozornenia o peniazoch.
+- Stránka, ktorá do výmazu prešla OSTROU registráciou (napr. evanjelický farár ako tester), si nechá vzhľad, profil, texty, fotky, nástenku aj príspevky — tie si riadi sám v Správe. Zbierky idú preč všetky, aj jeho prázdna (vytvoriť novú nie je problém).
+- Testovacie stránky a účty idú preč celé.
+- Číslovanie: peňažné doklady, VS a čísla zbierok začnú po výmaze NANOVO, ale od nového základu, ktorý sa s testovacím rozsahom nikdy neprekryje — žiadne testovacie číslo sa nezrecykluje (vytlačený testovací QR ostane navždy mŕtvy, nesmie viesť na cudziu ostrú zbierku). Čísla príspevkov a poradové čísla účtov ostrých ľudí pokračujú.
+- Staré pohyby spred 0157 (bez príznaku, štartovací kredit): rieši 0158 — výmaz berie všetky peniaze až po ostrý štart.
