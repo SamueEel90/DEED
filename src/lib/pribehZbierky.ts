@@ -20,6 +20,8 @@ export interface Pribeh {
   citat: { text: string; meno: string; vztah: string; suhlas: boolean };
   /** 5 · priebeh (najnovší navrchu) */
   priebeh: ZapisPriebehu[];
+  /** OPRAVY 474: kedy bol príbeh naposledy zverejnený (ISO) — hlavička v Správe, nadpis na stránke */
+  zverejnene?: string;
 }
 export const PRIBEH_ZNAKOV = 6000;
 export const PRIBEH_RIADKOV = 3;
@@ -93,7 +95,8 @@ export async function ulozKonceptPribehu(id: string, org: string, p: Pribeh): Pr
 }
 /** Zverejniť príbeh — koncept ide na stránku; vráti chybu alebo null */
 export async function zverejniPribeh(id: string, org: string): Promise<string | null> {
-  const k = kluc(id), z = pamat.get(k); const p = z?.koncept ?? z?.zverejneny; if (!p) return "Najprv napíšte príbeh.";
+  const k = kluc(id), z = pamat.get(k); const p0 = z?.koncept ?? z?.zverejneny; if (!p0) return "Najprv napíšte príbeh.";
+  const p: Pribeh = { ...p0, zverejnene: new Date().toISOString() };
   if (supabase) {
     if (!org) return CHYBA_ULOZ;
     const { error } = await supabase.from("pribeh_zbierky").upsert({ zbierka: k, stranka: org, koncept: null, zverejneny: p }, { onConflict: "zbierka" });
