@@ -215,3 +215,9 @@
 ## Parkované — tester charity (Martin 21. 10.)
 
 - Martin má známu — šéfku charity, o projekte vie, čaká na testovanie. Až keď bude charita dokončená a vyladená, pripraví sa jej testovacia cesta (obdoba zadania registrácie farnosti pre testera). Teraz NErobiť, len nestratiť.
+
+## Balík 39 (body 490–493) — platobný modul: kto prispel, farby pruhu, reťaze (prijaté 22. 10.)
+
+- Skontrolované proti dohodám. SEDÍ: zlatá = peniaze firiem (dorovnanie aj pevná suma) · tmavozelený vlastný vklad bez prekliku · „dorovnáva" vs. „Prispela" len pri pevnej sume · formulár dorovnania len pre IČO · „ZA ZBIERKU ZODPOVEDÁ" vždy hore, tvorca ani firma nikdy ako zodpovední · reťaz = zapečatená verzia zbierky u tvorcu s vlastným QR, na nej sa reťaz nereťazí · dorovnanie splitnutej ide (deed-dorovnanie) · fialová mimo Iskier povolená (Martin 21. 10.).
+- NOVÉ pravidlá z balíka (do dohôd po kóderkinom „hotové"): poradie úsekov a riadkov organizácia → firmy → reťaze → skutky → ľudia · paleta 8 odtieňov fialovej pre max 20 reťazí, odtieň natrvalo · pri nerozlíšiteľných odtieňoch farba z loga · pod pruhom 3 najväčšie + „Zobraziť všetky ›".
+- ⚠️ JEDEN STRET: bod 490(4) káže fialové tlačidlo „Reťaz dobra · Nastaviť ›" v module „všade", ale dohoda z 27. 9. (zdroj 01) znie „pri aktívnom dorovnaní sa Reťaz dobra nezobrazuje, ani jej prázdny obal" — balík to nespomína. Kóderke treba dopovedať: tlačidlo Nastaviť mizne, kým beží dorovnanie; existujúce (skôr pripojené) reťaze v pruhu a riadkoch ostávajú.
