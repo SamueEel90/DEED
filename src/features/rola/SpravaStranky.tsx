@@ -29,6 +29,7 @@ import { OznamySprava, AkcieCharity } from "./NovyOznam";
 import { aktivnychOznamov, aktivneOznamyText, nacitajOznamyStranky, useZmenyOznamovCharity, type DruhOznamu } from "@/lib/oznamyNove";
 import { centralnaZPamate, useZmenyCentralnej, prazdnaCentralna, nacitajCentralnuZbierku } from "@/lib/centralnaZbierka";
 import { useVecneZbierky } from "@/lib/vecnaZbierka";
+import { MaterialneCharita } from "./MaterialneCharita";
 import { useSektory, cislaSektora, nastavVyberCentralnej, chcemNovySektor, CENTRALNA_CISLA, NULA, SEKTORY_OD_TIERU } from "@/lib/sektoryCharity";
 import { cistyText } from "@/lib/richtext";
 import { cisloObjektu } from "@/lib/cisloObjektu";
@@ -393,6 +394,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   // OPRAVY 486: „+ Nová zbierka“ pri charite = výber typu „Akú zbierku pridávate?“ (ako Viera); Bežná zbierka ide rovno do tvorby
   const [vyberZb, setVyberZb] = useState(false);
   const novaPriamo = useRef(false);
+  const [materialnaNova, setMaterialnaNova] = useState(false); // OPRAVY 486: z výberu rovno formulár materiálnej
   const [spravZb, setSpravZb] = useState<ZbierkaNaSpravu | null>(null); // KARTA 38: ktorú zbierku spravujem
   // OPRAVY 453: Tlačiť › zo záložky QR → QR nástroje so zvýraznenou zbierkou; ‹ Späť na zbierku otvorí znova záložku QR
   const [qrZ, setQrZ] = useState<string | null>(null);
@@ -420,7 +422,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   useEffect(() => { korenRef.current?.scrollIntoView?.({ block: "start" }); }, [sub]);
 
   const tlacQr = (id: string) => { setQrZ(id); setZbTab(undefined); otvor("qr"); };
-  useEffect(() => { if (sub !== "g_zbierky") setVyberZb(false); }, [sub]); // OPRAVY 486
+  useEffect(() => { if (sub !== "g_zbierky") setVyberZb(false); if (sub !== "materialne") setMaterialnaNova(false); }, [sub]); // OPRAVY 486
   useEffect(() => { if (sub !== "qr" && sub !== "x:Správa zbierky" && sub !== "centralna") { setQrZ(null); setZbTab(undefined); } }, [sub]);
   const otvorPolozku = (id: PolozkaSpravy) => otvor(id === "zbierky" ? "g_zbierky" : id === "spravcovia" ? "n:spravcovia" : id);
   // pri zmene typu (DEV) späť na Prehľad, nech nezostane otvorená vypnutá položka
@@ -450,6 +452,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   const navZobr = menu.nav.map((n) => ({ ...n, n: bezUkazok ? undefined : n.n })); // nová charita: Ľudia bez čísla
   const spolocne = { strankaId, entita: poz as string, tier, piny: pinyTypu, prepniPin, otvorPolozku, otvor, nova: bezUkazok, stit, sada, menu, mobil: !desktop, tablet, zbal, prepniZbal, uvod, krok1, pozvana, vlastne, rozpisana, spravuj: (z: ZbierkaNaSpravu) => { setSpravZb(z); otvor("x:Správa zbierky"); },
     vyberZb: typ === "charita" && vyberZb, zavriVyberZb: () => setVyberZb(false),
+    novaMaterialna: () => { setVyberZb(false); setMaterialnaNova(true); otvor("materialne"); },
     novaBezna: () => { setVyberZb(false); novaPriamo.current = true; try { otvor("x:Nová zbierka"); } finally { novaPriamo.current = false; } } };
   // KARTA 42 · telefón: karta charity v jednom riadku + 6 dlaždíc správy hneď pod ňou (bez nadpisu, nezbaľuje sa)
   const hornaCast = telefon ? <>
@@ -521,6 +524,8 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
     <QrNastroje strankaId={strankaId} meno={nazov} mobil={!desktop} zvyraznit={qrZ} charita />
   </>;
   else if (sub === "centralna" && typPovoli("centralna", typ) && maPovolenie("centralna", tier)) obsah = <SpravaCentralnej key={zbTab === 5 ? "qr" : "z"} startQr={zbTab === 5} onTlacQr={typ === "charita" ? tlacQr : undefined} strankaId={strankaId} nazov={nazov} hlavnyUcet={nacitajIbanOrg(poz)} tier={tier} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onDorovnanie={() => otvor("dorovnanie")} onDarcovia={() => otvor("darcovia")} />;
+  // OPRAVY 486: materiálna zbierka charity = vecná zbierka z Viery (od P1)
+  else if (sub === "materialne" && typ === "charita" && maPovolenie("materialne", tier)) obsah = <MaterialneCharita key={materialnaNova ? "nova" : "zoznam"} strankaId={strankaId} meno={nazov} mobil={!desktop} nova={materialnaNova} onTlacQr={tlacQr} />;
   else obsah = !typPovoli(sub as PolozkaSpravy, typ) ? <Pripravujeme /> : maPovolenie(sub as PolozkaSpravy, tier) ? <Pripravujeme /> : <Zamknute program={odProgramu(sub as PolozkaSpravy)} />;
   // OPRAVY 404: pracovník charity vidí len zapnuté časti, zvyšok je zamknutý
   { const treba = typ === "charita" ? pravoPreSub(sub) : null; if (treba && !smie(mojePrava, treba)) obsah = <NematePovolene />; }
@@ -909,7 +914,7 @@ function Sekcia({ id, nazov, suhrn, akcia, zbal, prepni, children }: { id: strin
 /** OPRAVY 326: Bežiace = len aktívne; ukončené (aj „zmazané“, bod 264) medzi bežiacimi nikdy */
 const bezi = (z: SpustenaZbierka) => (z.stav ?? "aktivna") === "aktivna";
 type Spolocne = { strankaId: string; entita: string; spravuj: (z: ZbierkaNaSpravu) => void; vlastne: SpustenaZbierka[]; rozpisana: NovaZbierkaData | null; uvod: boolean; krok1: boolean; pozvana: boolean; tier: Tier; piny: PolozkaSpravy[]; prepniPin: (id: PolozkaSpravy) => void; otvorPolozku: (id: PolozkaSpravy) => void; otvor: (s: Sub) => void; nova: boolean; stit: StitCharity; sada: StitSada; menu: Menu; mobil: boolean; tablet: boolean; zbal: Zbalenie; prepniZbal: (id: string, otv?: boolean) => void;
-  /** OPRAVY 486 */ vyberZb?: boolean; zavriVyberZb?: () => void; novaBezna?: () => void };
+  /** OPRAVY 486 */ vyberZb?: boolean; zavriVyberZb?: () => void; novaBezna?: () => void; novaMaterialna?: () => void };
 
 function KartaStitu({ stit, sada = "care", onZoom, mobil, vyska }: { stit: StitCharity; sada?: StitSada; onZoom: () => void; mobil?: boolean; vyska?: number }) {
   const [n, alt, en] = STITY[stit];
@@ -1515,7 +1520,7 @@ function ObrZbierky(s: Spolocne) {
       () => { if (zamok("segment")) { setVysvetli("segment"); return; } if (!cenBezi) { s.zavriVyberZb?.(); otvorCen(0); return; } s.zavriVyberZb?.(); chcemNovySektor(); otvorCen(0); }, { id: "segment", siva: !cenBezi })}
     {volba(IK_BEZNA, "Bežná zbierka", "pre niekoho, s cieľom · ide do feedu", () => s.novaBezna?.())}
     {vidnoPolozku("materialne", tier) && volba("M12 3l8 4.5v9L12 21l-8-4.5v-9zM12 12l8-4.5M12 12v9M12 12L4 7.5", "Materiálna zbierka", "veci namiesto peňazí",
-      () => { if (zamok("materialne")) { setVysvetli("materialne"); return; } s.zavriVyberZb?.(); otvor("materialne"); }, { id: "materialne" })}
+      () => { if (zamok("materialne")) { setVysvetli("materialne"); return; } s.novaMaterialna?.(); }, { id: "materialne" })}
     {vysvetlenie}
   </section>;
   if (vyberEl) return vyberEl;

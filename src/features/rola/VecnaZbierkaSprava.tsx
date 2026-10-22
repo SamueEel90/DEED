@@ -24,7 +24,7 @@ const nepov = <span style={{ fontWeight: 500, color: "var(--ink3)" }}> · nepovi
 /** hlavička plagátu z Upraviť profil (nedá sa prepísať) */
 
 // ---------- (B) Vyplniť ----------
-export function VecnaNova({ strankaId, mobil, onZavri, onHotovo }: { strankaId: string; mobil: boolean; onZavri: () => void; onHotovo: (z: VecnaZbierka) => void }) {
+export function VecnaNova({ strankaId, mobil, onZavri, onHotovo, charita }: { strankaId: string; mobil: boolean; onZavri: () => void; onHotovo: (z: VecnaZbierka) => void; /** OPRAVY 486: charita = Materiálna zbierka */ charita?: boolean }) {
   const [f, setF] = useState({ nazov: "", popis: "", popis2: "", co: "", kde: "", doKedy: "", organizuje: "", ciel: "", ukaz: true });
   const [media, setMedia] = useState<VecnaZbierka["media"]>([]);
   const [chyby, setChyby] = useState<string[]>([]);
@@ -48,7 +48,7 @@ export function VecnaNova({ strankaId, mobil, onZavri, onHotovo }: { strankaId: 
     onHotovo(z);
   };
   return <section style={{ ...karta, border: "2px solid var(--green)" }}>
-    <div style={{ display: "flex", alignItems: "center", gap: 10 }}><b style={{ flex: 1, fontSize: 20 }}>Vecná zbierka</b>
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}><b style={{ flex: 1, fontSize: 20 }}>{charita ? "Materiálna zbierka" : "Vecná zbierka"}</b>
       <button type="button" onClick={onZavri} aria-label="Zavrieť" style={{ width: 44, height: 44, borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--field)", cursor: "pointer", fontSize: 18, color: "var(--ink2)", boxShadow: "none" }}>×</button></div>
     <span style={pozn}>Ponožky, potraviny, oblečenie. Bez peňazí: darca vec vhodí do krabice a cez QR na plagáte sa zapíše medzi darcov.</span>
     <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={nad}>Názov</span>
@@ -58,7 +58,7 @@ export function VecnaNova({ strankaId, mobil, onZavri, onHotovo }: { strankaId: 
       nadpis2="Pokračovanie" popis2Text="Ukáže sa po ťuku na „… viac“. Čo presne treba, čo nie, kto to odovzdá, kam to pôjde." placeholder2="Čo presne potrebujeme, čo nie, kto to odovzdá…" />
     <div style={{ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : "1fr 1fr", gap: 12 }}>
       <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={nad}>Čo zbierame</span><input value={f.co} maxLength={60} onChange={(e) => zmen({ co: e.target.value })} placeholder="nové ponožky" style={pole} /></label>
-      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={nad}>Kde</span><input value={f.kde} maxLength={60} onChange={(e) => zmen({ kde: e.target.value })} placeholder="krabica vzadu v kostole" style={pole} /></label>
+      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={nad}>Kde</span><input value={f.kde} maxLength={60} onChange={(e) => zmen({ kde: e.target.value })} placeholder={charita ? "krabica pri vchode" : "krabica vzadu v kostole"} style={pole} /></label>
       <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={nad}>Do kedy</span><input type="date" min={dnes} value={f.doKedy} onChange={(e) => zmen({ doKedy: e.target.value })} style={pole} /></label>
       <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={nad}>Kto organizuje{nepov}</span><input value={f.organizuje} maxLength={60} onChange={(e) => zmen({ organizuje: e.target.value })} placeholder="napr. Maltézska pomoc" style={pole} /></label>
       <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={nad}>Cieľ v hodnote €{nepov}</span><input inputMode="numeric" value={f.ciel} maxLength={7} onChange={(e) => zmen({ ciel: e.target.value.replace(/[^\d\s]/g, "") })} placeholder="napr. 1 000" style={pole} /></label>
@@ -78,7 +78,7 @@ export function VecnaNova({ strankaId, mobil, onZavri, onHotovo }: { strankaId: 
 }
 
 // ---------- (C) Beží · Správa vecnej zbierky ----------
-export function VecnaSprava({ strankaId, meno, z: z0, nova, mobil, onSpat, onTlacQr }: { strankaId: string; meno: string; z: VecnaZbierka; /** hneď po spustení: zelená karta a Hotovo */ nova?: boolean; mobil: boolean; onSpat: () => void; /** OPRAVY 347 */ onTlacQr?: (id: string) => void }) {
+export function VecnaSprava({ strankaId, meno, z: z0, nova, mobil, onSpat, onTlacQr, charita }: { strankaId: string; meno: string; z: VecnaZbierka; /** OPRAVY 486 */ charita?: boolean; /** hneď po spustení: zelená karta a Hotovo */ nova?: boolean; mobil: boolean; onSpat: () => void; /** OPRAVY 347 */ onTlacQr?: (id: string) => void }) {
   const [z, setZ] = useState(z0);
   const [ulozene, setUlozene] = useState<"" | "uklada" | "ok" | "chyba">("");
   const [chybaT, setChybaT] = useState("");
@@ -151,12 +151,12 @@ export function VecnaSprava({ strankaId, meno, z: z0, nova, mobil, onSpat, onTla
   return <>
     <button type="button" onClick={onSpat} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--green)", boxShadow: "none" }}>‹ Späť na zbierky</button>
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--gInk)" }}>VECNÁ ZBIERKA{aktivna ? "" : " · UKONČENÁ"}</span>
+      <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--gInk)" }}>{charita ? "MATERIÁLNA ZBIERKA" : "VECNÁ ZBIERKA"}{aktivna ? "" : " · UKONČENÁ"}</span>
       <b style={{ fontSize: 22, lineHeight: 1.25 }}>{z.nazov}</b>
       <span style={pozn}>{[z.co, z.kde, z.doKedy ? `do ${doKedyText(z.doKedy, false)}` : "", z.organizuje ? `organizuje ${z.organizuje}` : ""].filter(Boolean).join(" · ")}</span>
     </div>
     {nova && aktivna && <div role="status" style={{ padding: "14px 16px", borderRadius: 14, background: "var(--gSoft)", border: "2px solid var(--green)", display: "flex", flexDirection: "column", gap: 4 }}>
-      <b style={{ fontSize: 16.5, color: "var(--gInk)" }}>Vecná zbierka beží ✓</b><span style={{ fontSize: 14.5, color: "var(--ink2)" }}>Ďalší krok: vytlačte plagát a zaveste ho ku krabici.</span></div>}
+      <b style={{ fontSize: 16.5, color: "var(--gInk)" }}>{charita ? "Materiálna" : "Vecná"} zbierka beží ✓</b><span style={{ fontSize: 14.5, color: "var(--ink2)" }}>Ďalší krok: vytlačte plagát a zaveste ho ku krabici.</span></div>}
     {ulozene && <span role={ulozene === "chyba" ? "alert" : "status"} style={{ fontSize: 14, fontWeight: 800, color: ulozene === "chyba" ? "#A34A2A" : ulozene === "ok" ? "var(--gInk)" : "var(--ink3)" }}>{ulozene === "uklada" ? "Ukladá sa…" : ulozene === "ok" ? "Uložené ✓" : `Neuložilo sa. ${chybaT}`}</span>}
     {/* OPRAVY 347: QR a jeden plagát pre všetky QR (náhľad, text, fotka, PDF) */}
     {aktivna && <section style={karta}><b style={{ fontSize: 18 }}>QR a plagát</b><QrZalozka strankaId={strankaId} meno={meno} id={z.id} mobil={mobil} onTlac={onTlacQr} />
@@ -185,7 +185,7 @@ export function VecnaSprava({ strankaId, meno, z: z0, nova, mobil, onSpat, onTla
     </section>
     {koniec ? <section role="status" style={{ ...karta, background: "var(--gSoft)", border: "2px solid var(--green)" }}>
       <b style={{ fontSize: 17 }}>Zbierka je ukončená</b>
-      <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>{plneDak ? "Darcovia sa už zapísať nedajú. Na stránke farnosti je zbierka s vaším poďakovaním." : "Darcovia sa už zapísať nedajú. Poďakovanie môžete doplniť neskôr."}</span>
+      <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>{plneDak ? `Darcovia sa už zapísať nedajú. Na ${charita ? "vašej stránke" : "stránke farnosti"} je zbierka s vaším poďakovaním.` : "Darcovia sa už zapísať nedajú. Poďakovanie môžete doplniť neskôr."}</span>
       {posl && <span role={posl.ok ? "status" : "alert"} style={{ fontSize: 14.5, fontWeight: 800, color: posl.ok ? "var(--gInk)" : "#A34A2A" }}>{posl.t}</span>}
       <button type="button" onClick={onSpat} style={tlPlne}>Hotovo · späť na zbierky</button>
     </section> : <section style={karta}>
@@ -204,7 +204,7 @@ export function VecnaSprava({ strankaId, meno, z: z0, nova, mobil, onSpat, onTla
       {aktivna ? <div style={{ ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo label={plneDak ? "Podržte a ukončite s poďakovaním" : "Podržte a ukončite"} trvanie={1500} onConfirm={() => { void ukonci(); }} /></div>
         : <button type="button" onClick={() => void ulozDak()} style={tlPlne}>Uložiť poďakovanie</button>}
       {!aktivna && z.podakovanie?.ulozene && !z.podakovanie.zmazane && <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 12, borderTop: "1px solid var(--cardBd)" }}>
-        <b style={{ fontSize: 15 }}>Zbierka je na stránke farnosti s poďakovaním</b>
+        <b style={{ fontSize: 15 }}>Zbierka je na {charita ? "vašej stránke" : "stránke farnosti"} s poďakovaním</b>
         <span style={pozn}>Nechajte ju tam, koľko chcete. Keď ju zmažete zo stránky, tu ostane.</span>
         <button type="button" onClick={() => void zmazZoStranky()} style={{ ...tlObr, alignSelf: "flex-start", color: "#A34A2A", borderColor: "#A34A2A" }}>Zmazať zo stránky</button>
       </div>}
