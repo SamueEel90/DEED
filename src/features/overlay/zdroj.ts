@@ -136,7 +136,7 @@ async function zRetaze(id: string): Promise<StavOverlay | null> {
   const dd = (d.data ?? {}) as { pocet?: number; dary?: { meno: string | null; suma: number }[] };
   const posl = dd.dary?.[0];
   return {
-    nazov: p.nazov, vyzbierane: Number(p.poslane) || 0, ciel: Number(p.ciel) || Math.max(1, Number(p.poslane) || 0), // zbierka bez cieľa: pás plný, číslo platí
+    nazov: p.nazov, vyzbierane: Number(p.poslane) || 0, ciel: Number(p.ciel) || 0, // bez cieľa: počítadlo bez pásu (Overlay)
     ...(posl ? { poslednyDarca: posl.meno || "Anonymný darca", poslednaSuma: Number(posl.suma) } : {}),
     pecat: Number(dd.pocet) || 0, naposledy: Date.now(),
   };

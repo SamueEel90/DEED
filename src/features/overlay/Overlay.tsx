@@ -106,7 +106,7 @@ export default function Overlay({ stav, splitId, tema = 'tmava', paleta = 'znack
 
     // Míľniky — každý raz.
     const k = kluc(splitId, stav.nazov), uz = citajMilniky(k);
-    const pomer = stav.vyzbierane / stav.ciel;
+    const pomer = stav.ciel > 0 ? stav.vyzbierane / stav.ciel : 0; // bez cieľa žiadne míľniky
     if (pomer >= 1 && !uz.includes(100)) {
       ulozMilnik(k, 100);
       setTimeout(oslava, 1300);
@@ -215,8 +215,10 @@ export default function Overlay({ stav, splitId, tema = 'tmava', paleta = 'znack
     vyplnRef.current?.animate([{ filter: 'brightness(1)' }, { filter: 'brightness(1.7)' }, { filter: 'brightness(1)' }], { duration: 700, iterations: 3 });
   }
 
-  const pct = Math.min(100, (stav.vyzbierane / stav.ciel) * 100);
-  const pctText = Math.floor((zobrazene / stav.ciel) * 100);
+  // balík 44 · 501: zbierka bez cieľa — žiadny pás ani percentá, len suma a posledný dar (plný pás by vyzeral ako hotovo)
+  const bezCiela = !(stav.ciel > 0);
+  const pct = bezCiela ? 0 : Math.min(100, (stav.vyzbierane / stav.ciel) * 100);
+  const pctText = bezCiela ? 0 : Math.floor((zobrazene / stav.ciel) * 100);
   const chyba = stav.ciel - zobrazene;
   const nazivo = teraz - stav.naposledy < VYPADOK_PO;
   const pruhPrechod = `1.3s ${PRUZINA}`;
@@ -239,15 +241,15 @@ export default function Overlay({ stav, splitId, tema = 'tmava', paleta = 'znack
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, textShadow: T.tien, whiteSpace: 'nowrap' }}>
             <span ref={sumaRef} style={{ display: 'inline-block', fontSize: 28, fontWeight: 800, letterSpacing: '-.02em', lineHeight: 1.05, color: T.text, fontVariantNumeric: 'tabular-nums' }}>{fmt(zobrazene)} €</span>
-            <span style={{ fontSize: 14, fontWeight: 700, color: T.text2 }}>z {fmt(stav.ciel)} €</span>
-            <span style={{ fontSize: 16, fontWeight: 800, color: T.text, fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>{pctText} %</span>
+            {!bezCiela && <span style={{ fontSize: 14, fontWeight: 700, color: T.text2 }}>z {fmt(stav.ciel)} €</span>}
+            {!bezCiela && <span style={{ fontSize: 16, fontWeight: 800, color: T.text, fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>{pctText} %</span>}
           </div>
-          <div style={{ position: 'relative', flex: 1, minHeight: 60, width: 14, borderRadius: 14, background: T.zliabok }}>
+          {bezCiela ? <div style={{ flex: 1 }} /> : <div style={{ position: 'relative', flex: 1, minHeight: 60, width: 14, borderRadius: 14, background: T.zliabok }}>
             <div ref={vyplnRef} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: `${pct}%`, minHeight: 14, borderRadius: 14, background: P.vypln.replace('90deg', '0deg'), boxShadow: P.ziara, transition: `height ${pruhPrechod}`, overflow: 'hidden' }}>
               <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '30%', background: 'linear-gradient(0deg,rgba(255,255,255,0),rgba(255,255,255,.5),rgba(255,255,255,0))', animation: 'ovLeskV 3.2s ease-in-out infinite' }} />
             </div>
             <div ref={hlavaRef} style={{ position: 'absolute', left: '50%', bottom: `${pct}%`, width: 0, height: 0, transition: `bottom ${pruhPrechod}` }} />
-          </div>
+          </div>}
           {stav.poslednyDarca && (
             <div ref={darcaRef} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, width: '100%', textShadow: T.tien }}>
               <span style={{ fontSize: 11, fontWeight: 800, color: T.text2, letterSpacing: '.06em' }}>POSLEDNÝ DAR</span>
@@ -255,7 +257,7 @@ export default function Overlay({ stav, splitId, tema = 'tmava', paleta = 'znack
               {stav.poslednaSuma != null && <span style={{ fontSize: 15, fontWeight: 800, color: T.text }}>{fmt(stav.poslednaSuma)} €</span>}
             </div>
           )}
-          <div style={{ width: '100%', paddingTop: 8, borderTop: `1px solid ${T.okraj}`, fontSize: 12.5, fontWeight: 700, lineHeight: 1.3, color: T.text2, textShadow: T.tien, fontVariantNumeric: 'tabular-nums' }}>{zostatok}</div>
+          <div style={{ width: '100%', paddingTop: 8, borderTop: `1px solid ${T.okraj}`, fontSize: 12.5, fontWeight: 700, lineHeight: 1.3, color: T.text2, textShadow: T.tien, fontVariantNumeric: 'tabular-nums', display: bezCiela ? 'none' : undefined }}>{zostatok}</div>
         </div>
       </div>
     );
@@ -279,8 +281,8 @@ export default function Overlay({ stav, splitId, tema = 'tmava', paleta = 'znack
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 3, whiteSpace: 'nowrap', textShadow: T.tien }}>
               <span ref={sumaRef} style={{ display: 'inline-block', flex: 'none', fontSize: 38, fontWeight: 800, letterSpacing: '-.02em', lineHeight: 1, color: T.text, fontVariantNumeric: 'tabular-nums', transformOrigin: '0 70%' }}>{fmt(zobrazene)} €</span>
-              <span style={{ fontSize: 17, fontWeight: 700, color: T.text2, flex: 'none' }}>z {fmt(stav.ciel)} €</span>
-              <span style={{ fontSize: 17, fontWeight: 800, color: T.text2, fontVariantNumeric: 'tabular-nums', flex: 'none' }}>· {pctText} %</span>
+              {!bezCiela && <span style={{ fontSize: 17, fontWeight: 700, color: T.text2, flex: 'none' }}>z {fmt(stav.ciel)} €</span>}
+              {!bezCiela && <span style={{ fontSize: 17, fontWeight: 800, color: T.text2, fontVariantNumeric: 'tabular-nums', flex: 'none' }}>· {pctText} %</span>}
             </div>
           </div>
           {stav.poslednyDarca && (
@@ -294,21 +296,21 @@ export default function Overlay({ stav, splitId, tema = 'tmava', paleta = 'znack
           )}
         </div>
 
-        <div style={{ position: 'relative', height: 12, borderRadius: 12, background: T.zliabok }}>
+        {!bezCiela && <div style={{ position: 'relative', height: 12, borderRadius: 12, background: T.zliabok }}>
           <div ref={vyplnRef} style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${pct}%`, minWidth: 12, borderRadius: 12, background: P.vypln, boxShadow: P.ziara, transition: `width ${pruhPrechod}`, overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: '30%', background: 'linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.5),rgba(255,255,255,0))', animation: 'ovLesk 3.2s ease-in-out infinite' }} />
           </div>
           <div ref={hlavaRef} style={{ position: 'absolute', top: '50%', left: `${pct}%`, width: 0, height: 0, transition: `left ${pruhPrechod}` }} />
-        </div>
+        </div>}
       </div>
 
-      <div style={{
+      {!bezCiela && <div style={{
         position: 'absolute', right: 14, bottom: 0, padding: '2px 10px 3px', borderRadius: '0 0 10px 10px',
         background: T.pas, border: `1px solid ${T.okraj}`, borderTop: 'none', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
         fontSize: 14, fontWeight: 700, color: T.text2, textShadow: T.tien, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap',
       }}>
         {zostatok}
-      </div>
+      </div>}
     </div>
   );
 }

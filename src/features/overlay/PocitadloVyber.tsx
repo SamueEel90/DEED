@@ -30,7 +30,7 @@ export function PocitadloVyberSheet({ toast, onClose }: {
 
   return (
     <Sheet onClose={onClose} label="Počítadlo do streamu">
-      <div style={{ fontSize: 16, fontWeight: 800 }}>📺 Počítadlo do streamu</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 16, fontWeight: 800 }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2" /><path d="M8 21h8M12 17v4" /></svg>Počítadlo do streamu</div>
       <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2, lineHeight: 1.45, marginBottom: SPACE.sm }}>
         Živý pás so zbierkou, ktorý si vložíš do OBS. Každý tvoj QR má vlastné počítadlo —
         ukazuje len to, čo prišlo cez ten jeden.
