@@ -38,6 +38,7 @@ import { pridajOznamDarcom } from "@/lib/oznamyDarcom";
 import { OznamDarcoviSheet } from "@/features/notifikacie/OznamDarcovi";
 import type { OrgZbierka } from "./mock";
 import { TextovePolia, GaleriaEditor } from "./obsahZbierky";
+import { ZapecatenyText, ZapecateneFotky } from "./ZapecatenyObsah";
 import type { MediumZbierky } from "@/lib/novaZbierka";
 import type { FakturaOrg } from "@/lib/fakturyOrg";
 import { PlatbaOrganizacie, Zaplatene } from "./PlatbaOrganizacie";
@@ -454,7 +455,8 @@ const DEN_MS = 86400000;
 const maskUcet = (u: string) => { const x = u.replace(/\s/g, ""); return x.length > 12 ? `${x.slice(0, 4)} ${x.slice(4, 8)} •• ${x.slice(-4)}` : u; };
 const inic = (t: string) => t.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 
-export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnanie, tier = 0, bezDokladov, startTab, onTlacQr }: { z: ZbierkaNaSpravu; mobil: boolean; onZbierky: () => void; toast: (m: string) => void; onUdaje?: () => void; onDorovnanie?: () => void; tier?: number;
+export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnanie, tier = 0, bezDokladov, startTab, onTlacQr, onOpravit }: {
+  /** OPRAVY 473 (3): Zrušiť a opraviť › — kópia zbierky na úpravu (len kým nemá dar) */ onOpravit?: () => void; z: ZbierkaNaSpravu; mobil: boolean; onZbierky: () => void; toast: (m: string) => void; onUdaje?: () => void; onDorovnanie?: () => void; tier?: number;
   /** OPRAVY 453: otvoriť rovno na záložke (QR po návrate z QR nástrojov) · Tlačiť › */ startTab?: number; onTlacQr?: (id: string) => void;
   /** KARTA 50: farnosť nič nedokladá — bez záložky Doklady, lehoty a „doložené"; výsledok napíše v ohláškach */ bezDokladov?: boolean }) {
   const [teraz] = useState(() => Date.now());
@@ -569,12 +571,13 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
   const stavKarta = <CislaKarta nadpis="Stav zbierky" dary={dary} cisla={[
     [eur(vyzbierane), z.ciel ? `z ${eur(z.ciel)} · ${pctC} %` : "vyzbierané"], [String(darcov), "darcov"],
     aktivna ? [dniT(z.dlha ? Math.max(0, dniDo(s.koniec, teraz)) : vFeede), "do konca"] : ["skončila", dnes(s.ukoncena ?? s.koniec)]]} />;
-  const textKarta = (
+  // OPRAVY 473: zbierka charity po spustení — text a fotky zapečatené, len doplnenia a nové fotky na koniec
+  const textKarta = !bezDokladov ? <ZapecatenyText z={z} mobil={mobil} /> : (
     <section style={kartaK}>
       <span style={nadpisK}>Text pre darcov</span>
       <TextovePolia popis={ob.popis} popis2={ob.popis2} onPopis={(h) => zmenOb({ popis: h })} onPopis2={(h) => zmenOb({ popis2: h })} ph={mobil} popisHlavneho="Toto ľudia uvidia pri zbierke hneď. Najviac 12 riadkov." />
     </section>);
-  const galeria = <GaleriaEditor media={ob.media} onMedia={(m) => zmenOb({ media: m })} ph={mobil} nadpis="Fotky a video" popisNapoveda="Popis (nepovinné), napríklad Pred opravou" dovetok="" />;
+  const galeria = !bezDokladov ? <ZapecateneFotky z={z} mobil={mobil} /> : <GaleriaEditor media={ob.media} onMedia={(m) => zmenOb({ media: m })} ph={mobil} nadpis="Fotky a video" popisNapoveda="Popis (nepovinné), napríklad Pred opravou" dovetok="" />;
   const dalsie = CFG.predlzenia[s.predlzenia];
   const maxFeed = CFG.dlzkaDni + CFG.predlzenia.reduce((a, p) => a + p.dni, 0);
   const predlzenie = aktivna && !z.bezPredlzenia && <section style={kartaK}>
@@ -620,7 +623,12 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
     {voFeede && <button type="button" onClick={() => zmen({ stiahnuta: new Date().toISOString() })} style={obrysK}>Stiahnuť z feedu</button>}
   </section>;
   const ako = <AkoDarovat sada={ob.sada} eurc={ob.eurc} sadaE={ob.sadaE} onZmena={zmenOb} bezi={aktivna} />;
-  const zap = <Zapecatene riadky={[["Cieľ", z.ciel ? eur(z.ciel) : "bez cieľa"], ["Účel", z.ucel ?? "—"], ["Účet", maskUcet(z.ucet ?? hlavnyUcetOrg())], ...(bezDokladov ? [] : [["Lehota na doklady", z.lehotaText ?? (s.lehota === "30" ? "30 dní po skončení" : lehT)] as [string, string]])]} />;
+  const zap = <Zapecatene riadky={[["Cieľ", z.ciel ? eur(z.ciel) : "bez cieľa"], ["Účel", z.ucel ?? "—"], ["Účet", maskUcet(z.ucet ?? hlavnyUcetOrg())], ...(bezDokladov ? [] : [["Lehota na doklady", z.lehotaText ?? (s.lehota === "30" ? "30 dní po skončení" : lehT)] as [string, string]])]}>
+    {onOpravit && aktivna && darcov === 0 && <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 12, borderTop: "1px solid var(--cardBd)" }}>
+      <span style={textK}>Zbierka zatiaľ nemá žiadny dar. Môžete ju zrušiť a opraviť celú. Z-číslo a QR ostanú rovnaké.</span>
+      <button type="button" onClick={onOpravit} style={obrysK}>Zrušiť a opraviť ›</button>
+    </div>}
+  </Zapecatene>;
   // OPRAVY 358: ten istý QR ako v QR nástrojoch — /z/{id} (adresa sa hľadá podľa id zbierky, nie podľa názvu)
   const qr = <QrKarta nazov={z.nazov} slug={z.id} odkaz={odkazQrZbierky(z.id)} cislo={cisloObjektu("Z", z.id, z.vs)} organizacia={z.organizacia} toast={toast} />;
   const vlavo = <>{stavKarta}{textKarta}{galeria}</>;

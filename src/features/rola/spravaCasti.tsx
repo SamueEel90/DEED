@@ -184,7 +184,7 @@ export function AkoDarovat({ sada, eurc, sadaE, onZmena, pravidelna, bezi }: { s
 
 export const ZAMOK = <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>;
 /** Zapečatené pri spustení: cieľ, účel, účet, lehota — nedá sa zmeniť */
-export function Zapecatene({ riadky }: { riadky: [string, string][] }) {
+export function Zapecatene({ riadky, children }: { riadky: [string, string][]; /** OPRAVY 473 (3): Zrušiť a opraviť (kým nemá dar) */ children?: ReactNode }) {
   return (
     <section style={kartaK}>
       <span style={nadpisK}>Zapečatené pri spustení</span>
@@ -194,6 +194,7 @@ export function Zapecatene({ riadky }: { riadky: [string, string][] }) {
         <span style={{ flex: 1, fontSize: 13.5, fontWeight: 700, color: "var(--ink3)" }}>{k}</span>
         <b style={{ fontSize: 14, textAlign: "right" }}>{v}</b>
       </div>)}
+      {children}
     </section>);
 }
 

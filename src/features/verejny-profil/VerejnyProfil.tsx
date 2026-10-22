@@ -50,7 +50,7 @@ import { ucast, nacitajUcasti, pocetText, useZmenyUcasti } from "@/lib/oznamUcas
 import { OznamDetail } from "@/features/rola/OznamDetail";
 import { useProgramStranky } from "@/lib/programStranky";
 import { nacitajOznamyStranky, oznamyStranky, bezi as oznamBezi, useZmenyOznamovCharity, type OznamCharity } from "@/lib/oznamyNove";
-import { nacitajZbierkyStranky, zbierkyStrankyZPamate, useZmenyZbierok, cielCislo, type SpustenaZbierka } from "@/lib/novaZbierka";
+import { nacitajZbierkyStranky, zbierkyStrankyZPamate, useZmenyZbierok, cielCislo, doplneniaHtml, type SpustenaZbierka } from "@/lib/novaZbierka";
 import { PomozCharita } from "./PomozCharita";
 
 /** OPRAVY 402: testovací profil, alebo novo založená charita (vlastné id ch-…) — prázdny profil s menom z registra */
@@ -79,7 +79,7 @@ function sHlavnouZUctu(p: TestProfil): TestProfil {
 /** OPRAVY 414 (8): zbierka charity z databázy → zbierka profilu (nič predvolené, nič z testovacej stránky) */
 function zbierkaProfilu(z: SpustenaZbierka, p: TestProfil): TestZbierka {
   const s = sucetDarov(z.id), ciel = cielCislo(z), foto = z.media?.find((m) => m.typ === "foto")?.src ?? "";
-  return { id: z.id, vs: z.vs, nazov: z.nazov || "Zbierka", popis: cistyText(z.popis ?? ""), popisHtml: [z.popis, z.popis2].filter((x) => x && cistyText(x)).join("") || undefined, mesto: p.mesto, foto, vyzbierane: s.suma, ciel: ciel || undefined, ludia: s.pocet,
+  return { id: z.id, vs: z.vs, nazov: z.nazov || "Zbierka", popis: cistyText(z.popis ?? ""), popisHtml: [z.popis, z.popis2].filter((x) => x && cistyText(x)).join("") + doplneniaHtml(z.doplnenia) || undefined, mesto: p.mesto, foto, vyzbierane: s.suma, ciel: ciel || undefined, ludia: s.pocet,
     stav: (z.stav ?? "aktivna") !== "aktivna" ? "ukoncena" : z.typ === "dlha" ? "dlhodoba" : "bezi",
     galeria: (z.media ?? []).map((m) => ({ typ: m.typ, src: m.src, popis: m.popis })), zDb: true, prav: !!z.prav, eurc: !!z.eurc };
 }

@@ -131,12 +131,14 @@ export function TextovePolia({ popis, popis2, onPopis, onPopis2, ph, pecat, onRi
 /** GALÉRIA — fotky (najviac 8) a jedno video do 45 s, poradie, výrez, pretiahnutie, popis fotky. Výrez rieši volajúci (onVyrez, bez neho sa tlačidlo neukáže).
  *  5. 10.: pod každou fotkou pole Popis (nepovinné, najviac 80 znakov) — darca ho vidí pod fotkou na celej obrazovke, čítačka ako alt.
  *  popisNapoveda = placeholder poľa (pri dokladoch „Napríklad: Pred opravou, Po oprave"). Jedna galéria všade, bez PRED / PO. */
-export function GaleriaEditor({ media, onMedia, ph, onVyrez, nadpis = "Galéria zbierky", dovetok = " Fotky a video môžete pridávať aj po spustení zbierky.", popisNapoveda = "Popis fotky (nepovinné)", children, max = MAX_FOTIEK_ZB, bezVidea, bezVerejnych, bezHlavnej }: {
+export function GaleriaEditor({ media, onMedia, ph, onVyrez, nadpis = "Galéria zbierky", dovetok = " Fotky a video môžete pridávať aj po spustení zbierky.", popisNapoveda = "Popis fotky (nepovinné)", children, max = MAX_FOTIEK_ZB, bezVidea, bezVerejnych, bezHlavnej: bezHlavnejP, pevne = 0 }: {
   media: MediumZbierky[]; onMedia: (m: MediumZbierky[]) => void; ph: boolean; onVyrez?: (id: number) => void; nadpis?: string; dovetok?: string; popisNapoveda?: string; children?: ReactNode;
   /** KARTA 56I: najviac fotiek (predvolene 8) */ max?: number; /** KARTA 56I: len fotky, bez videa */ bezVidea?: boolean;
   /** Martin 20. 10.: skutok (usera aj charity) = len vlastné fotky, AI ich posudzuje; zbierky môžu mať verejnú knižnicu */ bezVerejnych?: boolean;
   /** OPRAVY 455 (4): doplnkové fotky — bez štítku a tlačidla „Hlavné“ (hlavná je titulná fotka zbierky) */ bezHlavnej?: boolean;
+  /** OPRAVY 473: prvých N je zapečatených pri spustení (zbierka charity) — bez koša, šípok, „Hlavné“ a úpravy popisu; nové idú za ne */ pevne?: number;
 }) {
+  const bezHlavnej = bezHlavnejP || pevne > 0;
   const [chybaMed, setChybaMed] = useState("");
   /** BLOK B 232: galéria farnosti (Správa) alebo moje fotky (veriaci) — zdroj z kontextu */
   const zdroj = useZdrojFotiek();
@@ -168,7 +170,7 @@ export function GaleriaEditor({ media, onMedia, ph, onVyrez, nadpis = "Galéria 
     }
     if (nove.length) onMedia([...mediaRef.current, ...nove]);
   };
-  const presun = (i: number, j: number) => { if (j < 0 || j >= media.length || i === j) return; const m = [...media]; const [x] = m.splice(i, 1); m.splice(j, 0, x); onMedia(m); };
+  const presun = (i: number, j: number) => { if (i < pevne || j < pevne) return; if (j < 0 || j >= media.length || i === j) return; const m = [...media]; const [x] = m.splice(i, 1); m.splice(j, 0, x); onMedia(m); };
   useEffect(() => { media.forEach((m) => { if (m.typ === "foto" && m.w && m.w < 1200 && !male[m.id]) setMale((x) => ({ ...x, [m.id]: true })); }); }, [media, male]);
 
     const pridat = (foto: boolean) => (
@@ -189,27 +191,28 @@ export function GaleriaEditor({ media, onMedia, ph, onVyrez, nadpis = "Galéria 
           onVyber={async (l) => { const nove: MediumZbierky[] = []; for (const src of l) nove.push({ id: MID++, typ: "foto", src, w: await sirkaFotky(src), ...(jeVerejnaFotka(src) ? { ilustracna: true } : {}) }); onMedia([...mediaRef.current, ...nove]); }} />}
         <div style={{ display: "grid", gridTemplateColumns: ph ? "minmax(0,1fr)" : "repeat(3,minmax(0,1fr))", gap: 14 }}>
           {media.map((m, i) => (
-            <div key={m.id} draggable onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; setDrag(i); }} onDragOver={(e) => e.preventDefault()}
+            <div key={m.id} draggable={i >= pevne} onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; setDrag(i); }} onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => { e.preventDefault(); e.stopPropagation(); if (e.dataTransfer.files?.length) { setDrag(null); void pridajSubory(Array.from(e.dataTransfer.files)); return; } if (drag != null) presun(drag, i); setDrag(null); }} onDragEnd={() => setDrag(null)}
               style={{ display: "flex", flexDirection: "column", gap: 8, opacity: drag === i ? 0.4 : 1 }}>
-              <span style={{ position: "relative", display: "block", aspectRatio: "16 / 10", borderRadius: 14, overflow: "hidden", background: "#1D211B", boxShadow: i === 0 && !bezHlavnej ? "0 0 0 3px var(--green)" : "none", cursor: "grab" }}>
+              <span style={{ position: "relative", display: "block", aspectRatio: "16 / 10", borderRadius: 14, overflow: "hidden", background: "#1D211B", boxShadow: i === 0 && !bezHlavnej ? "0 0 0 3px var(--green)" : "none", cursor: i < pevne ? "default" : "grab" }}>
                 <Media m={m} />
                 {i === 0 && !bezHlavnej && <span style={{ position: "absolute", left: 8, top: 8, height: 22, padding: "0 8px", borderRadius: 11, background: "var(--green)", color: "#fff", fontSize: 11.5, fontWeight: 800, letterSpacing: ".05em", display: "flex", alignItems: "center" }}>HLAVNÉ</span>}
                 {m.typ === "video" && <span style={{ position: "absolute", right: 8, top: 8, height: 22, padding: "0 8px", borderRadius: 11, background: "rgba(20,18,14,.7)", color: "#fff", fontSize: 11.5, fontWeight: 800, display: "flex", alignItems: "center" }}>VIDEO · {fmtSek(m.sek ?? 0)}</span>}
                 <span style={{ position: "absolute", left: 8, bottom: 8, width: 26, height: 26, borderRadius: "50%", background: "#fff", color: "#1D211B", fontSize: 12.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{i + 1}</span>
               </span>
               {male[m.id] && <span style={{ fontSize: 12.5, fontWeight: 700, color: "#8A5A2B" }}>Fotka je malá, na PC môže byť rozmazaná.</span>}
+              {i < pevne ? <span style={{ minHeight: 30, display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: "var(--ink3)" }}><Zamok />{m.popis ? <span style={{ color: "var(--ink2)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.popis}</span> : "Zapečatené pri spustení"}</span> : <>
               <input value={m.popis ?? ""} maxLength={POPIS_FOTKY_MAX} onChange={(e) => onMedia(media.map((x) => (x.id === m.id ? { ...x, popis: e.target.value.slice(0, POPIS_FOTKY_MAX) } : x)))}
                 placeholder={popisNapoveda} aria-label={`Popis ${m.typ === "video" ? "videa" : "fotky"} ${i + 1}`}
                 style={{ height: 44, padding: "0 12px", borderRadius: 12, background: "var(--field)", border: "1.5px solid var(--cardBd)", fontFamily: "inherit", fontSize: 14, color: "var(--ink)", outline: "none", width: "100%", boxSizing: "border-box" }} />
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                <button type="button" onClick={() => presun(i, i - 1)} aria-label="Posunúť dopredu" disabled={i === 0} style={{ ...tl, opacity: i === 0 ? 0.35 : 1 }}><Ik d={I.vlavo} s={15} w={2.4} /></button>
+                <button type="button" onClick={() => presun(i, i - 1)} aria-label="Posunúť dopredu" disabled={i <= pevne} style={{ ...tl, opacity: i <= pevne ? 0.35 : 1 }}><Ik d={I.vlavo} s={15} w={2.4} /></button>
                 <button type="button" onClick={() => presun(i, i + 1)} aria-label="Posunúť dozadu" disabled={i === media.length - 1} style={{ ...tl, opacity: i === media.length - 1 ? 0.35 : 1 }}><Ik d={I.vpravo} s={15} w={2.4} /></button>
                 {m.typ === "foto" && onVyrez && <button type="button" onClick={() => onVyrez(m.id)} style={tl}><Ik d={I.vyrez} s={14} />Výrez</button>}
                 {i > 0 && !bezHlavnej && <button type="button" onClick={() => presun(i, 0)} style={{ ...tl, background: "var(--gSoft)", color: "var(--gInk)" }}>Hlavné</button>}
                 <span style={{ flex: 1 }} />
                 <button type="button" onClick={() => onMedia(media.filter((x) => x.id !== m.id))} aria-label={`Odstrániť ${m.typ === "video" ? "video" : "fotku"} ${i + 1}`} style={{ ...tl, background: "transparent", color: "var(--ink3)" }}><Ik d={I.kos} s={16} /></button>
-              </div>
+              </div></>}
             </div>))}
           {!ph && fotiek < max && pridat(true)}
           {!ph && !video && !bezVidea && pridat(false)}
