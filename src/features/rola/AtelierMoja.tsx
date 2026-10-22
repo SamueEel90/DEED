@@ -26,7 +26,7 @@ const ZARIADENIA: [Zariadenie, string, number | null, { wide: boolean; desktop: 
 const SW: Record<Rozlozenie, string> = { nastenka: "#8A6A1E", kronika: "#2F5E3A", moderne: "#3B6A8E", konzervativny: "#6B5626" };
 type Ulozenie = "" | "uklada" | "ok" | "chyba";
 
-/** stránka má obsah (fotka, logo alebo text o farnosti) → ateliér začne na Moja stránka, inak na Vzorovej */
+/** stránka má obsah (fotka, logo alebo text o farnosti) — veta v modrom páse Vzorovej */
 const vyplnena = (p: ProfilStranky | null) => !!p && (!!p.cover?.src || !!p.logo || cistyText(p.onas ?? "").trim().length > 0);
 
 export function AtelierObrazovka({ strankaId, meno, profil, koncept, naostro, uspNaostro, onZavri }: { strankaId: string; meno: string; profil: ProfilStranky | null;
@@ -34,7 +34,7 @@ export function AtelierObrazovka({ strankaId, meno, profil, koncept, naostro, us
   const svetly = useMotiv().svetly;
   const [vz, setVz] = useState<Rozlozenie>(koncept?.rozlozenie ?? naostro);
   const [u, setU] = useState<Usporiadanie>(() => normalizuj(koncept?.usporiadanie ?? uspNaostro));
-  const [mod, setMod] = useState<"moja" | "vzor">(() => (koncept || vyplnena(profil) ? "moja" : "vzor"));
+  const [mod, setMod] = useState<"moja" | "vzor">("moja"); // Martin 22. 10.: vždy Moja stránka, kým server nepozná stav „zverejnená“
   const [zar, setZar] = useState<Zariadenie>("pc");
   const [por, setPor] = useState(false);
   const [zver, setZver] = useState(false);
