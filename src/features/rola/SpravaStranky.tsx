@@ -27,7 +27,8 @@ import { SpravaDorovnania } from "./SpravaDorovnania";
 import { SkutkyCharity } from "./SkutkyCharity";
 import { OznamySprava, AkcieCharity } from "./NovyOznam";
 import { aktivnychOznamov, aktivneOznamyText, nacitajOznamyStranky, useZmenyOznamovCharity, type DruhOznamu } from "@/lib/oznamyNove";
-import { centralnaZPamate, useZmenyCentralnej, prazdnaCentralna } from "@/lib/centralnaZbierka";
+import { centralnaZPamate, useZmenyCentralnej, prazdnaCentralna, nacitajCentralnuZbierku } from "@/lib/centralnaZbierka";
+import { useVecneZbierky } from "@/lib/vecnaZbierka";
 import { useSektory, cislaSektora, nastavVyberCentralnej, CENTRALNA_CISLA, NULA, SEKTORY_OD_TIERU } from "@/lib/sektoryCharity";
 import { cistyText } from "@/lib/richtext";
 import { cisloObjektu } from "@/lib/cisloObjektu";
@@ -381,7 +382,12 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   useZmenyZbierok();
   const vlastne = zbierkyStrankyZPamate(strankaId);
   const rozpisana = konceptZbierkyZPamate(strankaId);
-  useEffect(() => { void nacitajZbierkyStranky(strankaId); void nacitajKonceptZbierky(strankaId); }, [strankaId]);
+  useEffect(() => { void nacitajZbierkyStranky(strankaId); void nacitajKonceptZbierky(strankaId); void nacitajCentralnuZbierku(strankaId); }, [strankaId]);
+  // OPRAVY 482: „Vytvorte prvú zbierku“ len keď charita nemá žiadnu — ani centrálnu, sektor, bežnú či vecnú
+  useZmenyCentralnej();
+  const sektoryVsetky = useSektory();
+  const vecneVsetky = useVecneZbierky(strankaId);
+  const centralnaBezi = !!centralnaZPamate(strankaId)?.spustena;
   const beziacich = vlastne.filter(bezi).length + (bezUkazok ? 0 : PH_ZBIERKY.filter((z) => !/^Centrálna zbierka/.test(z.t)).length); // limit je mimo centrálnej
   const [limitOkno, setLimitOkno] = useState(false);
   const [spravZb, setSpravZb] = useState<ZbierkaNaSpravu | null>(null); // KARTA 38: ktorú zbierku spravujem
@@ -430,7 +436,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   // OPRAVY 109: úvod novej charity (kým nemá prvú zbierku); krok 1 = prvé Uložiť profil
   // OPRAVY 433: úvod len podľa skutočných dát — nemá uložený profil → krok 1, nemá spustenú zbierku → krok 2, má → úvod preč
   // (spustená = bežiaca, ukončená aj zrušená, z tých istých dát ako BEŽIACE ZBIERKY; rozpísaná sa nepočíta)
-  const maZbierku = vlastne.length > 0;
+  const maZbierku = vlastne.length > 0 || centralnaBezi || sektoryVsetky.length > 0 || vecneVsetky.length > 0;
   const uvod = typ === "charita" && !maZbierku;
   const krok1 = !!profil;
   const glowUp = uvod && !krok1 && sub !== "profil";
