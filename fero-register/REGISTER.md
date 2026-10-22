@@ -243,3 +243,12 @@
 **Nové trvalé (výber):** Naživo/Od začiatku len dary a skutky, NIKDY návštevy; žiadna verejná nula · Z-číslo na mobile skrátené (posledné 4), ťuk rozbalí a kopíruje celé · jedna karta so sumou na stránke zbierky (s míľnikmi) · sektory = schválené oblasti zo stanov (AI overí), sektor s darmi sa nemaže, len zavrie · zavretá centrálna 15 min Vrátiť späť → Archív · poradie v pruhu organizácia → firmy → reťaze → skutky → ľudia; paleta 8 odtieňov, farba z loga pri nerozlíšiteľnosti; 3 najväčší + Zobraziť všetky · „dorovnáva" nikdy „prispela" (tá len pevná suma) · „ZA ZBIERKU ZODPOVEDÁ" vždy charita/user, nikdy tvorca ani firma · nové bezpečnostné prvky len so súhlasom Martina (489).
 
 **Otvorené zo zdroja 14:** stav „zverejnená áno/nie" na serveri (Ateliér) · galéria zbierky na mobile listuje až po otvorení · skutky — Martin hlási ďalšie problémy · darcovia Bena — ktoré dary sú skutočné (484 d).
+
+## Rozhodnuté 22. 10. večer — reťaz v DB + testovacie platby (Martin schválil)
+
+- Migrácia 0157: `retaz` + `retaz_pct` + `retaz_cast` priamo na pohybe — % aj podiel zafixované v momente daru ako súčasť nemenného dokladu; súčet častí = dar na cent, zvyšková stotina podľa sirotského pravidla ledgera.
+- Kým je testovacia pokladňa zapnutá, server označí príznakom test KAŽDÚ platbu na doméne, bez ohľadu na appku. Vypnutie pokladne = vedomý ostrý štart s Martinovým súhlasom, jednorazovo.
+- Vecné dary dostanú príznak test (sú účtovníctvo); reakcie a prihlásenia nie — zmiznú až pri ostrom štarte s testovacími účtami.
+- Mazanie testov jedným príkazom (vzor 0135): doklady so stornami, platby, retaz_platba, dorovnania, zbierka_vklad, podpora, platba_split, upozornenia darcom; počítadlá sa prepočítajú z ledgera samy. Dvojkrokovo: najprv výpis počtov, zmazanie až pri druhom spustení s potvrdením.
+- Rozoznávanie testov podľa sumy/kurzu (nápad 1 DeeD = 1 €) ZAMIETNUTÉ — kurz 100 DeeD = 1 € sa nemení, testy rozlišuje výhradne príznak.
+- Súvisí: pri plnení reťazí platí blokovanie platby na verzii u tvorcu, kým delenie (bod 1) nebeží — hláška, nie tiché zlé delenie.
