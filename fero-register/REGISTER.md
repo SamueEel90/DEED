@@ -260,3 +260,9 @@
 - Testovacie stránky a účty idú preč celé.
 - Číslovanie: peňažné doklady, VS a čísla zbierok začnú po výmaze NANOVO, ale od nového základu, ktorý sa s testovacím rozsahom nikdy neprekryje — žiadne testovacie číslo sa nezrecykluje (vytlačený testovací QR ostane navždy mŕtvy, nesmie viesť na cudziu ostrú zbierku). Čísla príspevkov a poradové čísla účtov ostrých ľudí pokračujú.
 - Staré pohyby spred 0157 (bez príznaku, štartovací kredit): rieši 0158 — výmaz berie všetky peniaze až po ostrý štart.
+
+
+## Doplnok zdroja 14 (v2 súboru, prijaté 23. 10. v noci)
+
+- **Sekcia 6 OPRAVENÁ:** reťaz robí ktokoľvek registrovaný, kto dostáva dary (nie len tvorca). Jediný vzor: prototyp „Retaz dobra - kto a s kym" + RetazDobra.tsx; starý prototyp „Retaz dobra.dc.html" NEPLATÍ → Pasce.
+- **Nová sekcia 12 (23. 10.):** schválený prototyp „QR toho kto retazi - co vidi darca" (QR aj /r/ = jedna adresa; na PC odkaz v popise/chate, QR vo videu sa kliknúť nedá — sedí s nočnou debatou) · OBS počítadlo UŽ JE v kóde (features/overlay, /overlay/{splitId}, 0085b) — pri stránke tvorcu len použiť, nevymýšľať · QR reťaze aj v Moje QR kódy (501) · pekná adresa reťaze až pred ostrou · ľudia v pruhu = prechod zelených, 498 zrušený · **farby sektorov rozhodnuté**: 1. petrolejová #2F7C82, 2. modrá #3F6FA8, 3. terakota #B5653A, ďalšie svetlejšie; fialová a zlatá pri sektoroch nikdy (časť otázky bodu 139 uzavretá — ostáva len zlatá UDALOSŤ vs zlatá dorovnania) · 497 = potvrdenie prípadu A (skrýva sa len tlačidlo Nastaviť) · 483: QR platí aj pre staré zbierky a vytlačené plagáty — drží s pravidlom nerecyklovať čísla.

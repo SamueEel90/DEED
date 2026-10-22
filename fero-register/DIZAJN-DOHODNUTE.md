@@ -118,6 +118,7 @@
 - Sektorové zbierky „od AKCIA/P2" → od P1 (22. 10.).
 - Paušálne „5 zbierok mimo centrálnej" → limity P1 centrálna+3, P2 centrálna+10 (22. 10.).
 - SektoroveZbierky.tsx a CentralnaZbierka.tsx ako vzor → staré generácie; jediný vzor SpravaCentralnej.tsx (KARTA 48).
+- Prototyp „Retaz dobra.dc.html" (tvorca × majiteľ zbierky) → NEPLATÍ; jediný vzor reťaze „Retaz dobra - kto a s kym" + RetazDobra.tsx (23. 10.).
 
 ## 9b · Rozhodnuté 22. 10. (zdroj 14 — mení staršie body vyššie)
 
@@ -129,5 +130,7 @@
 - Naživo/Od začiatku: len dary a skutky, nikdy návštevy; žiadna verejná nula. Z-číslo na mobile skrátené (4 číslice, ťuk rozbalí). Jedna karta so sumou (s míľnikmi).
 - Strážca nečinnosti a auto-odhlásenie v testovacej verzii VYPNUTÉ (489); nové bezpečnostné prvky len so súhlasom Martina.
 - Vzor kódu centrálnej: SpravaCentralnej.tsx (KARTA 48).
+- **Reťaz robí ktokoľvek registrovaný, kto dostáva dary** (23. 10.) — nie len tvorca; vzor „Retaz dobra - kto a s kym" + RetazDobra.tsx. Stránka darcu po QR reťaze: „Za zbierku zodpovedá" + charita, bez Reťaze dobra, firma „dorovnáva"; QR aj /r/ jedna adresa, na PC odkaz v popise/chate. OBS počítadlo (features/overlay) sa pri tvorcovi POUŽÍVA, nevymýšľa.
+- **Farby sektorov** (23. 10.): centrálna zelená · 1. petrolejová #2F7C82 · 2. modrá #3F6FA8 · 3. terakota #B5653A · ďalšie svetlejšie; fialová (reťaz) a zlatá (firmy) pri sektoroch NIKDY. Ľudia v pruhu = prechod tmavozelená → svetlozelená (498 zrušený).
 
 *— koniec v1.0 + dodatok 22. 10. · dopĺňa sa cez REGISTER.md pri každom novom výpise —*
