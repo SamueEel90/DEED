@@ -1,6 +1,6 @@
 // KARTA 48 · centrálna zbierka a sektory charity (Správa → Zbierky).
 // Centrálna = položka 0 (od P1, nezakladá sa). Sektory 1–3 (od P2) len z činností v stanovách.
-// Farba podľa poradia: 0 zelená, 1 petrolejová, 2 fialová, 3 oranžová (data-hier).
+// Farba podľa poradia: 0 zelená, 1 petrolejová, 2 modrá, 3 terakota, ďalšie svetlejšie (data-hier) — OPRAVY 500: fialová patrí reťazi.
 // Zatiaľ v pamäti relácie (žiadne úložisko prehliadača); čísla sú TESTOVACIE, na serveri ich počíta server.
 import { useSyncExternalStore } from "react";
 import type { CentralnaZbierka } from "./centralnaZbierka";
