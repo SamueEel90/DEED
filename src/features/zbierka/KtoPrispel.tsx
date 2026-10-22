@@ -15,6 +15,7 @@ import { objektZbierky } from "@/lib/darZbierky";
 import { strankaZbierky } from "@/lib/novaZbierka";
 import type { DarRiadok } from "@/lib/darcovia";
 import { otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
+import { otvorVerziuRetaze } from "@/lib/retazVerzia";
 import { StitStrany } from "./StranaZmluvy";
 import { sumaEur } from "@/lib/suma";
 
@@ -74,7 +75,8 @@ export function useKtoPrispel(refId: string, dary: DarRiadok[], orgZb?: OrgZbier
   // 3 · Reťaz dobra
   ret.forEach((p: PodporaRetazou, i) => r.push({ k: `r${p.retaz}`, druh: "retaz", meno: p.meno, strana: p.robi, ini: inicialy(p.meno), logo: p.robi?.foto,
     text: <>Reťaz dobra · {p.pct}{" "}% · zatiaľ <span style={{ whiteSpace: "nowrap" }}>{eur(p.poslane)}</span></>, suma: p.poslane, farba: odtien("retaz", i),
-    ...(p.stranka ? { tap: () => otvorVerejnyProfil(p.stranka!), tapText: "Pozri profil ›" } : {}) }));
+    // OPRAVY 492: kým reťaz na túto zbierku posiela, ťuk otvorí platobný modul verzie u toho, kto reťazí
+    ...(p.bezi ? { tap: () => otvorVerziuRetaze(p.retaz, refId), tapText: "Darovať cez reťaz ›" } : p.stranka ? { tap: () => otvorVerejnyProfil(p.stranka!), tapText: "Pozri profil ›" } : {}) }));
   // 4 · skutky, ktoré zbierajú na zbierku
   // OPRAVY 490: skutok podľa id (0140) — „Pozri ›“ otvorí priamo skutok; staré dary bez id otvoria stránku charity
   const sk = new Map<string, { nazov: string; id?: string; suma: number }>();

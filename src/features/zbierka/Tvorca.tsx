@@ -19,11 +19,14 @@ export type TvorcaData = {
   veta?: string;
   odkazy?: { druh: "nazivo" | "zaznam"; platforma: string; url: string }[];
   stit: StitUroven;
+  /** OPRAVY 492: reťaz dobra — namiesto „tvorca“ (reťaziť môže ktokoľvek registrovaný) */ rola?: string;
+  /** OPRAVY 492: „Otvoriť stránku tvorcu ›“ — len keď má stránku */ onStranka?: () => void;
 };
 
 const eK = (n: number) => `${sumaEur(n)}`;
 
-export function KamIdeDar({ nazovZbierky, fotoZbierky, tvorca, onStrankaTvorcu }: { nazovZbierky: string; fotoZbierky?: string; tvorca: TvorcaData; onStrankaTvorcu?: () => void }) {
+export function KamIdeDar({ nazovZbierky, fotoZbierky, tvorca, onStrankaTvorcu: onSt }: { nazovZbierky: string; fotoZbierky?: string; tvorca: TvorcaData; onStrankaTvorcu?: () => void }) {
+  const onStrankaTvorcu = onSt ?? tvorca.onStranka;
   const [otv, setOtv] = useState(false);
   return (
     <div style={{ margin: "0 0 12px", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)" }}>
@@ -53,7 +56,7 @@ export function KamIdeDar({ nazovZbierky, fotoZbierky, tvorca, onStrankaTvorcu }
           </span>
           <span style={{ flex: 1, minWidth: 0 }}>
             <span style={{ display: "block", fontSize: 17, fontWeight: 800, lineHeight: 1.2 }}>{tvorca.meno}</span>
-            <span style={{ display: "block", marginTop: 3, fontSize: 12.5, color: "rgba(241,236,225,.72)" }}>{["tvorca", ...tvorca.platformy].join(" · ")}</span>
+            <span style={{ display: "block", marginTop: 3, fontSize: 12.5, color: "rgba(241,236,225,.72)" }}>{[tvorca.rola ?? "tvorca", ...tvorca.platformy].join(" · ")}</span>
             <span style={{ display: "inline-flex", marginTop: 6, padding: "3px 8px", borderRadius: 8, background: "rgba(143,182,212,.16)", color: "#BFD6E8", fontSize: 12, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{100 - tvorca.podielZbierke} % ide {tvorca.menoDativ}</span>
           </span>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F1ECE1" strokeWidth="2.4" strokeLinecap="round" style={{ flex: "none", transform: `rotate(${otv ? 180 : 0}deg)`, transition: "transform .3s ease" }}><path d="M6 9l6 6 6-6" /></svg>
@@ -71,7 +74,7 @@ export function KamIdeDar({ nazovZbierky, fotoZbierky, tvorca, onStrankaTvorcu }
                 <span style={{ fontWeight: 800, color: "#BFD6E8" }}>Pozrieť ›</span>
               </a>
             ))}
-            {onStrankaTvorcu && <button type="button" onClick={onStrankaTvorcu} style={{ alignSelf: "flex-start", padding: 0, border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "#BFD6E8" }}>Otvoriť stránku tvorcu ›</button>}
+            {onStrankaTvorcu && <button type="button" onClick={onStrankaTvorcu} style={{ alignSelf: "flex-start", padding: 0, border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "#BFD6E8" }}>{tvorca.rola ? "Otvoriť stránku ›" : "Otvoriť stránku tvorcu ›"}</button>}
           </div>
         )}
       </div>

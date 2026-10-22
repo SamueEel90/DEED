@@ -54,6 +54,7 @@ import { PomocHost } from "@/features/profil/Pomoc";
 import { PolohaOkruhu } from "@/features/profil/Bezpecnost24";
 import { PrehladEditora } from "@/features/deed/PrehladEditora";
 import { PristupoveKody } from "@/features/deed/PristupoveKody";
+import { VerziaRetazeVrstva } from "@/features/zbierka/VerziaRetaze";
 import { somDeedAdmin } from "@/lib/editorStat";
 import { obnovPushOdber } from "@/lib/push";
 
@@ -483,6 +484,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
         )}
         {prehladEd && deedTim && <PrehladEditora onZavri={() => setPrehladEd(false)} />}
         {kody && deedTim && <PristupoveKody onZavri={() => setKody(false)} />}
+        <VerziaRetazeVrstva />{/* OPRAVY 492: verzia zbierky u toho, kto reťazí (QR /r/… a ťuk na riadok reťaze) */}
 
         {/* intro sprievodca — prvé spustenie (raz) alebo „Ako DEED funguje" z menu */}
         {(intro || akoFunguje) && <IntroPruvodca onClose={zavriIntro} />}

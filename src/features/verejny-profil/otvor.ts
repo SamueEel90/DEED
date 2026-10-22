@@ -93,6 +93,8 @@ if (typeof window !== "undefined") {
     }
   }
 }
+// OPRAVY 492 · /r/{reťaz}/{zbierka} — QR reťaze dobra: verzia zbierky u toho, kto reťazí (lib/retazVerzia), aj hosťovi
+if (typeof window !== "undefined" && /^\/r\/rt-/.test(window.location.pathname)) prisloSCielom = true;
 // KARTA 47 · /z/{zbierka}?s={stream} — QR / odkaz zo streamu tvorcu → rovno stránka streamu na zbierku.
 if (typeof window !== "undefined") {
   const m = window.location.pathname.match(/^\/z\/([^/?#]+)/);
