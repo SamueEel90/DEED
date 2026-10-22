@@ -72,7 +72,7 @@ export const vMeste = (m: Mesto): string => ({ "Trenčín": "Trenčíne", "Preš
 // ---------------- štít CARE s leskom (prototypy v2 / v3 / v4) ----------------
 export const stitSrc = (stit: string) => `/stity/care/${stit.toLowerCase()}.webp`;
 export function StitCare({ stit, w, h, lesk, tien = "drop-shadow(0 8px 12px rgba(0,0,0,.4))", firma }: { stit: string; w: number; h: number; lesk?: boolean; tien?: string; /** KARTA 46 · štít firmy (odznaky/{stit}.png) */ firma?: boolean }) {
-  const src = firma ? `/odznaky/${stit.toLowerCase()}.png` : stitSrc(stit);
+  const src = firma ? `/odznaky/partner/${stit.toLowerCase()}.png` : stitSrc(stit); // OPRAVY 490: firma = štít PARTNER (bronze · silver · gold · platinum · legend)
   const maska: CSSProperties = { WebkitMaskImage: `url(${src})`, maskImage: `url(${src})`, WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat", WebkitMaskPosition: "center", maskPosition: "center" };
   return (
     <span role="img" aria-label={`${firma ? "Štít firmy" : "Štít DEED+ CARE"} · ${nazovStitu(stit)}`} style={{ position: "relative", width: w, height: h, display: "block" }}>
