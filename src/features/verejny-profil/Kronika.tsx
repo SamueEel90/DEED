@@ -6,6 +6,8 @@
 // Mobil (< 760): titulka 200, Naživo zbalené na 1 riadok, dlaždice 2 × 2, lepkavá lišta, Aktuálne, roky.
 // Štítky, štít a overenie sú v okne štítu (bod 137). Rozbalený je len aktuálny rok. Z ISKIER: Iskry / Zbierky.
 // Zbaliť aj Späť z detailu, Iskier či hárku vráti na to isté miesto (pamäť posunu na úrovni stránky).
+import { useNazivoCharity } from "@/lib/nazivoCharity";
+import { ZivyRiadok, dnesNazivo, cislaOdZaciatku, PRVY_DAR } from "./NazivoCharity";
 import { podlaPribehu, stitokNoveho, useZmenyPribehov } from "@/lib/pribehZbierky";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { eur, pct, tvar, vLokalite, type Lokalita, type TestProfil, type TestZbierka, jeFarnost } from "@/lib/testProfily";
@@ -99,6 +101,9 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
     return () => { window.clearInterval(t); window.clearTimeout(t2); };
   }, []);
   const ld = darcovia.length ? darcovia[live % darcovia.length] : null;
+  // OPRAVY 478: skutočná charita — Naživo a Od začiatku zo skutočných darov (ten istý zdroj ako Správa → Štatistiky)
+  const nz = useNazivoCharity(profil.k, !!profil.zivaCharita);
+  const cislaNz = nz ? cislaOdZaciatku(nz) : null;
 
   // ---- filter a hľadanie naprieč všetkými rokmi ----
   const qn = norm(q).trim();
@@ -202,17 +207,18 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
     </button>
   );
   const bodka = <span style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--green)", animation: "vpPulz 1.6s ease infinite", flex: "none" }} />;
-  const dnesText = <b style={{ fontSize: 14, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>Dnes {eur(dnes)} od {tvar(darcovia.length, ["človeka", "ľudí", "ľudí"])}</b>;
-  const liveRiadok = ld && (
+  const dnesText = <b style={{ fontSize: 14, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{nz ? dnesNazivo(nz) : <>Dnes {eur(dnes)} od {tvar(darcovia.length, ["človeka", "ľudí", "ľudí"])}</>}</b>;
+  const liveRiadok = nz ? <ZivyRiadok nz={nz} /> : ld && (
     <span aria-live="polite" style={{ display: "flex", alignItems: "baseline", gap: 8, opacity: liveOp, transition: "opacity .3s", minWidth: 0 }}>
       {ld.suma != null && <b style={{ flex: "none", fontSize: 14, color: "var(--gInk)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>+{eur(ld.suma)}</b>}
       <span style={{ flex: "none", fontSize: 14, fontWeight: 700, whiteSpace: "nowrap" }}>{ld.meno}</span>
       <span style={{ fontSize: 13, color: "var(--ink3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ld.naCo} · {ld.pred}</span>
     </span>
   );
-  const celkom = (fs: number) => (
+  const cislaOd = nz ? cislaNz : profil.cisla;
+  const celkom = (fs: number) => !cislaOd ? <span style={{ fontSize: 14, color: "var(--ink3)" }}>{PRVY_DAR}</span> : (
     <span style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 6 }}>
-      {profil.cisla.map(([v, t]) => <span key={t} style={{ display: "flex", flexDirection: "column" }}><b style={{ fontSize: fs, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{v}</b><span style={{ fontSize: 12, color: "var(--ink3)" }}>{t}</span></span>)}
+      {cislaOd.map(([v, t]) => <span key={t} style={{ display: "flex", flexDirection: "column" }}><b style={{ fontSize: fs, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{v}</b><span style={{ fontSize: 12, color: "var(--ink3)" }}>{t}</span></span>)}
     </span>
   );
   const odZacT = <b style={{ fontSize: 11, letterSpacing: ".1em", color: "var(--acc)" }}>OD ZAČIATKU · {profil.odRoku}</b>;
@@ -223,7 +229,7 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
       {liveRiadok}
       <span style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap", borderTop: "1px solid var(--cardBd)", paddingTop: 8, fontSize: 13, color: "var(--ink3)" }}>
         <b style={{ fontSize: 11, letterSpacing: ".1em", color: "var(--acc)", paddingRight: 4 }}>OD ZAČIATKU · {profil.odRoku}</b>
-        {profil.cisla.map(([v, t], i) => <span key={t} style={{ display: "contents" }}><b style={{ color: "var(--ink)", fontSize: 14, fontVariantNumeric: "tabular-nums" }}>{v}</b>{t}{i < profil.cisla.length - 1 ? " ·" : ""}</span>)}
+        {!cislaOd ? <span>{PRVY_DAR}</span> : cislaOd.map(([v, t], i) => <span key={t} style={{ display: "contents" }}><b style={{ color: "var(--ink)", fontSize: 14, fontVariantNumeric: "tabular-nums" }}>{v}</b>{t}{i < cislaOd.length - 1 ? " ·" : ""}</span>)}
       </span>
     </div>
   );

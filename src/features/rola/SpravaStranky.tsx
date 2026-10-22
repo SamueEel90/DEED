@@ -6,6 +6,7 @@
 // Len rozloženie, farby podľa štítu a témy, Späť všade, povolenia z jedného miesta (stav.ts).
 // Funkcie za tlačidlami NIE SÚ — každé tlačidlo otvorí obrazovku „Pripravujeme".
 // ============================================================
+import { darcoviaZDarov } from "@/lib/nazivoCharity";
 import { useZmenyPribehov, nacitajPribehy, novePribehu, stitokNoveho } from "@/lib/pribehZbierky";
 import { useZmenyDarov, darcoviaPre, sucetDarov } from "@/lib/darcovia";
 import { skutkyOrgSpravy, useZmenySkutkov } from "@/lib/mojeSkutky";
@@ -242,9 +243,10 @@ export function refCentralnej(strankaId: string): string { const r = `${strankaI
 function cislaZLedgera(refs: string[], obd: number): [string, string][] {
   const dnes = new Date(); dnes.setHours(0, 0, 0, 0);
   const od = obd === 0 ? dnes.getTime() : Date.now() - [7, 30, 365][obd - 1] * DEN_MS;
-  const v = refs.flatMap((r) => darcoviaPre(r)).filter((r) => r.cas >= od);
+  const vsetky = refs.flatMap((r) => darcoviaPre(r)), v = vsetky.filter((r) => r.cas >= od);
   const ludia = v.filter((r) => !r.firma), suma = ludia.reduce((a, r) => a + r.suma, 0), firmy = v.filter((r) => r.firma).reduce((a, r) => a + r.suma, 0);
-  return [[eur(suma), ""], [String(ludia.length), ""], [ludia.length ? eur(suma / ludia.length) : "—", ""], ["—", ""], ["—", ""], [eur(firmy), ""], ["—", ""], ["—", ""]]; // OPRAVY 442 doplnok 3: pravidelnú podporu appka zatiaľ nepočíta → „—“, nie „0 ľudí“
+  const dc = darcoviaZDarov(vsetky, od); // OPRAVY 478 doplnok: noví a všetci darcovia zo skutočných darov
+  return [[eur(suma), ""], [String(ludia.length), ""], [ludia.length ? eur(suma / ludia.length) : "—", ""], [String(dc.novi), ""], ["—", ""], [eur(firmy), ""], ["—", ""], [String(dc.spolu), "od začiatku"]]; // OPRAVY 442 doplnok 3: pravidelnú podporu appka zatiaľ nepočíta → „—“, nie „0 ľudí“
 }
 const ULOHY: [string, string, string, string][] = [
   ["#C9A24A", "Strecha pre rodinu Horváthovú končí o 9 dní", "Chýba 3 580 €. Pripomeňte ju sledujúcim.", "Pripomenúť"],

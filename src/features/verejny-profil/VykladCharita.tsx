@@ -4,6 +4,8 @@
 //   pás Hľadáme ľudí → Čo sme dokázali (filtre, mriežka 4) → Videá z Iskier.
 // Mobil a tablet: titulka 360 → Tento týždeň → Príbeh týždňa → Podporiť (modul zmenšený, B) → Ďalšie príbehy →
 //   Hľadáme ľudí → Čo sme dokázali (riadky s fotkou 92 px) → Videá z Iskier. Bez veľkých rokov (to je Kronika).
+import { useNazivoCharity } from "@/lib/nazivoCharity";
+import { ZivyRiadok, dnesNazivo, cislaOdZaciatku, PRVY_DAR } from "./NazivoCharity";
 import { useOtvorHlavnuZQr } from "./otvor";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { eur, pct, tvar, jeFarnost, type Lokalita, type TestProfil, type TestSektor, type TestZbierka } from "@/lib/testProfily";
@@ -42,6 +44,7 @@ export function VykladCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, 
   useOtvorHlavnuZQr(profil.k, profil.typ === "farnost", () => setSel(0)); // OPRAVY 162
   const [filter, setFilter] = useState<"vsetko" | "skutok" | "zbierka" | "akcia">("vsetko");
   const d = useCharitaData(profil, lok, domace);
+  const nz = useNazivoCharity(profil.k, !!profil.zivaCharita); // OPRAVY 478
   const stit = profil.stit.toLowerCase();
   const farnost = jeFarnost(profil);
   const meno = profil.meno.replace(/\s+o\.\s?z\.$/i, "");
@@ -170,8 +173,9 @@ export function VykladCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, 
   const bodka = <span style={{ width: 9, height: 9, borderRadius: 5, background: "var(--green)", animation: "vpPulz 1.6s ease infinite", flex: "none" }} />;
   const nazivo = (
     <div style={{ borderRadius: 20, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>{bodka}<b style={{ fontSize: 12, letterSpacing: ".1em", color: "var(--green)" }}>NAŽIVO</b><span style={{ flex: 1 }} /><b style={{ fontSize: 15, fontVariantNumeric: "tabular-nums" }}>Dnes {eur(d.dnes)} od {tvar(d.darcovia.length, ["človeka", "ľudí", "ľudí"])}</b></div>
-      <span style={{ fontSize: 14, color: "var(--ink3)" }}><b style={{ color: "var(--acc)", letterSpacing: ".08em", fontSize: 12 }}>OD ZAČIATKU · {profil.odRoku}</b>{"  "}{profil.cisla.map(([v, t], i) => <span key={t}>{i ? " · " : ""}<b style={{ color: "var(--ink)" }}>{v}</b> {t}</span>)}</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>{bodka}<b style={{ fontSize: 12, letterSpacing: ".1em", color: "var(--green)" }}>NAŽIVO</b><span style={{ flex: 1 }} /><b style={{ fontSize: 15, fontVariantNumeric: "tabular-nums" }}>{nz ? dnesNazivo(nz) : <>Dnes {eur(d.dnes)} od {tvar(d.darcovia.length, ["človeka", "ľudí", "ľudí"])}</>}</b></div>
+      {nz && <ZivyRiadok nz={nz} fs={14.5} />}
+      <span style={{ fontSize: 14, color: "var(--ink3)" }}><b style={{ color: "var(--acc)", letterSpacing: ".08em", fontSize: 12 }}>OD ZAČIATKU · {profil.odRoku}</b>{"  "}{(() => { const c = nz ? cislaOdZaciatku(nz) : profil.cisla; return c ? c.map(([v, t], i) => <span key={t}>{i ? " · " : ""}<b style={{ color: "var(--ink)" }}>{v}</b> {t}</span>) : PRVY_DAR; })()}</span>
     </div>);
   const sektory: TestSektor[] = [...(profil.bezCentralnej ? [] : [profil.centralna]), ...profil.sektory].slice(0, 4); // OPRAVY 414: centrálna nevzniká sama
   const dlazdice = (
