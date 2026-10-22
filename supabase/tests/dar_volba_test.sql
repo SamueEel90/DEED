@@ -21,12 +21,12 @@ insert into t select 'vsetky pohyby testovacie', bool_and(po.testovaci) from poh
 insert into t select 'platba meta testovaci', (meta->>'testovaci')::boolean from platba where idem_kluc = 'tc-1';
 insert into t select 'meno darcu v zozname', (public.zbierka_dary('tc-far:hlavna')->'dary'->0->>'meno') = 'Martin Konaľ, Trenčín';
 insert into t select 'pocet darov 1', (public.zbierka_dary('tc-far:hlavna')->>'pocet')::int = 1;
--- bežný dar po teste už testovací nie je
+-- 0157: kým je testovacia pokladňa zapnutá, je testovací aj bežný dar (príznak píše server)
 set role authenticated;
 select public.zbierka_dar_volba('tc-far:hlavna', 'tc-2', 10, 'EUR', 'fiat', null, 'tc-far', 'Podporiť farnosť', null, false);
 reset role;
 insert into t select 'bez mena: meno prazdne', (select odosielatel_text is null and zobrazenie = 4 from platba where idem_kluc = 'tc-2');
-insert into t select 'bezny dar nie je testovaci', not bool_or(po.testovaci) from pohyb po join platba pl on pl.id = po.platba_id where pl.idem_kluc = 'tc-2';
+insert into t select 'bezny dar pri zapnutej pokladni je testovaci', bool_and(po.testovaci) from pohyb po join platba pl on pl.id = po.platba_id where pl.idem_kluc = 'tc-2';
 -- vypnutá testovacia pokladňa → odmietne
 update public.ledger_prepinac set zapnute = false where kluc = 'testovacia_pokladna';
 set role authenticated;
