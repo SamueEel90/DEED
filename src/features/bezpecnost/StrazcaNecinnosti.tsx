@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { signOut } from "@/lib/auth";
 import { nazovZariadenia } from "@/lib/zariadenia";
+import { TESTOVACIA } from "@/lib/testovacia";
 
 export const NECINNOST_MIN = 15;
 export const ODPOCET_S = 60;
@@ -22,7 +23,8 @@ export function odhlasenyPreNecinnost(): boolean {
 }
 
 export function StrazcaNecinnosti() {
-  const pc = nazovZariadenia().typ === "pocitac";
+  // OPRAVY 489: v testovacej verzii (TESTOVACIA / VITE_TEST) strážca nebeží — kým nejde o reálne peniaze, odhlasovanie len zavadzia
+  const pc = !TESTOVACIA && nazovZariadenia().typ === "pocitac";
   const [okno, setOkno] = useState<number | null>(null); // koniec odpočtu (ms)
   const [teraz, setTeraz] = useState(() => Date.now());
   const moja = useRef(Date.now());
