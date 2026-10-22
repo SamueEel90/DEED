@@ -21,7 +21,7 @@ export interface SektorCharity {
 export interface CislaPolozky { mesiac: number; mesacne: number; spolu: number }
 
 export const SEKTORY_MAX = 3;
-export const SEKTORY_OD_TIERU = 2;
+export const SEKTORY_OD_TIERU = 1; // OPRAVY 486: sektorové zbierky od P1
 export const CENTRALNA_FOTO = U("photo-1542601906990-b4d3fb778b09");
 export const CENTRALNA_SLUG = "svetlo-pomoci";
 
@@ -95,3 +95,8 @@ export function otvorCentralnu() { centralnaZavreta = null; zmena(); }
 let vyber = 0;
 export const vyberCentralnej = () => vyber;
 export const nastavVyberCentralnej = (i: number) => { vyber = i; };
+/** OPRAVY 486: „Akú zbierku pridávate?“ → Sektorová zbierka otvorí Správu centrálnej rovno s „+ Pridať sektor“ */
+let novySektor = false;
+export const chcemNovySektor = () => { novySektor = true; };
+export const jeNovySektor = () => novySektor;
+export const vezmiNovySektor = () => { novySektor = false; };

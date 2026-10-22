@@ -210,7 +210,7 @@ export type PolozkaSpravy =
   // OPRAVY 450: Ľudia → Štatutár a pracovníci (kto spravuje stránku), vo všetkých programoch
   | "spravcovia";
 export const POVOLENIA_CHARITY: Record<PolozkaSpravy, { od: Program }> = {
-  zbierky: { od: "zadarmo" }, centralna: { od: "P1" }, dorovnanie: { od: "P1" }, segment: { od: "P2" }, materialne: { od: "P3" },
+  zbierky: { od: "zadarmo" }, centralna: { od: "P1" }, dorovnanie: { od: "P1" }, segment: { od: "P1" }, materialne: { od: "P3" },
   skutky: { od: "zadarmo" }, video: { od: "zadarmo" }, oznamy: { od: "P1" }, nastenka: { od: "P1" }, upoutavky: { od: "P2" },
   darcovia: { od: "zadarmo" }, sledujuci: { od: "zadarmo" }, dobrovolnici: { od: "P2" }, podujatia: { od: "P2" }, sponzoring: { od: "P1" }, inzeraty: { od: "P1" },
   qr: { od: "zadarmo" }, sektorqr: { od: "P2" }, embed: { od: "P1" }, prednost: { od: "P3" }, statistiky: { od: "zadarmo" }, vypis: { od: "zadarmo" }, export: { od: "P3" },
