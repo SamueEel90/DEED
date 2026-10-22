@@ -642,7 +642,19 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
     // OPRAVY 442 doplnok 3: dary po dňoch zo skutočných darov (posledných 10 dní), bez čísel, ktoré appka nepozná
     obdobie: `od ${dnes(zac).replace(/ \d{4}$/, "")}`, od: dnes(zac).replace(/ \d{4}$/, ""),
     dni: Array.from({ length: 10 }, (_, i) => { const d0 = new Date(); d0.setHours(0, 0, 0, 0); d0.setDate(d0.getDate() - (9 - i)); const d1 = d0.getTime() + DEN_MS; return darcoviaPre(z.id).filter((r) => r.cas >= d0.getTime() && r.cas < d1).length; }),
-    cez: [["Priamo na zbierke", vyzbierane, "feed a profil"]], split: [],
+    // OPRAVY 484 (b): odkiaľ prišli peniaze — skutky, reťaze a firmy zo skutočných darov, zvyšok priamo
+    cez: (() => {
+      const dary = darcoviaPre(z.id);
+      const sk = dary.filter((r) => r.cezSkutok).reduce((a, r) => a + r.suma, 0);
+      const nSk = new Set(dary.filter((r) => r.cezSkutok).map((r) => r.cezSkutokId ?? r.cezSkutok)).size;
+      const rt = dary.filter((r) => !r.cezSkutok && r.cezTvorcu?.startsWith("rt-")).reduce((a, r) => a + r.suma, 0);
+      const fi = dary.filter((r) => r.firma).reduce((a, r) => a + r.suma, 0);
+      const l: [string, number, string][] = [["Priamo na zbierke", Math.max(0, vyzbierane - sk - rt - fi), "feed a profil"]];
+      if (sk > 0) l.push(["Zo skutkov", sk, nSk === 1 ? "1 skutok" : `${nSk} ${nSk < 5 ? "skutky" : "skutkov"}`]);
+      if (rt > 0) l.push(["Cez reťaz dobra", rt, "časť pre zbierku"]);
+      if (fi > 0) l.push(["Firmy", fi, "dorovnanie a príspevky"]);
+      return l.sort((x, y) => y[1] - x[1]);
+    })(), split: [],
     darcovia: [[String(darcov), "darcov"], ...(() => { const f = new Set(darcoviaPre(z.id).filter((r) => r.firma).map((r) => r.firma)).size; return f ? [[String(f), f === 1 ? "firma" : "firmy"] as [string, string]] : []; })()], dary: realneDary,
   };
   const { faza, dni } = fazaDokladovania(s, vyzbierane, Math.max(teraz, Date.now()));
