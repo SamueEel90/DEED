@@ -270,7 +270,7 @@
 ## Balík 45 (507–510, Ateliér a vzhľad) — prijaté 23. 10.
 
 - 507: výber vzhľadu naostro podľa balíka 33 (4 vedľa seba s nákresmi rozloženia, mobil 2×2) — nahrádza 2×2 obrovské plochy.
-- 508: Vzorová farnosť dostane fotky kostolov a fary z voľnej galérie — POZN. Fero: na vzorovej označiť ako ilustračné/vzorové, aby sa nebilo s pravidlom „ilustračné foto len v Help; žiadne vymyslené dáta" (vzorová je ukážka, nie živá stránka — prípustné, ale nech sa z nej fotobanka nerozlezie).
+- 508: Vzorová farnosť dostane fotky kostolov a fary z voľnej galérie — bez výhrad (bez fotiek vzor ukazuje len biele diery, viď snímka 23. 10.).
 - 510: Ateliér stránky aj v charite, 1:1 z farnosti (balíky 32–34), Vzorová charita s fotkami.
 - 509: Martin zajtra porovná „Pozrieť na: Tablet" so skutočnou stránkou na iPade.
 - Ateliér na snímke už rieši otvorený bod zo zdroja 14 sekcia 11: „Uložené ✓ · nikto to nevidí" + štart na Vzorovej — po Paľovom „hotové" bod uzavrieť.
