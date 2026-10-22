@@ -63,3 +63,14 @@ export function zapisNastavenie(kluc: string, hodnota: unknown): void {
   cakajuce = () => { const k = [...zmeneneKluce], h = data; zmeneneKluce = new Set(); void posliKluce(id, k, h); };
   casovac = setTimeout(dopis, 600);
 }
+
+/** OPRAVY 471: zápis, na ktorý sa čaká (ateliér: „uložené ✓“ až po potvrdení servera) — chyba ako text alebo null.
+ *  Bez DB (testovacia verzia) len v pamäti relácie. */
+export async function zapisNastavenieIsto(kluc: string, hodnota: unknown): Promise<string | null> {
+  data = { ...data, [kluc]: hodnota };
+  zmena();
+  if (!supabase || !stranka) return null;
+  zmeneneKluce.delete(kluc); // čakajúci zápis toho istého kľúča by poslal staršiu hodnotu
+  const { error } = await supabase.rpc("nastavenia_zapis", { p_stranka: stranka, p_data: { [kluc]: hodnota } }).then((x) => x, () => ({ error: { message: "siet" } }));
+  return error ? "Neuložilo sa na server. Skontrolujte pripojenie a skúste znova." : null;
+}
