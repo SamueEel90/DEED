@@ -19,6 +19,10 @@ import { SplitConfigStep, splitValid, splitOwnerPct, splitCielePayload, type Spl
 import { useQrSplitList, useQrSplitCreate, useGoodFeed } from "@/data";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import type { QrSplitListItem } from "@/types";
+import { nacitajRetaz, beziaca, zbierkaVRetazi, useZmenyRetaze } from "@/lib/retaz";
+import { AkcieQrRetaze } from "@/features/zbierka/RetazDobra";
+import { DeedQr } from "@/components/deedqr";
+import { ADRESA } from "@/lib/adresa";
 
 const GREEN = "var(--a-green)";
 
@@ -26,6 +30,8 @@ export function MojeQrKody({ onClose, toast }: { onClose?: () => void; toast?: (
   // počítadlo do streamu sa viaže na konkrétny QR (split), nie na zbierku
   const [pocitadlo, setPocitadlo] = useState<{ splitId: string; nazov?: string } | null>(null);
   const { ucetId, celeMeno } = usePouzivatel();
+  useZmenyRetaze();
+  const retaz = nacitajRetaz(), bezRet = retaz ? beziaca(retaz) : null;
   const { data: moje = [], isLoading } = useQrSplitList(ucetId);
   const { data: POSTY = [] } = useGoodFeed();
   const create = useQrSplitCreate();
@@ -131,6 +137,16 @@ export function MojeQrKody({ onClose, toast }: { onClose?: () => void; toast?: (
           <div style={{ fontSize: 11.5, color: C.textTer }}>Rozdelenie honoráru · % ku každému QR</div>
         </div>
       </div>
+
+      {/* balík 43 (501): QR reťaze dobra, ktorú človek robí — ten istý QR ako v Reťazi dobra */}
+      {retaz && <div style={{ background: "rgba(var(--glass-rgb),.04)", border: "1.5px solid rgba(166,139,208,.45)", borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.gutter, display: "flex", flexDirection: "column", alignItems: "center", gap: SPACE.sm }}>
+        <div style={{ alignSelf: "stretch", display: "flex", flexDirection: "column", gap: 2 }}>
+          <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".07em", color: "#A68BD0" }}>REŤAZ DOBRA</span>
+          <span style={{ fontSize: 14, fontWeight: 700 }}>{bezRet ? zbierkaVRetazi(bezRet.zbierkaId)?.nazov ?? "Zbierka v rade" : "Reťaz teraz neposiela na žiadnu zbierku"}</span>
+        </div>
+        <span style={{ background: "#fff", padding: 8, borderRadius: 14, lineHeight: 0 }}><DeedQr data={`${ADRESA}/r/${retaz.id}${bezRet ? `/${bezRet.zbierkaId}` : ""}`} odznak="D++" retaz size={148} /></span>
+        <AkcieQrRetaze retaz={retaz} />
+      </div>}
 
       <button onClick={() => setKrok("novy")} style={{ width: "100%", height: 46, borderRadius: RADIUS.md, border: "none", marginBottom: SPACE.gutter, fontWeight: 700, fontSize: 14.5, fontFamily: "inherit", background: GRAD_ZELENY, color: "#fff", cursor: "pointer", boxShadow: "0 8px 26px rgba(31,191,143,.3)" }}>＋ Vytvoriť nový QR</button>
 
