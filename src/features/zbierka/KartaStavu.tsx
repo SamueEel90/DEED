@@ -52,7 +52,7 @@ function Pruh({ podiel, vyska, blik, koniec, useky = [] }: { podiel: number; vys
     <>
     <div style={{ position: "relative", height: vyska, borderRadius: 10, background: "var(--track)", overflow: "hidden" }}>
       {useky.length > 0 && <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 1, display: "flex", pointerEvents: "none", transformOrigin: "0 50%", transform: `scaleX(${p > 0 ? 1 : 0})`, transition: "transform .6s" }}>
-        {useky.map((u, i) => <span key={i} style={{ flex: "none", width: `${Math.max(0, Math.min(1, u.w)) * 100}%`, height: "100%", background: u.farba }} />)}
+        {useky.map((u, i) => <span key={i} style={{ flex: "none", width: `${Math.max(0, Math.min(1, u.w)) * 100}%`, minWidth: 3, height: "100%", background: u.farba, boxShadow: i ? "inset 1px 0 0 rgba(0,0,0,.25)" : "none" }} />)}{/* OPRAVY 491: každý úsek najmenej 3 px */}
       </div>}
       <div key={blik} className={`zb-pruh${blik ? " zb-blik" : ""}`}
         style={{ height: "100%", borderRadius: 10, background: "var(--hcPruh, linear-gradient(90deg, #4B7A35, #8DB866))", transformOrigin: "0 50%", transform: `scaleX(${p})` }} />

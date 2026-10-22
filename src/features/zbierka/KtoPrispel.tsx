@@ -6,7 +6,8 @@
 // Zdroje: vlastný vklad a pevná suma organizácie (usePrispievatelia), dorovnanie firmy (dary s „firma“),
 // Reťaz dobra (usePodporaRetazou), dar cez skutok (dary s „cezSkutok“). Nič vymyslené — prázdne skupiny sa neukážu.
 // ============================================================
-import type { CSSProperties, ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
+import { TlZbalit } from "@/features/verejny-profil/zbalit";
 import { usePrispievatelia } from "@/lib/farnostPrispela";
 import { usePodporaRetazou, inicialy, type PodporaRetazou, type Strana } from "@/lib/retaz";
 import { beziaceDorovnaniaNaCiel, useZmenyDorovnani } from "@/lib/dorovnanie";
@@ -22,9 +23,23 @@ export const FARBA_FIRMA = "#D9A93E";
 export const FARBA_RETAZ = "repeating-linear-gradient(135deg,#6B4E9A 0 4px,#A68BD0 4px 8px)";
 export const FARBA_SKUTOK = "repeating-linear-gradient(135deg,#3F6E2A 0 4px,#6E9E4A 4px 8px)";
 export const FARBA_LUDIA = "linear-gradient(90deg,#4B7A35,#8DB866)";
-/** OPRAVY 490: Reťaz dobra fialová (predtým zelená s pásikmi) — každý ďalší tvorca iný odtieň */
-const FIALOVE: [string, string][] = [["#6B4E9A", "#A68BD0"], ["#56407E", "#8E73BB"], ["#8467B4", "#BBA3E0"]];
-export const pasikyFialove = (i: number) => { const [a, b] = FIALOVE[i % FIALOVE.length]; return `repeating-linear-gradient(135deg,${a} 0 4px,${b} 4px 8px)`; };
+/** OPRAVY 491: viac subjektov rovnakého druhu — každý vlastný odtieň podľa poradia pripojenia (8 od tmavej po svetlú, natrvalo pri zbierke);
+ *  od 9. sa odtiene opakujú so širším pásikom, od 17. s užším. Reťaz a skutok sú šrafované, organizácia a firma plné (od 9. šrafované). */
+const PALETY: Record<"org" | "firma" | "retaz" | "skutok", [string, string][]> = {
+  retaz: [["#4A3570", "#7C62A8"], ["#56407E", "#8E73BB"], ["#6B4E9A", "#A68BD0"], ["#7A5BAA", "#B39BDB"], ["#8467B4", "#BBA3E0"], ["#9174BE", "#C7B2E6"], ["#9F84C8", "#D2C0EC"], ["#AE95D2", "#DDCFF1"]],
+  firma: [["#9C7418", "#C9982E"], ["#B0831F", "#D4A63C"], ["#C4922A", "#DDB04A"], ["#D9A93E", "#E8C56E"], ["#E0B654", "#EFD08A"], ["#E6C26C", "#F3D99E"], ["#EBCD84", "#F6E2B2"], ["#F0D89C", "#F9EAC6"]],
+  org: [["#1F4528", "#3B6E47"], ["#2F5E3A", "#4C7F58"], ["#3A6B45", "#5A8C66"], ["#467852", "#689A73"], ["#52855E", "#76A781"], ["#5E926B", "#84B48F"], ["#6A9F78", "#92C09D"], ["#77AC85", "#A0CCAB"]],
+  skutok: [["#2F5A1E", "#5A8A3A"], ["#3F6E2A", "#6E9E4A"], ["#4A7A33", "#7AAA55"], ["#55863C", "#86B660"], ["#609245", "#92C16B"], ["#6B9E4E", "#9ECC76"], ["#76AA57", "#AAD681"], ["#82B661", "#B5E08C"]],
+};
+/** prvý subjekt má základnú farbu z 490, ďalší striedavo svetlejšie a tmavšie odtiene (aby susedné úseky boli rozlíšiteľné) */
+const PORADIE: Record<keyof typeof PALETY, number[]> = { retaz: [2, 5, 0, 7, 3, 6, 1, 4], firma: [3, 6, 0, 5, 1, 7, 2, 4], org: [1, 4, 7, 2, 5, 0, 3, 6], skutok: [1, 4, 7, 2, 5, 0, 3, 6] };
+export const odtien = (druh: keyof typeof PALETY, i: number): string => {
+  const [a, b] = PALETY[druh][PORADIE[druh][i % 8]], kolo = Math.floor(i / 8), w = kolo === 0 ? 4 : kolo === 1 ? 7 : 2;
+  if ((druh === "org" || druh === "firma") && kolo === 0) return i === 0 ? (druh === "org" ? FARBA_ORG : FARBA_FIRMA) : a;
+  return `repeating-linear-gradient(135deg,${a} 0 ${w}px,${b} ${w}px ${w * 2}px)`;
+};
+/** OPRAVY 490: Reťaz dobra fialová (predtým zelená s pásikmi) */
+export const pasikyFialove = (i: number) => odtien("retaz", i);
 
 const eur = (n: number) => sumaEur(n);
 const pomerText = (p: number) => (p === 0.5 ? "1 : 0,5" : `1 : ${String(p).replace(".", ",")}`);
@@ -41,30 +56,32 @@ export function useKtoPrispel(refId: string, dary: DarRiadok[], orgZb?: OrgZbier
   const ret = usePodporaRetazou(refId).filter((p) => p.poslane > 0 || p.bezi);
   const r: Riadok[] = [];
   // 1 · organizácia — vlastný vklad
-  for (const p of org.filter((x) => x.vlastne && (x.suma ?? 0) > 0))
-    r.push({ k: `o${p.stranka}`, druh: "org", meno: p.meno, ini: inicialy(p.meno), ...(orgZb && orgZb.meno === p.meno ? { logo: orgZb.obrazok, strana: strOrg(p.meno) } : {}), text: <>vložila vlastné peniaze · <span style={{ whiteSpace: "nowrap" }}>{eur(p.suma!)}</span></>, suma: p.suma!, farba: FARBA_ORG });
+  for (const [io, p] of org.filter((x) => x.vlastne && (x.suma ?? 0) > 0).entries())
+    r.push({ k: `o${p.stranka}`, druh: "org", meno: p.meno, ini: inicialy(p.meno), ...(orgZb && orgZb.meno === p.meno ? { logo: orgZb.obrazok, strana: strOrg(p.meno) } : {}), text: <>vložila vlastné peniaze · <span style={{ whiteSpace: "nowrap" }}>{eur(p.suma!)}</span></>, suma: p.suma!, farba: odtien("org", io) });
   // 2 · firmy — pevná suma (Prispela) a dorovnanie (dorovnáva)
+  let fi = 0;
   for (const p of org.filter((x) => !x.vlastne && (x.suma ?? 0) > 0))
-    r.push({ k: `p${p.stranka}`, druh: "firma", meno: p.meno, ini: inicialy(p.meno), text: <>Prispela · <span style={{ whiteSpace: "nowrap" }}>{eur(p.suma!)}</span></>, suma: p.suma!, farba: FARBA_FIRMA, tap: () => otvorVerejnyProfil(p.stranka), tapText: "Pozri profil ›" });
+    r.push({ k: `p${p.stranka}`, druh: "firma", meno: p.meno, ini: inicialy(p.meno), text: <>Prispela · <span style={{ whiteSpace: "nowrap" }}>{eur(p.suma!)}</span></>, suma: p.suma!, farba: odtien("firma", fi++), tap: () => otvorVerejnyProfil(p.stranka), tapText: "Pozri profil ›" });
   const dor = beziaceDorovnaniaNaCiel(refId);
   const firmy = new Map<string, number>();
   for (const d of dary) if (d.firma) firmy.set(d.firma, (firmy.get(d.firma) ?? 0) + d.suma);
   for (const d of dor) if (!firmy.has(d.firma)) firmy.set(d.firma, 0);
   for (const [meno, suma] of firmy) {
     const d = dor.find((x) => x.firma === meno);
-    r.push({ k: `f${meno}`, druh: "firma", meno, logo: d?.firmaLogo, ini: inicialy(meno), text: <>dorovnáva {pomerText(d?.pomer ?? 1)} · zatiaľ <span style={{ whiteSpace: "nowrap" }}>{eur(suma)}</span></>, suma, farba: FARBA_FIRMA,
+    r.push({ k: `f${meno}`, druh: "firma", meno, logo: d?.firmaLogo, ini: inicialy(meno), text: <>dorovnáva {pomerText(d?.pomer ?? 1)} · zatiaľ <span style={{ whiteSpace: "nowrap" }}>{eur(suma)}</span></>, suma, farba: odtien("firma", fi++),
       ...(d?.firmaProfil ? { tap: () => otvorVerejnyProfil(d.firmaProfil!), tapText: "Pozri profil ›" } : {}) });
   }
   // 3 · Reťaz dobra
   ret.forEach((p: PodporaRetazou, i) => r.push({ k: `r${p.retaz}`, druh: "retaz", meno: p.meno, strana: p.robi, ini: inicialy(p.meno), logo: p.robi?.foto,
-    text: <>Reťaz dobra · {p.pct}{" "}% · zatiaľ <span style={{ whiteSpace: "nowrap" }}>{eur(p.poslane)}</span></>, suma: p.poslane, farba: pasikyFialove(i),
+    text: <>Reťaz dobra · {p.pct}{" "}% · zatiaľ <span style={{ whiteSpace: "nowrap" }}>{eur(p.poslane)}</span></>, suma: p.poslane, farba: odtien("retaz", i),
     ...(p.stranka ? { tap: () => otvorVerejnyProfil(p.stranka!), tapText: "Pozri profil ›" } : {}) }));
   // 4 · skutky, ktoré zbierajú na zbierku
   // OPRAVY 490: skutok podľa id (0140) — „Pozri ›“ otvorí priamo skutok; staré dary bez id otvoria stránku charity
   const sk = new Map<string, { nazov: string; id?: string; suma: number }>();
   for (const d of dary) if (d.cezSkutok) { const k = d.cezSkutokId ?? `n:${d.cezSkutok}`; const x = sk.get(k); sk.set(k, { nazov: d.cezSkutok, id: d.cezSkutokId, suma: (x?.suma ?? 0) + d.suma }); }
   const strankaZb = async () => objektZbierky(refId)?.stranka ?? (refId.includes(":") ? refId.split(":")[0] : await strankaZbierky(refId));
-  for (const [k, x] of sk) r.push({ k: `s${k}`, druh: "skutok", meno: orgZb?.meno ?? "Skutok", ini: inicialy(orgZb?.meno ?? "S"), logo: orgZb?.obrazok, strana: orgZb ? strOrg(orgZb.meno) : undefined, text: <>skutok {x.nazov} · zatiaľ <span style={{ whiteSpace: "nowrap" }}>{eur(x.suma)}</span></>, suma: x.suma, farba: FARBA_SKUTOK,
+  let si = 0;
+  for (const [k, x] of sk) r.push({ k: `s${k}`, druh: "skutok", meno: orgZb?.meno ?? "Skutok", ini: inicialy(orgZb?.meno ?? "S"), logo: orgZb?.obrazok, strana: orgZb ? strOrg(orgZb.meno) : undefined, text: <>skutok {x.nazov} · zatiaľ <span style={{ whiteSpace: "nowrap" }}>{eur(x.suma)}</span></>, suma: x.suma, farba: odtien("skutok", si++),
     tap: () => { void strankaZb().then((st) => { if (st) otvorVerejnyProfil(st, x.id ? { doSkutku: x.id } : undefined); }); }, tapText: "Pozri ›" });
   return { riadky: r, cezSkutok: [...sk.values()].reduce((a, b) => a + b.suma, 0) };
 }
@@ -90,12 +107,37 @@ const VZHLAD: Record<Riadok["druh"], { bg: string; bd: string; ink: string; kruh
 };
 
 /** riadky pod pruhom — foto/logo · meno · štít · čo robí · suma */
+const DALSICH: Record<Riadok["druh"], (n: number) => string> = {
+  org: (n) => n === 1 ? "a ďalšia organizácia" : `a ďalších ${n} ${n < 5 ? "organizácie" : "organizácií"}`,
+  firma: (n) => n === 1 ? "a ďalšia firma" : `a ďalších ${n} ${n < 5 ? "firmy" : "firiem"}`,
+  retaz: (n) => n === 1 ? "a ďalšia reťaz" : `a ďalších ${n} ${n < 5 ? "reťaze" : "reťazí"}`,
+  skutok: (n) => n === 1 ? "a ďalší skutok" : `a ďalších ${n} ${n < 5 ? "skutky" : "skutkov"}`,
+};
+/** OPRAVY 491: z každého druhu 3 najväčšie + „a ďalších N · spolu … € · Zobraziť všetky ›“ (rozbalí sa tu, dole Zbaliť) */
 export function RiadkyKtoPrispel({ riadky }: { riadky: Riadok[] }) {
+  const [otv, setOtv] = useState<Set<string>>(new Set());
   if (!riadky.length) return null;
+  const vystup: (Riadok | { dalsie: Riadok["druh"]; n: number; suma: number } | { zbal: Riadok["druh"] })[] = [];
+  for (const druh of ["org", "firma", "retaz", "skutok"] as const) {
+    const g = riadky.filter((x) => x.druh === druh).sort((a, b) => b.suma - a.suma);
+    if (g.length <= 3 || otv.has(druh)) { vystup.push(...g); if (g.length > 3) vystup.push({ zbal: druh }); continue; }
+    vystup.push(...g.slice(0, 3));
+    const zv = g.slice(3);
+    vystup.push({ dalsie: druh, n: zv.length, suma: zv.reduce((a, x) => a + x.suma, 0) });
+  }
+  const prepni = (d: string, on: boolean) => setOtv((x) => { const n = new Set(x); if (on) n.add(d); else n.delete(d); return n; });
   return <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
-    {riadky.map((r) => {
+    {vystup.map((r) => {
+      if ("zbal" in r) return <TlZbalit key={`z${r.zbal}`} onZbal={() => prepni(r.zbal, false)} styl={{ color: VZHLAD[r.zbal].ink }} />;
+      if ("dalsie" in r) return <button key={`d${r.dalsie}`} type="button" onClick={() => prepni(r.dalsie, true)} aria-expanded={false}
+        style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 48, padding: "8px 12px", borderRadius: 14, border: `1px dashed ${VZHLAD[r.dalsie].bd}`, background: "transparent", cursor: "pointer", fontFamily: "inherit", color: "var(--ink2)", textAlign: "left", boxShadow: "none" }}>
+        <span style={{ flex: 1, minWidth: 0, fontSize: 13, lineHeight: 1.4 }}>{DALSICH[r.dalsie](r.n)} · spolu <span style={{ whiteSpace: "nowrap", fontWeight: 800, color: "var(--ink)" }}>{eur(r.suma)}</span></span>
+        <span style={{ flex: "none", whiteSpace: "nowrap", fontSize: 13, fontWeight: 800, color: VZHLAD[r.dalsie].ink }}>Zobraziť všetky ›</span>
+      </button>;
       const v = VZHLAD[r.druh];
+      const viac = riadky.filter((x) => x.druh === r.druh).length > 1; // OPRAVY 491: pri viacerých rovnakého druhu pásik vlastného odtieňa
       const obsah = <>
+        {viac && <span aria-hidden="true" style={{ flex: "none", alignSelf: "stretch", width: 6, margin: "-4px 0", borderRadius: 3, background: r.farba }} />}
         <span aria-hidden="true" style={{ flex: "none", width: 40, height: 40, borderRadius: "50%", background: r.logo ? `url("${r.logo}") center/cover no-repeat #fff` : v.kruh, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800 }}>{r.logo ? "" : r.ini}</span>
         <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2, textAlign: "left" }}>
           <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}><b style={{ fontSize: 14, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.meno}</b>{r.strana && <StitStrany s={r.strana} h={22} />}</span>
