@@ -1,5 +1,6 @@
 // KARTA 13 · Zbierka cez tvorcu — „Kam ide tvoj dar" (zbierka + tmavá karta tvorcu) a malá karta „Celá zbierka".
 // Počet sledovateľov ani karma sa nezobrazujú. Odkazy na obsah mení tvorca kedykoľvek (nie sú súčasťou zapečatenia).
+import { useKtoPrispel, usekyPruhu, FARBA_LUDIA } from "./KtoPrispel";
 import { useState } from "react";
 import { useDarcovia } from "@/lib/darcovia";
 import { StityRad } from "@/components/stit";
@@ -83,8 +84,10 @@ export function KamIdeDar({ nazovZbierky, fotoZbierky, tvorca, onStrankaTvorcu: 
 }
 
 /** malá karta „Celá zbierka" pod kartou stavu cez tvorcu */
-export function CelaZbierka({ refId, zaklad, ciel, ludiaZaklad }: { refId: string; zaklad: number; ciel?: number | null; ludiaZaklad: number }) {
+export function CelaZbierka({ refId, zaklad, ciel, ludiaZaklad, nazov }: { refId: string; zaklad: number; ciel?: number | null; ludiaZaklad: number;
+  /** OPRAVY 492 · balík 42: verzia reťaze — „Celá zbierka {názov}“ a pruh s úsekmi (firma zlatá · reťaz fialová · ľudia) */ nazov?: string }) {
   const dary = useDarcovia(refId);
+  const kto = useKtoPrispel(refId, dary);
   const suma = zaklad + dary.reduce((a, r) => a + r.suma, 0);
   const ludia = ludiaZaklad + dary.length;
   const riadok = { display: "flex", alignItems: "center", gap: 10, margin: "-4px 0 12px", padding: "12px 14px", borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", fontSize: 12.5, fontVariantNumeric: "tabular-nums" } as const;
@@ -92,9 +95,11 @@ export function CelaZbierka({ refId, zaklad, ciel, ludiaZaklad }: { refId: strin
     const p = Math.min(1, suma / ciel);
     return (
       <div style={riadok}>
-        <span style={{ flex: "none", fontWeight: 700, color: "var(--ink3)" }}>Celá zbierka</span>
-        <div style={{ position: "relative", flex: 1, height: 5, borderRadius: 5, background: "var(--track)", overflow: "hidden" }}>
-          <div className="zb-pruh" style={{ position: "absolute", inset: 0, background: "var(--green)", transformOrigin: "0 50%", transform: `scaleX(${p})` }} />
+        <span style={{ flex: "none", fontWeight: 700, color: "var(--ink3)", maxWidth: nazov ? "40%" : undefined, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nazov ? `Celá zbierka ${nazov}` : "Celá zbierka"}</span>
+        <div style={{ position: "relative", flex: 1, height: nazov ? 7 : 5, borderRadius: 5, background: "var(--track)", overflow: "hidden", display: "flex" }}>
+          {nazov ? <>{usekyPruhu(kto.riadky, ciel).map((u, i) => <span key={i} style={{ flex: "none", width: `${u.w * 100}%`, minWidth: u.w > 0 ? 3 : 0, height: "100%", background: u.farba }} />)}
+            <span style={{ flex: "none", width: `${Math.max(0, p - usekyPruhu(kto.riadky, ciel).reduce((a, u) => a + u.w, 0)) * 100}%`, height: "100%", background: FARBA_LUDIA }} /></>
+            : <div className="zb-pruh" style={{ position: "absolute", inset: 0, background: "var(--green)", transformOrigin: "0 50%", transform: `scaleX(${p})` }} />}
         </div>
         <span style={{ flex: "none", fontWeight: 800 }}>{eK(suma)} z {eK(ciel)}</span>
         <span style={{ flex: "none", fontWeight: 800, color: "var(--green)" }}>{Math.floor((suma / ciel) * 100)} %</span>

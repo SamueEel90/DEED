@@ -11,6 +11,12 @@ import { ZbierkaModul } from "./ZbierkaModul";
 
 const tl = { minHeight: 48, padding: "0 18px", borderRadius: 14, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--ink)" } as const;
 
+/** „Späť na prenos“: prehliadač späť, keď je kam (odkaz z popisu videa); inak zostane stránka toho, kto reťazí */
+function spatNaPrenos() {
+  if (typeof document !== "undefined" && document.referrer && window.history.length > 1) { window.history.back(); return; }
+  zavriVerziuRetaze();
+}
+
 export function VerziaRetazeVrstva() {
   const c = useVerziaRetaze();
   const [st, setSt] = useState<{ c: CielVerzie; v: Verzia } | null>(null);
@@ -37,7 +43,12 @@ export function VerziaRetazeVrstva() {
     <div className="sc-tokeny" role="dialog" aria-modal="true" aria-label="Zbierka cez reťaz dobra" style={{ position: "fixed", inset: 0, zIndex: 1100, background: "var(--bg)", color: "var(--ink)", overflowY: "auto" }}>
       {!v && <div style={{ padding: "40px 16px", textAlign: "center", fontSize: 15, color: "var(--ink3)" }}>Načítavam…</div>}
       {v?.druh === "ok" && <div style={{ maxWidth: 1240, margin: "0 auto", padding: 14 }}>
-        <ZbierkaModul zbierka={v.zbierka} miesto="tvorca" onBack={zavriVerziuRetaze} spatNazov={c.zQr && v.stranka ? "Späť na stránku" : "Späť"} />
+        <ZbierkaModul zbierka={v.zbierka} miesto="tvorca" onBack={zavriVerziuRetaze} spatNazov="Späť"
+          verziaRetaze={{
+            // balík 42: z QR / odkazu „Späť na prenos“ (tam, odkiaľ prišiel), z hlavnej zbierky späť do nej
+            spat: c.zQr ? { text: "Späť na prenos", onClick: spatNaPrenos } : { text: "Späť", onClick: zavriVerziuRetaze },
+            ...(v.stranka ? { stranka: { text: `Stránka · ${v.zbierka.tvorca?.meno ?? ""}`, onClick: () => { const s = v.stranka!; zavriVerziuRetaze(); otvorVerejnyProfil(s); } } } : {}),
+          }} />
       </div>}
       {(v?.druh === "nebezi" || v?.druh === "chyba") && <div style={{ maxWidth: 520, margin: "0 auto", padding: "calc(24px + env(safe-area-inset-top, 0px)) 16px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
         <b style={{ fontSize: 20 }}>{v.druh === "nebezi" ? "Reťaz teraz neposiela na žiadnu zbierku" : "Zbierku sa nepodarilo načítať"}</b>

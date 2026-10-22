@@ -15,6 +15,7 @@ import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import PodrzTlacidlo from "./PodrzTlacidlo";
 import { potvrditTuknutim } from "./Platba";
 import { sumaEur } from "@/lib/suma";
+import { kopiruj } from "@/lib/zdielanie";
 
 type Krok = "nastavenie" | "vyber" | "zhrnutie" | "bezi";
 type VRade = { zbierkaId: string; pct: number };
@@ -285,6 +286,8 @@ function RetazDobraOkno({ zbierka, onClose }: { zbierka: ZbierkaHaroka; onClose:
           <span style={{ background: "#fff", padding: 10, borderRadius: 16, lineHeight: 0 }}>
             <DeedQr data={`${ADRESA}/r/${retaz.id}${b ? `/${b.zbierkaId}` : ""}`} odznak="D++" retaz size={180} />
           </span>
+          {/* balík 42: QR aj odkaz = jedna adresa (na PC sa QR vo videu kliknúť nedá — odkaz do popisu alebo chatu prenosu) */}
+          <KopirovatOdkaz odkaz={`${ADRESA}/r/${retaz.id}${b ? `/${b.zbierkaId}` : ""}`} />
           <div style={{ padding: "9px 16px", borderRadius: 999, background: "#1D211B", color: "#F1ECE1", fontSize: 14.5, fontWeight: 800, textAlign: "center" }}>{stitokDarcu(b?.pct ?? 100, b?.zbierkaId ?? null)}</div>
           <div style={{ fontSize: 12.5, color: "var(--ink3)", fontVariantNumeric: "tabular-nums" }}>Dostali ste {e2(retaz.dostal)} · ďalej poslané {e2(retaz.poslane)}</div>
         </div>
@@ -331,4 +334,18 @@ function RetazDobraOkno({ zbierka, onClose }: { zbierka: ZbierkaHaroka; onClose:
     {/* balík 8 C · 10: Testovanie v plnej miere — len testovací režim */}
     {TESTOVACIA && krok !== "vyber" && <TestovanieRetaze onOdznova={() => { setChyst(null); setChyba(null); setKrok("nastavenie"); }} />}
   </div></Harok>;
+}
+
+/** balík 42 · „Kopírovať odkaz“ pri QR toho, kto reťazí → na tlačidle „Skopírované ✓“ */
+function KopirovatOdkaz({ odkaz }: { odkaz: string }) {
+  const [stav, setStav] = useState<"" | "ok" | "chyba">("");
+  useEffect(() => { if (!stav) return; const t = window.setTimeout(() => setStav(""), 2500); return () => window.clearTimeout(t); }, [stav]);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, width: "100%" }}>
+      <span style={{ fontSize: 12.5, color: "var(--ink3)", overflowWrap: "anywhere", textAlign: "center" }}>{odkaz.replace(/^https:\/\//, "")}</span>
+      <button type="button" aria-live="polite" onClick={() => { void kopiruj(odkaz).then((ok) => setStav(ok ? "ok" : "chyba")); }}
+        style={{ minHeight: 44, padding: "0 18px", borderRadius: 12, border: `1.5px solid ${stav === "ok" ? "var(--green)" : "var(--cardBd)"}`, background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: stav === "ok" ? "var(--gInk)" : "var(--ink)", boxShadow: "none" }}>
+        {stav === "ok" ? "Skopírované ✓" : stav === "chyba" ? "Nepodarilo sa, skúste znova" : "Kopírovať odkaz"}
+      </button>
+    </div>);
 }

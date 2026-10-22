@@ -96,7 +96,12 @@ function nacitajDev(): DevStav {
 }
 function ulozDev(v: DevStav) { try { localStorage.setItem(KLUC_DEV, JSON.stringify(v)); } catch { /* LS */ } }
 
-export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, onZavriet, zoStrankyOrg, onOtvorOrg, stav, onStav, bocny, bez, ktoVoli, pohreb, pietne, hore, bezDarcov }: {
+/** OPRAVY 492 · balík 42: zelené tlačidlá nad modulom verzie reťaze (Späť na prenos · Stránka …) */
+const zeleneTl: CSSProperties = { flex: "1 1 0", minWidth: 0, minHeight: 44, padding: "0 12px", border: "none", borderRadius: 12, background: "#4B7A35", color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "none" };
+
+export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, onZavriet, zoStrankyOrg, onOtvorOrg, stav, onStav, bocny, bez, ktoVoli, pohreb, pietne, hore, bezDarcov, verziaRetaze }: {
+  /** OPRAVY 492 · balík 42: modul zbierky u toho, kto reťazí — hore dve zelené tlačidlá, pod nimi Za zbierku zodpovedá, bez Kam ide tvoj dar */
+  verziaRetaze?: { spat: { text: string; onClick: () => void }; stranka?: { text: string; onClick: () => void } };
   /** OPRAVY 204: riadok nad modulom v bočnom stĺpci namiesto nadpisu (ZBIERKU ORGANIZUJE · meno · Pozri profil ›) */
   hore?: React.ReactNode;
   /** OPRAVY 204: darcov ukazuje stránka inde (PC: pod parte) */
@@ -159,7 +164,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
   const [predDarom, setPredDarom] = useState(stavPredDarom);
   // hárky z karty 12 (zatiaľ pôvodné hárky appky — nový vzhľad príde s ich kartami)
   const [harok, setHarok] = useState<"pravidelna" | "firma" | "retaz" | "zdielat" | "podporit" | null>(null);
-  const polozky = pripojene(miesto, k).filter((p) => !bez?.includes(p.kluc) && !(p.kluc === "krypto" && zbierka.eurc === false) && !(p.kluc === "pravidelna" && zbierka.pravidelna === false) && !(bezDarcov && p.kluc === "darcovia"));
+  const polozky = pripojene(miesto, k).filter((p) => !(verziaRetaze && (p.kluc === "poleZodpoveda" || p.kluc === "kamIdeDar")) && !bez?.includes(p.kluc) && !(p.kluc === "krypto" && zbierka.eurc === false) && !(p.kluc === "pravidelna" && zbierka.pravidelna === false) && !(bezDarcov && p.kluc === "darcovia"));
   const pc = useSirokeOkno();
   // karta 13 — tvorca (na mieste tvorca vždy, na súkromnej len so splitom)
   const cezTvorcaMiesto = miesto === "tvorca" || (miesto === "sukromna" && dev.split);
@@ -192,8 +197,8 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
       return (
         <div key={p.kluc} className="zb-pol" style={{ padding: "0 16px" }}>
           <KartaStavu refId={zbierka.id} zaklad={0} ciel={null} ludiaZaklad={0} tempo={tempoRezim} koniecPruhu={koniecPruhu}
-            cezTvorcu={{ id: tvorca.id, menoAkuzativ: tvorca.menoAkuzativ }} />
-          <CelaZbierka refId={zbierka.id} zaklad={zakladMimoRiadkov(zbierka.id, zbierka.vyzbierane ?? 0)} ciel={ciel} ludiaZaklad={zakladMimoRiadkov(zbierka.id, zbierka.ludia ?? 0)} />
+            cezTvorcu={{ id: tvorca.id, menoAkuzativ: tvorca.menoAkuzativ }} fialova={!!verziaRetaze} />
+          <CelaZbierka nazov={verziaRetaze ? zbierka.nazov : undefined} refId={zbierka.id} zaklad={zakladMimoRiadkov(zbierka.id, zbierka.vyzbierane ?? 0)} ciel={ciel} ludiaZaklad={zakladMimoRiadkov(zbierka.id, zbierka.ludia ?? 0)} />
         </div>
       );
     }
@@ -243,7 +248,13 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
   // karta 02 — hlavička, galéria, nadpis a text (všade okrem hárku Podporiť DEED)
   const vrch = miesto !== "podporitDeed" ? (
     <div className="zb-pol" style={{ padding: "4px 16px 0" }}>
-      <Hlavicka cisloZbierky={cisloObjektu("Z", zbierka.id, zbierka.vs)} zverejnene={zbierka.zverejnene} onBack={onBack} spatNazov={spatNazov} onZavriet={onZavriet} onMoznosti={() => setMenu("menu")} />
+      {verziaRetaze ? <>
+        <div style={{ display: "flex", gap: 8, padding: "6px 0 12px" }}>
+          <button type="button" onClick={verziaRetaze.spat.onClick} style={zeleneTl}>‹ {verziaRetaze.spat.text}</button>
+          {verziaRetaze.stranka && <button type="button" onClick={verziaRetaze.stranka.onClick} style={zeleneTl}><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{verziaRetaze.stranka.text}</span>{"\u00A0"}›</button>}
+        </div>
+        <div style={{ margin: "0 -16px" }}>{vykresli({ kluc: "poleZodpoveda", hodnota: "Za zbierku zodpovedá" })}</div>
+      </> : <Hlavicka cisloZbierky={cisloObjektu("Z", zbierka.id, zbierka.vs)} zverejnene={zbierka.zverejnene} onBack={onBack} spatNazov={spatNazov} onZavriet={onZavriet} onMoznosti={() => setMenu("menu")} />}
       <Galeria media={zbierka.media ?? []} nahlady />
       <NadpisText sledovat={{ refId: zbierka.id, typ: "charita", modul: "charity", nazov: zbierka.nazov, ciel: zbierka.ciel }} nazov={zbierka.nazov} text={zbierka.popis} otvoreny={st.text as boolean | undefined} onOtvoreny={(v) => zmenStav({ text: v })} />
     </div>
