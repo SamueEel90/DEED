@@ -531,7 +531,14 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   // OPRAVY 404: pracovník charity vidí len zapnuté časti, zvyšok je zamknutý
   { const treba = typ === "charita" ? pravoPreSub(sub) : null; if (treba && !smie(mojePrava, treba)) obsah = <NematePovolene />; }
 
-  const aktivnaSkupina: string | null = sub === null ? null : sub === "nast" || (sub as string).startsWith("n:") ? "nast" : sub === "penazenka" || (sub as string).startsWith("g_") ? sub : (sub as string).startsWith("x:") || sub === "profil" || sub === "vsetko" ? null : SKUPINA_POLOZKY(sub as PolozkaSpravy, typ);
+  const podNast = sub !== null && (sub as string).startsWith("n:"); // obrazovka Nastavení — otvoriť sa dá aj zo sekcie (Ľudia → Štatutár a pracovníci)
+  const vlastnaSkupina: string | null = sub === null || podNast ? null : sub === "nast" ? "nast" : sub === "penazenka" || (sub as string).startsWith("g_") ? sub : (sub as string).startsWith("x:") || sub === "profil" || sub === "vsetko" ? null : SKUPINA_POLOZKY(sub as PolozkaSpravy, typ);
+  // OPRAVY 495: podstránka (napr. Ľudia → Štatutár a pracovníci) nechá zvýraznenú sekciu, z ktorej sa otvorila
+  const [poslSkupina, setPoslSkupina] = useState<string | null>(null);
+  const zPoslednej = sub !== null && sub !== "profil" && sub !== "vsetko";
+  if (vlastnaSkupina !== null && vlastnaSkupina !== poslSkupina) setPoslSkupina(vlastnaSkupina);
+  else if (sub === null && poslSkupina !== null) setPoslSkupina(null);
+  const aktivnaSkupina: string | null = vlastnaSkupina ?? (zPoslednej ? poslSkupina : null) ?? (podNast ? "nast" : null);
 
   // OPRAVY 147: jeden testovací prepínač (PrepinacPodania) — PC v hlavičke, mobil a tablet sivý pás úplne dole
   const dev = TESTOVACIA && FLAGS.dev_tier_switcher && (
