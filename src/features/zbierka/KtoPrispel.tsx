@@ -11,6 +11,7 @@ import { usePrispievatelia } from "@/lib/farnostPrispela";
 import { usePodporaRetazou, inicialy, type PodporaRetazou, type Strana } from "@/lib/retaz";
 import { beziaceDorovnaniaNaCiel, useZmenyDorovnani } from "@/lib/dorovnanie";
 import { objektZbierky } from "@/lib/darZbierky";
+import { strankaZbierky } from "@/lib/novaZbierka";
 import type { DarRiadok } from "@/lib/darcovia";
 import { otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
 import { StitStrany } from "./StranaZmluvy";
@@ -59,12 +60,13 @@ export function useKtoPrispel(refId: string, dary: DarRiadok[], orgZb?: OrgZbier
     text: <>Reťaz dobra · {p.pct}{" "}% · zatiaľ <span style={{ whiteSpace: "nowrap" }}>{eur(p.poslane)}</span></>, suma: p.poslane, farba: pasikyFialove(i),
     ...(p.stranka ? { tap: () => otvorVerejnyProfil(p.stranka!), tapText: "Pozri profil ›" } : {}) }));
   // 4 · skutky, ktoré zbierajú na zbierku
-  const sk = new Map<string, number>();
-  for (const d of dary) if (d.cezSkutok) sk.set(d.cezSkutok, (sk.get(d.cezSkutok) ?? 0) + d.suma);
-  const o = objektZbierky(refId);
-  for (const [nazov, suma] of sk) r.push({ k: `s${nazov}`, druh: "skutok", meno: orgZb?.meno ?? "Skutok", ini: inicialy(orgZb?.meno ?? "S"), logo: orgZb?.obrazok, strana: orgZb ? strOrg(orgZb.meno) : undefined, text: <>skutok {nazov} · zatiaľ <span style={{ whiteSpace: "nowrap" }}>{eur(suma)}</span></>, suma, farba: FARBA_SKUTOK,
-    ...(o?.stranka ? { tap: () => otvorVerejnyProfil(o.stranka), tapText: "Pozri ›" } : {}) });
-  return { riadky: r, cezSkutok: [...sk.values()].reduce((a, b) => a + b, 0) };
+  // OPRAVY 490: skutok podľa id (0140) — „Pozri ›“ otvorí priamo skutok; staré dary bez id otvoria stránku charity
+  const sk = new Map<string, { nazov: string; id?: string; suma: number }>();
+  for (const d of dary) if (d.cezSkutok) { const k = d.cezSkutokId ?? `n:${d.cezSkutok}`; const x = sk.get(k); sk.set(k, { nazov: d.cezSkutok, id: d.cezSkutokId, suma: (x?.suma ?? 0) + d.suma }); }
+  const strankaZb = async () => objektZbierky(refId)?.stranka ?? (refId.includes(":") ? refId.split(":")[0] : await strankaZbierky(refId));
+  for (const [k, x] of sk) r.push({ k: `s${k}`, druh: "skutok", meno: orgZb?.meno ?? "Skutok", ini: inicialy(orgZb?.meno ?? "S"), logo: orgZb?.obrazok, strana: orgZb ? strOrg(orgZb.meno) : undefined, text: <>skutok {x.nazov} · zatiaľ <span style={{ whiteSpace: "nowrap" }}>{eur(x.suma)}</span></>, suma: x.suma, farba: FARBA_SKUTOK,
+    tap: () => { void strankaZb().then((st) => { if (st) otvorVerejnyProfil(st, x.id ? { doSkutku: x.id } : undefined); }); }, tapText: "Pozri ›" });
+  return { riadky: r, cezSkutok: [...sk.values()].reduce((a, b) => a + b.suma, 0) };
 }
 
 /** úseky pruhu v poradí organizácia → firmy → reťaze → skutky (ľudia = zvyšok pruhu) */

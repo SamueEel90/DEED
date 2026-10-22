@@ -22,7 +22,7 @@ import { verejneOznamy, useZmenyOznamov, type Oznam } from "@/lib/oznamy";
 import { pracaZPonuky } from "@/features/rola/PonukyPrace";
 import { centralnaZPamate, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
 import { cistyText } from "@/lib/richtext";
-import { otvorVerejnyProfil, useVerejnyProfilOtvoreny, verejnyProfilKluc, zavriVerejnyProfil, vrstvaProfiluPripoj, nahladZoSpravy, cielOznamu, zrusDoOznamu } from "./otvor";
+import { otvorVerejnyProfil, useVerejnyProfilOtvoreny, verejnyProfilKluc, zavriVerejnyProfil, vrstvaProfiluPripoj, nahladZoSpravy, cielOznamu, zrusDoOznamu, cielSkutku, zrusDoSkutku } from "./otvor";
 import { VrstvaProfilu, naZbierkaData } from "./casti";
 import { useVzhlad, maVybranyVzhlad, type Vzhlad } from "@/lib/vzhladStranky";
 import { nacitajTiery } from "@/features/rola/stav";
@@ -185,6 +185,16 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad }: { kluc: string; onBa
   useEffect(() => { if (idOznamov) void nacitajUcasti(idOznamov.split(",")); }, [idOznamov]);
   const [profCh, setProfCh] = useState<ProfilStranky | null>(() => (kCh ? profilZPamate(kCh).ulozeny : null));
   useEffect(() => { if (!kCh) return; let ziva = true; void nacitajProfil(kCh).then((z) => { if (ziva) setProfCh(z.ulozeny); }); void nacitajZbierkyStranky(kCh); void nacitajCentralnuZbierku(kCh); void nacitajSkutkyStranky(kCh); void nacitajOznamyStranky(kCh); nacitajPrud(); return () => { ziva = false; }; }, [kCh]);
+  // OPRAVY 490: z modulu zbierky „Pozri ›“ pri skutku → detail toho skutku hneď po načítaní skutkov stránky
+  useEffect(() => {
+    const id = cielSkutku();
+    if (!id || !kCh || !profil0) return;
+    const sk = (skutkyStrankyZPamate(kCh) ?? skutkyOrg(kCh)).find((x) => x.id === id);
+    if (!sk) return;
+    const t = skutokProfilu(sk, profil0);
+    zrusDoSkutku();
+    setZaznam({ id: t.id, typ: "sk", d: t.d ?? "", m: t.m ?? "", rok: t.rok ?? new Date().getFullYear(), nazov: t.nazov, s: t.popis, foto: t.foto });
+  });
   if (!profil0) return null;
   const profil1 = sUdajmiCharity(sHlavnouZUctu(ts.prazdny ? vyprazdni(profil0) : profil0), profilNahlad ?? profCh, tierStranky);
   const profil = profil1.typ === "charita" && regV.nazov.trim() ? { ...profil1, meno: regV.nazov.trim() } : profil1;

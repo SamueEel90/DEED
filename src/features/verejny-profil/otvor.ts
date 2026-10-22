@@ -21,7 +21,11 @@ const zmena = () => { verzia++; posluchaci.forEach((f) => f()); };
 let zoSpravy = false;
 // OPRAVY 315: ťuk na upozornenie „Farár zverejnil váš príspevok“ → stránka presne pri príspevku
 let doOznamu: string | null = null;
-export function otvorVerejnyProfil(k: string, o?: { zoSpravy?: boolean; doOznamu?: string; doVecnej?: string }) { otvorene = true; kluc = k; zoSpravy = !!o?.zoSpravy; doOznamu = o?.doOznamu ?? null; doVecnej = o?.doVecnej ?? null; zmena(); }
+export function otvorVerejnyProfil(k: string, o?: { zoSpravy?: boolean; doOznamu?: string; doVecnej?: string; doSkutku?: string }) { otvorene = true; kluc = k; zoSpravy = !!o?.zoSpravy; doOznamu = o?.doOznamu ?? null; doVecnej = o?.doVecnej ?? null; doSkutku = o?.doSkutku ?? null; zmena(); }
+// OPRAVY 490: „Pozri ›“ pri skutku v module zbierky → stránka charity s otvoreným detailom skutku (číta sa bez mazania, zmaže zrusDoSkutku)
+let doSkutku: string | null = null;
+export const cielSkutku = (): string | null => doSkutku;
+export function zrusDoSkutku() { doSkutku = null; }
 // OPRAVY 320 doplnok: z upozornenia „Poďakovanie · …“ → stránka s detailom vecnej zbierky (číta sa bez mazania, zmaže zrusDoVecnej)
 let doVecnej: string | null = null;
 export const cielVecnej = (): string | null => doVecnej;
