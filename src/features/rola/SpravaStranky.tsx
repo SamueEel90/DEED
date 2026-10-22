@@ -1498,7 +1498,7 @@ function ObrZbierky(s: Spolocne) {
       </button>);
   };
   const vysvetlenie = vysvetli && <div role="status" style={{ borderRadius: 16, background: "var(--goldBg)", border: "1.5px solid #C9A24A", padding: "14px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
-    <b style={{ fontSize: 15.5 }}>{vysvetli === "segment" ? "Sektorová zbierka" : vysvetli === "centralna" ? "Centrálna zbierka" : "Vecná zbierka"} je od programu {odProgramu(vysvetli)}</b>
+    <b style={{ fontSize: 15.5 }}>{vysvetli === "segment" ? "Sektorová zbierka" : vysvetli === "centralna" ? "Centrálna zbierka" : "Materiálna zbierka"} je od programu {odProgramu(vysvetli)}</b>
     <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>{vysvetli === "segment" ? "Jedna téma zo stanov, napríklad Seniori, s vlastným transparentným účtom a QR. Beží popri centrálnej zbierke, len na vašej stránke." : vysvetli === "centralna" ? "Pravidelná podpora celej vašej činnosti. Je len na vašej stránke, nie vo feede." : "Ľudia prinesú veci namiesto peňazí a zapíšu sa cez QR pri krabici."} Máte program {PROGRAM_NAZOV[tier]}.</span>
     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
       <button type="button" onClick={() => otvor("n:program")} style={{ ...zeleneTl, height: 48 }}>Porovnať programy ›</button>
@@ -1514,7 +1514,7 @@ function ObrZbierky(s: Spolocne) {
     {vidnoPolozku("segment", tier) && volba(IK_SEKTOR, "Sektorová zbierka", !zamok("segment") && !cenBezi ? "najprv založte centrálnu zbierku" : "jedna téma zo stanov · vlastný transparentný účet",
       () => { if (zamok("segment")) { setVysvetli("segment"); return; } if (!cenBezi) { s.zavriVyberZb?.(); otvorCen(0); return; } s.zavriVyberZb?.(); chcemNovySektor(); otvorCen(0); }, { id: "segment", siva: !cenBezi })}
     {volba(IK_BEZNA, "Bežná zbierka", "pre niekoho, s cieľom · ide do feedu", () => s.novaBezna?.())}
-    {vidnoPolozku("materialne", tier) && volba("M12 3l8 4.5v9L12 21l-8-4.5v-9zM12 12l8-4.5M12 12v9M12 12L4 7.5", "Vecná zbierka", "veci namiesto peňazí",
+    {vidnoPolozku("materialne", tier) && volba("M12 3l8 4.5v9L12 21l-8-4.5v-9zM12 12l8-4.5M12 12v9M12 12L4 7.5", "Materiálna zbierka", "veci namiesto peňazí",
       () => { if (zamok("materialne")) { setVysvetli("materialne"); return; } s.zavriVyberZb?.(); otvor("materialne"); }, { id: "materialne" })}
     {vysvetlenie}
   </section>;
