@@ -266,3 +266,11 @@
 
 - **Sekcia 6 OPRAVENÁ:** reťaz robí ktokoľvek registrovaný, kto dostáva dary (nie len tvorca). Jediný vzor: prototyp „Retaz dobra - kto a s kym" + RetazDobra.tsx; starý prototyp „Retaz dobra.dc.html" NEPLATÍ → Pasce.
 - **Nová sekcia 12 (23. 10.):** schválený prototyp „QR toho kto retazi - co vidi darca" (QR aj /r/ = jedna adresa; na PC odkaz v popise/chate, QR vo videu sa kliknúť nedá — sedí s nočnou debatou) · OBS počítadlo UŽ JE v kóde (features/overlay, /overlay/{splitId}, 0085b) — pri stránke tvorcu len použiť, nevymýšľať · QR reťaze aj v Moje QR kódy (501) · pekná adresa reťaze až pred ostrou · ľudia v pruhu = prechod zelených, 498 zrušený · **farby sektorov rozhodnuté**: 1. petrolejová #2F7C82, 2. modrá #3F6FA8, 3. terakota #B5653A, ďalšie svetlejšie; fialová a zlatá pri sektoroch nikdy (časť otázky bodu 139 uzavretá — ostáva len zlatá UDALOSŤ vs zlatá dorovnania) · 497 = potvrdenie prípadu A (skrýva sa len tlačidlo Nastaviť) · 483: QR platí aj pre staré zbierky a vytlačené plagáty — drží s pravidlom nerecyklovať čísla.
+
+## Balík 45 (507–510, Ateliér a vzhľad) — prijaté 23. 10.
+
+- 507: výber vzhľadu naostro podľa balíka 33 (4 vedľa seba s nákresmi rozloženia, mobil 2×2) — nahrádza 2×2 obrovské plochy.
+- 508: Vzorová farnosť dostane fotky kostolov a fary z voľnej galérie — POZN. Fero: na vzorovej označiť ako ilustračné/vzorové, aby sa nebilo s pravidlom „ilustračné foto len v Help; žiadne vymyslené dáta" (vzorová je ukážka, nie živá stránka — prípustné, ale nech sa z nej fotobanka nerozlezie).
+- 510: Ateliér stránky aj v charite, 1:1 z farnosti (balíky 32–34), Vzorová charita s fotkami.
+- 509: Martin zajtra porovná „Pozrieť na: Tablet" so skutočnou stránkou na iPade.
+- Ateliér na snímke už rieši otvorený bod zo zdroja 14 sekcia 11: „Uložené ✓ · nikto to nevidí" + štart na Vzorovej — po Paľovom „hotové" bod uzavrieť.
