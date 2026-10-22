@@ -12,11 +12,12 @@ import { overIban } from "@/features/rola/segmenty";
 import type { RegistrIcoVysledok } from "@/types";
 import { Obrazovka, Nadpis, Svetlo, Bublina, Pole, Volby, Prepinace, Cipy, KycKarty, PlanKapitol, Register, Odomknute, kapitoly, naServeri, pockaj, vibruj, IK, U } from "./RegB";
 import { ulozKrok } from "./OsobaB";
+import { FarnostB } from "./FarnostB";
 import { ulozRegistra, ulozStatutara, vznikText } from "@/lib/udajeRegistra";
 import { nacitajNastavenia } from "@/lib/nastaveniaStranky";
 
-export type KrokOrg = "ucet" | "plan" | "ico" | "statutar" | "stanovy" | "profil" | "moznosti" | "nahlad" | "hotovo";
-const PORADIE: KrokOrg[] = ["ucet", "plan", "ico", "statutar", "stanovy", "profil", "moznosti", "nahlad", "hotovo"];
+export type KrokOrg = "ucet" | "typ" | "plan" | "ico" | "statutar" | "stanovy" | "profil" | "moznosti" | "nahlad" | "hotovo";
+const PORADIE: KrokOrg[] = ["ucet", "typ", "plan", "ico", "statutar", "stanovy", "profil", "moznosti", "nahlad", "hotovo"];
 const KAP: [string, KrokOrg[]][] = [["Organizácia", ["ico"]], ["Overenie", ["statutar", "stanovy"]], ["Profil", ["profil", "moznosti", "nahlad"]]];
 const SEKTORY = ["Sociálne", "Deti", "Zdravie", "Seniori"];
 const datum = (iso: string) => { const d = new Date(iso); return isNaN(+d) ? iso : `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`; };
@@ -39,6 +40,8 @@ export function CharitaB({ prihlaseny, onSpat, onPrihlasit, onBezUctu, onHotovo,
   const subor = useRef<HTMLInputElement>(null);
   const [veta, setVeta] = useState(""), [iban, setIban] = useState(""), [sektory, setSektory] = useState<string[]>(SEKTORY.slice(0, 2));
   const [moz, setMoz] = useState([true, false]);
+  // registrácia farnosti (testovacia verzia): vlastná krátka cesta FarnostB
+  const [typOrg, setTypOrg] = useState(0), [farnost, setFarnost] = useState(false);
 
   const nazov = reg?.nazov ?? "";
   const statutar = prihlaseny?.meno ?? ""; // DEMO register: štatutár = prihlásená osoba (ostrý register vráti meno z ORSR / registra MV)
@@ -122,12 +125,18 @@ export function CharitaB({ prihlaseny, onSpat, onPrihlasit, onBezUctu, onHotovo,
   const kap = PORADIE.indexOf(krok) >= PORADIE.indexOf("ico") && krok !== "hotovo" ? kapitoly(KAP, krok) : null;
   const zak = { kluc: krok, spat: krok === "hotovo" ? undefined : spat, kap, ctaBusy: busy };
 
+  if (farnost && prihlaseny) return <FarnostB prihlaseny={prihlaseny} onSpat={() => setFarnost(false)} onHotovo={onHotovo} />;
   switch (krok) {
+    case "typ": return (
+      <Obrazovka {...zak} cta="Pokračovať" onCta={() => (typOrg === 1 ? setFarnost(true) : ides("plan"))}>
+        <Nadpis kicker="ORGANIZÁCIA" t="Akú organizáciu pridávate?" sub="Farnosť má vlastnú krátku cestu, bez IČO a stanov." />
+        <Volby volby={[{ t: "Charita, občianske združenie, nadácia", s: "IČO z registra, štatutár a stanovy", ik: IK.org }, { t: "Farnosť alebo zbor", s: "názov, cirkev, kostol, asi 2 minúty", ik: IK.kostol }]} vybrane={typOrg} onVyber={setTypOrg} />
+      </Obrazovka>);
     case "ucet": {
       const volby = prihlaseny
         ? [{ t: `Prihlásený · ${prihlaseny.meno}`, s: "účet je overený" }]
         : [{ t: "Prihlásiť sa", s: "e-mail a heslo vášho osobného účtu" }, { t: "Ešte nemám účet", s: "najprv krátka registrácia osoby (4 min), potom sem" }];
-      const dalej = () => { if (prihlaseny) ides("plan"); else if (volbaUctu === 0) { cakajRegistraciuOrg(true); onPrihlasit(); } else onBezUctu(); };
+      const dalej = () => { if (prihlaseny) ides("typ"); else if (volbaUctu === 0) { cakajRegistraciuOrg(true); onPrihlasit(); } else onBezUctu(); };
       return (
         <Obrazovka {...zak} cta={prihlaseny ? `Pokračovať ako ${prihlaseny.meno.split(" ")[0]}` : "Pokračovať"} onCta={dalej}>
           <Nadpis kicker="ÚČET" t="Organizáciu pridáte z vlastného účtu" sub="Jeden človek, jeden účet. Z neho spravujete seba aj všetky organizácie a firmy. Prepínate v Konáš ako." />

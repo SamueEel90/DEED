@@ -4,7 +4,7 @@
 // Ukladá sa na server pod stránkou do súkromných nastavení (nastavenia_stranky.data, kľúč „atelier“) — vidí ho len Správa.
 // Naostro je vo verejných nastaveniach (rozlozenie, usporiadanie); Zverejniť ich prepíše (hneď alebo server o 2:00).
 // ============================================================
-import { citajNastavenie, zapisNastavenie, useZmenyNastaveni } from "./nastaveniaStranky";
+import { citajNastavenie, zapisNastavenie, zapisNastavenieIsto, useZmenyNastaveni } from "./nastaveniaStranky";
 import { ROZLOZENIA, type Rozlozenie } from "./rozlozenieFarnosti";
 import { zapisVerejneIsto } from "./verejneNastavenia";
 import { supabase } from "./supabase";
@@ -19,6 +19,8 @@ export function useKonceptAtelieru(): KonceptAtelieru | null {
   return platny(k) ? k : null;
 }
 export const konceptAtelieru = (): KonceptAtelieru | null => { const k = citajNastavenie(KLUC); return platny(k) ? k : null; };
+/** OPRAVY 471: uloženie konceptu, na ktoré sa čaká (chyba ako text alebo null) */
+export const ulozKonceptIsto = (k: Omit<KonceptAtelieru, "zmenene">): Promise<string | null> => zapisNastavenieIsto(KLUC, { ...k, zmenene: new Date().toISOString() });
 export function ulozKonceptAtelieru(k: Omit<KonceptAtelieru, "zmenene"> | null) {
   zapisNastavenie(KLUC, k ? { ...k, zmenene: new Date().toISOString() } : null);
 }

@@ -20,7 +20,7 @@ import { eurcText } from "./NastaveniaCharity";
 import { OverenieUctu, useOverenieUctu } from "./OverenieUctu";
 import {
   zbierkyStrankyZPamate,
-  prazdnaZbierka, konceptZbierkyZPamate, nacitajKonceptZbierky, ulozKonceptZbierky, spustiZbierku, lehotaZbierky, cielCislo, jeIne,
+  prazdnaZbierka, konceptZbierkyZPamate, nacitajKonceptZbierky, ulozKonceptZbierky, spustiZbierku, opravZbierku, lehotaZbierky, cielCislo, jeIne,
   DLHA_FEED_TEXT, DLHA_PRIEBEZNE_TEXT, SADY, SADY_EURC, KROKY_ZBIERKY, UCELY, LEHOTY, NAZOV_ZB, RIADKY_ZB,
   type NovaZbierkaData, type SpustenaZbierka,
 } from "@/lib/novaZbierka";
@@ -37,7 +37,14 @@ import { RamPisania } from "@/components/RamPisania";
 
 /** OPRAVY 416: účet zbierky nie je overený pre stránku — návod namiesto „Skúsiť znova“ */
 const UCET_NEOVERENY = "Najprv overte účet · Nastavenia → Účet ›";
-export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, tablet, stit, onMojeZbierky, farnost, onUcet, onQr }: {
+/** OPRAVY 473 (3): kópia spustenej zbierky na opravu — bez textov a polí, ktoré nie sú obsah (id, VS, stav, doplnenia…) */
+const naOpravu = (z: SpustenaZbierka): NovaZbierkaData => {
+  const { id: _i, stranka: _s, spustena: _sp, ucet: _u, lehota: _l, lehotaKluc: _lk, vs: _v, stav: _st, koniec: _k, doplnenia: _d, ...d } = z;
+  return { ...prazdnaZbierka(), ...d, krok: 1 };
+};
+export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, tablet, stit, onMojeZbierky, farnost, onUcet, onQr, oprava, onOpravena }: {
+  /** OPRAVY 473 (3): Zrušiť a opraviť — kópia tejto zbierky; po zapečatení nahradí pôvodnú (to isté Z-číslo a QR). Bez konceptu. */
+  oprava?: SpustenaZbierka; onOpravena?: () => void;
   /** OPRAVY 453: Ďalší krok po spustení · Stiahnuť QR plagát → záložka QR */ onQr?: (id: string) => void;
   /** OPRAVY 416: neoverený účet → Nastavenia → Účet */ onUcet?: () => void;
   strankaId: string; pozicia: Pozicia; tier: Tier; nazov: string; inicialy: string; mobil: boolean; tablet: boolean; stit: string;
@@ -51,10 +58,10 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   const KROKY = farnost ? [1, 2, 3, 4, 6] : [1, 2, 3, 4, 5, 6];
   const eurcRezim = eurcText(); // "nie" | "pre všetky zbierky" | "podľa zbierky"
   const hlavnyUcet = farnost?.ucet || nacitajIbanOrg(pozicia); // OPRAVY 403: bez vymysleného náhradného účtu
-  const [d, setD] = useState<NovaZbierkaData>(() => konceptZbierkyZPamate(strankaId) ?? prazdnaZbierka());
+  const [d, setD] = useState<NovaZbierkaData>(() => (oprava ? naOpravu(oprava) : konceptZbierkyZPamate(strankaId) ?? prazdnaZbierka()));
   const zmenene = useRef(false);
   const [nacitane, setNacitane] = useState(false);
-  useEffect(() => { let ziva = true; void nacitajKonceptZbierky(strankaId).then((k) => { if (ziva && k && !zmenene.current) setD(k); if (ziva) setNacitane(true); }); return () => { ziva = false; }; }, [strankaId]);
+  useEffect(() => { if (oprava) return; let ziva = true; void nacitajKonceptZbierky(strankaId).then((k) => { if (ziva && k && !zmenene.current) setD(k); if (ziva) setNacitane(true); }); return () => { ziva = false; }; }, [strankaId]);
   const zmen = (z: Partial<NovaZbierkaData>) => { zmenene.current = true; setD((x) => ({ ...x, ...z })); };
   // KARTA 62: „Na ktoré miesto“ — nepovinný účel zbierky farnosti, len pri 2+ miestach
   const miestaF = useMiesta(strankaId);
@@ -65,7 +72,7 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   const upoz = upozV ?? predvUpoz("zbierka");
   // ROZPÍSANÉ SA UKLADÁ SAMO — 600 ms po poslednej zmene, do účtu stránky
   useEffect(() => {
-    if (!zmenene.current || !nacitane) return;
+    if (!zmenene.current || !nacitane || oprava) return;
     const t = window.setTimeout(() => { void ulozKonceptZbierky(strankaId, d); }, 600);
     return () => window.clearTimeout(t);
   }, [d, strankaId, nacitane]);
@@ -79,8 +86,8 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   const [hotovo, setHotovo] = useState<SpustenaZbierka | null>(null);
   const [pozriet, setPozriet] = useState(false);
   // karta 37 · bod 8: „Veríme vám" raz pred prvou zbierkou (rovnaké úložisko ako pri skutku za charitu)
-  const [uvodOn, setUvodOn] = useState(() => !uvodZPamate(strankaId, "zbierka") && !uvodZPamate(strankaId, "skutok"));
-  useEffect(() => { let ziva = true; void nacitajUvod(strankaId).then((u) => { if (ziva) setUvodOn(!u.zbierka && !u.skutok); }); return () => { ziva = false; }; }, [strankaId]);
+  const [uvodOn, setUvodOn] = useState(() => !oprava && !uvodZPamate(strankaId, "zbierka") && !uvodZPamate(strankaId, "skutok"));
+  useEffect(() => { let ziva = true; void nacitajUvod(strankaId).then((u) => { if (ziva) setUvodOn(!oprava && !u.zbierka && !u.skutok); }); return () => { ziva = false; }; }, [strankaId]);
   const [pravidla, setPravidla] = useState(false);
   const hore = useRef<HTMLDivElement>(null);
   // pri zmene kroku hore na začiatok správy (hlavička ostane vidno), nie pri prvom otvorení
@@ -102,10 +109,10 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
     if (n === 2) { if (!fotiek) return "Pridajte aspoň jednu fotku"; if (!d.suhlas && suhTreba) return SUHLAS_CHYBA; }
     if (n === 3) {
       if (d.cielTyp === "ciel" && !(cielCislo(d) > 0)) return "Zadajte cieľovú sumu";
-      if (!zadarmo && (!/^SK\d{2}/i.test(iban) || iban.length !== 24)) return "Zadajte transparentný účet (IBAN má 24 znakov a začína SK)"; // Zadarmo: IBAN sa nekontroluje
+      if (!zadarmo && !oprava && (!/^SK\d{2}/i.test(iban) || iban.length !== 24)) return "Zadajte transparentný účet (IBAN má 24 znakov a začína SK)"; // Zadarmo: IBAN sa nekontroluje
     }
     if (n === 5 && !farnost) { if (d.ucel == null) return "Vyberte, na aký účel zbierate"; if (jeIne(d)) { if (!d.ineT.trim()) return "Napíšte, na čo zbierate"; if (d.ineL == null) return "Vyberte lehotu na doklady"; } }
-    if (n === 6 && !zadarmo && overenie?.stav !== "overeny") return "Účet zbierky ešte nie je overený";
+    if (n === 6 && !zadarmo && !oprava && overenie?.stav !== "overeny") return "Účet zbierky ešte nie je overený";
     if (n === 6 && !ok) return "Potvrďte, že ste údaje skontrolovali";
     return "";
   };
@@ -121,6 +128,12 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   const zapecat = async () => {
     if (chyba || spusta) return;
     setChybaSp(null); setSpusta(true);
+    if (oprava) {
+      const ch = await opravZbierku(strankaId, oprava.id, zadarmo ? { ...d, typ: "kratka", iban: "", prav: false } : { ...d, iban: oprava.ucet });
+      setSpusta(false);
+      if (ch) setChybaSp(ch); else onOpravena?.();
+      return;
+    }
     try {
       const z = await spustiZbierku(strankaId, zadarmo ? { ...d, typ: "kratka", iban: "", prav: false, ...(farnost ? { ucel: null, farnost: { druh: "farnost" as const, ...(naMiesto ? { miesto: naMiesto.id } : {}), upoz } } : {}) } : d, zadarmo ? hlavnyUcet : d.iban, farnost ? "nabozenstvo" : undefined);
       if (farnost) { farnost.onSpustena(z); return; }
@@ -223,7 +236,7 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   // ============ KROKY ============
   const stepper = (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {!ph && <div style={{ display: "flex", justifyContent: "flex-end" }}><span style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, fontWeight: 700, color: "var(--ink2)" }}><span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)" }} />Rozpísané sa ukladá samo</span></div>}
+      {!ph && <div style={{ display: "flex", justifyContent: "flex-end" }}><span style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, fontWeight: 700, color: "var(--ink2)" }}><span style={{ width: 7, height: 7, borderRadius: "50%", background: oprava ? "#C9A24A" : "var(--green)" }} />{oprava ? "Oprava sa uloží až po zapečatení" : "Rozpísané sa ukladá samo"}</span></div>}
       <div role="list" aria-label="Kroky" style={{ display: "grid", gridTemplateColumns: `repeat(${KROKY.length},minmax(0,1fr))`, gap: ph ? 5 : 10 }}>
         {KROKY.map((n, i) => { const t = KROKY_ZBIERKY[n - 1], akt = n === k, hot = n < k, moze = n <= maxK; return (
           <button key={t} role="listitem" type="button" onClick={() => naKrok(n)} aria-current={akt ? "step" : undefined} style={{ border: "none", background: "transparent", padding: 0, cursor: moze ? "pointer" : "default", fontFamily: "inherit", display: "flex", flexDirection: "column", gap: 8, textAlign: "left", minHeight: ph ? 12 : 44 }}>
@@ -294,6 +307,10 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
               <option value="">Celá farnosť</option>{miestaF.map((m) => <option key={m.id} value={m.id}>{m.nazov}</option>)}</select>
             <span style={{ ...pozn, marginTop: -6 }}>Len účel. Zbierka sa ukáže aj na stránke tohto kostola, peniaze idú na účet farnosti.</span>
           </>}
+        </> : oprava ? <>
+          <Nadpis t="Kam prídu peniaze" />
+          <div style={{ ...pole, display: "flex", alignItems: "center", gap: 10, background: "var(--btn)", color: "var(--ink2)", maxWidth: ph ? undefined : 520 }}><Zamok s={15} /><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{oprava.ucet}</span></div>
+          <span style={{ ...pozn, marginTop: -6 }}>Účet sa pri oprave nemení. Iný účet = nová zbierka.</span>
         </> : zadarmo ? <>
           <Nadpis t="Kam prídu peniaze" />
           <div style={{ ...pole, display: "flex", alignItems: "center", gap: 10, background: "var(--btn)", color: "var(--ink2)", maxWidth: ph ? undefined : 520 }}><Zamok s={15} /><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{hlavnyUcet}</span></div>
@@ -386,6 +403,13 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
       {farnost && <UpozornitSledujucich strankaId={strankaId} blok="zb" miesta={naMiesto ? [naMiesto.id] : undefined} value={upoz} onChange={setUpozV} />}</>;
   }
 
+  // OPRAVY 473 (3): kým sa oprava nezapečatí, darcovia vidia pôvodnú zbierku
+  if (oprava) obsah = <><section style={{ borderRadius: 18, background: "var(--warnBg)", border: "1.5px solid #C9A24A", padding: ph ? "14px 16px" : "16px 20px", display: "flex", flexDirection: "column", gap: 4 }}>
+      <b style={{ fontSize: 15.5, color: "var(--ink)" }}>Opravujete zbierku „{oprava.nazov}“</b>
+      <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>Kým opravu nezapečatíte, darcovia vidia pôvodnú. Po zapečatení ju nahradí. Z-číslo a QR ostanú rovnaké.</span>
+      <button type="button" onClick={onMojeZbierky} style={{ ...odkaz, alignSelf: "flex-start", padding: "6px 0 0", fontSize: 14.5 }}>Zrušiť opravu a vrátiť sa ›</button>
+    </section>{obsah}</>;
+
   // ---------- spodná lišta ----------
   const tuk = potvrditTuknutim();
   const chybaEl = chyba ? <span role="status" style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 700, color: "#8A5A2B", minWidth: 0 }}><span style={{ width: 8, height: 8, flex: "none", borderRadius: "50%", background: "#C9A24A" }} />{chyba}</span> : null;
@@ -393,17 +417,17 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
     ? <button type="button" onClick={dalej} aria-disabled={!!chyba} style={{ flex: ph ? 1 : "none", height: 52, padding: "0 24px", border: "none", borderRadius: 14, background: chyba ? "#CFC9BC" : "var(--green)", color: chyba ? "#6B6C62" : "#fff", cursor: chyba ? "default" : "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>Pokračovať{!ph && <Ik d={I.vpravo} s={17} w={2.4} />}</button>
     : tuk
       ? <button type="button" onDoubleClick={() => void zapecat()} aria-disabled={!!chyba} style={{ flex: ph ? 1 : "none", height: 52, padding: "0 24px", border: "none", borderRadius: 14, background: chyba ? "#CFC9BC" : "var(--green)", color: chyba ? "#6B6C62" : "#fff", cursor: chyba ? "default" : "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800 }}>Dvakrát kliknite a zapečaťte</button>
-      : <div style={{ flex: ph ? 1 : "none", width: ph ? undefined : 280, ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo label={spusta ? "Spúšťa sa…" : "Podržte a zapečaťte"} disabled={!!chyba} onConfirm={() => void zapecat()} /></div>;
+      : <div style={{ flex: ph ? 1 : "none", width: ph ? undefined : 280, ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo label={spusta ? (oprava ? "Ukladá sa…" : "Spúšťa sa…") : oprava ? "Podržte a zapečaťte opravu" : "Podržte a zapečaťte"} disabled={!!chyba} onConfirm={() => void zapecat()} /></div>;
   const chybaSpEl = chybaSp === UCET_NEOVERENY && onUcet
-    ? <ChybaPriTlacidle text={ki === KROKY.length - 1 ? chybaSp : null} onZnova={onUcet} znovaText="Nastavenia → Účet ›" nadpis="Zbierka sa nespustila" />
-    : <ChybaPriTlacidle text={ki === KROKY.length - 1 ? chybaSp : null} uklada={spusta} onZnova={() => void zapecat()} nadpis="Zbierka sa nespustila" />;
+    ? <ChybaPriTlacidle text={ki === KROKY.length - 1 ? chybaSp : null} onZnova={onUcet} znovaText="Nastavenia → Účet ›" nadpis={oprava ? "Oprava sa neuložila" : "Zbierka sa nespustila"} />
+    : <ChybaPriTlacidle text={ki === KROKY.length - 1 ? chybaSp : null} uklada={spusta} onZnova={() => void zapecat()} nadpis={oprava ? "Oprava sa neuložila" : "Zbierka sa nespustila"} />;
   const spatEl = ki > 0 ? <button type="button" onClick={spat} aria-label="Späť" style={{ flex: "none", height: 52, minWidth: 52, padding: ph ? 0 : "0 18px 0 12px", borderRadius: 14, border: "1.5px solid var(--cardBd)", background: ph ? "var(--field)" : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--ink)", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}><Ik d={I.vlavo} s={18} w={2.4} />{!ph && "Späť"}</button> : null;
 
   const pravidlaEl = pravidla ? <PravidlaObsahu ph={ph} stit={stit} onZavri={() => setPravidla(false)} /> : null;
   // OPRAVY 284: na telefóne rám na celú obrazovku (ako 258) — lišta KROK N Z M, Náhľad na ťuk, Späť a Pokračovať dole
   if (ph) return (<>
     <div ref={hore} />
-    <RamPisania nazov={KROKY_ZBIERKY[k - 1] ?? "Nová zbierka"} kroky={{ i: ki, n: KROKY.length }} teloRef={ramTelo}
+    <RamPisania nazov={oprava ? `Oprava · ${KROKY_ZBIERKY[k - 1] ?? ""}` : KROKY_ZBIERKY[k - 1] ?? "Nová zbierka"} kroky={{ i: ki, n: KROKY.length }} teloRef={ramTelo}
       onSpat={() => { if (ki > 0) spat(); else onMojeZbierky(); }} onNahlad={() => setNahlad("str")}
       dole={<>{chybaSpEl}{chybaEl}<div style={{ display: "flex", gap: 10 }}>{spatEl}{dalejEl}</div></>} vrstva={pravidlaEl}>
       <div style={{ padding: "16px 16px 28px", display: "flex", flexDirection: "column", gap: 16 }}>{obsah}</div>

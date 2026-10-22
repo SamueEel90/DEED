@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, lazy, Suspense, type CSSProperties } from "react";
 import { AdresarHost } from "@/features/viera/AdresarCirkvi";
-import { cakaOtvorenieSpravy, vezmiOtvorenieProfilu, cakaRegistraciaOrg, cakajRegistraciuOrg, UDALOST_SPRAVA } from "@/lib/mojeStranky";
+import { cakaOtvorenieSpravy, vezmiOtvorenieProfilu, cakaRegistraciaOrg, cakajRegistraciuOrg, UDALOST_SPRAVA, UDALOST_PRIDAT_ORG } from "@/lib/mojeStranky";
 import { useStitAppky } from "@/lib/stitAppky";
 import "@/styles/sprava.css";
 import { LazyMotion, domAnimation, MotionConfig } from "motion/react";
@@ -289,6 +289,8 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   useVrstva(upgradeOpen, () => setUpgradeOpen(false));
   useVrstva(!!aktivacia, () => setAktivacia(false));
   useVrstva(orgReg, () => { setOrgReg(false); cakajRegistraciuOrg(false); });
+  // Moje stránky → + Pridať organizáciu (charita alebo farnosť)
+  useEffect(() => { const f = () => setOrgReg(true); window.addEventListener(UDALOST_PRIDAT_ORG, f); return () => window.removeEventListener(UDALOST_PRIDAT_ORG, f); }, []);
   // OPRAVY 402: testovacie „+ Založiť charitu (test)“ — ten istý formulár registrácie charity
   // OPRAVY 402 (zjednodušené): testovacie tlačidlo jedným ťukom založí charitu s testovacími údajmi a otvorí jej Správu
   useEffect(() => {

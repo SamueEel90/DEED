@@ -5,7 +5,7 @@ import { kartaVolby, FajkaVolby } from "@/components/Volby";
 import { toast } from "@/components/toast";
 import { useLayout } from "@/components/context";
 import { usePouzivatel } from "@/lib/pouzivatel";
-import { UKAZKOVE_STRANKY, useMojeStranky, useStrankyUctu, nastavAko, prepniPrezentaciu, TESTOVACIA, strankaCharity, type Stranka } from "@/lib/mojeStranky";
+import { UKAZKOVE_STRANKY, useMojeStranky, useStrankyUctu, nastavAko, prepniPrezentaciu, TESTOVACIA, strankaCharity, strankaFarnosti, pridatOrganizaciu, type Stranka } from "@/lib/mojeStranky";
 import { lokalneStranky } from "@/lib/aktivnaCharita";
 import { DevSimulacia } from "@/features/rola/MojDeedFiremny";
 import { useT } from "@/i18n";
@@ -19,7 +19,7 @@ export function useStranky(): Stranka[] {
   const ja = usePouzivatel();
   const zUctu = useStrankyUctu(!ja.demo && !!ja.cisloUctu);
   // OPRAVY 402: charity založené v tomto prehliadači bez databázy (testovacia verzia) pribudnú k ukážkovým
-  const zoznam = ja.demo ? [...UKAZKOVE_STRANKY, ...lokalneStranky().map((l) => strankaCharity(l.k, l.n))] : zUctu ?? [];
+  const zoznam = ja.demo ? [...UKAZKOVE_STRANKY, ...lokalneStranky().map((l) => (l.typ === "farnost" ? strankaFarnosti(l.k, l.n) : strankaCharity(l.k, l.n)))] : zUctu ?? [];
   const ini = `${(ja.meno || "?")[0]}${(ja.priezvisko || "")[0] ?? ""}`.toUpperCase();
   return zoznam.map((s) => (s.typ === "tvorca" ? { ...s, n: ja.celeMeno || s.n, i: ini } : s));
 }
@@ -44,7 +44,7 @@ export function MojeStranky({ naSpravovat }: { naSpravovat: (s: Stranka) => void
   const stranky = useStranky();
   if (st.prezentacia) return <PasPrezentacie />;
   if (!stranky.length) return (
-    <button type="button" onClick={() => toast(t("stranky.pridaniePride"))} className="deed-platba"
+    <button type="button" onClick={pridatOrganizaciu} className="deed-platba"
       style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48, padding: "10px 14px", borderRadius: 16, border: "1px dashed var(--cardBd)", background: "transparent", boxShadow: "none", color: "var(--ink2)", fontSize: 14, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", textAlign: "left" }}>
       <span style={{ flex: 1 }}>{t("stranky.pridajPrazdne")}</span><span aria-hidden="true" style={{ color: "var(--green)", fontWeight: 800 }}>+</span>
     </button>);
@@ -71,7 +71,7 @@ export function MojeStranky({ naSpravovat }: { naSpravovat: (s: Stranka) => void
                 style={{ flex: "1 1 auto", minHeight: 40, padding: "0 10px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: "inherit", ...(on ? {} : { background: "transparent", color: "var(--ink3)", boxShadow: "none" }) }}>{a.n}</button>); })}
           </div>
           <span style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)" }}>{cur ? t("stranky.akoStranka", { meno: cur.n }) : t("stranky.akoJa")}</span>
-          <button type="button" onClick={() => toast(t("stranky.pridaniePride"))} style={{ alignSelf: "flex-start", minHeight: 44, padding: "0 14px", borderRadius: 12, border: "1.5px dashed var(--gBd)", background: "transparent", boxShadow: "none", color: "var(--green)", fontSize: 14, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>{t("stranky.pridat")}</button>
+          <button type="button" onClick={pridatOrganizaciu} style={{ alignSelf: "flex-start", minHeight: 44, padding: "0 14px", borderRadius: 12, border: "1.5px dashed var(--gBd)", background: "transparent", boxShadow: "none", color: "var(--green)", fontSize: 14, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>{t("stranky.pridat")}</button>
         </div>
       </section>
       {TESTOVACIA && <DevSimulacia />}

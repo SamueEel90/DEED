@@ -7,25 +7,20 @@
 // Zbierky: Nástenka a Moderné presúvateľné, Kronika a Klasika v bočnom paneli. Premenovať 7 blokov (najviac 30 znakov).
 // „Podržte a uložte“ + „Obnoviť pôvodné“, hláška na mieste, zlyhanie má tvár. Ukladá sa na server (verejné nastavenia).
 // ============================================================
-import { useRef, useState, type CSSProperties } from "react";
+import { useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { BLOKY_STRANKY, PREMENOVAT, NAZOV_MAX, POVODNE, normalizuj, ulozUsporiadanie, useUsporiadanie, nadpisBloku, mozeVedla, radyVedla, type BlokStranky, type Usporiadanie } from "@/lib/usporiadanieStranky";
-import { ROZLOZENIA, rozlozenieZPamate } from "@/lib/rozlozenieFarnosti";
+import { ROZLOZENIA, rozlozenieZPamate, type Rozlozenie } from "@/lib/rozlozenieFarnosti";
 import { konceptAtelieru, ulozKonceptAtelieru } from "@/lib/atelier";
 
 const M = Object.fromEntries(BLOKY_STRANKY.map((b) => [b.id, b])) as Record<BlokStranky, (typeof BLOKY_STRANKY)[number]>;
 const rovnake = (a: Usporiadanie, b: Usporiadanie) => JSON.stringify(normalizuj(a)) === JSON.stringify(normalizuj(b));
 
-export function UsporiadatStranku({ strankaId, mobil, onSpat }: { strankaId: string; mobil: boolean; onSpat: () => void }) {
-  const ulozene = useUsporiadanie(strankaId);
-  const [u, setU] = useState<Usporiadanie>(ulozene);
-  const vz = rozlozenieZPamate(strankaId); // OPRAVY 323: náhľad = zapnutý vzhľad farnosti
+/** OPRAVY 471: zoznam blokov — Usporiadať stránku aj Ateliér (Poradie blokov) s tými istými pravidlami podľa vzhľadu.
+ *  Kronika a Klasika: Zbierky v bočnom paneli (PEVNÉ). Vedľa predošlého len kde smie. spodok = tlačidlá volajúceho. */
+export function ZoznamBlokov({ u, zmen, vz, mobil, spodok }: { u: Usporiadanie; zmen: (n: Usporiadanie) => void; vz: Rozlozenie; mobil: boolean; spodok?: ReactNode }) {
   const [ed, setEd] = useState<BlokStranky | null>(null);
-  const [hlaska, setHlaska] = useState<{ ok: boolean; t: string } | null>(null);
-  const [uklada, setUklada] = useState(false);
-  const zmen = (n: Usporiadanie) => { setHlaska(null); setU(n); };
-  const zapnuty = ROZLOZENIA.find((r) => r.k === rozlozenieZPamate(strankaId))?.t ?? "Nástenka";
   const bok = vz === "kronika" || vz === "konzervativny";
   const L = u.poradie.filter((k) => !(bok && k === "zbierky")), n = L.length;
   const panel = bok ? ["Zbierky farnosti", "Omše a kalendár", "Farský úrad"] : ["Omše a kalendár", "Farský úrad"];
@@ -36,12 +31,8 @@ export function UsporiadatStranku({ strankaId, mobil, onSpat }: { strankaId: str
     zmen({ ...u, poradie: o });
   };
   const vedla = (k: BlokStranky, on: boolean) => zmen({ ...u, vedla: on ? [...u.vedla.filter((x) => x !== k), k] : u.vedla.filter((x) => x !== k) });
-  const parVz = vz === "moderne" || vz === "konzervativny"; // dvojice vedľa seba len v Modernom a Klasike
   const prepni = (k: BlokStranky) => zmen({ ...u, skryte: u.skryte.includes(k) ? u.skryte.filter((x) => x !== k) : [...u.skryte, k] });
   const premenuj = (k: BlokStranky, t: string) => { const z = { ...u.nazvy }; if (t) z[k] = t.slice(0, NAZOV_MAX); else delete z[k]; zmen({ ...u, nazvy: z }); };
-  const zmenene = !rovnake(u, ulozene);
-
-  // ---- mobil: podržať úchyt a potiahnuť ----
   const zoznam = useRef<HTMLDivElement>(null);
   const [tah, setTah] = useState<BlokStranky | null>(null);
   const tahZ = (k: BlokStranky) => (e: React.PointerEvent<HTMLButtonElement>) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); setTah(k); };
@@ -54,22 +45,10 @@ export function UsporiadatStranku({ strankaId, mobil, onSpat }: { strankaId: str
     if (j !== i) presun(i, j);
   };
   const tahK = () => setTah(null);
-
-  const ulozit = async () => {
-    if (uklada) return;
-    setUklada(true); setHlaska(null);
-    const e = await ulozUsporiadanie(strankaId, u);
-    // OPRAVY 468: rozpracovaný koncept v ateliéri dostane to isté poradie
-    const k = konceptAtelieru(); if (!e && k) ulozKonceptAtelieru({ rozlozenie: k.rozlozenie, usporiadanie: u, naplanovane: k.naplanovane });
-    setUklada(false);
-    setHlaska(e ? { ok: false, t: e } : { ok: true, t: "Uložené ✓ Stránka farnosti má nové poradie vo všetkých vzhľadoch." });
-  };
-
   const sivy: CSSProperties = { display: "flex", alignItems: "center", gap: 12, minHeight: 50, padding: "8px 14px", boxSizing: "border-box", borderRadius: 12, background: "var(--btn)", color: "var(--ink3)" };
   const stitok: CSSProperties = { width: mobil ? 64 : 84, flex: "none", fontSize: 12, fontWeight: 800, letterSpacing: ".04em" };
   const sipka = (on: boolean): CSSProperties => ({ flex: "none", width: 44, height: 44, borderRadius: 11, border: "1px solid var(--cardBd)", background: "var(--card)", color: "var(--ink)", fontSize: 18, cursor: on ? "pointer" : "default", opacity: on ? 1 : 0.35, fontFamily: "inherit", boxShadow: "none" });
-
-  const zoznamEl = (
+  return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }}>
       <div style={sivy}><span style={stitok}>VŽDY PRVÁ</span><b style={{ fontSize: 15 }}>Titulka a hlavička</b></div>
       <div style={sivy}><span style={stitok}>PEVNÉ</span><span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}><b style={{ fontSize: 15 }}>Bočný panel · {panel.join(" · ")}</b><span style={{ fontSize: 12.5 }}>Na PC pravý stĺpec, na mobile v hlavičke.</span></span></div>
@@ -116,15 +95,44 @@ export function UsporiadatStranku({ strankaId, mobil, onSpat }: { strankaId: str
         })}
       </div>
       <div style={sivy}><span style={stitok}>VŽDY POSLEDNÁ</span><b style={{ fontSize: 15 }}>Päta · kalendár, kancelária, úradné hodiny</b></div>
+      {spodok}
+      </div>);
+}
+
+export function UsporiadatStranku({ strankaId, mobil, onSpat }: { strankaId: string; mobil: boolean; onSpat: () => void }) {
+  const ulozene = useUsporiadanie(strankaId);
+  const [u, setU] = useState<Usporiadanie>(ulozene);
+  const vz = rozlozenieZPamate(strankaId); // OPRAVY 323: náhľad = zapnutý vzhľad farnosti
+  const [hlaska, setHlaska] = useState<{ ok: boolean; t: string } | null>(null);
+  const [uklada, setUklada] = useState(false);
+  const zmen = (n: Usporiadanie) => { setHlaska(null); setU(n); };
+  const zapnuty = ROZLOZENIA.find((r) => r.k === rozlozenieZPamate(strankaId))?.t ?? "Nástenka";
+  const bok = vz === "kronika" || vz === "konzervativny";
+  const L = u.poradie.filter((k) => !(bok && k === "zbierky"));
+  const panel = bok ? ["Zbierky farnosti", "Omše a kalendár", "Farský úrad"] : ["Omše a kalendár", "Farský úrad"];
+  const parVz = vz === "moderne" || vz === "konzervativny"; // dvojice vedľa seba len v Modernom a Klasike
+  const zmenene = !rovnake(u, ulozene);
+
+  const ulozit = async () => {
+    if (uklada) return;
+    setUklada(true); setHlaska(null);
+    const e = await ulozUsporiadanie(strankaId, u);
+    // OPRAVY 468: rozpracovaný koncept v ateliéri dostane to isté poradie
+    const k = konceptAtelieru(); if (!e && k) ulozKonceptAtelieru({ rozlozenie: k.rozlozenie, usporiadanie: u, naplanovane: k.naplanovane });
+    setUklada(false);
+    setHlaska(e ? { ok: false, t: e } : { ok: true, t: "Uložené ✓ Stránka farnosti má nové poradie vo všetkých vzhľadoch." });
+  };
+
+  const zoznamEl = <ZoznamBlokov u={u} zmen={zmen} vz={vz} mobil={mobil} spodok={<>
       {zmenene && !hlaska && <span style={{ fontSize: 13.5, fontWeight: 700, color: "#8A6A1C" }}>Zmeny ešte nie sú uložené.</span>}
       {hlaska?.ok && <div role="status" style={{ padding: "12px 14px", borderRadius: 14, fontSize: 14.5, fontWeight: 800, lineHeight: 1.45, background: "var(--gSoft)", border: "1.5px solid var(--gBd)", color: "var(--gInk)" }}>{hlaska.t}</div>}
       {/* OPRAVY 335: chyba priamo nad tlačidlom (na mobile aj okno) */}
       <ChybaPriTlacidle text={hlaska && !hlaska.ok ? hlaska.t : null} uklada={uklada} onZnova={() => void ulozit()} />
       <div style={{ display: "flex", gap: 10, marginTop: 4, flexWrap: mobil ? "wrap" : "nowrap" }}>
         <div style={{ flex: "1 1 220px", ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo label={uklada ? "Ukladá sa…" : "Podržte a uložte"} trvanie={1200} disabled={uklada} onConfirm={() => { void ulozit(); }} /></div>
-        <button type="button" onClick={() => { zmen({ ...POVODNE, poradie: [...POVODNE.poradie] }); setEd(null); }} style={{ flex: mobil ? "1 1 100%" : "none", minHeight: 54, padding: "0 18px", borderRadius: 14, border: "1.5px solid var(--cardBd)", background: "transparent", color: "var(--ink)", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, cursor: "pointer" }}>Obnoviť pôvodné</button>
+        <button type="button" onClick={() => { zmen({ ...POVODNE, poradie: [...POVODNE.poradie] }); }} style={{ flex: mobil ? "1 1 100%" : "none", minHeight: 54, padding: "0 18px", borderRadius: 14, border: "1.5px solid var(--cardBd)", background: "transparent", color: "var(--ink)", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, cursor: "pointer" }}>Obnoviť pôvodné</button>
       </div>
-    </div>);
+  </>} />;
 
   const nahlad = (
     <div style={{ display: "flex", flexDirection: "column", gap: 10, position: mobil ? "static" : "sticky", top: 20, minWidth: 0 }}>

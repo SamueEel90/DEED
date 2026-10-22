@@ -193,6 +193,9 @@ export async function nacitajCirkevFarnosti(stranka: string): Promise<string> {
     const { data } = await supabase.from("farnost_adresar").select("cirkev").eq("stranka", stranka).maybeSingle();
     const c = (data as { cirkev?: string } | null)?.cirkev;
     if (c) cirkevPamat.set(stranka, c);
+  } else if (!cirkevPamat.has(stranka)) {
+    // bez databázy (testovacia verzia v prehliadači): cirkev z tohto prehliadača
+    try { const c = localStorage.getItem(`deed.cirkev.${stranka}`); if (c) cirkevPamat.set(stranka, c); } catch { /* LS */ }
   }
   return cirkevPamat.get(stranka) ?? "RKC";
 }
@@ -202,6 +205,7 @@ export async function nastavCirkevFarnosti(stranka: string, kod: string): Promis
   if (adresar) { adresar = adresar.map((f) => (f.id === stranka ? { ...f, cirkev: kod } : f)); }
   zmena();
   if (supabase) { const { error } = await supabase.from("farnost_adresar").upsert({ stranka, cirkev: kod, upravene: new Date().toISOString() }, { onConflict: "stranka" }); chyba(error); }
+  else { try { localStorage.setItem(`deed.cirkev.${stranka}`, kod); } catch { /* LS */ } }
 }
 
 // ---- KARTA 61 §0 · slová podľa cirkvi (číselník public.cirkev, 0078). V kóde jedna rola „duchovný“, mení sa len slovo. ----

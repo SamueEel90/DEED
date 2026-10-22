@@ -63,7 +63,7 @@ export function Registracia({ onHotovo, start, resume }: { onHotovo?: () => void
     return (
       <Obrazovka kluc="kto" spat={() => setFaza("vitaj")} cta="Pokračovať" onCta={() => setFaza(kto === 0 ? "osoba" : "org")} alt="Len prispievať, bez registrácie" onAlt={pasivne}>
         <Nadpis t="Kto sa registruje?" sub="Každý má vlastný účet. Organizácia sa nemieša s osobným účtom štatutára." />
-        <Volby volby={[{ t: "Ja, ako človek", s: "Darujem, robím skutky, pridávam Iskry", ik: IK.osoba }, { t: "Organizácia", s: "Charita, občianske združenie, nadácia", ik: IK.org }]} vybrane={kto} onVyber={setKto} />
+        <Volby volby={[{ t: "Ja, ako človek", s: "Darujem, robím skutky, pridávam Iskry", ik: IK.osoba }, { t: "Organizácia", s: "Charita, združenie, nadácia alebo farnosť", ik: IK.org }]} vybrane={kto} onVyber={setKto} />
       </Obrazovka>);
   }
   return (

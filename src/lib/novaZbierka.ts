@@ -5,6 +5,7 @@
 // Bez DB spojenia (mock/offline) drží appka všetko v pamäti relácie.
 // ============================================================
 import { bezDataUrl } from "./uploadFoto";
+import { sanitizujHtml } from "./richtext";
 import { useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
 import type { Vyrez } from "@/components/orezfotky";
@@ -124,7 +125,16 @@ export interface SpustenaZbierka extends NovaZbierkaData {
   stav?: "aktivna" | "ukoncena" | "vyuctovana";
   /** KARTA 57 A.8: čas ukončenia zo servera (zbierka.koniec, migrácia 0068) — archív */
   koniec?: string;
+  /** OPRAVY 473 · 0155: doplnenia textu charity po spustení — len pribúdajú, uložené sa nemenia */
+  doplnenia?: DoplnenieZbierky[];
 }
+export type DoplnenieZbierky = { datum: string; text: string };
+/** „22. 10.“ z ISO dátumu doplnenia */
+export const datumDoplnenia = (iso: string) => { const [, m, d] = iso.split("-").map(Number); return `${d}. ${m}.`; };
+/** doplnenie v jednom riadku za „Doplnené D. M.:“ — odseky na zalomenia */
+export const doplnenieInline = (h: string) => sanitizujHtml(h).replace(/<\/p>\s*<p[^>]*>/g, "<br>").replace(/<\/?p[^>]*>/g, "");
+/** OPRAVY 473: doplnenia pod pôvodným textom na stránke zbierky (každý ich vidí, aj neprihlásený) */
+export const doplneniaHtml = (l?: DoplnenieZbierky[]) => (l ?? []).filter((d) => d?.text).map((d) => `<p><b>Doplnené ${datumDoplnenia(d.datum)}:</b> ${doplnenieInline(d.text)}</p>`).join("");
 
 // ---- pamäť relácie + odber zmien ----
 const koncepty = new Map<string, NovaZbierkaData | null>();
@@ -181,7 +191,7 @@ export async function nacitajZbierkyStranky(stranka: string): Promise<SpustenaZb
 /** KARTA 48 · úprava spustenej zbierky v Správe (Ukladá sa samo): len text pre darcov, galéria a rýchle sumy.
  *  Cieľ, účel, účet a lehota ostávajú zapečatené. */
 /** OPRAVY 314: vráti chybu ako text (Správa ju ukáže pri poli „Neuložilo sa · Skúsiť znova“), inak null */
-export async function upravZbierku(stranka: string, id: string, p: Pick<NovaZbierkaData, "popis" | "popis2" | "media" | "sada" | "eurc" | "sadaE">): Promise<string | null> {
+export async function upravZbierku(stranka: string, id: string, p: Partial<Pick<NovaZbierkaData, "popis" | "popis2" | "media" | "sada" | "eurc" | "sadaE">>): Promise<string | null> {
   const l = zbierkyStrankyZPamate(stranka);
   const z = l.find((x) => x.id === id); if (!z) return null;
   const n = { ...z, ...p };
@@ -194,6 +204,51 @@ export async function upravZbierku(stranka: string, id: string, p: Pick<NovaZbie
   const { data, error } = await supabase.from("zbierka").update({ nastavenie: cista }).eq("id", id).select("id").then((x) => x, () => ({ data: null, error: { message: "" } }));
   if (error) return "Nepodarilo sa uložiť na server. Skontrolujte pripojenie a skúste znova.";
   if (!data?.length) return "Túto zbierku môže upraviť len ten, kto ju založil.";
+  return null;
+}
+
+/** OPRAVY 473 · 0155: zbierka charity po spustení — doplnenie textu (nový riadok s dátumom) alebo nové fotky na koniec.
+ *  Do pamäte až po potvrdení servera; vráti chybu ako text, inak null. */
+export async function zapecatDoplnenie(stranka: string, id: string, p: { doplnenie?: string; media?: MediumZbierky[] }): Promise<string | null> {
+  const z = zbierkyStrankyZPamate(stranka).find((x) => x.id === id); if (!z) return "Zbierku sa nepodarilo nájsť. Obnovte stránku.";
+  const n: SpustenaZbierka = { ...z };
+  if (p.doplnenie !== undefined) {
+    const t = p.doplnenie.trim(); if (!t) return "Napíšte, čo chcete doplniť.";
+    n.doplnenia = [...(z.doplnenia ?? []), { datum: new Date().toISOString().slice(0, 10), text: t }];
+  }
+  if (p.media) n.media = [...z.media, ...p.media];
+  if (supabase) {
+    const { vs: _vs, stav: _stav, koniec: _koniec, ...nastavenie } = n;
+    let cista: typeof nastavenie;
+    try { cista = await bezDataUrl(nastavenie, "zbierky"); } catch { return "Fotku sa nepodarilo nahrať. Skúste znova."; }
+    const { data, error } = await supabase.from("zbierka").update({ nastavenie: cista }).eq("id", id).select("id").then((x) => x, () => ({ data: null, error: { message: "", code: "" } }));
+    if (error) return (error as { code?: string }).code === "42501" ? "Server zmenu neprijal — zbierka je zapečatená. Obnovte stránku a skúste znova." : "Nepodarilo sa uložiť na server. Skontrolujte pripojenie a skúste znova.";
+    if (!data?.length) return "Túto zbierku môže upraviť len ten, kto ju spravuje.";
+    Object.assign(n, { media: cista.media, doplnenia: cista.doplnenia });
+  }
+  spustene.set(stranka, zbierkyStrankyZPamate(stranka).map((x) => (x.id === id ? n : x))); zmena();
+  return null;
+}
+
+/** OPRAVY 473 (3) · 0155: Zrušiť a opraviť — kým zbierka nemá dar, opravená kópia nahradí pôvodnú (to isté id, Z-číslo a QR) */
+export async function opravZbierku(stranka: string, id: string, d: NovaZbierkaData): Promise<string | null> {
+  const z = zbierkyStrankyZPamate(stranka).find((x) => x.id === id); if (!z) return "Zbierku sa nepodarilo nájsť. Obnovte stránku.";
+  const leh = lehotaZbierky(d);
+  let n: SpustenaZbierka = { ...d, id, stranka, spustena: new Date().toISOString(), ucet: z.ucet, lehota: leh.text, lehotaKluc: leh.kluc, vs: z.vs, stav: z.stav };
+  delete n.doplnenia;
+  if (supabase) {
+    try { n = await bezDataUrl(n, "zbierky"); } catch { return "Fotku sa nepodarilo nahrať. Skúste znova."; }
+    const { vs: _vs, stav: _stav, koniec: _koniec, ...nastavenie } = n;
+    const r = await supabase.rpc("oprav_zbierku", { p_zbierka: id, p_nazov: d.nazov, p_ciel: d.cielTyp === "ciel" ? cielCislo(d) : null, p_nastavenie: nastavenie }).then((x) => x, () => ({ error: { message: "", code: "" } }));
+    if (r.error) {
+      const e = r.error as { message?: string; code?: string; details?: string };
+      if (e.details === "ma_dar" || /už má dar/.test(e.message ?? "")) return "Zbierka medzičasom dostala dar — opraviť ju už nemožno.";
+      if (e.code === "PGRST202" || e.code === "42883") return "Oprava zbierky na serveri ešte nie je zapnutá. Skúste neskôr.";
+      if (e.code === "42501") return "Túto zbierku nespravujete, opraviť ju nemôžete.";
+      return "Nepodarilo sa uložiť na server. Skontrolujte pripojenie a skúste znova.";
+    }
+  }
+  spustene.set(stranka, zbierkyStrankyZPamate(stranka).map((x) => (x.id === id ? n : x))); zmena();
   return null;
 }
 

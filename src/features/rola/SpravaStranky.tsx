@@ -466,7 +466,13 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   else if (sub === "x:Nová zbierka") obsah = <NovaZbierka strankaId={strankaId} pozicia={poz} tier={tier} nazov={nazov} inicialy={inicialy} mobil={!desktop} tablet={tablet} stit={stit}
     onMojeZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onUcet={() => otvor("n:ucty")}
     onQr={typ === "charita" ? (id) => { const z = zbierkyStrankyZPamate(strankaId).find((x) => x.id === id); if (!z) { hist.current = []; setSub("g_zbierky"); return; } hist.current = ["g_zbierky"]; setSpravZb(naSpravu(naRiadok(z))); setZbTab(5); setSub("x:Správa zbierky"); } : undefined} />;
-  else if (sub === "x:Správa zbierky" && spravZb) obsah = <SpravaZbierky key={spravZb.id} tier={tier} startTab={zbTab} onTlacQr={typ === "charita" ? tlacQr : undefined} onDorovnanie={() => otvor("dorovnanie")} z={{ ...spravZb, organizacia: nazov, stranka: strankaId, onObsah: vlastne.some((x) => x.id === spravZb.id) ? (o) => void upravZbierku(strankaId, spravZb.id, o) : undefined }} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onUdaje={() => otvor("n:udaje")} />;
+  // OPRAVY 473 (3): Zrušiť a opraviť — kópia spustenej zbierky v Novej zbierke; po zapečatení späť do Správy zbierky
+  else if (sub === "x:Oprava zbierky" && spravZb && vlastne.some((x) => x.id === spravZb.id)) obsah = <NovaZbierka key={`oprava-${spravZb.id}`} oprava={vlastne.find((x) => x.id === spravZb.id)} strankaId={strankaId} pozicia={poz} tier={tier} nazov={nazov} inicialy={inicialy} mobil={!desktop} tablet={tablet} stit={stit}
+    onMojeZbierky={spat} onUcet={() => otvor("n:ucty")}
+    onOpravena={() => { const z = zbierkyStrankyZPamate(strankaId).find((x) => x.id === spravZb.id); if (z) setSpravZb(naSpravu(naRiadok(z))); hist.current = ["g_zbierky"]; setSub("x:Správa zbierky"); toast("Opravená zbierka je zapečatená ✓"); }} />;
+  else if (sub === "x:Správa zbierky" && spravZb) obsah = <SpravaZbierky key={spravZb.id} tier={tier} startTab={zbTab} onTlacQr={typ === "charita" ? tlacQr : undefined} onDorovnanie={() => otvor("dorovnanie")}
+    onOpravit={vlastne.some((x) => x.id === spravZb.id) ? () => otvor("x:Oprava zbierky") : undefined}
+    z={{ ...spravZb, organizacia: nazov, stranka: strankaId, onObsah: vlastne.some((x) => x.id === spravZb.id) ? (o) => void upravZbierku(strankaId, spravZb.id, { sada: o.sada, eurc: o.eurc, sadaE: o.sadaE }) : undefined }} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onUdaje={() => otvor("n:udaje")} />;
   // OPRAVY 411: charita · Kalendár (dlaždica na telefóne aj ikona v hlavičke) — plní sa sám, ťuk otvorí správu položky
   else if ((sub === "kalendar" || sub === "x:Kalendár") && typ === "charita") obsah = <KalendarCharity strankaId={strankaId} mobil={!desktop}
     onAkcia={(id) => otvor("oznamy", undefined, id)} onBrigady={() => otvor("dobrovolnici")} onPonuky={() => otvor("inzeraty")}
@@ -1617,7 +1623,7 @@ export function ObrNastavenia({ tier, otvor, mobil, farnost, vzhlad, charita }: 
 // ---------- prázdne obrazovky ----------
 /** OPRAVY 404: ktoré právo pracovníka treba na časť Správy charity (null = smie každý v Správe) */
 const PRAVO_SUB: Record<string, Pravo> = {
-  g_zbierky: "zbierky", centralna: "zbierky", dorovnanie: "zbierky", segment: "zbierky", materialne: "zbierky", "x:Nová zbierka": "zbierky", "x:Správa zbierky": "zbierky",
+  g_zbierky: "zbierky", centralna: "zbierky", dorovnanie: "zbierky", segment: "zbierky", materialne: "zbierky", "x:Nová zbierka": "zbierky", "x:Správa zbierky": "zbierky", "x:Oprava zbierky": "zbierky",
   doklady: "doklady",
   g_obsah: "obsah", skutky: "obsah", video: "obsah", oznamy: "obsah", nastenka: "obsah", upoutavky: "obsah",
   g_ludia: "ludia", darcovia: "ludia", sledujuci: "ludia", dobrovolnici: "ludia", podujatia: "ludia", sponzoring: "ludia", inzeraty: "ludia",

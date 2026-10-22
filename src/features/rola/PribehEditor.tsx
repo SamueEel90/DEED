@@ -11,7 +11,7 @@ import { pridajOznamDarcom } from "@/lib/oznamyDarcom";
 import { najdiTestProfil, prazdnaCharita, type TestZbierka } from "@/lib/testProfily";
 import { registra } from "@/lib/udajeRegistra";
 import {
-  pribehNaUpravu, ulozKonceptPribehu, zverejniPribeh, zmenPriebeh, nacitajPribeh, jeNacitany, orgPribehu,
+  pribehNaUpravu, pribehZbierky, ulozKonceptPribehu, zverejniPribeh, zmenPriebeh, nacitajPribeh, jeNacitany, orgPribehu,
   useZmenyPribehov, PRIBEH_ZNAKOV, PRIBEH_RIADKOV, type Pribeh, type ZapisPriebehu,
 } from "@/lib/pribehZbierky";
 import type { MediumZbierky } from "@/lib/novaZbierka";
@@ -26,6 +26,7 @@ const pole: CSSProperties = { width: "100%", minHeight: 48, padding: "0 14px", b
 // OPRAVY 455: poradie krokov · „Ako to zatiaľ ide“ (živé zhrnutie) · Priebeh hneď pod ním · „Ďalšie fotky k príbehu“
 const KROKY = ["Krátky text do feedu", "Ako to zatiaľ ide", "Priebeh", "Ďalšie fotky k príbehu", "Citát"] as const; // OPRAVY 461: Príbeh týždňa ide automaticky
 const dnes = () => new Date().toISOString().slice(0, 10);
+const datumKratko = (iso: string) => { const d = new Date(iso); return `${d.getDate()}. ${d.getMonth() + 1}.`; };
 const datumSk = (iso: string) => { const d = new Date(iso); return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`; };
 const podlaDatumu = (l: ZapisPriebehu[]) => [...l].sort((a, b) => (a.datum < b.datum ? 1 : a.datum > b.datum ? -1 : 0));
 type Novy = { id: string | null; datum: string; nadpis: string; text: string; media: MediumZbierky[] };
@@ -43,7 +44,7 @@ export function PribehEditor(props: { z: ZbierkaNaSpravu; mobil: boolean; toast:
   return <PribehEditorObsah key={z.id} {...props} />;
 }
 
-function PribehEditorObsah({ z, mobil, toast }: { z: ZbierkaNaSpravu; mobil: boolean; toast: (m: string) => void }) {
+function PribehEditorObsah({ z, mobil }: { z: ZbierkaNaSpravu; mobil: boolean; toast: (m: string) => void }) {
   useZmenyPribehov();
   const org = z.stranka || orgPribehu(z.id);
   const start = pribehNaUpravu(z.id);
@@ -57,6 +58,9 @@ function PribehEditorObsah({ z, mobil, toast }: { z: ZbierkaNaSpravu; mobil: boo
   const [chybaZapis, setChybaZapis] = useState<string | null>(null);
   const [zverejnene, setZverejnene] = useState(false);
   const [posiela, setPosiela] = useState(false);
+  // OPRAVY 474: zápis — chyba nadpisu až pri podržaní, výsledok na mieste formulára (nie toast)
+  const [nadpisChyba, setNadpisChyba] = useState(false);
+  const [hotovoZapis, setHotovoZapis] = useState<{ t: string; s: string } | null>(null);
   const stav = pribehNaUpravu(z.id);
   const casovac = useRef<number>();
   const vrchKroku = useRef<HTMLButtonElement>(null);
@@ -93,7 +97,8 @@ function PribehEditorObsah({ z, mobil, toast }: { z: ZbierkaNaSpravu; mobil: boo
   };
   // (3) Priebeh: zvolený dátum, najnovší hore, ťuk = upraviť, zmazať podržaním
   const ulozZapis = async () => {
-    if (!novy.nadpis.trim()) return;
+    if (!novy.nadpis.trim()) { setNadpisChyba(true); return; }
+    setNadpisChyba(false);
     const zapis: ZapisPriebehu = { id: novy.id ?? `zp-${Date.now()}`, datum: novy.datum || dnes(), nadpis: novy.nadpis.trim(), text: novy.text, ...(novy.media.length ? { media: novy.media } : {}) };
     const zoznam = podlaDatumu(novy.id ? p.priebeh.map((r) => (r.id === novy.id ? zapis : r)) : [zapis, ...p.priebeh]);
     window.clearTimeout(casovac.current);
@@ -104,13 +109,16 @@ function PribehEditorObsah({ z, mobil, toast }: { z: ZbierkaNaSpravu; mobil: boo
     setP((x) => ({ ...x, priebeh: zoznam }));
     if (r.naStranke && !novy.id) pridajOznamDarcom({ zbierkaId: z.id, typ: "sprava", text: `<p><b>${zapis.nadpis}</b></p>${zapis.text}` });
     setNovy(prazdnyZapis());
-    toast(r.naStranke ? (novy.id ? "Zápis je upravený aj na stránke." : "Zápis je na stránke. Darcovia dostali upozornenie.") : "Zápis je v koncepte.");
+    setHotovoZapis(novy.id
+      ? (r.naStranke ? { t: "Zmeny sú na stránke ✓", s: "Darcom sa nové upozornenie neposiela." } : { t: "Zmeny sú v príbehu ✓", s: "Na stránke budú po zverejnení príbehu (dole)." })
+      : (r.naStranke ? { t: "Zápis je na stránke ✓", s: "Darcovia dostali upozornenie. Je navrchu v zozname nižšie." } : { t: "Zápis je v príbehu ✓", s: "Na stránke bude po zverejnení príbehu (dole)." }));
   };
   const zmazZapis = async (id: string) => {
     const zoznam = p.priebeh.filter((r) => r.id !== id);
     const r = await zmenPriebeh(z.id, org, zoznam);
     if ("chyba" in r) { setChybaZapis(r.chyba); return; }
     setP((x) => ({ ...x, priebeh: zoznam })); setNovy(prazdnyZapis());
+    setHotovoZapis(r.naStranke ? { t: "Zápis je zmazaný ✓", s: "Zo stránky zmizol. Darcom sa nič neposiela." } : { t: "Zápis je zmazaný ✓", s: "Z príbehu zmizol." });
   };
   const naPriebeh = () => { if (mobil) setKrok(2); else priebehRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); };
 
@@ -127,36 +135,50 @@ function PribehEditorObsah({ z, mobil, toast }: { z: ZbierkaNaSpravu; mobil: boo
       <RichTextInput vzhlad="sprava" value={p.text} onChange={(h) => uprav({ text: h })} nastroje={NASTROJE} minH={200}
         ariaLabel="Ako to zatiaľ ide" tvrdyLimit={PRIBEH_ZNAKOV} />
     </>;
-    if (i === 2) { const ok = !!novy.nadpis.trim(); return <>
-      <span style={textK}>Čo sa stalo, s dátumom. Najnovší zápis je navrchu. Keď je príbeh zverejnený, darcovia dostanú upozornenie. Ťuknutím na zápis ho upravíte.</span>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: 14, borderRadius: 16, border: novy.id ? "2px solid var(--green)" : "1px dashed var(--cardBd)" }}>
-        {novy.id && <b style={{ fontSize: 14, color: "var(--gInk)" }}>Upravujete zápis</b>}
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+    if (i === 2) { const naStranke = stav.zverejneny; return <>
+      <span style={textK}>Čo sa stalo, s dátumom. {naStranke ? "Zápis sa zverejní hneď a darcovia dostanú upozornenie." : "Na stránke bude po zverejnení príbehu."} Ťuknutím na zápis ho upravíte.</span>
+      {hotovoZapis && !novy.id
+        ? <div role="status" style={{ display: "flex", flexDirection: "column", gap: 10, padding: 16, borderRadius: 16, background: "var(--gSoft)", border: "1.5px solid var(--gBd)" }}>
+            <b style={{ fontSize: 16, color: "var(--gInk)" }}>{hotovoZapis.t}</b>
+            <span style={{ fontSize: 14.5, lineHeight: 1.45, color: "var(--ink)" }}>{hotovoZapis.s}</span>
+            <button type="button" onClick={() => setHotovoZapis(null)} style={{ ...obrysK, alignSelf: "flex-start" }}>+ Napísať ďalší zápis</button>
+          </div>
+        : <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: 14, borderRadius: 16, border: novy.id ? "2px solid var(--green)" : "1px dashed var(--cardBd)" }}>
+        {novy.id && <b style={{ fontSize: 14, color: "var(--gInk)" }}>Upravujete zápis z {datumSk(novy.datum)}</b>}
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-start" }}>
           <input type="date" max={dnes()} style={{ ...pole, flex: "0 0 170px", width: "auto" }} value={novy.datum} onChange={(e) => setNovy({ ...novy, datum: e.target.value > dnes() ? dnes() : e.target.value })} aria-label="Dátum" />
-          <input style={{ ...pole, flex: "1 1 200px", width: "auto" }} value={novy.nadpis} onChange={(e) => setNovy({ ...novy, nadpis: e.target.value })} placeholder="Čo sa stalo, napríklad Krov stojí" aria-label="Nadpis zápisu" maxLength={80} />
+          <span style={{ flex: "1 1 200px", display: "flex", flexDirection: "column", gap: 6 }}>
+            <input style={{ ...pole, ...(nadpisChyba ? { border: "2px solid #B3402A" } : {}) }} value={novy.nadpis} onChange={(e) => { setNovy({ ...novy, nadpis: e.target.value }); if (e.target.value.trim()) setNadpisChyba(false); }} placeholder="Čo sa stalo, napríklad Krov stojí" aria-label="Nadpis zápisu" aria-invalid={nadpisChyba || undefined} maxLength={80} />
+            {nadpisChyba && <span role="alert" style={{ fontSize: 13.5, fontWeight: 700, color: "#B3402A" }}>Napíšte sem, čo sa stalo. Potom znova podržte tlačidlo.</span>}
+          </span>
         </div>
         <TextovePolia popis={novy.text} popis2="" onPopis={(h) => setNovy((x) => ({ ...x, text: h }))} onPopis2={() => {}} ph={mobil} bezPokracovania
           nadpis1="Text zápisu" popis1="Pár viet pre darcov. Na stránke sa dlhý text skráti s … viac." />
         <GaleriaEditor media={novy.media} onMedia={(m) => setNovy((x) => ({ ...x, media: m }))} ph={mobil} max={4} bezVidea bezHlavnej nadpis="Fotky k zápisu · nepovinné" dovetok="" />
-        <button type="button" onClick={() => void ulozZapis()} aria-disabled={!ok}
-          style={{ ...(ok ? zelenyK : obrysK), alignSelf: "flex-start", opacity: ok ? 1 : 0.55, cursor: ok ? "pointer" : "default" }}>{novy.id ? "Uložiť zmeny" : "+ Pridať zápis"}</button>
-        {!ok && <SvetlusikKarta chyba>Doplňte, čo sa stalo.</SvetlusikKarta>}
         {chybaZapis && <SvetlusikKarta chyba>{chybaZapis}</SvetlusikKarta>}
-        {novy.id && <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-          <button type="button" onClick={() => setNovy(prazdnyZapis())} style={obrysK}>Zrušiť úpravu</button>
-          <span style={{ flex: "1 1 220px" }}><PodrzTlacidlo label="Podržte a zmažte zápis" farba="cervena" trvanie={1500} onConfirm={() => void zmazZapis(novy.id!)} /></span>
-        </div>}
-      </div>
+        {novy.id
+          ? <>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                <button type="button" onClick={() => { setNovy(prazdnyZapis()); setNadpisChyba(false); }} style={obrysK}>Zrušiť úpravu</button>
+                <span style={{ flex: "1 1 240px" }}><PodrzTlacidlo label="Podržte a uložte zmeny" trvanie={1500} onConfirm={() => void ulozZapis()} /></span>
+              </div>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", paddingTop: 12, borderTop: "1px solid var(--cardBd)" }}>
+                <span style={{ flex: "1 1 200px", fontSize: 13.5, color: "var(--ink3)" }}>Zápis už nechcete? {naStranke ? "Zmizne zo stránky." : "Zmizne z príbehu."}</span>
+                <span style={{ flex: "0 1 260px" }}><PodrzTlacidlo label="Podržte a zmažte zápis" farba="cervena" obrys vyska={48} trvanie={1500} onConfirm={() => void zmazZapis(novy.id!)} /></span>
+              </div>
+            </>
+          : <PodrzTlacidlo label={naStranke ? "Podržte a zverejnite zápis" : "Podržte a pridajte do príbehu"} trvanie={1500} onConfirm={() => void ulozZapis()} />}
+      </div>}
       {p.priebeh.map((r, j) => (
-        <button key={r.id} type="button" onClick={() => setNovy({ id: r.id, datum: r.datum, nadpis: r.nadpis, text: r.text, media: r.media ?? [] })} aria-label={`Upraviť zápis ${r.nadpis}`}
-          style={{ display: "flex", flexDirection: "column", gap: 2, padding: "6px 0 6px 14px", border: "none", borderLeft: `3px solid ${j === 0 ? "var(--gold)" : "var(--cardBd)"}`, background: "transparent", textAlign: "left", cursor: "pointer", fontFamily: "inherit", color: "var(--ink)" }}>
+        <button key={r.id} type="button" onClick={() => { setHotovoZapis(null); setNadpisChyba(false); setNovy({ id: r.id, datum: r.datum, nadpis: r.nadpis, text: r.text, media: r.media ?? [] }); }} aria-label={`Upraviť zápis ${r.nadpis}`}
+          style={{ display: "flex", flexDirection: "column", gap: 4, padding: "6px 0 6px 14px", border: "none", borderLeft: `3px solid ${j === 0 ? "var(--gold)" : "var(--cardBd)"}`, background: "transparent", textAlign: "left", cursor: "pointer", fontFamily: "inherit", color: "var(--ink)" }}>
           <span style={{ fontSize: 12.5, fontWeight: 800, color: j === 0 ? "var(--gold)" : "var(--ink3)" }}>{datumSk(r.datum)}</span>
           <b style={{ fontSize: 15 }}>{r.nadpis}</b>
           {cistyText(r.text) && <span className="ftext" style={textK} dangerouslySetInnerHTML={{ __html: sanitizujHtml(r.text) }} />}
-          {!!r.media?.length && <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{r.media.length} {r.media.length === 1 ? "fotka" : r.media.length < 5 ? "fotky" : "fotiek"}</span>}
+          {!!r.media?.length && <span style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{r.media.filter((m) => m.typ === "foto").map((m) => <img key={m.id} src={m.src} alt={m.popis ?? ""} style={{ width: 72, height: 54, borderRadius: 8, objectFit: "cover", display: "block" }} />)}</span>}
         </button>))}
     </>; }
-    if (i === 3) return <GaleriaEditor media={p.media} onMedia={(m) => uprav({ media: m })} ph={false} bezHlavnej nadpis="Ďalšie fotky k príbehu" dovetok="">
+    if (i === 3) return <GaleriaEditor media={p.media} onMedia={(m) => uprav({ media: m })} ph={false} bezHlavnej nadpis="" dovetok="">
       <span style={textK}>Doplnkové fotky. Hlavná fotka je vždy titulná fotka zbierky. Pod fotkou môžete napísať popis.</span></GaleriaEditor>;
     return <>
       <span style={textK}>Nepovinné. Jedna veta človeka, ktorému pomáhate.</span>
@@ -173,25 +195,37 @@ function PribehEditorObsah({ z, mobil, toast }: { z: ZbierkaNaSpravu; mobil: boo
     </>;
   };
 
-  const stavText = zmenene || stav.koncept ? (stav.zverejneny ? "Koncept sa ukladá sám. Zmeny sa na stránke ukážu po zverejnení." : "Koncept sa ukladá sám. Na stránke sa ukáže po zverejnení.") : stav.zverejneny ? "Príbeh je zverejnený." : "Príbeh zatiaľ nemáte. Je dobrovoľný.";
+  // OPRAVY 474: hlavička = len stav + Náhľad; zverejnenie je dole v páse
+  const datumZv = stav.zverejneny ? (pribehZbierky(z.id)?.zverejnene ? datumKratko(pribehZbierky(z.id)!.zverejnene!) : "") : "";
+  const nezverejnene = zmenene || stav.koncept;
+  const [bodka, stavText] = !stav.zverejneny && !nezverejnene ? ["var(--ink4, #A6A395)", "Príbeh zatiaľ nemáte. Je dobrovoľný."]
+    : nezverejnene ? ["#D4A72C", stav.zverejneny ? `Na stránke je verzia${datumZv ? ` z ${datumZv}` : ""}. Máte nezverejnené zmeny, zverejníte ich dole.` : "Príbeh ešte nie je na stránke. Zverejníte ho dole."]
+    : ["#4B7A35", `Zverejnený${datumZv ? ` ${datumZv}` : ""}. Všetko je na stránke.`];
   const ulozenie = ulozStav === "uklada" ? <span style={{ fontSize: 13, color: "var(--ink3)" }}>Ukladá sa…</span>
     : ulozStav !== "ok" ? <SvetlusikKarta chyba><span style={{ display: "flex", flexDirection: "column", gap: 8 }}>{ulozStav}<button type="button" onClick={() => void uloz(p)} style={{ ...zelenyK, alignSelf: "flex-start" }}>Skúsiť znova</button></span></SvetlusikKarta>
     : zmenene ? <span style={{ fontSize: 13, color: "var(--gInk)", fontWeight: 700 }}>Uložené ✓</span> : null;
+  const nahladTl = <button type="button" onClick={() => setNahlad(true)} disabled={!p.kratky.trim() && !cistyText(p.text).trim()} style={{ ...obrysK, alignSelf: "auto" }}>Náhľad</button>;
   const hlavicka = (
-    <section style={{ ...kartaK, gap: 12 }}>
-      <span style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-        <b style={nadpisK}>Príbeh zbierky</b>
-        <span style={textK}>{stavText}</span>
-        {ulozenie}
+    <section style={{ ...kartaK, gap: 10 }}>
+      <span style={{ display: "flex", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+        <span style={{ flex: "1 1 260px", display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+          <b style={nadpisK}>Príbeh zbierky</b>
+          <span style={{ display: "flex", alignItems: "flex-start", gap: 8, ...textK }}><span aria-hidden="true" style={{ flex: "none", width: 10, height: 10, marginTop: 5, borderRadius: "50%", background: bodka }} />{stavText}</span>
+          {ulozenie}
+        </span>
+        {nahladTl}
       </span>
-      {zverejnene
-        ? <div role="status" style={{ padding: "14px 16px", borderRadius: 16, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 15.5, fontWeight: 800, color: "var(--gInk)" }}>Zverejnené ✓ · darcovia dostali upozornenie</div>
-        : <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-            <button type="button" onClick={() => setNahlad(true)} disabled={!p.kratky.trim() && !cistyText(p.text).trim()} style={{ ...obrysK, alignSelf: "auto" }}>Náhľad</button>
-            {mozeZverejnit && <span style={{ flex: "1 1 240px" }}><PodrzTlacidlo label={posiela ? "Zverejňuje sa…" : "Podržte a zverejnite príbeh"} trvanie={1500} disabled={posiela} onConfirm={() => void zverejni()} /></span>}
-          </div>}
-      {!zverejnene && !mozeZverejnit && dovodNezverejnit && <SvetlusikKarta chyba>{dovodNezverejnit}</SvetlusikKarta>}
     </section>);
+  // OPRAVY 474 (2): pás dole — nezverejnené zmeny + Náhľad + Podržte a zverejnite príbeh (dôvod namiesto tlačidla); výsledok na tom istom mieste
+  const pas = zverejnene
+    ? <div role="status" style={{ position: "sticky", bottom: 0, zIndex: 5, padding: "14px 16px", borderRadius: 16, background: "var(--gSoft)", border: "1.5px solid var(--gBd)", fontSize: 15.5, fontWeight: 800, color: "var(--gInk)", boxShadow: "0 -6px 18px rgba(0,0,0,.08)" }}>Zverejnené ✓ · darcovia dostali upozornenie</div>
+    : nezverejnene ? <div style={{ position: "sticky", bottom: 0, zIndex: 5, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", padding: "14px 16px", borderRadius: 16, background: "var(--card)", border: "1.5px solid #D4A72C", boxShadow: "0 -6px 18px rgba(0,0,0,.12)" }}>
+        <span style={{ flex: "1 1 220px", display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}><b style={{ fontSize: 15.5 }}>Máte nezverejnené zmeny v príbehu</b><span style={{ fontSize: 13.5, color: "var(--ink3)" }}>Darcovia ich uvidia až po zverejnení.</span></span>
+        {nahladTl}
+        {mozeZverejnit
+          ? <span style={{ flex: "1 1 260px" }}><PodrzTlacidlo label={posiela ? "Zverejňuje sa…" : "Podržte a zverejnite príbeh"} trvanie={1500} disabled={posiela} onConfirm={() => void zverejni()} /></span>
+          : dovodNezverejnit && <span style={{ flex: "1 1 260px" }}><SvetlusikKarta chyba>{dovodNezverejnit}</SvetlusikKarta></span>}
+      </div> : null;
 
   const cislo = (i: number) => (
     <span style={{ width: 32, height: 32, borderRadius: "50%", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, background: vyplnene[i] ? "#4B7A35" : "var(--btn)", color: vyplnene[i] ? "#fff" : "var(--ink2)" }}>{i + 1}</span>);
@@ -205,7 +239,7 @@ function PribehEditorObsah({ z, mobil, toast }: { z: ZbierkaNaSpravu; mobil: boo
         <span style={{ display: "flex", alignItems: "center", gap: 10 }}>{cislo(krok)}<b style={nadpisK}>{KROKY[krok]}</b></span>
         {telo(krok)}
       </section>
-      {hlavicka}{prehlad}
+      {hlavicka}{pas}{prehlad}
     </>;
     return <>
       {hlavicka}
@@ -215,7 +249,7 @@ function PribehEditorObsah({ z, mobil, toast }: { z: ZbierkaNaSpravu; mobil: boo
             {cislo(i)}<span style={{ flex: 1 }}>{t}</span><span aria-hidden="true" style={{ color: "var(--ink3)" }}>›</span>
           </button>))}
       </section>
-      {prehlad}
+      {pas}{prehlad}
     </>;
   }
   return <>
@@ -225,16 +259,16 @@ function PribehEditorObsah({ z, mobil, toast }: { z: ZbierkaNaSpravu; mobil: boo
         <span style={{ display: "flex", alignItems: "center", gap: 10 }}>{cislo(i)}<b style={nadpisK}>{t}</b></span>
         {telo(i)}
       </section>))}
-    {prehlad}
+    {pas}{prehlad}
   </>;
 }
 
-/** Náhľad = tá istá stránka Príbeh, akú uvidí darca (s konceptom) */
+/** Náhľad = tá istá stránka Príbeh, akú uvidí darca (s konceptom) · OPRAVY 476 (b): titulná fotka = hlavná fotka zbierky ako po zverejnení */
 function NahladPribehu({ z, org, p, onZavri }: { z: ZbierkaNaSpravu; org: string; p: Pribeh; onZavri: () => void }) {
   // OPRAVY 403: charita bez testovacieho profilu = jej prázdny profil s menom z registra
   const profil = najdiTestProfil(org) ?? prazdnaCharita(org, registra(org).nazov || undefined);
   const tz: TestZbierka = profil.zbierky.find((x) => x.id === z.id || (z.id.startsWith("ukazka-strecha") && x.id === "z-strecha-horvath"))
-    ?? { id: z.id, nazov: z.nazov, popis: cistyText(z.popis ?? ""), mesto: "Trenčín", foto: p.media.find((m) => m.typ === "foto")?.src ?? "", vyzbierane: z.vyzbierane, ciel: z.ciel || undefined, ludia: z.darcovia, stav: z.ukoncena ? "ukoncena" : z.dlha ? "dlhodoba" : "bezi" };
+    ?? { id: z.id, nazov: z.nazov, popis: cistyText(z.popis ?? ""), popisHtml: `${z.popis ?? ""}${z.popis2 ?? ""}`, mesto: profil.mesto, foto: z.media?.find((m) => m.typ === "foto")?.src ?? "", vs: z.vs, vyzbierane: z.vyzbierane, ciel: z.ciel || undefined, ludia: z.darcovia, stav: z.ukoncena ? "ukoncena" : z.dlha ? "dlhodoba" : "bezi" };
   return (
     <div role="dialog" aria-label="Náhľad príbehu" style={{ position: "fixed", inset: 0, zIndex: 400, background: "var(--bg)" }}>
       <PribehZbierky profil={profil} z={tz} p={p} spatText="Zavrieť náhľad" onBack={onZavri} />
