@@ -21,7 +21,9 @@ const zmena = () => { verzia++; posluchaci.forEach((f) => f()); };
 let zoSpravy = false;
 // OPRAVY 315: ťuk na upozornenie „Farár zverejnil váš príspevok“ → stránka presne pri príspevku
 let doOznamu: string | null = null;
-export function otvorVerejnyProfil(k: string, o?: { zoSpravy?: boolean; doOznamu?: string; doVecnej?: string; doSkutku?: string }) { otvorene = true; kluc = k; zoSpravy = !!o?.zoSpravy; doOznamu = o?.doOznamu ?? null; doVecnej = o?.doVecnej ?? null; doSkutku = o?.doSkutku ?? null; zmena(); }
+export function otvorVerejnyProfil(k: string, o?: { zoSpravy?: boolean; doOznamu?: string; doVecnej?: string; doSkutku?: string; /** OPRAVY 485: Späť zo skutku vráti rovno na feed */ spatNaFeed?: boolean }) { otvorene = true; kluc = k; zoSpravy = !!o?.zoSpravy; doOznamu = o?.doOznamu ?? null; doVecnej = o?.doVecnej ?? null; doSkutku = o?.doSkutku ?? null; skutokZFeedu = !!o?.spatNaFeed; zmena(); }
+let skutokZFeedu = false;
+export const skutokOtvorenyZFeedu = (): boolean => skutokZFeedu;
 // OPRAVY 490: „Pozri ›“ pri skutku v module zbierky → stránka charity s otvoreným detailom skutku (číta sa bez mazania, zmaže zrusDoSkutku)
 let doSkutku: string | null = null;
 export const cielSkutku = (): string | null => doSkutku;
@@ -58,6 +60,11 @@ let qrCiel: QrCiel | null = null;
 /** cieľ z QR (číta sa bez mazania — StrictMode), zmaže zrusQrCiel */
 export const qrCielCitaj = (): QrCiel | null => qrCiel;
 export function zrusQrCiel() { qrCiel = null; }
+// OPRAVY 483: zbierka z QR pre stránku charity — samostatne, lebo nástenka farnosti qrCiel pri prvom vykreslení maže
+// (stránka charity sa pri načítaní chvíľu vykreslí ako farnosť, kým appka nevie, že je to charita)
+let zbierkaZQr: string | null = null;
+export const zbierkaZQrCitaj = (): string | null => zbierkaZQr;
+export function zrusZbierkuZQr() { zbierkaZQr = null; }
 /** OPRAVY 356: QR farnosti (?qr=1) pre Nástenku farnosti — číta sa bez mazania (StrictMode), zmaže zrusQrHlavna */
 export const qrHlavnaCitaj = (): boolean => qrHlavna;
 export function zrusQrHlavna() { qrHlavna = false; }
@@ -105,7 +112,7 @@ if (typeof window !== "undefined") {
     prisloSCielom = true;
     // OPRAVY 347: /z/{id} — QR zbierky farnosti, vecnej aj rodiny: stránka, ktorej zbierka patrí, a hneď zbierka
     const id = decodeURIComponent(m[1]);
-    void strankaZbierky(id).then((st) => { if (st) { qrCiel = { zbierka: id }; otvorVerejnyProfil(st); } });
+    void strankaZbierky(id).then((st) => { if (st) { qrCiel = { zbierka: id }; zbierkaZQr = id; otvorVerejnyProfil(st); } });
   }
 }
 

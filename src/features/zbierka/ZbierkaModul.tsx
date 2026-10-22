@@ -188,7 +188,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
     if (p.kluc === "kartaStavu" && (p.hodnota === "cela" || p.hodnota === "skryta")) {
       return (
         <div key={p.kluc} className="zb-pol" style={{ padding: "0 16px" }}>
-          <KartaStavu refId={zbierka.id} zaklad={zakladMimoRiadkov(zbierka.id, zbierka.vyzbierane ?? 0)} ciel={p.hodnota === "skryta" ? null : ciel} ludiaZaklad={zakladMimoRiadkov(zbierka.id, zbierka.ludia ?? 0)} tempo={tempoRezim} koniecPruhu={koniecPruhu} skryta={p.hodnota === "skryta"} organizacia={zbierka.organizacia ? { meno: zbierka.organizacia.meno, obrazok: zbierka.organizacia.obrazok, stit: zbierka.organizacia.stit } : undefined} />
+          <KartaStavu nazovZbierky={zbierka.nazov} refId={zbierka.id} zaklad={zakladMimoRiadkov(zbierka.id, zbierka.vyzbierane ?? 0)} ciel={p.hodnota === "skryta" ? null : ciel} ludiaZaklad={zakladMimoRiadkov(zbierka.id, zbierka.ludia ?? 0)} tempo={tempoRezim} koniecPruhu={koniecPruhu} skryta={p.hodnota === "skryta"} organizacia={zbierka.organizacia ? { meno: zbierka.organizacia.meno, obrazok: zbierka.organizacia.obrazok, stit: zbierka.organizacia.stit } : undefined} />
         </div>
       );
     }

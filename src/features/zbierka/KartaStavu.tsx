@@ -84,7 +84,9 @@ function Ludia({ pocet, fanusikov, org = 0, cezSkutok = 0 }: { pocet: number; fa
   );
 }
 
-export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, koniecPruhu, cezTvorcu, skryta, bezMilnikov, organizacia, fialova }: {
+export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, koniecPruhu, cezTvorcu, skryta, bezMilnikov, organizacia, fialova, nazovZbierky }: {
+  /** OPRAVY 484: názov zbierky pre riadok skutku */
+  nazovZbierky?: string;
   /** OPRAVY 492 · balík 42: verzia zbierky u toho, kto reťazí — fialová karta „Vyzbierané cez …“ */
   fialova?: boolean;
   /** OPRAVY 490: organizácia, ktorá zbiera — logo a štít pri vlastnom vklade a pri skutku */
@@ -110,7 +112,7 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, ko
   const suma = (cezTvorcu ? 0 : zaklad) + dary.reduce((a, r) => a + r.suma, 0);
   const org = useUsekyOrganizacii(refId);
   // OPRAVY 490: kto prispel — organizácia → firmy → reťaze → skutky → ľudia (úseky pruhu, legenda, riadky)
-  const kto = useKtoPrispel(refId, dary, organizacia);
+  const kto = useKtoPrispel(refId, dary, organizacia, nazovZbierky);
   // OPRAVY 222: dary organizácií (farnosť, vlastné peniaze) nie sú ľudia
   const ludia = Math.max(0, (cezTvorcu ? 0 : ludiaZaklad) + dary.filter((r) => !r.firma).length - (cezTvorcu ? 0 : org.darovOrg));
   const nadpisVyzbierane = cezTvorcu ? `Vyzbierané cez ${cezTvorcu.menoAkuzativ}` : "Vyzbierané";

@@ -22,7 +22,7 @@ import { verejneOznamy, useZmenyOznamov, type Oznam } from "@/lib/oznamy";
 import { pracaZPonuky } from "@/features/rola/PonukyPrace";
 import { centralnaZPamate, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
 import { cistyText } from "@/lib/richtext";
-import { otvorVerejnyProfil, useVerejnyProfilOtvoreny, verejnyProfilKluc, zavriVerejnyProfil, vrstvaProfiluPripoj, nahladZoSpravy, cielOznamu, zrusDoOznamu, cielSkutku, zrusDoSkutku, qrCielCitaj, zrusQrCiel } from "./otvor";
+import { otvorVerejnyProfil, useVerejnyProfilOtvoreny, verejnyProfilKluc, zavriVerejnyProfil, vrstvaProfiluPripoj, nahladZoSpravy, cielOznamu, zrusDoOznamu, cielSkutku, zrusDoSkutku, zbierkaZQrCitaj, zrusZbierkuZQr, skutokOtvorenyZFeedu } from "./otvor";
 import { VrstvaProfilu, naZbierkaData } from "./casti";
 import { useVzhlad, maVybranyVzhlad, type Vzhlad } from "@/lib/vzhladStranky";
 import { nacitajTiery } from "@/features/rola/stav";
@@ -139,11 +139,13 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad }: { kluc: string; onBa
   // OPRAVY 402: novo založená charita (vlastné id) — prázdny profil s menom z registra
   const profil0 = profilKluca(kl0);
   const [detail, setDetail] = useState<TestZbierka | null>(null);
+  const [detailZQr, setDetailZQr] = useState(false); // OPRAVY 483: z QR rovno modul s platbou (nie príbeh)
   const [oznamId, setOznamId] = useState<string | null>(null); // OPRAVY 431: ťuk na oznam / výzvu = detail
   // KARTA 57C §1: farnosť = živá nástenka z uloženého (nie testovací profil)
   const [stream, setStream] = useState<string | null>(null);
   // doplnky 4. 10.: záznam z kroniky / rokov — skutok, akcia, ukončená zbierka (bez platby), Iskra = Iskry na tom videu
   const [zaznam, setZaznam] = useState<PolCh | null>(null);
+  const [zaznamZFeedu, setZaznamZFeedu] = useState(false); // OPRAVY 485: skutok z hlavného feedu — Späť rovno na feed
   const [novyOdF, setNovyOdF] = useState<string | null>(null); // KARTA 56I: nová položka Od veriacich je zvýraznená
   const pc = usePc1200();
   const otvorZaznam = (p: PolCh) => {
@@ -194,17 +196,18 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad }: { kluc: string; onBa
     const sk = (skutkyStrankyZPamate(kCh) ?? skutkyOrg(kCh)).find((x) => x.id === id || x.prispevokId === id); // OPRAVY 485: z feedu id príspevku
     if (!sk) return;
     const t = skutokProfilu(sk, profil0);
+    setZaznamZFeedu(skutokOtvorenyZFeedu());
     zrusDoSkutku();
     setZaznam({ id: t.id, typ: "sk", d: t.d ?? "", m: t.m ?? "", rok: t.rok ?? new Date().getFullYear(), nazov: t.nazov, s: t.popis, foto: t.foto });
   });
   // OPRAVY 483: QR / odkaz zbierky (/z/{id}) → rovno detail tej zbierky s platbou (ako vo Viere), nie stránka charity
   useEffect(() => {
-    const c = qrCielCitaj();
-    const id = c && "zbierka" in c ? c.zbierka : null;
+    const id = zbierkaZQrCitaj();
     if (!id || !kCh || !profil0) return;
     const z = zbierkyStrankyZPamate(kCh).find((x) => x.id === id);
     if (!z) return;
-    zrusQrCiel();
+    zrusZbierkuZQr();
+    setDetailZQr(true);
     setDetail(zbierkaProfilu(z, profil0));
   });
   if (!profil0) return null;
@@ -250,7 +253,7 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad }: { kluc: string; onBa
   };
   // bod 149 · detail zbierky / záznam sa otvorí NAD profilom (profil ostane pod ním) → Zbaliť a späť vráti na tú istú kartu a posun
   // KARTA 55 · E: zbierka so zverejneným príbehom otvorí stránku Príbeh zbierky (inak modul zbierky ako doteraz)
-  const pribeh = detail ? pribehZbierky(detail.id) : null;
+  const pribeh = detail && !detailZQr ? pribehZbierky(detail.id) : null;
   const oznamD = oznamId ? oznamyStranky(profil.k).find((o) => o.id === oznamId) : undefined;
   const vrstva = oznamD ? (
     <div className="sc-tokeny" data-stit={profil.stit.toLowerCase()} style={{ background: "var(--bg)", minHeight: "100%" }}>
@@ -263,14 +266,14 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad }: { kluc: string; onBa
   ) : detail ? (
     <div className="sc-tokeny" data-stit={profil.stit.toLowerCase()} style={{ background: "var(--bg)", minHeight: "100%" }}>
       <div style={{ maxWidth: 1240, margin: "0 auto", padding: 14 }}>
-        <ZbierkaModul zbierka={naZbierkaData(detail, profil)} zoStrankyOrg onBack={() => setDetail(null)} spatNazov="Späť na stránku" />
+        <ZbierkaModul zbierka={naZbierkaData(detail, profil)} zoStrankyOrg onBack={() => { setDetail(null); setDetailZQr(false); }} spatNazov="Späť na stránku" />
       </div>
     </div>
   ) : zaznam ? (
     <div className="vp sc-tokeny" data-stit={profil.stit.toLowerCase()} style={{ height: "100%" }}>
       {zaznam.typ === "zb"
         ? <DetailUkoncenej pc={pc} profil={profil} p={zaznam} onBack={() => setZaznam(null)} />
-        : <DetailSkutku pc={pc} profil={profil} p={zaznam} onBack={() => setZaznam(null)} />}
+        : <DetailSkutku pc={pc} profil={profil} p={zaznam} onBack={() => { if (zaznamZFeedu) { setZaznamZFeedu(false); zavriVerejnyProfil(); } setZaznam(null); }} />}
     </div>
   ) : null;
   return (

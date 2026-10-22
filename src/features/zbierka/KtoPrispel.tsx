@@ -50,7 +50,7 @@ type Riadok = { k: string; druh: "org" | "firma" | "retaz" | "skutok"; meno: str
 /** všetky skupiny prispievateľov pri zbierke (bez ľudí) — rovnaké poradie pre pruh aj riadky */
 /** organizácia, ktorá zbiera (z modulu) — meno, logo a štít pri vlastnom vklade a pri skutku */
 export type OrgZbierky = { meno: string; obrazok?: string; stit?: string };
-export function useKtoPrispel(refId: string, dary: DarRiadok[], orgZb?: OrgZbierky): { riadky: Riadok[]; cezSkutok: number } {
+export function useKtoPrispel(refId: string, dary: DarRiadok[], orgZb?: OrgZbierky, /** OPRAVY 484: názov zbierky pri skutku („zbiera na zbierku: …“) */ nazovZb?: string): { riadky: Riadok[]; cezSkutok: number } {
   const strOrg = (meno: string): Strana | undefined => orgZb?.stit ? { druh: "charita", meno, iniciala: inicialy(meno), stit: orgZb.stit } : undefined;
   useZmenyDorovnani();
   const org = usePrispievatelia(refId);
@@ -83,7 +83,7 @@ export function useKtoPrispel(refId: string, dary: DarRiadok[], orgZb?: OrgZbier
   for (const d of dary) if (d.cezSkutok) { const k = d.cezSkutokId ?? `n:${d.cezSkutok}`; const x = sk.get(k); sk.set(k, { nazov: d.cezSkutok, id: d.cezSkutokId, suma: (x?.suma ?? 0) + d.suma }); }
   const strankaZb = async () => objektZbierky(refId)?.stranka ?? (refId.includes(":") ? refId.split(":")[0] : await strankaZbierky(refId));
   let si = 0;
-  for (const [k, x] of sk) r.push({ k: `s${k}`, druh: "skutok", meno: orgZb?.meno ?? "Skutok", ini: inicialy(orgZb?.meno ?? "S"), logo: orgZb?.obrazok, strana: orgZb ? strOrg(orgZb.meno) : undefined, text: <>Skutok {x.nazov} · zbiera na túto zbierku · zatiaľ <span style={{ whiteSpace: "nowrap" }}>{eur(x.suma)}</span></>, suma: x.suma, farba: odtien("skutok", si++),
+  for (const [k, x] of sk) r.push({ k: `s${k}`, druh: "skutok", meno: orgZb?.meno ?? "Skutok", ini: inicialy(orgZb?.meno ?? "S"), logo: orgZb?.obrazok, strana: orgZb ? strOrg(orgZb.meno) : undefined, text: <>Skutok {x.nazov} · {(nazovZb ?? objektZbierky(refId)?.nazov) ? `zbiera na zbierku: ${nazovZb ?? objektZbierky(refId)?.nazov}` : "zbiera na túto zbierku"} · zatiaľ <span style={{ whiteSpace: "nowrap" }}>{eur(x.suma)}</span></>, suma: x.suma, farba: odtien("skutok", si++),
     tap: () => { void strankaZb().then((st) => { if (st) otvorVerejnyProfil(st, x.id ? { doSkutku: x.id } : undefined); }); }, tapText: "Pozri ›" });
   return { riadky: r, cezSkutok: [...sk.values()].reduce((a, b) => a + b.suma, 0) };
 }
