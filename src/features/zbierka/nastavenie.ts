@@ -71,7 +71,8 @@ export function pripojene(miesto: Miesto, k: Kontext): { kluc: Kluc; hodnota: Ho
   // dorovnanie len keď beží a platí pre darcu
   if (!k.dorovnanieAktivne) p.dorovnanie = false;
   // reťaz dobra sa nedá nastaviť na zbierke, ktorú už niekto dorovnáva (opačne sa nič neblokuje)
-  if (k.dorovnanieAktivne) p.retazNastavit = false;
+  // OPRAVY 497: skryje sa len tlačidlo „Reťaz dobra · Nastaviť ›“, už pripojené reťaze ostávajú
+  if (k.dorovnanieAktivne && p.retazNastavit) p.retazNastavit = "bezTlacidla";
   // krypto (EURC/DEED) a vlastná suma v krypte len registrovaný
   if (!k.registrovany) p.krypto = false;
   // neregistrovaný na mieste DEED: namiesto DEED dlaždíc eurá (Drobné 1 · 3 · 5 €) + vlastná suma v €

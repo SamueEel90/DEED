@@ -233,7 +233,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
     if (p.kluc === "pravidelna") return obal(<PravidelnaRiadok registrovany={registrovany} onClick={() => setHarok("pravidelna")} />);
     if (p.kluc === "oblubene") return null; // OPRAVY 429: Obľúbené z modulu preč → Sledovať vedľa nadpisu
     if (p.kluc === "zapojitFirmu") return !smieDorovnat("charita", firmaPreDorovnanie().ucet) ? null : obal(<ZapojitFirmuRiadok firma={firmaPreDorovnanie().nazov} onClick={() => setHarok("firma")} />);
-    if (p.kluc === "retazNastavit") return obal(<><RetazRiadok onClick={() => setHarok("retaz")} /><PodporujuRetazou zbierkaId={zbierka.id} /></>);
+    if (p.kluc === "retazNastavit") return obal(<>{p.hodnota !== "bezTlacidla" && <RetazRiadok onClick={() => setHarok("retaz")} />}<PodporujuRetazou zbierkaId={zbierka.id} /></>);
     if (p.kluc === "darcovia") return obal(<Darcovia refId={zbierka.id} cezTvorcu={cezTvorcu} nadpis={tvorca ? `DARCOVIA CEZ ${tvorca.menoAkuzativ.toLocaleUpperCase("sk-SK")}` : undefined} />);
     if (p.kluc === "krypto") return <div key={p.kluc} className="zb-pol" style={{ padding: "0 16px" }}><DaryVKrypte refId={zbierka.id} otvor={otvorPlatbu} mikro={mikro} cezTvorcu={cezTvorcu} sumy={zbierka.rychleSumyE} zbalene={miesto === "pohreb"} />
       {/* OPRAVY 209: pri pohrebe pod kryptom Kondolovať (dodá stránka) */}
