@@ -177,8 +177,8 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
   const hornaLista = (
     <div style={{ position: "absolute", left: rez === "tab" ? 24 : rez === "mob" ? 12 : 16, right: rez === "tab" ? 24 : rez === "mob" ? 12 : 16, top: rez === "tab" ? 28 : rez === "mob" ? "max(12px, env(safe-area-inset-top))" : 16, display: "flex", alignItems: "center", gap: rez === "tab" ? 10 : 8 }}>
       {rez === "mob"
-        ? <button type="button" onClick={spat} aria-label="Späť" style={{ ...tlTmave, width: 44 }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg></button>
-        : <button type="button" onClick={spat} aria-label="Späť" style={{ ...tlTmave, padding: "0 14px 0 8px", gap: 4, fontSize: 14, fontWeight: 800, color: "#fff" }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>Späť</button>}
+        ? <button type="button" onClick={spat} aria-label="Späť" style={{ ...tlTmave, background: "#4B7A35", width: 44 }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg></button>
+        : <button type="button" onClick={spat} aria-label="Späť" style={{ ...tlTmave, background: "#4B7A35", padding: "0 14px 0 8px", gap: 4, fontSize: 14, fontWeight: 800, color: "#fff" }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>Späť</button>}
       <LokalitaPrepinac lok={lok} onLok={setLok} domace={domace} sidlo={profil.mesto} tmavy />
       <span style={{ flex: 1 }} />
       <button type="button" aria-label="Zdieľať · QR" style={{ ...tlTmave, width: 44 }}>

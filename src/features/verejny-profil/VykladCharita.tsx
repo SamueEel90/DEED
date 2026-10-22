@@ -49,7 +49,7 @@ export function VykladCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, 
   // ---- titulka ----
   const horna = (
     <div style={{ position: "absolute", left: pc ? 36 : 16, right: pc ? 36 : 16, top: pc ? 22 : "max(14px, env(safe-area-inset-top))", display: "flex", alignItems: "center", gap: pc ? 10 : 8 }}>
-      <button type="button" onClick={onBack} aria-label="Späť" style={{ ...tlTmave, padding: pc ? "0 14px 0 8px" : 0, width: pc ? undefined : 44, gap: 4, fontSize: 14, fontWeight: 800, color: "#fff" }}>
+      <button type="button" onClick={onBack} aria-label="Späť" style={{ ...tlTmave, background: "#4B7A35", padding: pc ? "0 14px 0 8px" : 0, width: pc ? undefined : 44, gap: 4, fontSize: 14, fontWeight: 800, color: "#fff" }}>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>{pc && "Späť"}</button>
       <LokalitaPrepinac lok={lok} onLok={setLok} domace={domace} sidlo={profil.mesto} tmavy />
     </div>);
