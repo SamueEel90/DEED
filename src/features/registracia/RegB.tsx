@@ -5,6 +5,7 @@ import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { cipFiltra } from "@/components/Volby";
 import { USE_SUPABASE } from "@/lib/supabase";
+import { upravKod } from "@/lib/pristupoveKody";
 import "@/styles/platba.css";
 import "@/styles/registracia.css";
 
@@ -293,3 +294,10 @@ export function Odomknute({ polozky }: { polozky: string[] }) {
 
 /** poradové číslo člena po slovensky: 1 248 */
 export const clenCislo = (n: number) => n.toLocaleString("sk-SK").replace(/\s/g, " ");
+
+/** 0158: prístupový kód testovacej verzie — nepovinný, bez kódu je stránka testovacia; len so serverom */
+export function PoleKodu({ value, onChange, chyba }: { value: string; onChange: (v: string) => void; chyba?: string | null }) {
+  if (!naServeri) return null;
+  return <Pole label="Prístupový kód (ak ste ho dostali)" value={value} onChange={(v) => onChange(upravKod(v))} chyba={chyba}
+    hint="Bez kódu je stránka testovacia." placeholder="XXXX-XXXX" autoComplete="off" autoCapitalize="characters" spellCheck={false} />;
+}

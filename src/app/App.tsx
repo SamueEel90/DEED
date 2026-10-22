@@ -53,6 +53,7 @@ import { AkciaHost } from "@/features/skutok/Akcia";
 import { PomocHost } from "@/features/profil/Pomoc";
 import { PolohaOkruhu } from "@/features/profil/Bezpecnost24";
 import { PrehladEditora } from "@/features/deed/PrehladEditora";
+import { PristupoveKody } from "@/features/deed/PristupoveKody";
 import { somDeedAdmin } from "@/lib/editorStat";
 import { obnovPushOdber } from "@/lib/push";
 
@@ -255,6 +256,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   // KARTA 57 F: tím DEED (deed_admin, 0070) — Viac → TÍM DEED → Štatistika editora oznámení
   const [deedTim, setDeedTim] = useState(false);
   const [prehladEd, setPrehladEd] = useState(false);
+  const [kody, setKody] = useState(false); // 0158: Prístupové kódy (tím DEED)
   useEffect(() => { let ziva = true; void somDeedAdmin().then((a) => { if (ziva) setDeedTim(a); }); return () => { ziva = false; }; }, [session]);
   const [obnovaHesla, setObnovaHesla] = useState(false); // PASSWORD_RECOVERY z emailového odkazu
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -308,6 +310,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   useVrstva(!!chainSheet, () => setChainSheet(null));
   useVrstva(intro || akoFunguje, () => { setIntro(false); setAkoFunguje(false); });
   useVrstva(prehladEd, () => setPrehladEd(false));
+  useVrstva(kody, () => setKody(false));
 
   // KARTA 44: po prihlásení sa sprievodca už sám neotvára (Úvod beží pred registráciou, ďalej len cez „Ako funguje DEED+")
 
@@ -475,9 +478,11 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
             onPenazenka={() => { prepni("profil"); setWalletReq((n) => n + 1); setViac(false); }}
             onAko={() => { setViac(false); setAkoFunguje(true); }}
             onDeedTim={deedTim ? () => { setViac(false); setPrehladEd(true); } : undefined}
+            onKody={deedTim ? () => { setViac(false); setKody(true); } : undefined}
             onClose={() => setViac(false)} />
         )}
         {prehladEd && deedTim && <PrehladEditora onZavri={() => setPrehladEd(false)} />}
+        {kody && deedTim && <PristupoveKody onZavri={() => setKody(false)} />}
 
         {/* intro sprievodca — prvé spustenie (raz) alebo „Ako DEED funguje" z menu */}
         {(intro || akoFunguje) && <IntroPruvodca onClose={zavriIntro} />}

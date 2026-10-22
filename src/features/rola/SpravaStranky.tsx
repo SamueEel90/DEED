@@ -80,6 +80,7 @@ import {
   nacitajIbanOrg, STRANKA_POZICIE,
 } from "./stav";
 import { useVerejneNastavenia, verejneZPamate } from "@/lib/verejneNastavenia";
+import { useRezimStranky, type RezimStranky } from "@/lib/pristupoveKody";
 
 // ---------- ikony (cesty z prototypu) ----------
 const IK = {
@@ -561,6 +562,9 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
         <button type="button" onClick={() => setVerejny(false)} style={{ height: 42, padding: "0 16px", border: "none", borderRadius: 13, background: "var(--btn)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>Zavrieť</button>
         <button type="button" onClick={() => { setVerejny(false); otvor("profil"); }} style={{ height: 42, padding: "0 16px", border: "none", borderRadius: 13, background: "var(--btn)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>Upraviť profil</button></>} />}</>;
 
+  // 0158: štítok PILOT / TESTOVACIA len správcovi, len na Prehľade (verejný profil nič)
+  const rezim = useRezimStranky(strankaId);
+  const stitokRezimu = sub === null && rezim ? <StitokRezimu rezim={rezim} /> : null;
   const hlavicka = <Hlavicka titul={sub === "vsetko" ? <>Všetko, čo <DeedZnacka /> vie</> : titulok(sub, typ)} onSpat={spat} spatT={sub === null ? "Domov" : "Späť"} otvor={otvor} mobil={!desktop} glowNova={glowZb} telefon={telefon} onPridat={() => setPridat(true)} bezNovej={sub === "skutky" || sub === "darcovia"} />;
 
   if (desktop) return (
@@ -593,6 +597,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
       <main style={{ maxWidth: 1600, margin: "0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>
         {hlavicka}
         {dev}
+        {stitokRezimu}
         <div key={String(sub)} style={{ display: "flex", flexDirection: "column", gap: 14, animation: "spravaFade .2s ease both" }}>{obsah}</div>
       </main>
       </div>
@@ -605,6 +610,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
     <div ref={korenRef} className="sprava-charity" data-stit={stit} style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
       {hlavicka}
       <div key={String(sub)} style={{ padding: "14px 14px 28px", display: "flex", flexDirection: "column", gap: 14, animation: "spravaFade .2s ease both", width: "100%", maxWidth: tablet ? 880 : undefined, margin: tablet ? "0 auto" : undefined, boxSizing: "border-box" }}>
+        {stitokRezimu}
         {/* OPRAVY 115: tablet — karta charity sa natiahne, štít vpravo rovno s Číslami, medzera 16 (mobil 10) */}
         {sub === null && !telefon && <div style={{ display: "flex", gap: tablet ? 16 : 10, alignItems: "stretch" }}>
           <div style={{ flex: 1, minWidth: 0 }}><KartaCharity nazov={nazov} inicialy={inicialy} typ={typ} otvor={otvor} mobil tablet={tablet} uplnost={uplnost} profil={profil} glow={glowUp} /></div>
@@ -655,6 +661,18 @@ function Hlavicka({ titul, onSpat, spatT = "Späť", otvor, mobil, glowNova, tel
       {kalEl}
       {!bezNovej && <button onClick={() => otvor("x:Nová zbierka")} style={{ ...zeleneTl, boxShadow: nzSh, background: "#4B7A35", display: "flex", alignItems: "center", gap: 8 }}><Ik d="M12 5v14M5 12h14" s={17} c="currentColor" w={2.6} />Nová zbierka</button>}
     </header>);
+}
+
+/** 0158: testovacia verzia — čo sa so stránkou stane po skončení testu */
+function StitokRezimu({ rezim }: { rezim: RezimStranky }) {
+  const pilot = rezim === "pilot";
+  return (
+    <div role="note" style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", padding: "10px 14px", borderRadius: 14,
+      background: pilot ? "var(--gSoft)" : "var(--goldBg)", border: `1.5px solid ${pilot ? "var(--gBd)" : "var(--goldBd)"}` }}>
+      <b style={{ flex: "none", fontSize: 12.5, letterSpacing: ".08em", color: pilot ? "var(--gInk)" : "var(--gold)" }}>{pilot ? "PILOT" : "TESTOVACIA"}</b>
+      <span style={{ flex: "1 1 220px", fontSize: 13.5, lineHeight: 1.45, color: "var(--ink2)" }}>
+        {pilot ? "Po teste ostane vzhľad stránky, profil, texty, fotky, nástenka a príspevky. Zbierky, platby a reťaze sa zmažú." : "Po skončení testu sa stránka zmaže celá."}</span>
+    </div>);
 }
 
 // ============================================================

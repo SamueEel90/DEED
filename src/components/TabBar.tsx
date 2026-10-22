@@ -121,7 +121,7 @@ function Tab({ m, on, onClick }: { m?: Modul; on: boolean; onClick: () => void }
 }
 
 // ---- SHEET: VŠETKY MODULY + ÚPRAVA MENU ----
-export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onAko, onDeedTim, onClose, moduly = VSETKY_MODULY, strankaAkcie, strankaFiltre }: {
+export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onAko, onDeedTim, onKody, onClose, moduly = VSETKY_MODULY, strankaAkcie, strankaFiltre }: {
   taby: string[];
   setTaby: (taby: string[]) => void;
   aktivny: string;
@@ -131,6 +131,8 @@ export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onAko,
   onAko?: () => void;
   /** KARTA 57 F: tím DEED — štatistika editora oznámení (len keď som_deed_admin) */
   onDeedTim?: () => void;
+  /** 0158: tím DEED — prístupové kódy testovacej verzie */
+  onKody?: () => void;
   onClose: () => void;
   moduly?: Modul[];
   strankaAkcie?: StrankaAkcia[];
@@ -278,6 +280,16 @@ export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onAko,
               </div>
               <span style={{ color: C.textTer, fontSize: 15 }}>›</span>
             </div>
+            {onKody && <div {...pressable(() => { onClose(); onKody(); }, "Prístupové kódy")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.md}px`, cursor: "pointer", marginBottom: SPACE.xs }}>
+              <span aria-hidden style={{ width: 38, height: 38, borderRadius: RADIUS.sm, background: "color-mix(in srgb, var(--a-green) 12%, transparent)", border: `1px solid ${C.line2}`, display: "flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto" }}>
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="15" r="4" /><path d="M10.8 12.2L20 3M16 7l3 3M14 9l2 2" /></svg>
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 700 }}>Prístupové kódy</div>
+                <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>test a pilot · do ostrého štartu</div>
+              </div>
+              <span style={{ color: C.textTer, fontSize: 15 }}>›</span>
+            </div>}
           </>
         )}
 {!uprava && onAko && (
