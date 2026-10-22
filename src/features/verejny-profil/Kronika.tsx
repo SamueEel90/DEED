@@ -7,7 +7,7 @@
 // Štítky, štít a overenie sú v okne štítu (bod 137). Rozbalený je len aktuálny rok. Z ISKIER: Iskry / Zbierky.
 // Zbaliť aj Späť z detailu, Iskier či hárku vráti na to isté miesto (pamäť posunu na úrovni stránky).
 import { useNazivoCharity } from "@/lib/nazivoCharity";
-import { ZivyRiadok, dnesNazivo, cislaOdZaciatku, PRVY_DAR } from "./NazivoCharity";
+import { ZivyRiadok, dnesNazivo, cislaOdZaciatku } from "./NazivoCharity";
 import { podlaPribehu, stitokNoveho, useZmenyPribehov } from "@/lib/pribehZbierky";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { eur, pct, tvar, vLokalite, type Lokalita, type TestProfil, type TestZbierka, jeFarnost } from "@/lib/testProfily";
@@ -216,7 +216,7 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
     </span>
   );
   const cislaOd = nz ? cislaNz : profil.cisla;
-  const celkom = (fs: number) => !cislaOd ? <span style={{ fontSize: 14, color: "var(--ink3)" }}>{PRVY_DAR}</span> : (
+  const celkom = (fs: number) => !cislaOd ? null : (
     <span style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 6 }}>
       {cislaOd.map(([v, t]) => <span key={t} style={{ display: "flex", flexDirection: "column" }}><b style={{ fontSize: fs, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{v}</b><span style={{ fontSize: 12, color: "var(--ink3)" }}>{t}</span></span>)}
     </span>
@@ -227,10 +227,10 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
     <div style={{ width: 440, maxWidth: "100%", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "12px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
       <span style={{ display: "flex", alignItems: "center", gap: 8 }}>{bodka}<b style={{ fontSize: 12, letterSpacing: ".08em", color: "var(--green)" }}>NAŽIVO</b><span style={{ flex: 1 }} />{dnesText}</span>
       {liveRiadok}
-      <span style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap", borderTop: "1px solid var(--cardBd)", paddingTop: 8, fontSize: 13, color: "var(--ink3)" }}>
+      {cislaOd && <span style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap", borderTop: "1px solid var(--cardBd)", paddingTop: 8, fontSize: 13, color: "var(--ink3)" }}>
         <b style={{ fontSize: 11, letterSpacing: ".1em", color: "var(--acc)", paddingRight: 4 }}>OD ZAČIATKU · {profil.odRoku}</b>
-        {!cislaOd ? <span>{PRVY_DAR}</span> : cislaOd.map(([v, t], i) => <span key={t} style={{ display: "contents" }}><b style={{ color: "var(--ink)", fontSize: 14, fontVariantNumeric: "tabular-nums" }}>{v}</b>{t}{i < cislaOd.length - 1 ? " ·" : ""}</span>)}
-      </span>
+        {cislaOd.map(([v, t], i) => <span key={t} style={{ display: "contents" }}><b style={{ color: "var(--ink)", fontSize: 14, fontVariantNumeric: "tabular-nums" }}>{v}</b>{t}{i < cislaOd.length - 1 ? " ·" : ""}</span>)}
+      </span>}
     </div>
   );
   const nazivoTab = (
@@ -239,7 +239,7 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>{bodka}<b style={{ fontSize: 12, letterSpacing: ".08em", color: "var(--green)" }}>NAŽIVO</b><span style={{ flex: 1 }} />{dnesText}</span>
         {liveRiadok}
       </span>
-      <span style={{ display: "flex", flexDirection: "column", gap: 4, borderLeft: "1px solid var(--cardBd)", paddingLeft: 16 }}>{odZacT}{celkom(16)}</span>
+      {cislaOd && <span style={{ display: "flex", flexDirection: "column", gap: 4, borderLeft: "1px solid var(--cardBd)", paddingLeft: 16 }}>{odZacT}{celkom(16)}</span>}
     </div>
   );
   const nazivoMob = (
@@ -250,7 +250,7 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
       </button>
       {zivo && <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingBottom: 12 }}>
         {liveRiadok}
-        <span style={{ display: "flex", flexDirection: "column", gap: 6, borderTop: "1px solid var(--cardBd)", paddingTop: 8 }}>{odZacT}{celkom(17)}</span>
+        {cislaOd && <span style={{ display: "flex", flexDirection: "column", gap: 6, borderTop: "1px solid var(--cardBd)", paddingTop: 8 }}>{odZacT}{celkom(17)}</span>}
       </div>}
     </div>
   );

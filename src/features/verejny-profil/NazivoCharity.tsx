@@ -8,14 +8,16 @@ import { tvar } from "@/lib/testProfily";
 
 export const dnesNazivo = (nz: NazivoCharity) => nz.dnesLudi ? `Dnes ${sumaEur(nz.dnesSuma)} od ${tvar(nz.dnesLudi, ["človeka", "ľudí", "ľudí"])}` : "Dnes zatiaľ bez darov";
 const slovo = (n: number, f: [string, string, string]) => (n === 1 ? f[0] : n >= 2 && n <= 4 ? f[1] : f[2]);
-/** Od začiatku · 3 čísla; null = zatiaľ nič („Prvý dar tu bude čoskoro.“) */
+/** Od začiatku · len to, čo je (Martin 23. 10.: nič s nulou, nič nesľubujeme); null = zatiaľ nič → riadok sa neukáže */
 export function cislaOdZaciatku(nz: NazivoCharity): [string, string][] | null {
   const o = nz.odZaciatku;
-  if (!(o.suma > 0) && !o.darcov && !o.skutkov) return null;
-  return [[sumaEur(o.suma), "vyzbierané"], [o.darcov.toLocaleString("sk-SK"), slovo(o.darcov, ["darca", "darcovia", "darcov"])],
-    [o.skutkov.toLocaleString("sk-SK"), slovo(o.skutkov, ["doložený skutok", "doložené skutky", "doložených skutkov"])]];
+  const l: [string, string][] = [
+    ...(o.suma > 0 ? [[sumaEur(o.suma), "vyzbierané"] as [string, string]] : []),
+    ...(o.darcov ? [[o.darcov.toLocaleString("sk-SK"), slovo(o.darcov, ["darca", "darcovia", "darcov"])] as [string, string]] : []),
+    ...(o.skutkov ? [[o.skutkov.toLocaleString("sk-SK"), slovo(o.skutkov, ["doložený skutok", "doložené skutky", "doložených skutkov"])] as [string, string]] : []),
+  ];
+  return l.length ? l : null;
 }
-export const PRVY_DAR = "Prvý dar tu bude čoskoro.";
 
 /** jeden riadok, ktorý sa sám strieda (posledný dar · nový skutok · nové v príbehu), prechod len cez opacity */
 export function ZivyRiadok({ nz, fs = 14 }: { nz: NazivoCharity; fs?: number }) {
