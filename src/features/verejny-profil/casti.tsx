@@ -168,7 +168,7 @@ export const nazovStitu = (s: string): string => ({ Bronze: "Bronzový", Silver:
 import type { ZbierkaData } from "@/features/zbierka/ZbierkaModul";
 export function naZbierkaData(z: TestZbierka, profil: TestProfil): ZbierkaData {
   return {
-    id: z.id, nazov: z.nazov, popis: z.popisHtml ?? z.popis, overena: true,
+    id: z.id, vs: z.vs, nazov: z.nazov, popis: z.popisHtml ?? z.popis, overena: true,
     media: z.galeria?.length ? z.galeria : [{ typ: "foto", src: z.foto }], // 5. 10.: galéria zbierky aj v detaile
     vyzbierane: z.zDb ? 0 : z.vyzbierane, ciel: z.ciel, ludia: z.zDb ? 0 : z.ludia, // OPRAVY 415: z databázy len živé dary (bez dvojitého počítania)
     ...(z.zDb ? { pravidelna: !!z.prav, eurc: !!z.eurc } : {}),

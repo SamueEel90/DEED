@@ -55,6 +55,8 @@ export interface TestSektor {
 
 export interface TestZbierka {
   id: string;
+  /** OPRAVY 477: verejné číslo zbierky (VS zo servera) — Z-číslo v detaile; bez neho testovacie */
+  vs?: string;
   nazov: string;
   popis: string;
   /** OPRAVY 435: celý text s formátovaním (detail zbierky) — popis je čistý text pre karty */
