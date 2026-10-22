@@ -191,7 +191,7 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad }: { kluc: string; onBa
   useEffect(() => {
     const id = cielSkutku();
     if (!id || !kCh || !profil0) return;
-    const sk = (skutkyStrankyZPamate(kCh) ?? skutkyOrg(kCh)).find((x) => x.id === id);
+    const sk = (skutkyStrankyZPamate(kCh) ?? skutkyOrg(kCh)).find((x) => x.id === id || x.prispevokId === id); // OPRAVY 485: z feedu id príspevku
     if (!sk) return;
     const t = skutokProfilu(sk, profil0);
     zrusDoSkutku();

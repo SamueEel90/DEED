@@ -225,7 +225,8 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
   // frekvenčný strop → zoradenie. Veľkosť karty (Časť A) cez zobrazVelkost.
   // Lacné: pracuje len s uloženým skóre, žiadne AI. (Neskôr: GET /feed na backende.)
   const feed = pripravFeed(POLOZKY as any, user).map((it: any) => ({ ...it, velkost: zobrazVelkost(it) })) as GoodPolozka[];
-  const karta = (it: GoodPolozka) => <DomovKarta key={it.id} it={it} wide={wide} onDetail={() => onDetail(it.id)} />;
+  // OPRAVY 485: skutok charity z feedu = ten istý detail ako na jej stránke (Podporiť zbierku · modul zbierky, na ktorú skutok zbiera)
+  const karta = (it: GoodPolozka) => <DomovKarta key={it.id} it={it} wide={wide} onDetail={() => (it.stranka && it.typ === "skutok" ? otvorVerejnyProfil(it.stranka, { doSkutku: String(it.id) }) : onDetail(it.id))} />;
   // OPRAVY 431: výzvy charít na súrnu pomoc — hore vo feede, v meste charity (Celá SR = všetky) a tým, čo charitu sledujú
   const { data: VYZVY = [] } = useQuery({ queryKey: ["vyzvy-domov"], queryFn: vyzvyDomov, staleTime: 60_000 });
   useEffect(() => { void nacitajUcasti(VYZVY.map((v) => v.o.id)); }, [VYZVY]);
