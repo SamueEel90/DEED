@@ -3,7 +3,7 @@
 // krátky text tučne 22 px → celý príbeh 18 px → citát 34 px → galéria s popismi → Priebeh (zlatá bodka = posledný zápis).
 // PC vpravo sticky 440 px: suma, pruh, dorovnanie, modul. Mobil: suma pod názvom, modul dole zmenšený, „Späť ⌃" na konci.
 import { useEffect, useState, type CSSProperties } from "react";
-import { eur, pct, tvar, jeFarnost, type TestProfil, type TestZbierka } from "@/lib/testProfily";
+import { tvar, jeFarnost, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { cisloObjektu } from "@/lib/cisloObjektu";
 import { druhF } from "@/lib/druhy";
 import { stitokNoveho, type Pribeh } from "@/lib/pribehZbierky";
@@ -30,7 +30,6 @@ export function PribehZbierky({ profil, z, p, spatText = "Späť do feedu", onBa
   const pc = usePc();
   const [cela, setCela] = useState<number | null>(null); // OPRAVY 155/2: fotka na celú obrazovku
   const farnost = jeFarnost(profil);
-  const zF = z.zFirmy ?? 0, pp = pct(z.vyzbierane, z.ciel), pF = z.ciel ? Math.min(100 - pp, Math.round(zF / z.ciel * 100)) : 0, pL = Math.max(0, pp - pF);
   const st = z.stav === "dlhodoba" ? "DLHODOBÁ" : z.konciDni != null ? `KONČÍ O ${tvar(z.konciDni, ["DEŇ", "DNI", "DNÍ"])}` : z.stav === "ukoncena" ? "UKONČENÁ" : null;
   const nove = stitokNoveho(z.id); // OPRAVY 461: namiesto ručného Príbehu týždňa
   const meno = profil.meno.replace(/\s+o\.\s?z\.$/i, "");
@@ -54,22 +53,47 @@ export function PribehZbierky({ profil, z, p, spatText = "Späť do feedu", onBa
           {nove && stitok(nove.toLocaleUpperCase("sk-SK"), { background: "rgba(42,37,24,.9)", border: "1px solid #6B5A2E", color: "#E2C27A" })}
         </div>
         <b style={{ fontSize: pc ? 68 : 36, lineHeight: 1.02, letterSpacing: "-.035em", color: "#fff", maxWidth: 820 }}>{z.nazov}</b>
-        <span style={{ fontSize: pc ? 14 : 12.5, fontWeight: 800, letterSpacing: ".1em", color: "#E8E1D3" }}>{[z.mesto, z.cast, pc ? z.kategoria : st, pc ? cisloObjektu("Z", z.id) : null].filter(Boolean).join(" · ").toLocaleUpperCase("sk-SK")}</span>
+        <span style={{ fontSize: pc ? 14 : 12.5, fontWeight: 800, letterSpacing: ".1em", color: "#E8E1D3" }}>{[z.mesto, z.cast, pc ? z.kategoria : st, pc ? cisloObjektu("Z", z.id, z.vs) : null].filter(Boolean).join(" · ").toLocaleUpperCase("sk-SK")}</span>
       </div>
     </div>);
   const kov = <div style={{ height: "var(--mH)", background: "var(--metal)" }} />;
 
-  const sumaBox = (
-    <div style={{ borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: pc ? "20px 20px 18px" : "14px 16px", display: "flex", flexDirection: "column", gap: pc ? 12 : 10 }}>
-      <span style={{ fontSize: pc ? 16 : 14, color: "var(--ink3)" }}><b style={{ fontSize: pc ? 38 : 26, letterSpacing: "-.03em", color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{eur(z.vyzbierane)}</b>{z.ciel ? ` z ${eur(z.ciel)}` : ""}{!pc ? ` · ${tvar(z.ludia, ["človek", "ľudia", "ľudí"])}` : ""}</span>
-      <div style={{ height: 9, borderRadius: 5, background: "var(--track)", overflow: "hidden", display: "flex" }}><div style={{ height: "100%", width: `${z.ciel ? pL : 100}%`, background: "#6E9B4F" }} />{pF > 0 && <div style={{ height: "100%", width: `${pF}%`, background: "#C9A24A" }} />}</div>
-      {pc && <span style={{ fontSize: 14, color: "var(--ink3)" }}>{[tvar(z.ludia, ["človek", "ľudia", "ľudí"]), zF ? `${eur(zF)} pridala firma` : null, z.konciDni != null ? `končí o ${tvar(z.konciDni, ["deň", "dni", "dní"])}` : null].filter(Boolean).join(" · ")}</span>}
-      {z.dorovnanie && !farnost && profil.dorovnaniePas && (pc
-        ? <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 12px 5px 5px", borderRadius: 12, background: "var(--goldBg)", border: "1px solid var(--goldBd)", alignSelf: "flex-start" }}><span style={{ width: 26, height: 26, borderRadius: 7, background: "#F2EBDD", color: "#8A6A1C", fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{profil.dorovnaniePas.ini}</span><span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--gold)" }}>{z.dorovnanie}</span></div>
-        : <b style={{ fontSize: 13, color: "var(--gold)" }}>{z.dorovnanie}</b>)}
-    </div>);
   const modul = <ModulPlatby profil={profil} sektor={zbierkaAkoSektor(z)} nazov={z.nazov} dorovnanie={!farnost} />;
 
+  // OPRAVY 475 (a): hore vždy pôvodný zapečatený text zbierky, Príbeh pod ním ako samostatná časť
+  const povodny = z.popisHtml || z.popis;
+  const obsah = <>
+    {povodny && <FormatovanyText text={povodny} style={{ fontSize: pc ? 18 : 16, lineHeight: 1.75, color: "var(--ink2)" }} />}
+    <PribehCast p={p} pc={pc} />
+    {/* OPRAVY 155/3: Späť aj dole pod Priebehom — vráti na to isté miesto */}
+    <button type="button" onClick={onBack} style={{ width: "100%", height: 52, borderRadius: 14, border: "1.5px solid var(--cardBd)", background: "var(--btn)", color: "var(--ink)", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, boxShadow: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>{spatText}
+    </button>
+    {cela !== null && <CelaGaleria media={fotoT.map((m) => ({ typ: "foto" as const, src: m.src, popis: m.popis }))} start={cela} onClose={() => setCela(null)} />}
+  </>;
+
+  return (
+    <div className="vp sc-tokeny" data-stit={profil.stit.toLowerCase()} style={{ height: "100%", overflowY: "auto", background: "var(--bg)", color: "var(--ink)", WebkitOverflowScrolling: "touch" } as CSSProperties}>
+      {titulka}{kov}
+      {pc ? (
+        <div style={{ display: "flex", gap: 48, padding: "48px 48px 80px", alignItems: "flex-start" }}>
+          <div style={{ flex: 1, minWidth: 0, maxWidth: 760, display: "flex", flexDirection: "column", gap: 28 }}>{obsah}</div>
+          <aside data-hier="z" style={{ width: 440, flex: "none", position: "sticky", top: 20, display: "flex", flexDirection: "column", gap: 14 }}>{modul}</aside>
+        </div>
+      ) : (
+        <div style={{ padding: "16px 16px 140px", display: "flex", flexDirection: "column", gap: 20 }}>
+          {obsah}
+          <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)" }}>PODPORIŤ ZBIERKU</span>
+          <div data-hier="z"><ZmensenyModul>{modul}</ZmensenyModul></div>
+          <ZbalitASpat onClick={onBack} />
+        </div>)}
+    </div>);
+}
+
+/** OPRAVY 475: časť „Príbeh zbierky“ (krátky text, Ako to zatiaľ ide, citát, fotky, Priebeh) — stránka zbierky aj detail zbierky.
+ *  Text a fotky sú uložené raz (pribehZbierky), tu sa len zobrazujú. */
+export function PribehCast({ p, pc, bezNadpisu }: { p: Pribeh; pc: boolean; bezNadpisu?: boolean }) {
+  const [cela, setCela] = useState<number | null>(null);
   const citat = p.citat.text && p.citat.suhlas && (
     <div style={{ padding: pc ? "4px 0 4px 28px" : "2px 0 2px 16px", borderLeft: `${pc ? 6 : 4}px solid var(--acc)`, display: "flex", flexDirection: "column", gap: 10 }}>
       <span style={{ fontSize: pc ? 34 : 22, lineHeight: 1.3, fontWeight: 800, fontStyle: "italic", letterSpacing: "-.01em" }}>„{p.citat.text}“</span>
@@ -109,33 +133,18 @@ export function PribehZbierky({ profil, z, p, spatText = "Späť do feedu", onBa
           </div>))}
       </div>
     </div>);
-  const obsah = <>
-    <b style={{ fontSize: pc ? 22 : 18, lineHeight: 1.5, whiteSpace: "pre-line" }}>{p.kratky}</b>{/* OPRAVY 455 (1): nový riadok ostane */}
-    <FormatovanyText text={hlavny} style={textSt} />
-    {citat}{galeria}
-    {zaver && <FormatovanyText text={zaver} style={textSt} />}
-    {priebeh}
-    {/* OPRAVY 155/3: Späť aj dole pod Priebehom — vráti na to isté miesto */}
-    <button type="button" onClick={onBack} style={{ width: "100%", height: 52, borderRadius: 14, border: "1.5px solid var(--cardBd)", background: "var(--btn)", color: "var(--ink)", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, boxShadow: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>{spatText}
-    </button>
-    {cela !== null && <CelaGaleria media={foto.map((m) => ({ typ: "foto" as const, src: m.src, popis: m.popis }))} start={cela} onClose={() => setCela(null)} />}
-  </>;
-
+  const datum = p.zverejnene ? datumZ(p.zverejnene) : "";
   return (
-    <div className="vp sc-tokeny" data-stit={profil.stit.toLowerCase()} style={{ height: "100%", overflowY: "auto", background: "var(--bg)", color: "var(--ink)", WebkitOverflowScrolling: "touch" } as CSSProperties}>
-      {titulka}{kov}
-      {pc ? (
-        <div style={{ display: "flex", gap: 48, padding: "48px 48px 80px", alignItems: "flex-start" }}>
-          <div style={{ flex: 1, minWidth: 0, maxWidth: 760, display: "flex", flexDirection: "column", gap: 28 }}>{obsah}</div>
-          <aside data-hier="z" style={{ width: 440, flex: "none", position: "sticky", top: 20, display: "flex", flexDirection: "column", gap: 14 }}>{sumaBox}{modul}</aside>
-        </div>
-      ) : (
-        <div style={{ padding: "16px 16px 140px", display: "flex", flexDirection: "column", gap: 20 }}>
-          {sumaBox}{obsah}
-          <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)" }}>PODPORIŤ ZBIERKU</span>
-          <div data-hier="z"><ZmensenyModul>{modul}</ZmensenyModul></div>
-          <ZbalitASpat onClick={onBack} />
-        </div>)}
-    </div>);
+    <section aria-label="Príbeh zbierky" style={{ display: "flex", flexDirection: "column", gap: pc ? 24 : 18, paddingTop: bezNadpisu ? 0 : 8, borderTop: bezNadpisu ? "none" : "1px solid var(--cardBd)" }}>
+      {!bezNadpisu && <span style={{ display: "flex", flexDirection: "column", gap: 4, paddingTop: 16 }}>
+        <b style={{ fontSize: pc ? 30 : 24, letterSpacing: "-.02em" }}>Príbeh zbierky</b>
+        {datum && <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink3)" }}>zverejnený {datum}</span>}
+      </span>}
+      <b style={{ fontSize: pc ? 22 : 18, lineHeight: 1.5, whiteSpace: "pre-line" }}>{p.kratky}</b>{/* OPRAVY 455 (1): nový riadok ostane */}
+      <FormatovanyText text={hlavny} style={textSt} />
+      {citat}{galeria}
+      {zaver && <FormatovanyText text={zaver} style={textSt} />}
+      {priebeh}
+      {cela !== null && <CelaGaleria media={foto.map((m) => ({ typ: "foto" as const, src: m.src, popis: m.popis }))} start={cela} onClose={() => setCela(null)} />}
+    </section>);
 }

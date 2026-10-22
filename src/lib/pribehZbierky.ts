@@ -122,6 +122,10 @@ export async function zmenPriebeh(id: string, org: string, priebeh: ZapisPriebeh
   pamat.set(k, { koncept: koncept ?? z?.koncept ?? null, zverejneny: zverejneny ?? z?.zverejneny ?? null, org }); zmena();
   return { naStranke: !!zverejneny };
 }
+/** OPRAVY 475 (b): odkaz z feedu „Celý príbeh na stránke …“ otvorí detail zbierky s už rozbaleným príbehom */
+let otvorenyPribeh: string | null = null;
+export const chcemOtvorenyPribeh = (id: string) => { otvorenyPribeh = kluc(id); };
+export const vezmiOtvorenyPribeh = (id: string): boolean => { if (otvorenyPribeh !== kluc(id)) return false; otvorenyPribeh = null; return true; };
 /** Príbeh týždňa organizácie (len jeden naraz) */
 export const pribehTyzdna = (org: string): string | null => tyzdna[org] ?? null;
 export const jePribehTyzdna = (id: string, org: string) => tyzdna[org] === kluc(id);

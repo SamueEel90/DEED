@@ -28,6 +28,8 @@ import { ZdielatHarok, Harok } from "./Zdielat";
 import { NahlasitSheet } from "@/components/nahlasit";
 import { firmaPreDorovnanie } from "@/lib/podpory";
 import { PravidelnaHarok } from "./PravidelnaHarok";
+import { pribehZbierky, novePribehu, useZmenyPribehov, vezmiOtvorenyPribeh } from "@/lib/pribehZbierky";
+import { PribehCast } from "@/features/verejny-profil/PribehZbierky";
 import { PrispietZaFarnost } from "./FarnostPrispela";
 import { RetazDobraHarok } from "./RetazDobra";
 import { PodporujuRetazou } from "./RetazStranky";
@@ -249,6 +251,8 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
   // OPRAVY 222: farár prispeje za farnosť (SEPA alebo karta), nie na vlastnú zbierku
   const zaFarnost = miesto !== "podporitDeed" ? <PrispietZaFarnost refId={zbierka.id} nazov={zbierka.nazov} vlastnik={miesto === "pohreb" || ktoVoli === "rodina" ? undefined : zbierka.organizacia?.meno} /> : null;
   const lave = polozky.filter((p) => VLAVO.has(p.kluc));
+  // OPRAVY 475 (b): „Celý príbeh zbierky · Nové …“ nad Darcovia, ťuk rozbalí príbeh priamo tu
+  const pribehRiadok = miesto !== "podporitDeed" ? <PribehVDetaile id={zbierka.id} pc={pc} /> : null;
   const prave = polozky.filter((p) => !VLAVO.has(p.kluc));
 
   // Martin 13. 10.: súkromné zbierky (pohrebná, svadba, rodina, človek) sumy darcov nikdy; inak podľa okolia (farár / darca)
@@ -291,7 +295,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
         {polozky.filter((p) => p.kluc !== "darcovia").map(vykresli)}
         {polozky.filter((p) => p.kluc === "darcovia").map(vykresli)}
       </div> : <div className="zb-obsah">
-        <div className="zb-lavy">{vrch}{pc && lave.map(vykresli)}</div>
+        <div className="zb-lavy">{vrch}{pribehRiadok}{pc && lave.map(vykresli)}</div>
         <div className="zb-pravy">{pc ? <>{prave.map(vykresli)}</> : <ZmensenyModul>{polozky.filter((p) => p.kluc !== "darcovia").map(vykresli)}</ZmensenyModul>}</div>
       </div>}
       {/* bod 149 · dole vždy „Zbaliť a späť" (vráti na tú istú kartu a posun); OPRAVY 209: na mobile pod ním Darcovia */}
@@ -362,4 +366,30 @@ function DevPanel({ dev, setDev, miestoPevne, registrovany, ico, cielInfo, onDar
       )}
     </div>
   );
+}
+
+/** OPRAVY 475 (b): riadok „Celý príbeh zbierky · Nové 22. 10. ›“ — ťuk rozbalí celý príbeh, hore aj na konci „Zbaliť“.
+ *  Z feedu („Celý príbeh na stránke … ›“) sa detail otvorí s rozbaleným príbehom a posunie sa naň. */
+function PribehVDetaile({ id, pc }: { id: string; pc: boolean }) {
+  useZmenyPribehov();
+  const p = pribehZbierky(id);
+  const [otv, setOtv] = useState(() => vezmiOtvorenyPribeh(id));
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (otv) window.setTimeout(() => ref.current?.scrollIntoView({ block: "start", behavior: "smooth" }), 120); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!p) return null;
+  const nove = novePribehu(id) ?? p.zverejnene ?? null;
+  const m = nove ? /^(\d{4})-(\d{2})-(\d{2})/.exec(nove) : null;
+  const zbal = () => { setOtv(false); ref.current?.scrollIntoView({ block: "start" }); };
+  const tl: CSSProperties = { display: "flex", alignItems: "center", gap: 10, width: "100%", minHeight: 56, padding: "0 16px", borderRadius: 16, border: "1px solid var(--cardBd)", background: "var(--card)", color: "var(--ink)", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, cursor: "pointer", textAlign: "left" };
+  return (
+    <div ref={ref} className="zb-pol" style={{ padding: "12px 16px 0", scrollMarginTop: 12, display: "flex", flexDirection: "column", gap: 14 }}>
+      <button type="button" aria-expanded={otv} onClick={() => (otv ? zbal() : setOtv(true))} style={tl}>
+        <span style={{ flex: 1 }}>Celý príbeh zbierky{m ? <span style={{ color: "var(--gold)" }}> · Nové {+m[3]}. {+m[2]}.</span> : null}</span>
+        <span aria-hidden="true" style={{ color: "var(--ink3)" }}>{otv ? "Zbaliť ⌃" : "›"}</span>
+      </button>
+      {otv && <>
+        <PribehCast p={p} pc={pc} bezNadpisu />
+        <button type="button" onClick={zbal} style={{ ...tl, justifyContent: "center" }}>Zbaliť príbeh ⌃</button>
+      </>}
+    </div>);
 }

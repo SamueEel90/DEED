@@ -19,8 +19,8 @@ import { otvorPridatSkutok } from "@/features/skutok/otvor";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { usePersonalizacia } from "@/lib/personalizacia";
 import { oblastKluc } from "@/lib/personalizaciaStore";
-import { pribehZbierky, useZmenyPribehov, nacitajPribehy } from "@/lib/pribehZbierky";
-import { otvorPribeh, otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
+import { pribehZbierky, useZmenyPribehov, nacitajPribehy, chcemOtvorenyPribeh } from "@/lib/pribehZbierky";
+import { otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
 import { useZmenyDarov, sucetDarov, zLedgeraNacitane } from "@/lib/darcovia";
 import { casOd } from "@/components/feedcard";
 import { StitOkno } from "@/features/verejny-profil/casti";
@@ -216,7 +216,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard }: Feed
         tvorca={it.stranka ? { meno: it.orgNazov ?? "Organizácia", logo: it.org?.logo, ini: it.org?.ini, mesto: it.org?.mesto, stit: it.org?.stit ?? "Bronze",
           onProfil: () => otvorVerejnyProfil(it.stranka!), onStit: () => setStitOkno(it) } : undefined}
         popis={pr ? <span style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden", whiteSpace: "pre-line" }}>{pr.kratky}</span> : it.popis}
-        pribehOdkaz={pr ? { text: `Celý príbeh na stránke ${it.orgNazov ?? "organizácie"} ›`, onClick: () => otvorPribeh(idPr!) } : undefined}
+        pribehOdkaz={pr ? { text: `Celý príbeh na stránke ${it.orgNazov ?? "organizácie"} ›`, onClick: () => { chcemOtvorenyPribeh(idPr!); onDetail(zd); } } : undefined}
         vyzbierane={it.vyzbierane} ciel={it.ciel} oblubena={oblubenyZo(zd)} />
     );
   };

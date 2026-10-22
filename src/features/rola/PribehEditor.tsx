@@ -263,12 +263,12 @@ function PribehEditorObsah({ z, mobil }: { z: ZbierkaNaSpravu; mobil: boolean; t
   </>;
 }
 
-/** Náhľad = tá istá stránka Príbeh, akú uvidí darca (s konceptom) */
+/** Náhľad = tá istá stránka Príbeh, akú uvidí darca (s konceptom) · OPRAVY 476 (b): titulná fotka = hlavná fotka zbierky ako po zverejnení */
 function NahladPribehu({ z, org, p, onZavri }: { z: ZbierkaNaSpravu; org: string; p: Pribeh; onZavri: () => void }) {
   // OPRAVY 403: charita bez testovacieho profilu = jej prázdny profil s menom z registra
   const profil = najdiTestProfil(org) ?? prazdnaCharita(org, registra(org).nazov || undefined);
   const tz: TestZbierka = profil.zbierky.find((x) => x.id === z.id || (z.id.startsWith("ukazka-strecha") && x.id === "z-strecha-horvath"))
-    ?? { id: z.id, nazov: z.nazov, popis: cistyText(z.popis ?? ""), mesto: "Trenčín", foto: p.media.find((m) => m.typ === "foto")?.src ?? "", vyzbierane: z.vyzbierane, ciel: z.ciel || undefined, ludia: z.darcovia, stav: z.ukoncena ? "ukoncena" : z.dlha ? "dlhodoba" : "bezi" };
+    ?? { id: z.id, nazov: z.nazov, popis: cistyText(z.popis ?? ""), popisHtml: `${z.popis ?? ""}${z.popis2 ?? ""}`, mesto: profil.mesto, foto: z.media?.find((m) => m.typ === "foto")?.src ?? "", vs: z.vs, vyzbierane: z.vyzbierane, ciel: z.ciel || undefined, ludia: z.darcovia, stav: z.ukoncena ? "ukoncena" : z.dlha ? "dlhodoba" : "bezi" };
   return (
     <div role="dialog" aria-label="Náhľad príbehu" style={{ position: "fixed", inset: 0, zIndex: 400, background: "var(--bg)" }}>
       <PribehZbierky profil={profil} z={tz} p={p} spatText="Zavrieť náhľad" onBack={onZavri} />
