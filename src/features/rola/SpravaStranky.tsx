@@ -407,6 +407,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   // KARTA 42: Zadarmo → z hárku Pridať sa Oznamy otvoria rovno na výzve na súrnu pomoc
   const [oznamStart, setOznamStart] = useState<DruhOznamu | undefined>(undefined);
   const [oznamUprav, setOznamUprav] = useState<string | undefined>(undefined); // OPRAVY 407
+  const [poslSkupina, setPoslSkupina] = useState<string | null>(null); // OPRAVY 495 (502: Nastavenia → Ľudia)
   const otvor = (s: Sub, oznamDruh?: DruhOznamu, upravId?: string) => {
     if (s === "x:Nová zbierka" && typ === "charita" && !novaPriamo.current) { setVyberZb(true); if (sub !== "g_zbierky") { hist.current = [...hist.current, sub].slice(-30); setSub("g_zbierky"); } window.scrollTo({ top: 0, behavior: "smooth" }); return; }
     zastavDiktovanie(); setOznamStart(oznamDruh); setOznamUprav(upravId); if (s === "x:Verejný profil") { if (najdiTestProfil(strankaId) || /^ch-/.test(strankaId) || typ === "charita") setVerejnyTest(true); else setVerejny(true); return; } // OPRAVY 414 (2): charita vždy vo vzhľade z Nastavení
@@ -469,12 +470,12 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   else if (sub === "vsetko") obsah = <ObrVsetko typ={typ} tier={tier} otvor={otvor} stlpce={desktop || tablet ? 2 : 1} />;
   else if (sub === "penazenka") obsah = <ObrPenazenka otvor={otvor} mobil={!desktop} refs={[...zbierkyStrankyZPamate(strankaId).map((z) => z.id), refCentralnej(strankaId)]} />;
   // OPRAVY 396: Vzhľad stránky (Kronika · Výklad · Pirát) je v Nastaveniach pod Témou, ako vo Viere — nie v Upraviť profil
-  else if (sub === "nast") obsah = <ObrNastavenia tier={tier} otvor={otvor} mobil={!wide} charita={typ === "charita"}
+  else if (sub === "nast") obsah = <ObrNastavenia tier={tier} otvor={otvor} mobil={!wide} charita={typ === "charita"} naLudi={() => { setPoslSkupina("g_ludia"); otvor("n:spravcovia"); }}
     vzhlad={<VzhladStranky strankaId={strankaId} sektor={typ === "tvorca" ? "tvorca" : undefined} zadarmo={tier === 0} kto={slovo(typ, "darcovia", "darcovia")} onPozriet={() => otvor("x:Verejný profil")} />} />;
   else if (sub.startsWith("n:")) {
     const m = !wide, id = sub.slice(2), o = otvor as (s: string) => void; // tablet: Nastavenia v 2 stĺpcoch ako PC
     obsah = id === "notif" ? <ObrOznamenia mobil={m} /> : id === "eur" ? <ObrEur mobil={m} /> : id === "krypto" ? <ObrEurc mobil={m} /> : id === "ucty" ? <ObrUcty mobil={m} otvor={o} />
-      : id === "spravcovia" ? (typ === "charita" ? <LudiaCharity mobil={m} /> : <ObrSpravcovia mobil={m} />) : id === "udaje" ? <ObrUdaje mobil={m} />
+      : id === "spravcovia" ? (typ === "charita" ? <LudiaCharity mobil={m} strankaId={strankaId} meno={nazov} /> : <ObrSpravcovia mobil={m} />) : id === "udaje" ? <ObrUdaje mobil={m} />
       : id === "faktury" ? <ObrFaktury mobil={m} tier={tier} otvor={o} />
       : id === "program" ? <ObrProgram mobil={m} typ={typ} tier={tier} otvor={o} onTier={setTier} />
       : id === "zariadenia" ? <ObrZariadenia mobil={m} /> : id === "suhlasy" ? <ObrSuhlasy mobil={m} otvor={o} /> : id === "stiahnut" ? <ObrStiahnut mobil={m} />
@@ -536,7 +537,6 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   const podNast = sub !== null && (sub as string).startsWith("n:"); // obrazovka Nastavení — otvoriť sa dá aj zo sekcie (Ľudia → Štatutár a pracovníci)
   const vlastnaSkupina: string | null = sub === null || podNast ? null : sub === "nast" ? "nast" : sub === "penazenka" || (sub as string).startsWith("g_") ? sub : (sub as string).startsWith("x:") || sub === "profil" || sub === "vsetko" ? null : SKUPINA_POLOZKY(sub as PolozkaSpravy, typ);
   // OPRAVY 495: podstránka (napr. Ľudia → Štatutár a pracovníci) nechá zvýraznenú sekciu, z ktorej sa otvorila
-  const [poslSkupina, setPoslSkupina] = useState<string | null>(null);
   const zPoslednej = sub !== null && sub !== "profil" && sub !== "vsetko";
   if (vlastnaSkupina !== null && vlastnaSkupina !== poslSkupina) setPoslSkupina(vlastnaSkupina);
   else if (sub === null && poslSkupina !== null) setPoslSkupina(null);
@@ -1624,7 +1624,7 @@ type Riadok = { t: string; s?: string; v?: string; prep?: [boolean, () => void];
 
 /** OPRAVY 186: Nastavenia farnosti = tie isté Nastavenia ako charita; farnosť mení len riadky Príjem darov, Ľudia, Údaje a Predplatné */
 export interface NastFarnosti { ludia: () => void; predplatne: () => void; hlavna: () => void; n: (id: string) => void; /** OPRAVY 243: Vzhľad stránky · Farba línií */ vzhlad?: React.ReactNode }
-export function ObrNastavenia({ tier, otvor, mobil, farnost, vzhlad, charita }: { /** OPRAVY 404: Ľudia v správe charity */ charita?: boolean; tier: Tier; otvor: (s: Sub) => void; mobil: boolean; farnost?: NastFarnosti; /** OPRAVY 396: Vzhľad stránky charity pod Témou */ vzhlad?: React.ReactNode }) {
+export function ObrNastavenia({ tier, otvor, mobil, farnost, vzhlad, charita, naLudi }: { /** OPRAVY 404: Ľudia v správe charity */ charita?: boolean; /** OPRAVY 502: Správcovia a prístupy → Ľudia → Štatutár a pracovníci */ naLudi?: () => void; tier: Tier; otvor: (s: Sub) => void; mobil: boolean; farnost?: NastFarnosti; /** OPRAVY 396: Vzhľad stránky charity pod Témou */ vzhlad?: React.ReactNode }) {
   const n = useNastaveniaAppky();
   const { tema, nastavTemu } = useMotiv();
   const [tuk, setTuk] = useState(potvrditTuknutim);
@@ -1641,7 +1641,9 @@ export function ObrNastavenia({ tier, otvor, mobil, farnost, vzhlad, charita }: 
   const sekcie: [string, Riadok[]][] = [
     ["OZNÁMENIA", [{ t: "Čo chcete dostávať", s: "dary, zbierky, doklady, ľudia, správy", tap: nn("notif") }, { t: "Tichý čas", s: "22:00 – 7:00", prep: [tichy, () => setTichy((x) => !x)] }]],
     ["PRÍJEM DAROV", [{ t: "Dary v eurách", v: eurText(), tap: nn("eur") }, { t: "Dary v EURC", v: eurcText(), tap: nn("krypto") }, { t: "Správa účtov", s: "hlavný účet a účty zbierok", tap: nn("ucty") }]],
-    ["SPRÁVCOVIA", [{ t: charita ? "Ľudia v správe" : "Správcovia a prístupy", s: charita ? "štatutár a pracovníci, čo kto smie" : "kto spravuje stránku, pozvať ďalšieho", v: String(charita ? pocetLudiCharity() : pocetSpravcov()), tap: nn("spravcovia") }]],
+    // OPRAVY 502 (3): charita pridáva ľudí len v Ľuďoch — tu len odkaz tam
+    ["SPRÁVCOVIA", [charita ? { t: "Správcovia a prístupy", s: `štatutár a pracovníci · ${pocetLudiCharity()}`, v: "v Ľuďoch", tap: naLudi ?? nn("spravcovia") }
+      : { t: "Správcovia a prístupy", s: "kto spravuje stránku, pozvať ďalšieho", v: String(pocetSpravcov()), tap: nn("spravcovia") }]],
     ["ORGANIZÁCIA", [{ t: "Údaje organizácie", s: "IČO, sídlo, fakturačné údaje", tap: nn("udaje") }, { t: "Program a predplatné", v: PROG[Math.min(3, tier)][0], tap: nn("program") }]],
     ["BEZPEČNOSŤ A ÚDAJE", [{ t: "Prihlásené zariadenia", v: String(pocetZariadeni()), tap: nn("zariadenia") }, { t: "Súhlasy", s: "čo organizácia odsúhlasila", tap: nn("suhlasy") }, { t: "Stiahnuť údaje charity", s: "zbierky, darcovia a doklady v jednom súbore", tap: nn("stiahnut") }]],
     ["POMOC", [{ t: "Časté otázky", tap: nn("faq") }, { t: "Napísať podpore", tap: nn("podpora") }]],
