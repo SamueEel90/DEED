@@ -161,7 +161,8 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, 
       {/* Martin 13. 10.: tipy „čo za to“ (5 € = obed …) zrušené (PRAVIDLA-APPKY); ostáva len skutočné číslo, koľko ľudí podporuje mesačne */}
       {sektor.mesacne != null && sektor.mesacne > 0 && <div style={{ margin: "8px 2px 0", fontSize: 13.5, fontWeight: 600, color: "var(--green)" }}>{sektor.mesacne.toLocaleString("sk-SK")} {sektor.mesacne === 1 ? "človek podporuje" : sektor.mesacne >= 2 && sektor.mesacne <= 4 ? "ľudia podporujú" : "ľudí podporuje"} mesačne</div>}
       {/* OPRAVY 429: Obľúbené z platobného modulu preč */}
-      <RetazRiadok onClick={() => setHarok("retaz")} />
+      {/* OPRAVY 490 (4): pri dorovnaní tejto (hlavnej) zbierky firmou sa Reťaz dobra neponúka (dohoda 27. 9.) */}
+      {!dorovnanie && <RetazRiadok onClick={() => setHarok("retaz")} />}
       <PodporujuRetazou zbierkaId={refId} />
       {veta && uvidisOdkaz && <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: 18, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 14, lineHeight: 1.5, color: "var(--ink)", textWrap: "pretty" } as CSSProperties}>{veta}
         {uvidisOdkaz && <button type="button" onClick={uvidisOdkaz.onClick} style={{ display: "block", minHeight: 44, margin: "-6px 0 -12px", padding: 0, border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", textAlign: "left", fontSize: 13.5, fontWeight: 800, color: "var(--green)", fontFamily: "inherit" }}>{uvidisOdkaz.text} ›</button>}

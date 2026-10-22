@@ -4,6 +4,7 @@
 // KARTA 43 ZMENA: režim „vsade" zrušený — platobný modul sa otvorí len po ťuku na zbierku/skutok.
 // VerejnyProfilView sa dá vložiť priamo (feed, „Stránka organizácie", adresár),
 // VerejnyProfilHost je celoobrazovková vrstva otváraná zo store (tlačidlo v Správe, QR).
+import { MaterialneNaProfile } from "./MaterialneNaProfile";
 import { useTestStav, vyprazdni, otvorenaRealnaStranka } from "@/lib/testStav";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { FarnikPridava, OdFarnikov, fabZapnuty } from "./FarnikPridava";
@@ -21,7 +22,7 @@ import { verejneOznamy, useZmenyOznamov, type Oznam } from "@/lib/oznamy";
 import { pracaZPonuky } from "@/features/rola/PonukyPrace";
 import { centralnaZPamate, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
 import { cistyText } from "@/lib/richtext";
-import { otvorVerejnyProfil, useVerejnyProfilOtvoreny, verejnyProfilKluc, zavriVerejnyProfil, vrstvaProfiluPripoj, nahladZoSpravy, cielOznamu, zrusDoOznamu } from "./otvor";
+import { otvorVerejnyProfil, useVerejnyProfilOtvoreny, verejnyProfilKluc, zavriVerejnyProfil, vrstvaProfiluPripoj, nahladZoSpravy, cielOznamu, zrusDoOznamu, cielSkutku, zrusDoSkutku } from "./otvor";
 import { VrstvaProfilu, naZbierkaData } from "./casti";
 import { useVzhlad, maVybranyVzhlad, type Vzhlad } from "@/lib/vzhladStranky";
 import { nacitajTiery } from "@/features/rola/stav";
@@ -184,6 +185,16 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad }: { kluc: string; onBa
   useEffect(() => { if (idOznamov) void nacitajUcasti(idOznamov.split(",")); }, [idOznamov]);
   const [profCh, setProfCh] = useState<ProfilStranky | null>(() => (kCh ? profilZPamate(kCh).ulozeny : null));
   useEffect(() => { if (!kCh) return; let ziva = true; void nacitajProfil(kCh).then((z) => { if (ziva) setProfCh(z.ulozeny); }); void nacitajZbierkyStranky(kCh); void nacitajCentralnuZbierku(kCh); void nacitajSkutkyStranky(kCh); void nacitajOznamyStranky(kCh); nacitajPrud(); return () => { ziva = false; }; }, [kCh]);
+  // OPRAVY 490: z modulu zbierky „Pozri ›“ pri skutku → detail toho skutku hneď po načítaní skutkov stránky
+  useEffect(() => {
+    const id = cielSkutku();
+    if (!id || !kCh || !profil0) return;
+    const sk = (skutkyStrankyZPamate(kCh) ?? skutkyOrg(kCh)).find((x) => x.id === id);
+    if (!sk) return;
+    const t = skutokProfilu(sk, profil0);
+    zrusDoSkutku();
+    setZaznam({ id: t.id, typ: "sk", d: t.d ?? "", m: t.m ?? "", rok: t.rok ?? new Date().getFullYear(), nazov: t.nazov, s: t.popis, foto: t.foto });
+  });
   if (!profil0) return null;
   const profil1 = sUdajmiCharity(sHlavnouZUctu(ts.prazdny ? vyprazdni(profil0) : profil0), profilNahlad ?? profCh, tierStranky);
   const profil = profil1.typ === "charita" && regV.nazov.trim() ? { ...profil1, meno: regV.nazov.trim() } : profil1;
@@ -198,7 +209,7 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad }: { kluc: string; onBa
   const farnost = profil.typ === "farnost";
   const fab = farnost && fabZapnuty(profil.k);
   // OPRAVY 406: charita — v tom istom mieste blok Pomôž (Dobrovoľníctvo zo Správy)
-  const odF = (pad?: string) => farnost ? <OdFarnikov strankaId={profil.k} novy={novyOdF} pad={pad} fab={fab} /> : profil.typ === "charita" ? <PomozCharita strankaId={profil.k} pad={pad} /> : undefined;
+  const odF = (pad?: string) => farnost ? <OdFarnikov strankaId={profil.k} novy={novyOdF} pad={pad} fab={fab} /> : profil.typ === "charita" ? <><MaterialneNaProfile strankaId={profil.k} meno={profil.meno} logo={profil.logo} inicialy={profil.iniciala} pad={pad} /><PomozCharita strankaId={profil.k} pad={pad} /></> : undefined; // OPRAVY 486: materiálne zbierky
   const padOdF = pc ? "44px 40px 0" : "28px 16px 0";
   const hore = (pad?: string) => farnost ? <PrihovorNaStranke strankaId={profil.k} pad={pad} /> : undefined; // KARTA 57 C.7–C.8
   // OPRAVY 400: charita — Kontakt (sídlo, prevádzky) a Údaje organizácie na konci stránky

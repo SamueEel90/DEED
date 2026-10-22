@@ -114,5 +114,20 @@
 - Obľúbené → Sledovať. Talent → Iskra. „Transparentný účet" → „Správa účtov". „Dlhodobá" → „Centrálna zbierka spoločnosti".
 - Repo martinstofiktn-web/DEED → SamueEel90/DEED.
 - Verejné číslo v pätke detailu → v hlavičke.
+- Reťaz dobra zelená šrafovaná v module → od 22. 10. FIALOVÁ šrafovaná; zelená šrafovaná patrí skutku zbierajúcemu na zbierku.
+- Sektorové zbierky „od AKCIA/P2" → od P1 (22. 10.).
+- Paušálne „5 zbierok mimo centrálnej" → limity P1 centrálna+3, P2 centrálna+10 (22. 10.).
+- SektoroveZbierky.tsx a CentralnaZbierka.tsx ako vzor → staré generácie; jediný vzor SpravaCentralnej.tsx (KARTA 48).
 
-*— koniec v1.0 · dopĺňa sa cez REGISTER.md pri každom novom výpise —*
+## 9b · Rozhodnuté 22. 10. (zdroj 14 — mení staršie body vyššie)
+
+- **Zapečatenie zbierky po spustení (detail):** zapečatené je všetko z tvorby vrátane pôvodného textu, fotiek, videa a hlavnej fotky. Text sa len dopĺňa (1–2 vety s dátumom, doplnenie sa tiež zapečatí), fotky len pridať (max 8 + 1 video). Preklep pred prvým darom: „Zrušiť a opraviť" — kópia s rovnakým Z-číslom a QR (meniť sa dá aj účel, účet nie); po prvom dare: ukončiť a založiť novú. Centrálna a sektorové sa NEzapečatia (text a fotky voľne, ako hlavná vo Viere).
+- **Reťaz dobra v module = FIALOVÁ šrafovaná** (#6B4E9A/#A68BD0); zelená šrafovaná = skutok zbierajúci na zbierku. Poradie v pruhu aj riadkoch: organizácia → firmy → reťaze → skutky → ľudia; paleta 8 odtieňov per subjekt natrvalo, pri nerozlíšiteľnosti farba z loga; 3 najväčší + „Zobraziť všetky ›".
+- **Sektorové zbierky od P1**; limity súbežných: P1 = centrálna + 3, P2 = centrálna + 10, Zadarmo 1. Sektory = schválené oblasti zo stanov (AI overí), vlastný transparentný účet; s darmi sa sektor nemaže, len zavrie. Tok „+ Nová zbierka": Centrálna · Sektorová · Bežná · Vecná.
+- Reťaz = zapečatená verzia zbierky u tvorcu s vlastným QR; na nej sa reťaz nereťazí. Dorovnanie: (A) hlavnej zbierky — tlačidlo Reťaz dobra zmizne, skoršie reťaze ostávajú; (B) verzie u tvorcu — reťaz neblokuje.
+- „Dorovnáva", nikdy „prispela" (tá len pri pevnej sume); „ZA ZBIERKU ZODPOVEDÁ" vždy charita/user, aj na stránke tvorcu a firmy.
+- Naživo/Od začiatku: len dary a skutky, nikdy návštevy; žiadna verejná nula. Z-číslo na mobile skrátené (4 číslice, ťuk rozbalí). Jedna karta so sumou (s míľnikmi).
+- Strážca nečinnosti a auto-odhlásenie v testovacej verzii VYPNUTÉ (489); nové bezpečnostné prvky len so súhlasom Martina.
+- Vzor kódu centrálnej: SpravaCentralnej.tsx (KARTA 48).
+
+*— koniec v1.0 + dodatok 22. 10. · dopĺňa sa cez REGISTER.md pri každom novom výpise —*

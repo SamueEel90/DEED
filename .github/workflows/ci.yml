@@ -59,7 +59,7 @@ jobs:
   # Zadanie 5 · 5.2: čistá Postgres DB zo VŠETKÝCH migrácií v poradí + DB testy.
   db:
     name: čistá DB z migrácií
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4

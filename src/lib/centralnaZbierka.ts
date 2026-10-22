@@ -60,8 +60,10 @@ export async function nacitajCentralnuZbierku(stranka: string): Promise<Centraln
     }
     const mal = chyby.has(stranka);
     if (chyba) chyby.add(stranka); else chyby.delete(stranka);
-    if (c) pamat.set(stranka, c);
-    if (c || chyba !== mal) zmena();
+    // OPRAVY 481: server centrálnu nemá (zmazaná) → preč aj z pamäte, inak by v Správe ostala do obnovenia stránky
+    const bola = pamat.has(stranka);
+    if (c) pamat.set(stranka, c); else if (!chyba) pamat.delete(stranka);
+    if (c || chyba !== mal || (bola && !c && !chyba)) zmena();
     return c ?? centralnaZPamate(stranka);
   }
   return centralnaZPamate(stranka);

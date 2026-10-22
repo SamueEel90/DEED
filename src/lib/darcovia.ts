@@ -56,6 +56,8 @@ export interface DarRiadok {
   omsa?: { nazov: string; stranka: string };
   /** OPRAVY 438 (3): dar prišiel cez skutok charity — názov skutku (riadok „Cez skutok“) */
   cezSkutok?: string;
+  /** OPRAVY 490: id skutku (skutok_stranky) — staré dary ho nemajú */
+  cezSkutokId?: string;
   // zapečené polia LEN pre mock cudzích darcov (v produkcii render cez userId):
   meno?: string; inicialovo?: string; nick?: string; mesto?: string; mestoVerejne?: boolean;
 }
@@ -140,6 +142,7 @@ function obnovZLedgera(refId: string, id: string) {
       verzia: d.meno ? 1 : 4, zobrazSumu: true, moj: d.moj, zLedgera: true, ...(d.meno ? { meno: d.meno } : {}),
       ...(d.omsa ? { omsa: { nazov: (d.meno ?? "Svätá omša").trim(), stranka } } : {}),
       ...(d.cezSkutok ? { cezSkutok: d.cezSkutok } : {}),
+      ...(d.cezSkutokId ? { cezSkutokId: d.cezSkutokId } : {}),
     }));
     sklad.set(refId, [...firmy, ...dary].sort((a, b) => b.cas - a.cas));
     emit();

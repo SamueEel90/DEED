@@ -27,7 +27,7 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { Prepinac } from "@/features/profil/nastUi";
 import {
   useSektory, obsahSektora, ulozObsahSektora, pridajSektor, zmazSektor, premenujSektor, ziadostUctu, poziadajOZmenuUctu,
-  zavretaCentralna, zavriCentralnu, otvorCentralnu, vyberCentralnej, nastavVyberCentralnej, useZmenySektorov,
+  zavretaCentralna, zavriCentralnu, otvorCentralnu, vyberCentralnej, nastavVyberCentralnej, useZmenySektorov, vezmiNovySektor, jeNovySektor,
   NULA, SEKTORY_MAX, SEKTORY_OD_TIERU, STANOVY_CINNOSTI, type SektorCharity,
 } from "@/lib/sektoryCharity";
 import { nacitajStav, ulozStav, type StavZbierky } from "@/lib/zbierkaSprava";
@@ -73,7 +73,8 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   // OPRAVY 347: plagát hlavnej = jeden plagát pre všetky QR (QR farnosti)
   const qrFar = usePolozkyQr(strankaId, nazov).find((x) => x.id === "farnost");
   const [plOkno, setPlOkno] = useState(false);
-  const [novySek, setNovySek] = useState(false);
+  const [novySek, setNovySek] = useState(() => jeNovySektor() && smieSektory); // OPRAVY 486
+  useEffect(() => { vezmiNovySektor(); }, []);
   const prepni = (i: number) => { setTyp(i); nastavVyberCentralnej(i); setNovySek(false); };
 
   // ---- obsah položky (text, galéria, sumy) — ukladá sa samo ----

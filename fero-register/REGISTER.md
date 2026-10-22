@@ -215,3 +215,48 @@
 ## Parkované — tester charity (Martin 21. 10.)
 
 - Martin má známu — šéfku charity, o projekte vie, čaká na testovanie. Až keď bude charita dokončená a vyladená, pripraví sa jej testovacia cesta (obdoba zadania registrácie farnosti pre testera). Teraz NErobiť, len nestratiť.
+
+## Balík 39 (body 490–493) — platobný modul: kto prispel, farby pruhu, reťaze (prijaté 22. 10.)
+
+- Skontrolované proti dohodám. SEDÍ: zlatá = peniaze firiem (dorovnanie aj pevná suma) · tmavozelený vlastný vklad bez prekliku · „dorovnáva" vs. „Prispela" len pri pevnej sume · formulár dorovnania len pre IČO · „ZA ZBIERKU ZODPOVEDÁ" vždy hore, tvorca ani firma nikdy ako zodpovední · reťaz = zapečatená verzia zbierky u tvorcu s vlastným QR, na nej sa reťaz nereťazí · dorovnanie splitnutej ide (deed-dorovnanie) · fialová mimo Iskier povolená (Martin 21. 10.).
+- NOVÉ pravidlá z balíka (do dohôd po kóderkinom „hotové"): poradie úsekov a riadkov organizácia → firmy → reťaze → skutky → ľudia · paleta 8 odtieňov fialovej pre max 20 reťazí, odtieň natrvalo · pri nerozlíšiteľných odtieňoch farba z loga · pod pruhom 3 najväčšie + „Zobraziť všetky ›".
+- ⚠️ JEDEN STRET: bod 490(4) káže fialové tlačidlo „Reťaz dobra · Nastaviť ›" v module „všade", ale dohoda z 27. 9. (zdroj 01) znie „pri aktívnom dorovnaní sa Reťaz dobra nezobrazuje, ani jej prázdny obal" — balík to nespomína. Kóderke treba dopovedať: tlačidlo Nastaviť mizne, kým beží dorovnanie; existujúce (skôr pripojené) reťaze v pruhu a riadkoch ostávajú.
+
+
+## Postrehy zo zdroja 14 (Dohody 22. 10.) — najčerstvejší, nahrádza balík 39
+
+**Vyriešené otvorené veci:**
+
+- Včerajšia otázka „text a foto po spustení" ROZHODNUTÁ (sekcia 1): pôvodný text/fotky zapečatené, text sa doplní 1–2 vetami s dátumom (doplnenie sa tiež zapečatí), fotky len pridať (max 8 + 1 video); preklep pred prvým darom = „Zrušiť a opraviť" (kópia, rovnaké Z-číslo a QR, dá sa zmeniť aj účel, účet nie); po prvom dare = ukončiť a nová. Centrálna a sektorové sa NEzapečatia.
+- Dva prípady dorovnanie × reťaz (A hlavná zbierka / B verzia u tvorcu) — potvrdené, bod 490(4) doplnok.
+- Strážca nečinnosti v teste vypnutý = balík 38 (489); moja karta-strazca-necinnosti.md tým pokrytá.
+- SpravaCentralnej.tsx (KARTA 48) potvrdená ako jediný vzor; SektoroveZbierky.tsx a CentralnaZbierka.tsx oficiálne staré generácie (zmazať až keď nové funguje) — sedí s mojím nálezom z 22. 10.
+- Dorovnanie zo 6. 10. prepísané do PRAVIDLA-APPKY.md — register a pravidlá už držia to isté.
+
+**ZMENY starších dohôd (do DIZAJN-DOHODNUTE §9 + Pasce):**
+
+1. **Reťaz dobra v module = FIALOVÁ šrafovaná** (#6B4E9A/#A68BD0) — mení dohodu z 12. 10.; zelená šrafovaná teraz = skutok, ktorý zbiera na zbierku. Fialový je „kto reťazí" všade.
+2. **Sektorové zbierky od P1** — staré „od AKCIA/P2" neplatí.
+3. **Limity súbežných zbierok: P1 = centrálna + 3, P2 = centrálna + 10** — nahrádza paušálne „5 zbierok mimo centrálnej".
+4. Tok zbierok charity = ako Viera („+ Nová zbierka" → Centrálna/Sektorová/Bežná/Vecná), centrálna a sektory v Správe bokom.
+
+**Nové trvalé (výber):** Naživo/Od začiatku len dary a skutky, NIKDY návštevy; žiadna verejná nula · Z-číslo na mobile skrátené (posledné 4), ťuk rozbalí a kopíruje celé · jedna karta so sumou na stránke zbierky (s míľnikmi) · sektory = schválené oblasti zo stanov (AI overí), sektor s darmi sa nemaže, len zavrie · zavretá centrálna 15 min Vrátiť späť → Archív · poradie v pruhu organizácia → firmy → reťaze → skutky → ľudia; paleta 8 odtieňov, farba z loga pri nerozlíšiteľnosti; 3 najväčší + Zobraziť všetky · „dorovnáva" nikdy „prispela" (tá len pevná suma) · „ZA ZBIERKU ZODPOVEDÁ" vždy charita/user, nikdy tvorca ani firma · nové bezpečnostné prvky len so súhlasom Martina (489).
+
+**Otvorené zo zdroja 14:** stav „zverejnená áno/nie" na serveri (Ateliér) · galéria zbierky na mobile listuje až po otvorení · skutky — Martin hlási ďalšie problémy · darcovia Bena — ktoré dary sú skutočné (484 d).
+
+## Rozhodnuté 22. 10. večer — reťaz v DB + testovacie platby (Martin schválil)
+
+- Migrácia 0157: `retaz` + `retaz_pct` + `retaz_cast` priamo na pohybe — % aj podiel zafixované v momente daru ako súčasť nemenného dokladu; súčet častí = dar na cent, zvyšková stotina podľa sirotského pravidla ledgera.
+- Kým je testovacia pokladňa zapnutá, server označí príznakom test KAŽDÚ platbu na doméne, bez ohľadu na appku. Vypnutie pokladne = vedomý ostrý štart s Martinovým súhlasom, jednorazovo.
+- Vecné dary dostanú príznak test (sú účtovníctvo); reakcie a prihlásenia nie — zmiznú až pri ostrom štarte s testovacími účtami.
+- Mazanie testov jedným príkazom (vzor 0135): doklady so stornami, platby, retaz_platba, dorovnania, zbierka_vklad, podpora, platba_split, upozornenia darcom; počítadlá sa prepočítajú z ledgera samy. Dvojkrokovo: najprv výpis počtov, zmazanie až pri druhom spustení s potvrdením.
+- Rozoznávanie testov podľa sumy/kurzu (nápad 1 DeeD = 1 €) ZAMIETNUTÉ — kurz 100 DeeD = 1 € sa nemení, testy rozlišuje výhradne príznak.
+- Súvisí: pri plnení reťazí platí blokovanie platby na verzii u tvorcu, kým delenie (bod 1) nebeží — hláška, nie tiché zlé delenie.
+
+## Rozhodnuté 22. 10. neskoro večer — výmaz testu a ostrý štart (0158, Martin schválil)
+
+- Na konci testu jeden výmaz zoberie VŠETKY peniaze, ktoré vznikli do ostrého štartu, u každého — aj u ostrých účtov; k tomu vráti stav reťazí a zbierok (naplnená/preskočená/ukončená testom sa vráti) a zmaže všetky upozornenia o peniazoch.
+- Stránka, ktorá do výmazu prešla OSTROU registráciou (napr. evanjelický farár ako tester), si nechá vzhľad, profil, texty, fotky, nástenku aj príspevky — tie si riadi sám v Správe. Zbierky idú preč všetky, aj jeho prázdna (vytvoriť novú nie je problém).
+- Testovacie stránky a účty idú preč celé.
+- Číslovanie: peňažné doklady, VS a čísla zbierok začnú po výmaze NANOVO, ale od nového základu, ktorý sa s testovacím rozsahom nikdy neprekryje — žiadne testovacie číslo sa nezrecykluje (vytlačený testovací QR ostane navždy mŕtvy, nesmie viesť na cudziu ostrú zbierku). Čísla príspevkov a poradové čísla účtov ostrých ľudí pokračujú.
+- Staré pohyby spred 0157 (bez príznaku, štartovací kredit): rieši 0158 — výmaz berie všetky peniaze až po ostrý štart.

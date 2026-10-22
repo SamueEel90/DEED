@@ -14,10 +14,13 @@ import { useZamokVrstvy } from "@/lib/zamokVrstvy";
 import { TlZbalit } from "./zbalit";
 import { cistyText } from "@/features/rola/obsahZbierky";
 import { fotoVecnej, doKedyText, usePrehladDarov, zapisDar, type VecnaZbierka } from "@/lib/vecnaZbierka";
+import "@/styles/nastenka.css"; // OPRAVY 486: farby --nf-* aj na stránke charity
 
 const INK = "var(--nf-ink)", INK2 = "var(--nf-ink2)", INK3 = "var(--nf-ink3)", KARTA = "var(--nf-karta)", PAPIER = "var(--nf-papier)", LINKA = "var(--nf-linka)";
 const ZLATA_STITOK = "#E2C27A", ZELENA_TL = "#4B7A35";
 export const STITOK_VECNEJ = "VECNÁ ZBIERKA";
+/** OPRAVY 486: pri charite sa vecná volá materiálna */
+export const STITOK_MATERIALNEJ = "MATERIÁLNA ZBIERKA";
 const eur = (n: number) => `${n.toLocaleString("sk-SK", { maximumFractionDigits: 2 })} €`;
 const ludiT = (n: number) => `${n} ${n === 1 ? "človek daroval" : n < 5 ? "ľudia darovali" : "ľudí darovalo"}`;
 export interface Organizator { meno: string; logo: string | null; inicialy: string }
@@ -33,15 +36,16 @@ function Logo({ o, s }: { o: Organizator; s: number }) {
   return o.logo ? <span aria-hidden="true" style={{ flex: "none", width: s, height: s, borderRadius: 10, background: `url("${o.logo}") center/cover no-repeat #fff` }} />
     : <span aria-hidden="true" style={{ flex: "none", width: s, height: s, borderRadius: 10, background: "#E9E2D2", color: "#5A4E36", fontSize: s * 0.36, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{o.inicialy}</span>;
 }
-function Hlava({ z }: { z: VecnaZbierka }) {
+function Hlava({ z, charita }: { z: VecnaZbierka; charita?: boolean }) {
+  const st = charita ? STITOK_MATERIALNEJ : STITOK_VECNEJ;
   const f = fotoVecnej(z);
   return <div style={{ position: "relative", height: f ? 190 : 64, flex: "none", background: f ? `url("${f}") center/cover no-repeat #2B2620` : KARTA }}>
-    <span style={{ position: "absolute", left: 16, bottom: 12, fontSize: 12, fontWeight: 800, letterSpacing: ".08em", background: ZLATA_STITOK, color: "#14110B", padding: "4px 10px", borderRadius: 8 }}>{z.stav === "aktivna" ? STITOK_VECNEJ : `${STITOK_VECNEJ} · UKONČENÁ`}</span>
+    <span style={{ position: "absolute", left: 16, bottom: 12, fontSize: 12, fontWeight: 800, letterSpacing: ".08em", background: ZLATA_STITOK, color: "#14110B", padding: "4px 10px", borderRadius: 8 }}>{z.stav === "aktivna" ? st : `${st} · UKONČENÁ`}</span>
   </div>;
 }
 
 /** (E) detail vecnej zbierky na stránke */
-export function VecnaDetail({ strankaId, z, onZavri }: { strankaId: string; z: VecnaZbierka; onZavri: () => void }) {
+export function VecnaDetail({ strankaId, z, onZavri, charita }: { strankaId: string; z: VecnaZbierka; onZavri: () => void; /** OPRAVY 486 */ charita?: boolean }) {
   const pr = usePrehladDarov(strankaId, z);
   const [viac, setViac] = useState(false), [vsetci, setVsetci] = useState(false), [dakViac, setDakViac] = useState(false);
   const riadok = [z.co, z.kde, z.doKedy ? `do ${doKedyText(z.doKedy, false)}` : "", z.organizuje ? `organizuje ${z.organizuje}` : ""].filter(Boolean).join(" · ");
@@ -49,8 +53,8 @@ export function VecnaDetail({ strankaId, z, onZavri }: { strankaId: string; z: V
   const pct = ukaz && z.ciel ? Math.min(100, Math.round((pr.spolu! / z.ciel) * 100)) : 0;
   const dak = z.stav === "ukoncena" && z.podakovanie?.ulozene && !z.podakovanie.zmazane ? z.podakovanie : null;
   const darcovia = vsetci ? pr.darcovia : pr.darcovia.slice(0, 5);
-  return <Okno label={z.nazov} onZavri={onZavri}>
-    <Hlava z={z} />
+  return <Okno label={z.nazov} onZavri={onZavri} spatText={charita ? "‹ Späť na stránku" : undefined}>
+    <Hlava z={z} charita={charita} />
     <div data-zbal="" style={{ padding: "18px 18px 22px", display: "flex", flexDirection: "column", gap: 14 }}>
       <b style={{ fontSize: 23, lineHeight: 1.2, overflowWrap: "anywhere" }}>{z.nazov}</b>
       {riadok && <span style={{ fontSize: 15, lineHeight: 1.45, color: INK2 }}>{riadok}</span>}
@@ -86,7 +90,7 @@ export function VecnaDetail({ strankaId, z, onZavri }: { strankaId: string; z: V
 }
 
 /** (D) darca naskenoval QR · (D2) poďakovanie od organizátora na tom istom mieste */
-export function VecnaDarca({ strankaId, z, org, onZavri, onPozriet, onPrihlasit }: { strankaId: string; z: VecnaZbierka; org: Organizator; onZavri: () => void; onPozriet: () => void; /** OPRAVY 320 doplnok: neprihlásený → prihlásenie, potom späť na zápis */ onPrihlasit: () => void }) {
+export function VecnaDarca({ strankaId, z, org, onZavri, onPozriet, onPrihlasit, charita }: { strankaId: string; z: VecnaZbierka; org: Organizator; /** OPRAVY 486 */ charita?: boolean; onZavri: () => void; onPozriet: () => void; /** OPRAVY 320 doplnok: neprihlásený → prihlásenie, potom späť na zápis */ onPrihlasit: () => void }) {
   const ja = usePouzivatel(), sektor = useSektorDarcu(), reg = ja.typ !== "pasivny";
   const moznosti = useMemo(() => volbyMena(ja, volbaBezMena(sektor)), [ja, sektor]);
   const [volba, setVolba] = useState(nacitajPredvolbu);
@@ -105,13 +109,13 @@ export function VecnaDarca({ strankaId, z, org, onZavri, onPozriet, onPrihlasit 
   };
   const chip = (on: boolean): CSSProperties => ({ minHeight: 52, borderRadius: 12, border: on ? "none" : `1.5px solid ${LINKA}`, background: on ? ZELENA_TL : "transparent", color: on ? "#fff" : INK, cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800 });
   const skoncila = z.stav !== "aktivna";
-  return <Okno label={z.nazov} onZavri={onZavri}>
-    {!hotovo && <Hlava z={z} />}
+  return <Okno label={z.nazov} onZavri={onZavri} spatText={charita ? "‹ Späť na stránku" : undefined}>
+    {!hotovo && <Hlava z={z} charita={charita} />}
     <div style={{ padding: "18px 18px 22px", display: "flex", flexDirection: "column", gap: 14 }}>
       {hotovo ? <>
         <div role="status" style={{ padding: 16, borderRadius: 16, background: "var(--nf-gSoft)", border: "1.5px solid var(--nf-gBd)", display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}><Logo o={org} s={44} /><b style={{ fontSize: 17, lineHeight: 1.3 }}>{org.meno} ďakuje za dar</b></div>
-          <span style={{ fontSize: 15.5, lineHeight: 1.5, color: INK }}>{volba.verzia === 4 ? "Pán Boh zaplať." : `Pán Boh zaplať, ${meno}.`} Zapísali sme vás medzi darcov zbierky {z.nazov}.</span>
+          <span style={{ fontSize: 15.5, lineHeight: 1.5, color: INK }}>{charita ? (volba.verzia === 4 ? "Ďakujeme." : `Ďakujeme, ${meno}.`) : volba.verzia === 4 ? "Pán Boh zaplať." : `Pán Boh zaplať, ${meno}.`} Zapísali sme vás medzi darcov zbierky {z.nazov}.</span>
         </div>
         <button type="button" onClick={onPozriet} style={{ minHeight: 56, borderRadius: 16, border: "1.5px solid var(--nf-gBd)", background: "transparent", color: "var(--nf-gInk)", cursor: "pointer", fontFamily: "inherit", fontSize: 16.5, fontWeight: 800 }}>Pozrieť zbierku ›</button>
       </> : <>

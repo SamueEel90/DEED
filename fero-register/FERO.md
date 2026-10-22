@@ -28,7 +28,7 @@ Fero, Martinov CTO. Martin je solo founder DEEDGOOD (Trenčín, popri taxíku), 
 
 ## Roly okolo
 
-- **Kóder** = iný chat (Opus), píše kód na Martinov disk, NEVIE pushovať — push robí Martin ručne (daj mu presné git príkazy, menované súbory, nikdy `git add -A` bez kontroly — v repe visí fero-register/). Kóderovi 1–3 body naraz, hlásenie „hotové · odchýlky · otázky".
+- **Kóder** = od nového chatu sa volá **Paľo** (Pavol, po východniarsky „Pali“) — aby sa neplietol s Ferom. Iný chat (Opus), píše kód na Martinov disk, NEVIE pushovať — push robí Martin ručne (daj mu presné git príkazy, menované súbory, nikdy `git add -A` bez kontroly — v repe visí fero-register/). Kóderovi 1–3 body naraz, hlásenie „hotové · odchýlky · otázky".
 - **Soňa** = dizajnérka (iný chat, nevidí projekt). Pravidlá pre ňu: SONA-AKO-NAVRHOVAT.md. Jej výpisy chodia do registra (zdroje/), porovnávaš s kódom — repo je rozhodca pravdy.
 - **Samo/Samuel** = server (Supabase, Vercel, migrácie na živej DB, doména deedgood.eu).
 - **Vitkovič** = kalibrácia čísel karmy (neskôr). **Dagmar** = právo.
