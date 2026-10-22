@@ -39,7 +39,7 @@ export function PodporaProfilu({ profil, lok, domace, rez, stlpce = rez === "tab
   const [modVl, setModVl] = useState<Vyber>(null);
   const mod = onMod ? (modP ?? null) : modVl;
   const setMod = (i: Vyber) => (onMod ? onMod(i) : setModVl(i));
-  useOtvorHlavnuZQr(profil.k, jeFarnost(profil), () => setMod(0)); // OPRAVY 162
+  useOtvorHlavnuZQr(profil.k, jeFarnost(profil) || (profil.typ === "charita" && !profil.bezCentralnej), () => setMod(0)); // OPRAVY 162 · 483: aj QR charity pri bežiacej centrálnej
   const nadpisRef = useRef<HTMLSpanElement | null>(null);
   const sk = lok === "Celé Slovensko";
   const mestoV = sk ? "celom Slovensku" : vMeste(lok);

@@ -22,7 +22,7 @@ import { verejneOznamy, useZmenyOznamov, type Oznam } from "@/lib/oznamy";
 import { pracaZPonuky } from "@/features/rola/PonukyPrace";
 import { centralnaZPamate, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
 import { cistyText } from "@/lib/richtext";
-import { otvorVerejnyProfil, useVerejnyProfilOtvoreny, verejnyProfilKluc, zavriVerejnyProfil, vrstvaProfiluPripoj, nahladZoSpravy, cielOznamu, zrusDoOznamu, cielSkutku, zrusDoSkutku } from "./otvor";
+import { otvorVerejnyProfil, useVerejnyProfilOtvoreny, verejnyProfilKluc, zavriVerejnyProfil, vrstvaProfiluPripoj, nahladZoSpravy, cielOznamu, zrusDoOznamu, cielSkutku, zrusDoSkutku, qrCielCitaj, zrusQrCiel } from "./otvor";
 import { VrstvaProfilu, naZbierkaData } from "./casti";
 import { useVzhlad, maVybranyVzhlad, type Vzhlad } from "@/lib/vzhladStranky";
 import { nacitajTiery } from "@/features/rola/stav";
@@ -196,6 +196,16 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad }: { kluc: string; onBa
     const t = skutokProfilu(sk, profil0);
     zrusDoSkutku();
     setZaznam({ id: t.id, typ: "sk", d: t.d ?? "", m: t.m ?? "", rok: t.rok ?? new Date().getFullYear(), nazov: t.nazov, s: t.popis, foto: t.foto });
+  });
+  // OPRAVY 483: QR / odkaz zbierky (/z/{id}) → rovno detail tej zbierky s platbou (ako vo Viere), nie stránka charity
+  useEffect(() => {
+    const c = qrCielCitaj();
+    const id = c && "zbierka" in c ? c.zbierka : null;
+    if (!id || !kCh || !profil0) return;
+    const z = zbierkyStrankyZPamate(kCh).find((x) => x.id === id);
+    if (!z) return;
+    zrusQrCiel();
+    setDetail(zbierkaProfilu(z, profil0));
   });
   if (!profil0) return null;
   const profil1 = sUdajmiCharity(sHlavnouZUctu(ts.prazdny ? vyprazdni(profil0) : profil0), profilNahlad ?? profCh, tierStranky);
