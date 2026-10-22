@@ -5,8 +5,8 @@ import { useDarcovia, identitaDarcu, DARCOVIA_CFG, useSektorDarcu, useUkazSumy, 
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { ludiaPomohli } from "./hlasky";
 import { TempoDarov, type TempoRezim } from "./Tempo";
-import { PrispievateliaFarnosti, useUsekyOrganizacii, ZLATA_USEK, VLASTNE_USEK } from "./FarnostPrispela";
-import { PrispievateliaRetazou, useUsekyRetaze } from "./RetazStranky";
+import { PrispievateliaFarnosti, useUsekyOrganizacii } from "./FarnostPrispela";
+import { useKtoPrispel, usekyPruhu, LegendaPruhu, RiadkyKtoPrispel, type OrgZbierky } from "./KtoPrispel";
 import { sumaEur } from "@/lib/suma";
 
 // míľniky: počíta systém sám, nikto ich nenastavuje
@@ -68,9 +68,9 @@ const organizacie = (n: number) => n === 1 ? "1 organizácia" : n >= 2 && n <= 4
 const ludiaNom = (n: number) => n === 1 ? "1 človek" : n >= 2 && n <= 4 ? `${n} ľudia` : `${n} ľudí`;
 /** „38 ľudí a 1 organizácia pomohli“ (organizácia = partner, nie vlastné peniaze) */
 const ludiaAOrg = (n: number, o: number) => !o ? ludiaPomohli(n) : !n ? `${organizacie(o)} ${o === 1 ? "pomohla" : o <= 4 ? "pomohli" : "pomohlo"}` : `${ludiaNom(n)} a ${organizacie(o)} pomohli`;
-function Ludia({ pocet, fanusikov, org = 0 }: { pocet: number; fanusikov?: boolean; org?: number }) {
+function Ludia({ pocet, fanusikov, org = 0, cezSkutok = 0 }: { pocet: number; fanusikov?: boolean; org?: number; /** OPRAVY 490 */ cezSkutok?: number }) {
   if (pocet + org <= 0) return null; // OPRAVY 415: bez darov ani „0 ľudí pomohlo“, ani „rastie naživo“
-  return (
+  return (<>
     <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12, fontSize: 13, color: "var(--ink3)" }}>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg>
       <span style={{ flex: 1, minWidth: 0 }}>{(fanusikov ? fanusikovia(pocet) : ludiaAOrg(pocet, org)).replace(/^(\d+) /, "$1\u00A0")}</span>
@@ -79,10 +79,14 @@ function Ludia({ pocet, fanusikov, org = 0 }: { pocet: number; fanusikov?: boole
         rastie naživo
       </span>
     </div>
+    {cezSkutok > 0 && <div style={{ marginTop: 4, paddingLeft: 22, fontSize: 12.5, color: "var(--ink3)" }}>z toho <span style={{ whiteSpace: "nowrap", fontWeight: 700, color: "var(--ink2)" }}>{eur(cezSkutok)}</span> cez skutok</div>}
+    </>
   );
 }
 
-export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, koniecPruhu, cezTvorcu, skryta, bezMilnikov }: {
+export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, koniecPruhu, cezTvorcu, skryta, bezMilnikov, organizacia }: {
+  /** OPRAVY 490: organizácia, ktorá zbiera — logo a štít pri vlastnom vklade a pri skutku */
+  organizacia?: OrgZbierky;
   /** OPRAVY 388: zvončeková zbierka — nemá cieľ ani míľniky, len suma */
   bezMilnikov?: boolean;
   /** KARTA 57C §4 · OPRAVY 181: pohrebná zbierka — len rozmazaná suma a „suma sa ukáže po vašom dare“; bez míľnika a Posledného daru */
@@ -103,7 +107,8 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, ko
   const ukazSumy = useUkazSumy();
   const suma = (cezTvorcu ? 0 : zaklad) + dary.reduce((a, r) => a + r.suma, 0);
   const org = useUsekyOrganizacii(refId);
-  const ret = useUsekyRetaze(refId); // balík 8 C: podiel z reťaze = zelená s pásikmi (firmy → reťaze → ľudia)
+  // OPRAVY 490: kto prispel — organizácia → firmy → reťaze → skutky → ľudia (úseky pruhu, legenda, riadky)
+  const kto = useKtoPrispel(refId, dary, organizacia);
   // OPRAVY 222: dary organizácií (farnosť, vlastné peniaze) nie sú ľudia
   const ludia = Math.max(0, (cezTvorcu ? 0 : ludiaZaklad) + dary.filter((r) => !r.firma).length - (cezTvorcu ? 0 : org.darovOrg));
   const nadpisVyzbierane = cezTvorcu ? `Vyzbierané cez ${cezTvorcu.menoAkuzativ}` : "Vyzbierané";
@@ -150,11 +155,11 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, ko
             <span style={{ marginLeft: "auto", fontSize: 18, fontWeight: 800, color: "var(--green)", fontVariantNumeric: "tabular-nums" }}>{pct}{"\u00A0"}%</span>
           </span>
         </div>
-        <Pruh podiel={suma / ciel!} vyska={10} koniec={koniecPruhu} useky={[{ w: org.vlastne / ciel!, farba: VLASTNE_USEK }, { w: org.cudzie / ciel!, farba: ZLATA_USEK }, ...ret.useky.map((u) => ({ w: u.suma / ciel!, farba: u.farba }))].filter((u) => u.w > 0)} />
-        <PrispievateliaFarnosti refId={refId} />
-        <PrispievateliaRetazou refId={refId} />
+        <Pruh podiel={suma / ciel!} vyska={10} koniec={koniecPruhu} useky={usekyPruhu(kto.riadky, ciel!)} />
+        <LegendaPruhu riadky={kto.riadky} ludia={ludia > 0} />
+        <RiadkyKtoPrispel riadky={kto.riadky} />
         <TempoDarov refId={refId} rezim={tempo} />
-        <Ludia pocet={ludia} org={org.organizacii} />
+        <Ludia pocet={ludia} org={org.organizacii} cezSkutok={kto.cezSkutok} />
       </div>
     );
   }
@@ -184,7 +189,8 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, ko
       {dnes > 0 && <div style={{ fontSize: 13, fontWeight: 700, color: "var(--green)", marginTop: 4 }}>dnes +{eur(dnes)}</div>}
       {bezMilnikov ? <div ref={koniecPruhu} style={{ height: 0 }} /> : <>
       <div style={{ marginTop: 12 }}><Pruh podiel={zakladMilnika} vyska={6} blik={oslava || undefined} koniec={koniecPruhu}
-        useky={cezTvorcu || oslava ? [] : ret.useky.map((u) => ({ w: u.suma / dalsi, farba: u.farba })).filter((u) => u.w > 0)} /></div>
+        useky={cezTvorcu || oslava ? [] : usekyPruhu(kto.riadky, dalsi)} /></div>
+      {!cezTvorcu && !oslava && <LegendaPruhu riadky={kto.riadky} ludia={ludia > 0} />}
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 8, fontSize: 12.5, fontWeight: 700, color: "var(--ink3)" }}>
         <span>{dosiahnuty ? `míľnik ${eur(dosiahnuty)} dosiahnutý` : "prvý míľnik"}</span>
         <span>ďalší míľnik <span style={{ color: "var(--green)" }}>{eur(dalsi)}</span></span>
@@ -196,10 +202,9 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, ko
           {(ukazSumy || posledny.omsa) && sumaDaru(posledny) && <span style={{ fontSize: 13, fontWeight: 800, color: "var(--green)", flex: "none", fontVariantNumeric: "tabular-nums" }}>{sumaDaru(posledny)}</span>}
         </div>
       )}
-      {!cezTvorcu && <PrispievateliaFarnosti refId={refId} />}
-      {!cezTvorcu && <PrispievateliaRetazou refId={refId} />}
+      {!cezTvorcu && <RiadkyKtoPrispel riadky={kto.riadky} />}
       <TempoDarov refId={refId} rezim={tempo} cezTvorcu={cezTvorcu?.id} />
-      <Ludia pocet={ludia} fanusikov={!!cezTvorcu} org={cezTvorcu ? 0 : org.organizacii} />
+      <Ludia pocet={ludia} fanusikov={!!cezTvorcu} org={cezTvorcu ? 0 : org.organizacii} cezSkutok={cezTvorcu ? 0 : kto.cezSkutok} />
     </div>
   );
 }

@@ -108,11 +108,12 @@ export function RetazRiadok({ onClick }: { onClick: () => void }) {
   return (
     <button type="button" className="zb-karta" onClick={onClick}
       style={{ marginTop: 12, width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", textAlign: "left", cursor: "pointer", color: "var(--ink)", fontFamily: "inherit" }}>
-      <span style={{ width: 36, height: 36, borderRadius: 10, background: "var(--gSoft)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none", color: "var(--green)" }}>
+      {/* OPRAVY 490 (4): Reťaz dobra fialová — ikona, podklad ikony aj Nastaviť */}
+      <span style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(166,139,208,.22)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none", color: "#8467B4" }}>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></svg>
       </span>
       <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 14.5, fontWeight: 700 }}>Reťaz dobra</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>rozdeľ platbu medzi seba a charity</span></span>
-      <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--green)" }}>Nastaviť ›</span>
+      <span style={{ fontSize: 13.5, fontWeight: 800, color: "#8467B4", whiteSpace: "nowrap" }}>Nastaviť ›</span>
     </button>
   );
 }
@@ -204,7 +205,7 @@ export function Darcovia({ refId, nadpis = "DARCOVIA", cezTvorcu, bezDorovnania,
             <span style={{ width: 70, textAlign: "right", fontSize: 12, color: "var(--ink4)", flex: "none" }}>{relCas(darca.cas)}</span>
           </div>
           {/* OPRAVY 438 (3): dar prišiel cez skutok charity */}
-          {darca.cezSkutok && <div style={{ marginTop: 2, fontSize: 13, color: "var(--ink3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Cez skutok · {darca.cezSkutok}</div>}
+          {darca.cezSkutok && <div style={{ marginTop: 2, fontSize: 13, color: "var(--ink3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>cez skutok {darca.cezSkutok}</div>}
           {firma && (
             <div style={{ display: "flex", gap: 8, marginTop: 3, paddingLeft: 14, fontSize: 14, fontWeight: 700, color: "var(--gold)" }}>
               <span style={{ flex: 1 }}>+ {firma.firma}</span>
