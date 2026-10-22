@@ -11,7 +11,7 @@ import { MESIACE, kovText } from "./casti";
 export const GRAD = "linear-gradient(135deg,#4B7A35,#6E9F4E)";
 export const PRUH = "linear-gradient(90deg,#4B7A35,#8DB866)";
 const ZLATA = "#F6C453";
-export const bgF = (f: string) => `url('${f}') center/cover no-repeat #3a3530`;
+export const bgF = (f: string) => f.startsWith("logo|") ? `url(${JSON.stringify(f.split("|").slice(2).join("|"))}) center/auto 58% no-repeat ${f.split("|")[1]}` : `url('${f}') center/cover no-repeat #3a3530`; // OPRAVY 479: logo charity namiesto fotky
 const poradieDatumu = (m: string, d: string) => MESIACE.indexOf(m) * 100 + (parseInt(d, 10) || 0);
 const dokladov = (n: number) => tvar(n, ["DOKLAD", "DOKLADY", "DOKLADOV"]);
 

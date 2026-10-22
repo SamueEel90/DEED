@@ -25,7 +25,7 @@ type Rez = "pc" | "tab" | "mob";
 const FILTRE: [string, Typ | null][] = [["Všetko", null], ["Zbierky", "zb"], ["Skutky", "sk"], ["Iskry", "is"], ["Oznamy", "oz"], ["Práca", "pr"]];
 const PRUH = "linear-gradient(90deg,#4B7A35,#8DB866)";
 const ZLATA = "#F6C453";
-const bg = (f: string) => `url('${f}') center/cover no-repeat #3a3530`;
+const bg = (f: string) => f.startsWith("logo|") ? `url(${JSON.stringify(f.split("|").slice(2).join("|"))}) center/auto 58% no-repeat ${f.split("|")[1]}` : `url('${f}') center/cover no-repeat #3a3530`; // OPRAVY 479: logo charity namiesto fotky
 const dokladov = (n: number) => tvar(n, ["DOKLAD", "DOKLADY", "DOKLADOV"]);
 const poradieDatumu = (m: string, d: string) => MESIACE.indexOf(m) * 100 + (parseInt(d, 10) || 0);
 const TAB = "(min-width: 760px) and (max-width: 1199px)";

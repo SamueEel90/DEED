@@ -7,7 +7,7 @@ import { vMeste } from "./casti";
 import { ModulProfilu } from "./ModulProfilu";
 import { useOtvorHlavnuZQr } from "./otvor";
 
-const bg = (f: string) => `url('${f}') center/cover no-repeat #3a3530`;
+const bg = (f: string) => f.startsWith("logo|") ? `url(${JSON.stringify(f.split("|").slice(2).join("|"))}) center/auto 58% no-repeat ${f.split("|")[1]}` : `url('${f}') center/cover no-repeat #3a3530`; // OPRAVY 479
 export type RezPodpory = "pc" | "tab" | "mob";
 /** 5. 10. · čo je vybraté na darovanie: index dlaždice (0 centrálna, 1–3 sektory) alebo konkrétna zbierka (PC Pirát / Výklad) */
 export type Vyber = number | TestZbierka | null;
