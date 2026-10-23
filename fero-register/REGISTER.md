@@ -402,3 +402,18 @@ Minimum 5 % patrí LEN reťazi tvorcu. Kód sedí s dohodami, nič sa nemení. T
 - **Advokácia a právna pomoc: rieši sa pri sekcii registrácia** (tam patrí). Ak sa pridá, tak s DÔRAZNÝM varovaním na politiku a kokotiny — porušenie = ban 10 rokov.
 - Schvaľovanie pred/po stanovách: Paľo číselník nasadí, samotné pravidlo sa VYRIEŠI PRI SEKCII REGISTRÁCIA (Martin: „nechcem odskakovať od témy, teraz charita"). Ferov návrh na vtedy: hneď + štítok „čaká na overenie stanov", výplata až po overení.
 - Spolky (časť C) sa teraz nerobia.
+
+## Zdroj 22 prijatý — DOHODY 23. 10. (Soňa)
+Uložené verbatim v zdroje/22-dohody-23-10.md. Sedí s registrom (programy, cieľ-spúšťač, nezapečatený prepínač, poďakovanie od správcu — moje odpovede na Paľove rozpory už zapracované). Nové do evidencie:
+- Mená testovacích charít: **Pod korunami = Zadarmo · Pevný bod = P1 · Míľnik = P2** (P3 na požiadanie).
+- Slovo „feed" NIKDY v SK texte appky (512F); „ostrá verzia" len pre štart celej appky — pri stránke vždy „verejná/neverejná".
+- Vzhľad „Pirát" sa všade volá **„Moderné"**.
+- **Sektorová zbierka nepotrebuje centrálnu — stačí transparentný účet (527).**
+- Nadpis bloku podpory: Zadarmo „Podporte nás", od P1 „Podporte nás · aj pravidelne" (528).
+- Chyba: profil charity musí čítať skutočnú centrálnu (522, VerejnyProfil.tsx r. 73).
+- Ukončenie zbierky charity ako farnosť: bez darov zmazať + Vrátiť späť 15 min; s darmi Archív (523).
+- SpravaStranky.tsx obsluhuje všetky typy (spolok, klub, škola…) — novinky zapojené len pre charitu, zapnúť aj ostatným.
+- „Je pri vás" (524): QR 15 s, potvrdenie podržaním, bez e-mailu; charita aj farnosť.
+- „Pozrieť ako" (balík 50): pás „Pozeráte ako … · Vrátiť ›", zámky nad limit.
+- Komit k cieľu v balíku opravený: cbb2f07 (nie efcd8a2 — to je môj register-komit programov).
+- Otvorené u Soni: Míľnik vzhľad, poradie blokov, tablet v Ateliéri (509, Martin overí iPad), pekná adresa reťaze pred ostrou.
