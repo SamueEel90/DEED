@@ -281,5 +281,5 @@
 - 512: slovo „feed" preč zo všetkých textov pre ľudí — vynucuje starú dohodu „nikdy feed v UI".
 - Svetlúšik sprievodca: Martinove zásady (nič nerobí za farára, žiadne predvyplnené texty, karta v Prehľade), zatiaľ NAPEVNO katolícky — zástupky a číselník neskôr; charita bez Svetlúšika. Poradie po 1–3 bodoch.
 - ODPOVEĎ na otázku z balíka („existuje číselník cirkví?"): ÁNO — DB tabuľka `cirkev` (migrácia 0078): titul, titul_2p, jednotka_2p, oslovenie, dozorca (+ poďakovanie), appka číta cez slovaCirkvi/useSlovaFarnosti so zálohou. CHÝBAJÚ polia {bohosluzba} a {miesto} (omša/bohoslužba, kostol/chrám/synagóga) — až sa pôjde na zástupky, doplniť novou migráciou, nie novou tabuľkou.
-- Pozn. Fero: štítok „OSTRÁ VERZIA" na karte po zverejnení sa pletie s „ostrou verziou appky" (ostrý štart) — pri pilotoch v teste bude stránka „ostrá", ale appka v teste. Zvážiť slovo „VEREJNÁ" — rozhodne Martin.
+- ROZHODNUTÉ (Martin 23. 10.): štítok na karte po zverejnení je „VEREJNÁ", nie „OSTRÁ VERZIA" (plietla sa s ostrým štartom appky). Martin dáva prerobiť Soni aj v prototype.
 - Pripomienka v balíku: Samo má spustiť migrácie 0156–0160.
