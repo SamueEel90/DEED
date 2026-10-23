@@ -17,7 +17,7 @@ import type { StitLevel } from "@/components/stit";
 import { createPortal } from "react-dom";
 import { useLayout } from "@/components/context";
 import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
-import { najdiTestProfil, prazdnaCharita, type TestProfil, type TestZbierka, type TestSkutok, type TestOznam, type TestPraca } from "@/lib/testProfily";
+import { najdiTestProfil, prazdnaCharita, CHARITA_VZOR, type TestProfil, type TestZbierka, type TestSkutok, type TestOznam, type TestPraca } from "@/lib/testProfily";
 import { verejneOznamy, useZmenyOznamov, type Oznam } from "@/lib/oznamy";
 import { pracaZPonuky } from "@/features/rola/PonukyPrace";
 import { centralnaZPamate, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
@@ -56,11 +56,11 @@ import { PomozCharita } from "./PomozCharita";
 
 /** OPRAVY 402: testovací profil, alebo novo založená charita (vlastné id ch-…) — prázdny profil s menom z registra */
 const profilKluca = (k: string): TestProfil | undefined =>
-  najdiTestProfil(k) ?? (/^ch-/.test(k) || jeCharitaUctu(k) ? prazdnaCharita(k, registra(k).nazov || lokalneStranky().find((x) => x.k === k)?.n) : undefined);
+  (k === CHARITA_VZOR.k ? CHARITA_VZOR : undefined) ?? najdiTestProfil(k) ?? (/^ch-/.test(k) || jeCharitaUctu(k) ? prazdnaCharita(k, registra(k).nazov || lokalneStranky().find((x) => x.k === k)?.n) : undefined);
 
 /** vložiteľný verejný profil podľa kľúča stránky (svetlo · pekaren · tvorca) */
 /** OPRAVY 159: profil farnosti = sektor Viera (darca bez mena = „Bohu známy veriaci") */
-export function VerejnyProfilView(p: { kluc: string; onBack: () => void; /** OPRAVY 249: len vrstva otvorená tlačidlom Náhľad v Správe */ nahlad?: boolean; /** OPRAVY 414: Náhľad neuloženého profilu charity */ profilNahlad?: ProfilStranky }) {
+export function VerejnyProfilView(p: { kluc: string; onBack: () => void; /** OPRAVY 249: len vrstva otvorená tlačidlom Náhľad v Správe */ nahlad?: boolean; /** OPRAVY 414: Náhľad neuloženého profilu charity */ profilNahlad?: ProfilStranky; /** OPRAVY 510: Ateliér — vzhľad, ktorý sa skúša */ vzhladAtelier?: Vzhlad }) {
   const k = p.kluc.startsWith("stream:") ? "tvorca" : p.kluc.startsWith("pribeh:") ? orgPribehu(p.kluc.slice(7)) : p.kluc;
   const tp = profilKluca(k);
   // KARTA 57C · 60: farnosť (testovacia aj ktorákoľvek z Adresára) = živá stránka z uloženého
@@ -131,7 +131,7 @@ function sUdajmiCharity(p: TestProfil, prof: ProfilStranky | null, tier = 0): Te
   return { ...p, veta: cistyText(prof?.onas ?? "").trim() || p.veta, onas2: cistyText(prof?.onas2 ?? "").trim() ? prof!.onas2 : undefined, zivaCharita: true, zbierky, skutky: sk, oznamy: oz, praca, iniciala: ini, logo: prof?.logo || undefined, titulka: prof?.cover?.src || p.titulka, centralna, bezCentralnej: tier < 1 || !c?.spustena };
 }
 
-function VerejnyProfilObsah({ kluc, onBack, profilNahlad }: { kluc: string; onBack: () => void; profilNahlad?: ProfilStranky }) {
+function VerejnyProfilObsah({ kluc, onBack, profilNahlad, vzhladAtelier }: { kluc: string; onBack: () => void; profilNahlad?: ProfilStranky; vzhladAtelier?: Vzhlad }) {
   const zStreamu = kluc.startsWith("stream:") ? kluc.slice(7) : null;
   // KARTA 55 · E: „pribeh:{zbierka}" (odkaz z feedu) → stránka Príbeh; „{Organizácia} ›" otvorí jej profil
   const zPribehu = kluc.startsWith("pribeh:") ? kluc.slice(7) : null;
@@ -176,7 +176,7 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad }: { kluc: string; onBa
   const regV = useRegistra(profil0?.k ?? kluc); // OPRAVY 400: názov charity z registra
   const vzhlad = useVzhlad(profil0?.k ?? kluc, typP !== "farnost" && tierStranky === 0); // farnosť: jeden platený program, výber má vždy
   const [prepis, setPrepis] = useState<Vzhlad | null>(null);
-  const podanie = prepis ?? vzhlad;
+  const podanie = vzhladAtelier ?? prepis ?? vzhlad;
   // OPRAVY 160: spustená hlavná zbierka farnosti z účtu (názov, text farára, fotky) prepíše testovaciu
   useZmenyCentralnej();
   useEffect(() => { if (typP === "farnost" && profil0) void nacitajCentralnuZbierku(profil0.k); }, [typP, profil0]);

@@ -52,6 +52,16 @@ export async function ulozVzhlad(stranka: string, v: Vzhlad): Promise<void> {
   pamat.set(stranka, v); zmena();
   if (supabase) await supabase.from("profil_stranky").upsert({ stranka, vzhlad: v }, { onConflict: "stranka" });
 }
+/** OPRAVY 510 · Ateliér charity: zverejnenie vzhľadu, na ktoré sa čaká — chyba ako text alebo null */
+export async function ulozVzhladIsto(stranka: string, v: Vzhlad): Promise<string | null> {
+  if (supabase) {
+    const { error } = await supabase.from("profil_stranky").upsert({ stranka, vzhlad: v }, { onConflict: "stranka" }).then((x) => x, () => ({ error: { message: "siet" } }));
+    if (error) return "Vzhľad sa nezverejnil. Skontrolujte pripojenie a skúste znova.";
+  }
+  zapisane.set(stranka, Date.now());
+  pamat.set(stranka, v); zmena();
+  return null;
+}
 /** OPRAVY 403 doplnok · Klasik (tvorca): bez vybraného vzhľadu = pôvodná stránka tvorcu (StrankaTvorcu). Uloží sa hneď (vzhlad = null). */
 export async function ulozKlasik(stranka: string): Promise<void> {
   zapisane.set(stranka, Date.now());

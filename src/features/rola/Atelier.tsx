@@ -38,7 +38,7 @@ export function Atelier({ strankaId, meno, profil, onZavri, onPoradie }: { stran
 }
 
 /** OPRAVY 467 (5) · úzka obrazovka: ateliér na počítači alebo tablete */
-function AtelierMobil({ onZavri, onPoradie }: { onZavri: () => void; onPoradie: () => void }) {
+export function AtelierMobil({ onZavri, onPoradie }: { onZavri: () => void; /** charita (510): poradie blokov zatiaľ nie je */ onPoradie?: () => void }) {
   const [qr, setQr] = useState(false);
   const [sken, setSken] = useState(false);
   // naskenovaný QR počítača → okno „Prihlásiť počítač?“ je pod ateliérom, ateliér sa zavrie
@@ -63,9 +63,9 @@ function AtelierMobil({ onZavri, onPoradie }: { onZavri: () => void; onPoradie: 
           <button type="button" onClick={() => setSken(true)} style={{ minHeight: 52, border: "none", borderRadius: 14, background: "#4B7A35", color: "#fff", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" }}>Naskenovať QR z počítača</button>
         </>}
       </section>
-      <button type="button" onClick={onPoradie} style={{ ...karta, flexDirection: "row", alignItems: "center", minHeight: 64, cursor: "pointer", fontFamily: "inherit", color: "var(--ink)", textAlign: "left" }}>
+      {onPoradie && <button type="button" onClick={onPoradie} style={{ ...karta, flexDirection: "row", alignItems: "center", minHeight: 64, cursor: "pointer", fontFamily: "inherit", color: "var(--ink)", textAlign: "left" }}>
         <span style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 16 }}>Poradie blokov</b><span style={{ fontSize: 13.5, color: "var(--ink3)" }}>dá sa meniť aj tu, platí hneď</span></span>
-        <span aria-hidden="true" style={{ fontSize: 20 }}>›</span></button>
+        <span aria-hidden="true" style={{ fontSize: 20 }}>›</span></button>}
       {sken && <Suspense fallback={null}><QrSkener onClose={() => setSken(false)} toast={toast} /></Suspense>}
     </div>);
 }

@@ -62,6 +62,7 @@ import { nastavAktivnuCharitu, casRegistracieLokalne } from "@/lib/aktivnaCharit
 import { supabase } from "@/lib/supabase";
 import { useMojePrava, smie, NEMATE_POVOLENE, type Pravo } from "@/lib/pravaPracovnika";
 import { LudiaCharity, pocetLudiCharity } from "./LudiaCharity";
+import { AtelierCharity } from "./AtelierCharity";
 import { DarcoviaCharity, SledujuciCharity } from "./DarcoviaCharity";
 import { BrigadyFarnosti } from "./BrigadyFarnosti";
 import { IskryCharity } from "./IskryCharity";
@@ -407,7 +408,8 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   // KARTA 42: Zadarmo → z hárku Pridať sa Oznamy otvoria rovno na výzve na súrnu pomoc
   const [oznamStart, setOznamStart] = useState<DruhOznamu | undefined>(undefined);
   const [oznamUprav, setOznamUprav] = useState<string | undefined>(undefined); // OPRAVY 407
-  const [poslSkupina, setPoslSkupina] = useState<string | null>(null); // OPRAVY 495 (502: Nastavenia → Ľudia)
+  const [poslSkupina, setPoslSkupina] = useState<string | null>(null);
+  const [atelierCh, setAtelierCh] = useState(false); // OPRAVY 510: Ateliér stránky v charite // OPRAVY 495 (502: Nastavenia → Ľudia)
   const otvor = (s: Sub, oznamDruh?: DruhOznamu, upravId?: string) => {
     if (s === "x:Nová zbierka" && typ === "charita" && !novaPriamo.current) { setVyberZb(true); if (sub !== "g_zbierky") { hist.current = [...hist.current, sub].slice(-30); setSub("g_zbierky"); } window.scrollTo({ top: 0, behavior: "smooth" }); return; }
     zastavDiktovanie(); setOznamStart(oznamDruh); setOznamUprav(upravId); if (s === "x:Verejný profil") { if (najdiTestProfil(strankaId) || /^ch-/.test(strankaId) || typ === "charita") setVerejnyTest(true); else setVerejny(true); return; } // OPRAVY 414 (2): charita vždy vo vzhľade z Nastavení
@@ -471,7 +473,8 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   else if (sub === "penazenka") obsah = <ObrPenazenka otvor={otvor} mobil={!desktop} refs={[...zbierkyStrankyZPamate(strankaId).map((z) => z.id), refCentralnej(strankaId)]} />;
   // OPRAVY 396: Vzhľad stránky (Kronika · Výklad · Pirát) je v Nastaveniach pod Témou, ako vo Viere — nie v Upraviť profil
   else if (sub === "nast") obsah = <ObrNastavenia tier={tier} otvor={otvor} mobil={!wide} charita={typ === "charita"} naLudi={() => { setPoslSkupina("g_ludia"); otvor("n:spravcovia"); }}
-    vzhlad={<VzhladStranky strankaId={strankaId} sektor={typ === "tvorca" ? "tvorca" : undefined} zadarmo={tier === 0} kto={slovo(typ, "darcovia", "darcovia")} onPozriet={() => otvor("x:Verejný profil")} />} />;
+    vzhlad={<VzhladStranky strankaId={strankaId} sektor={typ === "tvorca" ? "tvorca" : undefined} zadarmo={tier === 0} kto={slovo(typ, "darcovia", "darcovia")} onPozriet={() => otvor("x:Verejný profil")}
+      onAtelier={typ === "charita" && tier > 0 ? () => setAtelierCh(true) : undefined} />} />;
   else if (sub.startsWith("n:")) {
     const m = !wide, id = sub.slice(2), o = otvor as (s: string) => void; // tablet: Nastavenia v 2 stĺpcoch ako PC
     obsah = id === "notif" ? <ObrOznamenia mobil={m} /> : id === "eur" ? <ObrEur mobil={m} /> : id === "krypto" ? <ObrEurc mobil={m} /> : id === "ucty" ? <ObrUcty mobil={m} otvor={o} />
@@ -566,6 +569,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
       </div>
     </div>, document.body)}
     {verejnyTest && <VerejnyProfilVSprave kluc={strankaId} onZavri={() => setVerejnyTest(false)} />}
+    {atelierCh && <AtelierCharity strankaId={strankaId} onZavri={() => setAtelierCh(false)} />}
     {verejny && <VerejnyProfilOkno pozicia={poz} sektor={typ} tier={tier} strankaId={strankaId} stit={stit} mobil={!desktop} onZavri={() => setVerejny(false)}
       lista={<><span style={{ flex: !desktop ? "1 1 100%" : 1, minWidth: 0, fontSize: 15, fontWeight: 800, color: "var(--ink)" }}>Takto vidí váš profil každý návštevník</span>
         <button type="button" onClick={() => setVerejny(false)} style={{ height: 42, padding: "0 16px", border: "none", borderRadius: 13, background: "var(--btn)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>Zavrieť</button>
