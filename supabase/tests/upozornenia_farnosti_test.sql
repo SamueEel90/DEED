@@ -48,5 +48,5 @@ insert into t select 'pocty: kostol 1 om = 1', pocet = 1 from public.sledujuci_b
 reset role;
 
 \pset tuples_only off
-select c, ok from t order by c;
+select ok, c from t order by ok, c;
 rollback;

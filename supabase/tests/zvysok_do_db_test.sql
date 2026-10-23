@@ -102,5 +102,5 @@ insert into t select 'moje_stranky: cudzi nie', not (public.moje_stranky() @> '[
 reset role;
 
 \pset tuples_only off
-select c, ok from t order by c;
+select ok, c from t order by ok, c;
 rollback;

@@ -40,6 +40,6 @@ insert into public.naboz_stav (oblast, id, data) values ('odfnast', 't97-far', '
 update public.naboz_stav set data = data || '[{"id":"p5","k":"oznam","t":"Nový"}]' where oblast = 'odfarnikov' and id = 't97-far';
 insert into t select 'vypnuté nič', not exists (select 1 from n97 where odkaz = 'odv:t97-far:p5');
 
-select c, ok from t order by ok, c;
+select ok, c from t order by ok, c;
 do $$ begin if exists (select 1 from t where not ok) then raise exception 'Test 0097 zlyhal'; end if; end $$;
 rollback;
