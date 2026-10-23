@@ -65,7 +65,7 @@
 | **Sekcie v registrácii: v kóde natvrdo 4** („Sociálne, Deti, Zdravie, Seniori" — CharitaB) vs. číselník zo 14. 9. | zabudnuté | **vysoká — číselník sekcií ako config (ako cirkvi)** |
 | Beneficient „súhlasí" checkbox + ručenie | Martin 23. 10.: existuje LEN pri dorovnávaní od firmy; pri tvorbe bežnej zbierky chýba | vysoká |
 | Dokladovací engine (lehoty podľa účelu, pásma, 3 000 € trigger, 3 strikes, správa darcom) | len texty, logika nie | vysoká — jadro odlíšenia |
-| Dobrovoľnícke hodnotenie 6★ + prepínač záujmu | nie je | stredná |
+| Dobrovoľnícke hodnotenie 6★ + prepínač záujmu | Martin 23. 10.: dobrovoľníctvo sa EŠTE NERIEŠILO — návrh z rešerše čaká, kým naň príde rad; nie je to zabudnuté | čaká na poradie |
 | Badge dôvery embed | položka „embed od P1" existuje — overiť obsah | stredná |
 | Vecné dary — plný tok (zberné miesto, QR, potvrdenie) | vecná zbierka od P1 je typ; tok Fáza 2–3 | vedome |
 | VTO, dve čísla pre firmu | → akteri/firma.md | — |
