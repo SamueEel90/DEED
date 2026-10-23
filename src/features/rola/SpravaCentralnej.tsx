@@ -204,7 +204,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
           <span style={{ fontSize: 13, opacity: .9 }}>{eur(mesiac)} tento mesiac</span>
         </span>
       </div>
-      {!farnost && <span style={drobneK}>Farba je podľa poradia, nie podľa obsahu: centrálna vždy zelená, 1. sektor petrolejová, 2. fialová, 3. oranžová.</span>}
+      {!farnost && <span style={drobneK}>Farba je podľa poradia, nie podľa obsahu: centrálna vždy zelená, 1. sektor petrolejová, 2. modrá, 3. terakota, ďalšie svetlejšie.</span>}
     </section>);
   const sektorKarta = sek && (
     <section style={kartaK}>

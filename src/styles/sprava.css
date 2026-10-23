@@ -82,10 +82,10 @@ html.dark .sprava-charity,html.dark .sc-tokeny{--fieldBd:#4A4336;--fieldLock:#24
 .sprava-charity .ftext>:first-child{margin-top:0}
 .sprava-charity .ftext>:last-child{margin-bottom:0}
 /* KARTA 48 · farby centrálnej a sektorov podľa poradia (0 centrálna, 1–3 sektory) — ako na verejnom profile */
-.sprava-charity,.sc-tokeny{--h0:#4E7D37;--h1:#2F7A78;--h2:#7A4E86;--h3:#B0652A}
-html.dark .sprava-charity,html.dark .sc-tokeny{--h0:#6E9F4E;--h1:#6FB8B4;--h2:#B78BC4;--h3:#E09A5E}
+.sprava-charity,.sc-tokeny{--h0:#4E7D37;--h1:#2F7C82;--h2:#3F6FA8;--h3:#B5653A;--h4:#5A9EA4;--h5:#6A92C6;--h6:#CC8758}
+html.dark .sprava-charity,html.dark .sc-tokeny{--h0:#6E9F4E;--h1:#6FB8BE;--h2:#8FB3E0;--h3:#E0956A;--h4:#93CDD2;--h5:#B3CDEE;--h6:#EDB590}
 .sprava-charity [data-hier],.sc-tokeny [data-hier]{--green:var(--hc);--gInk:var(--hc);--gSoft:color-mix(in srgb,var(--hc) 14%,transparent);--gBd:color-mix(in srgb,var(--hc) 50%,transparent)}
-.sprava-charity [data-hier="0"],.sc-tokeny [data-hier="0"]{--hc:var(--h0);--hcF:#4B7A35}.sprava-charity [data-hier="1"],.sc-tokeny [data-hier="1"]{--hc:var(--h1);--hcF:#2F7A78}.sprava-charity [data-hier="2"],.sc-tokeny [data-hier="2"]{--hc:var(--h2);--hcF:#7A4E86}.sprava-charity [data-hier="3"],.sc-tokeny [data-hier="3"]{--hc:var(--h3);--hcF:#A65A22}
+.sprava-charity [data-hier="0"],.sc-tokeny [data-hier="0"]{--hc:var(--h0);--hcF:#4B7A35}.sprava-charity [data-hier="1"],.sc-tokeny [data-hier="1"]{--hc:var(--h1);--hcF:#2F7C82}.sprava-charity [data-hier="2"],.sc-tokeny [data-hier="2"]{--hc:var(--h2);--hcF:#3F6FA8}.sprava-charity [data-hier="3"],.sc-tokeny [data-hier="3"]{--hc:var(--h3);--hcF:#B5653A}.sprava-charity [data-hier="4"],.sc-tokeny [data-hier="4"]{--hc:var(--h4);--hcF:#4A8E94}.sprava-charity [data-hier="5"],.sc-tokeny [data-hier="5"]{--hc:var(--h5);--hcF:#5A82B6}.sprava-charity [data-hier="6"],.sc-tokeny [data-hier="6"]{--hc:var(--h6);--hcF:#C07A4C}
 /* KARTA 49 · červená (odmietnuť, po lehote, ukončiť) */
 .sprava-charity,.sc-tokeny{--red:#8E3B2F}
 html.dark .sprava-charity,html.dark .sc-tokeny{--red:#E08A7A}

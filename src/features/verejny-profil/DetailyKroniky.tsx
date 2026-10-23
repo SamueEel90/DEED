@@ -60,7 +60,7 @@ export function DetailSkutku({ profil, p, onBack }: { pc: boolean; profil: TestP
     id: num, num, dom: "zdravie", type: "skutok", emoji: "", verified: true, likes: 0,
     author: profil.meno, ini: profil.iniciala, pfp: "#4B7A35",
     loc: `${sk?.mesto ?? profil.mesto} · ${datum(p)}`,
-    title: p.nazov, desc: sk?.popis ?? p.s, fotky: sk?.fotky?.length ? sk.fotky : [p.foto].filter(Boolean), // OPRAVY 441: všetky fotky, nie len prvá
+    title: p.nazov, desc: sk?.popis ?? p.s, fotky: sk?.fotky?.length ? sk.fotky : [p.foto].filter((f) => f && !f.startsWith("logo|")), // OPRAVY 441: všetky fotky, nie len prvá
     pomahali: sk?.dobrovolnici ? `${profil.meno} · ${sk.dobrovolnici} dobrovoľníkov` : profil.meno,
     split: sk?.split,
     logo: profil.logo, pomocnici: sk?.pomocnici, // OPRAVY 447 (2, 3)

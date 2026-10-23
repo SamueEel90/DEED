@@ -6,6 +6,8 @@
 // Mobil (< 760): titulka 200, Naživo zbalené na 1 riadok, dlaždice 2 × 2, lepkavá lišta, Aktuálne, roky.
 // Štítky, štít a overenie sú v okne štítu (bod 137). Rozbalený je len aktuálny rok. Z ISKIER: Iskry / Zbierky.
 // Zbaliť aj Späť z detailu, Iskier či hárku vráti na to isté miesto (pamäť posunu na úrovni stránky).
+import { useNazivoCharity } from "@/lib/nazivoCharity";
+import { ZivyRiadok, dnesNazivo, cislaOdZaciatku } from "./NazivoCharity";
 import { podlaPribehu, stitokNoveho, useZmenyPribehov } from "@/lib/pribehZbierky";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { eur, pct, tvar, vLokalite, type Lokalita, type TestProfil, type TestZbierka, jeFarnost } from "@/lib/testProfily";
@@ -23,7 +25,7 @@ type Rez = "pc" | "tab" | "mob";
 const FILTRE: [string, Typ | null][] = [["Všetko", null], ["Zbierky", "zb"], ["Skutky", "sk"], ["Iskry", "is"], ["Oznamy", "oz"], ["Práca", "pr"]];
 const PRUH = "linear-gradient(90deg,#4B7A35,#8DB866)";
 const ZLATA = "#F6C453";
-const bg = (f: string) => `url('${f}') center/cover no-repeat #3a3530`;
+const bg = (f: string) => f.startsWith("logo|") ? `url(${JSON.stringify(f.split("|").slice(2).join("|"))}) center/auto 58% no-repeat ${f.split("|")[1]}` : `url('${f}') center/cover no-repeat #3a3530`; // OPRAVY 479: logo charity namiesto fotky
 const dokladov = (n: number) => tvar(n, ["DOKLAD", "DOKLADY", "DOKLADOV"]);
 const poradieDatumu = (m: string, d: string) => MESIACE.indexOf(m) * 100 + (parseInt(d, 10) || 0);
 const TAB = "(min-width: 760px) and (max-width: 1199px)";
@@ -99,6 +101,9 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
     return () => { window.clearInterval(t); window.clearTimeout(t2); };
   }, []);
   const ld = darcovia.length ? darcovia[live % darcovia.length] : null;
+  // OPRAVY 478: skutočná charita — Naživo a Od začiatku zo skutočných darov (ten istý zdroj ako Správa → Štatistiky)
+  const nz = useNazivoCharity(profil.k, !!profil.zivaCharita);
+  const cislaNz = nz ? cislaOdZaciatku(nz) : null;
 
   // ---- filter a hľadanie naprieč všetkými rokmi ----
   const qn = norm(q).trim();
@@ -177,8 +182,8 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
   const hornaLista = (
     <div style={{ position: "absolute", left: rez === "tab" ? 24 : rez === "mob" ? 12 : 16, right: rez === "tab" ? 24 : rez === "mob" ? 12 : 16, top: rez === "tab" ? 28 : rez === "mob" ? "max(12px, env(safe-area-inset-top))" : 16, display: "flex", alignItems: "center", gap: rez === "tab" ? 10 : 8 }}>
       {rez === "mob"
-        ? <button type="button" onClick={spat} aria-label="Späť" style={{ ...tlTmave, width: 44 }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg></button>
-        : <button type="button" onClick={spat} aria-label="Späť" style={{ ...tlTmave, padding: "0 14px 0 8px", gap: 4, fontSize: 14, fontWeight: 800, color: "#fff" }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>Späť</button>}
+        ? <button type="button" onClick={spat} aria-label="Späť" style={{ ...tlTmave, background: "#4B7A35", width: 44 }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg></button>
+        : <button type="button" onClick={spat} aria-label="Späť" style={{ ...tlTmave, background: "#4B7A35", padding: "0 14px 0 8px", gap: 4, fontSize: 14, fontWeight: 800, color: "#fff" }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>Späť</button>}
       <LokalitaPrepinac lok={lok} onLok={setLok} domace={domace} sidlo={profil.mesto} tmavy />
       <span style={{ flex: 1 }} />
       <button type="button" aria-label="Zdieľať · QR" style={{ ...tlTmave, width: 44 }}>
@@ -202,17 +207,18 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
     </button>
   );
   const bodka = <span style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--green)", animation: "vpPulz 1.6s ease infinite", flex: "none" }} />;
-  const dnesText = <b style={{ fontSize: 14, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>Dnes {eur(dnes)} od {tvar(darcovia.length, ["človeka", "ľudí", "ľudí"])}</b>;
-  const liveRiadok = ld && (
+  const dnesText = <b style={{ fontSize: 14, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{nz ? dnesNazivo(nz) : <>Dnes {eur(dnes)} od {tvar(darcovia.length, ["človeka", "ľudí", "ľudí"])}</>}</b>;
+  const liveRiadok = nz ? <ZivyRiadok nz={nz} /> : ld && (
     <span aria-live="polite" style={{ display: "flex", alignItems: "baseline", gap: 8, opacity: liveOp, transition: "opacity .3s", minWidth: 0 }}>
       {ld.suma != null && <b style={{ flex: "none", fontSize: 14, color: "var(--gInk)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>+{eur(ld.suma)}</b>}
       <span style={{ flex: "none", fontSize: 14, fontWeight: 700, whiteSpace: "nowrap" }}>{ld.meno}</span>
       <span style={{ fontSize: 13, color: "var(--ink3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ld.naCo} · {ld.pred}</span>
     </span>
   );
-  const celkom = (fs: number) => (
+  const cislaOd = nz ? cislaNz : profil.cisla;
+  const celkom = (fs: number) => !cislaOd ? null : (
     <span style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 6 }}>
-      {profil.cisla.map(([v, t]) => <span key={t} style={{ display: "flex", flexDirection: "column" }}><b style={{ fontSize: fs, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{v}</b><span style={{ fontSize: 12, color: "var(--ink3)" }}>{t}</span></span>)}
+      {cislaOd.map(([v, t]) => <span key={t} style={{ display: "flex", flexDirection: "column" }}><b style={{ fontSize: fs, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{v}</b><span style={{ fontSize: 12, color: "var(--ink3)" }}>{t}</span></span>)}
     </span>
   );
   const odZacT = <b style={{ fontSize: 11, letterSpacing: ".1em", color: "var(--acc)" }}>OD ZAČIATKU · {profil.odRoku}</b>;
@@ -221,10 +227,10 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
     <div style={{ width: 440, maxWidth: "100%", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "12px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
       <span style={{ display: "flex", alignItems: "center", gap: 8 }}>{bodka}<b style={{ fontSize: 12, letterSpacing: ".08em", color: "var(--green)" }}>NAŽIVO</b><span style={{ flex: 1 }} />{dnesText}</span>
       {liveRiadok}
-      <span style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap", borderTop: "1px solid var(--cardBd)", paddingTop: 8, fontSize: 13, color: "var(--ink3)" }}>
+      {cislaOd && <span style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap", borderTop: "1px solid var(--cardBd)", paddingTop: 8, fontSize: 13, color: "var(--ink3)" }}>
         <b style={{ fontSize: 11, letterSpacing: ".1em", color: "var(--acc)", paddingRight: 4 }}>OD ZAČIATKU · {profil.odRoku}</b>
-        {profil.cisla.map(([v, t], i) => <span key={t} style={{ display: "contents" }}><b style={{ color: "var(--ink)", fontSize: 14, fontVariantNumeric: "tabular-nums" }}>{v}</b>{t}{i < profil.cisla.length - 1 ? " ·" : ""}</span>)}
-      </span>
+        {cislaOd.map(([v, t], i) => <span key={t} style={{ display: "contents" }}><b style={{ color: "var(--ink)", fontSize: 14, fontVariantNumeric: "tabular-nums" }}>{v}</b>{t}{i < cislaOd.length - 1 ? " ·" : ""}</span>)}
+      </span>}
     </div>
   );
   const nazivoTab = (
@@ -233,7 +239,7 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>{bodka}<b style={{ fontSize: 12, letterSpacing: ".08em", color: "var(--green)" }}>NAŽIVO</b><span style={{ flex: 1 }} />{dnesText}</span>
         {liveRiadok}
       </span>
-      <span style={{ display: "flex", flexDirection: "column", gap: 4, borderLeft: "1px solid var(--cardBd)", paddingLeft: 16 }}>{odZacT}{celkom(16)}</span>
+      {cislaOd && <span style={{ display: "flex", flexDirection: "column", gap: 4, borderLeft: "1px solid var(--cardBd)", paddingLeft: 16 }}>{odZacT}{celkom(16)}</span>}
     </div>
   );
   const nazivoMob = (
@@ -244,7 +250,7 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
       </button>
       {zivo && <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingBottom: 12 }}>
         {liveRiadok}
-        <span style={{ display: "flex", flexDirection: "column", gap: 6, borderTop: "1px solid var(--cardBd)", paddingTop: 8 }}>{odZacT}{celkom(17)}</span>
+        {cislaOd && <span style={{ display: "flex", flexDirection: "column", gap: 6, borderTop: "1px solid var(--cardBd)", paddingTop: 8 }}>{odZacT}{celkom(17)}</span>}
       </div>}
     </div>
   );

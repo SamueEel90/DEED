@@ -89,5 +89,5 @@ insert into public.pohyb (doklad, poradie, typ, ucet_debet, ucet_kredit, suma, m
 create temp table k3 as select public.zmaz_testovacie() x;
 insert into t select 'mínus po výmaze → NEZMAZANÉ', (select x like '0157: NEZMAZANÉ%' from k3) and exists (select 1 from public.pohyb where testovaci);
 
-select c, ok from t order by ok, c;
+select ok, c from t order by ok, c;
 rollback;

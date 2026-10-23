@@ -27,9 +27,9 @@ export function zabudniPozvanku() { try { sessionStorage.removeItem(KLUC); } cat
 export function otvorPozvanku(stranka: string, id: string) { window.dispatchEvent(new CustomEvent(UDALOST_POZVANKA, { detail: { stranka, id } })); }
 
 const CHYBY: Record<string, string> = {
-  pozvanka_neexistuje: "Pozvánka už neplatí. Požiadajte farára o novú.",
-  pozvanka_neplati: "Pozvánka už neplatí. Požiadajte farára o novú.",
-  vyprsala: "Pozvánka vypršala. Požiadajte farára o novú.",
+  pozvanka_neexistuje: "Pozvánka už neplatí. Požiadajte toho, kto vás pozval, o novú.",
+  pozvanka_neplati: "Pozvánka už neplatí. Požiadajte toho, kto vás pozval, o novú.",
+  vyprsala: "Pozvánka vypršala. Požiadajte toho, kto vás pozval, o novú.",
   bez_emailu: "Váš účet nemá e-mail. Prihláste sa e-mailom a skúste znova.",
   neprihlaseny: "Najprv sa prihláste.",
 };

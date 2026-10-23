@@ -119,5 +119,25 @@ function demo(splitId: string): StavOverlay {
 /** Jedno načítanie stavu. `jeDemo` rozhoduje, či sa dáta vymýšľajú. */
 export async function nacitajStav(splitId: string, jeDemo: boolean): Promise<StavOverlay | null> {
   if (jeDemo) return demo(splitId);
+  if (splitId.startsWith("rt-")) return (await zRetaze(splitId)) ?? zoSnimky(splitId);
   return (await zoServera(splitId)) ?? zoSnimky(splitId);
+}
+
+/** balík 43 (501) · reťaz dobra (rt-…): stav priamo zo servera (retaz_stav, retaz_darcovia — čítajú aj bez prihlásenia),
+ *  appka toho, kto reťazí, nemusí byť otvorená. Suma = koľko zbierka dostala cez reťaz (ako „Vyzbierané cez reťaz …“ vo verzii). */
+async function zRetaze(id: string): Promise<StavOverlay | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc("retaz_stav", { p_retaz: id });
+  if (error || !data) return null;
+  const r = data as { polozky?: { zbierka: string; nazov: string; stav: string; poslane: number; ciel: number | null }[] };
+  const p = (r.polozky ?? []).find((x) => x.stav === "bezi");
+  if (!p) return null; // nič nebeží → ostáva posledný stav
+  const d = await supabase.rpc("retaz_darcovia", { p_retaz: id, p_zbierka: p.zbierka, p_limit: 1 });
+  const dd = (d.data ?? {}) as { pocet?: number; dary?: { meno: string | null; suma: number }[] };
+  const posl = dd.dary?.[0];
+  return {
+    nazov: p.nazov, vyzbierane: Number(p.poslane) || 0, ciel: Number(p.ciel) || 0, // bez cieľa: počítadlo bez pásu (Overlay)
+    ...(posl ? { poslednyDarca: posl.meno || "Anonymný darca", poslednaSuma: Number(posl.suma) } : {}),
+    pecat: Number(dd.pocet) || 0, naposledy: Date.now(),
+  };
 }

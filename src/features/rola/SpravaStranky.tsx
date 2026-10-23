@@ -6,6 +6,7 @@
 // Len rozloženie, farby podľa štítu a témy, Späť všade, povolenia z jedného miesta (stav.ts).
 // Funkcie za tlačidlami NIE SÚ — každé tlačidlo otvorí obrazovku „Pripravujeme".
 // ============================================================
+import { darcoviaZDarov } from "@/lib/nazivoCharity";
 import { useZmenyPribehov, nacitajPribehy, novePribehu, stitokNoveho } from "@/lib/pribehZbierky";
 import { useZmenyDarov, darcoviaPre, sucetDarov } from "@/lib/darcovia";
 import { skutkyOrgSpravy, useZmenySkutkov } from "@/lib/mojeSkutky";
@@ -80,6 +81,7 @@ import {
   nacitajIbanOrg, STRANKA_POZICIE,
 } from "./stav";
 import { useVerejneNastavenia, verejneZPamate } from "@/lib/verejneNastavenia";
+import { useRezimStranky, type RezimStranky } from "@/lib/pristupoveKody";
 
 // ---------- ikony (cesty z prototypu) ----------
 const IK = {
@@ -241,9 +243,10 @@ export function refCentralnej(strankaId: string): string { const r = `${strankaI
 function cislaZLedgera(refs: string[], obd: number): [string, string][] {
   const dnes = new Date(); dnes.setHours(0, 0, 0, 0);
   const od = obd === 0 ? dnes.getTime() : Date.now() - [7, 30, 365][obd - 1] * DEN_MS;
-  const v = refs.flatMap((r) => darcoviaPre(r)).filter((r) => r.cas >= od);
+  const vsetky = refs.flatMap((r) => darcoviaPre(r)), v = vsetky.filter((r) => r.cas >= od);
   const ludia = v.filter((r) => !r.firma), suma = ludia.reduce((a, r) => a + r.suma, 0), firmy = v.filter((r) => r.firma).reduce((a, r) => a + r.suma, 0);
-  return [[eur(suma), ""], [String(ludia.length), ""], [ludia.length ? eur(suma / ludia.length) : "—", ""], ["—", ""], ["—", ""], [eur(firmy), ""], ["—", ""], ["—", ""]]; // OPRAVY 442 doplnok 3: pravidelnú podporu appka zatiaľ nepočíta → „—“, nie „0 ľudí“
+  const dc = darcoviaZDarov(vsetky, od); // OPRAVY 478 doplnok: noví a všetci darcovia zo skutočných darov
+  return [[eur(suma), ""], [String(ludia.length), ""], [ludia.length ? eur(suma / ludia.length) : "—", ""], [String(dc.novi), ""], ["—", ""], [eur(firmy), ""], ["—", ""], [String(dc.spolu), "od začiatku"]]; // OPRAVY 442 doplnok 3: pravidelnú podporu appka zatiaľ nepočíta → „—“, nie „0 ľudí“
 }
 const ULOHY: [string, string, string, string][] = [
   ["#C9A24A", "Strecha pre rodinu Horváthovú končí o 9 dní", "Chýba 3 580 €. Pripomeňte ju sledujúcim.", "Pripomenúť"],
@@ -404,6 +407,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   // KARTA 42: Zadarmo → z hárku Pridať sa Oznamy otvoria rovno na výzve na súrnu pomoc
   const [oznamStart, setOznamStart] = useState<DruhOznamu | undefined>(undefined);
   const [oznamUprav, setOznamUprav] = useState<string | undefined>(undefined); // OPRAVY 407
+  const [poslSkupina, setPoslSkupina] = useState<string | null>(null); // OPRAVY 495 (502: Nastavenia → Ľudia)
   const otvor = (s: Sub, oznamDruh?: DruhOznamu, upravId?: string) => {
     if (s === "x:Nová zbierka" && typ === "charita" && !novaPriamo.current) { setVyberZb(true); if (sub !== "g_zbierky") { hist.current = [...hist.current, sub].slice(-30); setSub("g_zbierky"); } window.scrollTo({ top: 0, behavior: "smooth" }); return; }
     zastavDiktovanie(); setOznamStart(oznamDruh); setOznamUprav(upravId); if (s === "x:Verejný profil") { if (najdiTestProfil(strankaId) || /^ch-/.test(strankaId) || typ === "charita") setVerejnyTest(true); else setVerejny(true); return; } // OPRAVY 414 (2): charita vždy vo vzhľade z Nastavení
@@ -466,12 +470,12 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   else if (sub === "vsetko") obsah = <ObrVsetko typ={typ} tier={tier} otvor={otvor} stlpce={desktop || tablet ? 2 : 1} />;
   else if (sub === "penazenka") obsah = <ObrPenazenka otvor={otvor} mobil={!desktop} refs={[...zbierkyStrankyZPamate(strankaId).map((z) => z.id), refCentralnej(strankaId)]} />;
   // OPRAVY 396: Vzhľad stránky (Kronika · Výklad · Pirát) je v Nastaveniach pod Témou, ako vo Viere — nie v Upraviť profil
-  else if (sub === "nast") obsah = <ObrNastavenia tier={tier} otvor={otvor} mobil={!wide} charita={typ === "charita"}
+  else if (sub === "nast") obsah = <ObrNastavenia tier={tier} otvor={otvor} mobil={!wide} charita={typ === "charita"} naLudi={() => { setPoslSkupina("g_ludia"); otvor("n:spravcovia"); }}
     vzhlad={<VzhladStranky strankaId={strankaId} sektor={typ === "tvorca" ? "tvorca" : undefined} zadarmo={tier === 0} kto={slovo(typ, "darcovia", "darcovia")} onPozriet={() => otvor("x:Verejný profil")} />} />;
   else if (sub.startsWith("n:")) {
     const m = !wide, id = sub.slice(2), o = otvor as (s: string) => void; // tablet: Nastavenia v 2 stĺpcoch ako PC
     obsah = id === "notif" ? <ObrOznamenia mobil={m} /> : id === "eur" ? <ObrEur mobil={m} /> : id === "krypto" ? <ObrEurc mobil={m} /> : id === "ucty" ? <ObrUcty mobil={m} otvor={o} />
-      : id === "spravcovia" ? (typ === "charita" ? <LudiaCharity mobil={m} /> : <ObrSpravcovia mobil={m} />) : id === "udaje" ? <ObrUdaje mobil={m} />
+      : id === "spravcovia" ? (typ === "charita" ? <LudiaCharity mobil={m} strankaId={strankaId} meno={nazov} /> : <ObrSpravcovia mobil={m} />) : id === "udaje" ? <ObrUdaje mobil={m} />
       : id === "faktury" ? <ObrFaktury mobil={m} tier={tier} otvor={o} />
       : id === "program" ? <ObrProgram mobil={m} typ={typ} tier={tier} otvor={o} onTier={setTier} />
       : id === "zariadenia" ? <ObrZariadenia mobil={m} /> : id === "suhlasy" ? <ObrSuhlasy mobil={m} otvor={o} /> : id === "stiahnut" ? <ObrStiahnut mobil={m} />
@@ -530,7 +534,13 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   // OPRAVY 404: pracovník charity vidí len zapnuté časti, zvyšok je zamknutý
   { const treba = typ === "charita" ? pravoPreSub(sub) : null; if (treba && !smie(mojePrava, treba)) obsah = <NematePovolene />; }
 
-  const aktivnaSkupina: string | null = sub === null ? null : sub === "nast" || (sub as string).startsWith("n:") ? "nast" : sub === "penazenka" || (sub as string).startsWith("g_") ? sub : (sub as string).startsWith("x:") || sub === "profil" || sub === "vsetko" ? null : SKUPINA_POLOZKY(sub as PolozkaSpravy, typ);
+  const podNast = sub !== null && (sub as string).startsWith("n:"); // obrazovka Nastavení — otvoriť sa dá aj zo sekcie (Ľudia → Štatutár a pracovníci)
+  const vlastnaSkupina: string | null = sub === null || podNast ? null : sub === "nast" ? "nast" : sub === "penazenka" || (sub as string).startsWith("g_") ? sub : (sub as string).startsWith("x:") || sub === "profil" || sub === "vsetko" ? null : SKUPINA_POLOZKY(sub as PolozkaSpravy, typ);
+  // OPRAVY 495: podstránka (napr. Ľudia → Štatutár a pracovníci) nechá zvýraznenú sekciu, z ktorej sa otvorila
+  const zPoslednej = sub !== null && sub !== "profil" && sub !== "vsetko";
+  if (vlastnaSkupina !== null && vlastnaSkupina !== poslSkupina) setPoslSkupina(vlastnaSkupina);
+  else if (sub === null && poslSkupina !== null) setPoslSkupina(null);
+  const aktivnaSkupina: string | null = vlastnaSkupina ?? (zPoslednej ? poslSkupina : null) ?? (podNast ? "nast" : null);
 
   // OPRAVY 147: jeden testovací prepínač (PrepinacPodania) — PC v hlavičke, mobil a tablet sivý pás úplne dole
   const dev = TESTOVACIA && FLAGS.dev_tier_switcher && (
@@ -561,6 +571,9 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
         <button type="button" onClick={() => setVerejny(false)} style={{ height: 42, padding: "0 16px", border: "none", borderRadius: 13, background: "var(--btn)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>Zavrieť</button>
         <button type="button" onClick={() => { setVerejny(false); otvor("profil"); }} style={{ height: 42, padding: "0 16px", border: "none", borderRadius: 13, background: "var(--btn)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>Upraviť profil</button></>} />}</>;
 
+  // 0158: štítok PILOT / TESTOVACIA len správcovi, len na Prehľade (verejný profil nič)
+  const rezim = useRezimStranky(strankaId);
+  const stitokRezimu = sub === null && rezim ? <StitokRezimu rezim={rezim} /> : null;
   const hlavicka = <Hlavicka titul={sub === "vsetko" ? <>Všetko, čo <DeedZnacka /> vie</> : titulok(sub, typ)} onSpat={spat} spatT={sub === null ? "Domov" : "Späť"} otvor={otvor} mobil={!desktop} glowNova={glowZb} telefon={telefon} onPridat={() => setPridat(true)} bezNovej={sub === "skutky" || sub === "darcovia"} />;
 
   if (desktop) return (
@@ -593,6 +606,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
       <main style={{ maxWidth: 1600, margin: "0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>
         {hlavicka}
         {dev}
+        {stitokRezimu}
         <div key={String(sub)} style={{ display: "flex", flexDirection: "column", gap: 14, animation: "spravaFade .2s ease both" }}>{obsah}</div>
       </main>
       </div>
@@ -605,6 +619,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
     <div ref={korenRef} className="sprava-charity" data-stit={stit} style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
       {hlavicka}
       <div key={String(sub)} style={{ padding: "14px 14px 28px", display: "flex", flexDirection: "column", gap: 14, animation: "spravaFade .2s ease both", width: "100%", maxWidth: tablet ? 880 : undefined, margin: tablet ? "0 auto" : undefined, boxSizing: "border-box" }}>
+        {stitokRezimu}
         {/* OPRAVY 115: tablet — karta charity sa natiahne, štít vpravo rovno s Číslami, medzera 16 (mobil 10) */}
         {sub === null && !telefon && <div style={{ display: "flex", gap: tablet ? 16 : 10, alignItems: "stretch" }}>
           <div style={{ flex: 1, minWidth: 0 }}><KartaCharity nazov={nazov} inicialy={inicialy} typ={typ} otvor={otvor} mobil tablet={tablet} uplnost={uplnost} profil={profil} glow={glowUp} /></div>
@@ -655,6 +670,18 @@ function Hlavicka({ titul, onSpat, spatT = "Späť", otvor, mobil, glowNova, tel
       {kalEl}
       {!bezNovej && <button onClick={() => otvor("x:Nová zbierka")} style={{ ...zeleneTl, boxShadow: nzSh, background: "#4B7A35", display: "flex", alignItems: "center", gap: 8 }}><Ik d="M12 5v14M5 12h14" s={17} c="currentColor" w={2.6} />Nová zbierka</button>}
     </header>);
+}
+
+/** 0158: testovacia verzia — čo sa so stránkou stane po skončení testu */
+function StitokRezimu({ rezim }: { rezim: RezimStranky }) {
+  const pilot = rezim === "pilot";
+  return (
+    <div role="note" style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", padding: "10px 14px", borderRadius: 14,
+      background: pilot ? "var(--gSoft)" : "var(--goldBg)", border: `1.5px solid ${pilot ? "var(--gBd)" : "var(--goldBd)"}` }}>
+      <b style={{ flex: "none", fontSize: 12.5, letterSpacing: ".08em", color: pilot ? "var(--gInk)" : "var(--gold)" }}>{pilot ? "PILOT" : "TESTOVACIA"}</b>
+      <span style={{ flex: "1 1 220px", fontSize: 13.5, lineHeight: 1.45, color: "var(--ink2)" }}>
+        {pilot ? "Po teste ostane vzhľad stránky, profil, texty, fotky, nástenka a príspevky. Zbierky, platby a reťaze sa zmažú." : "Po skončení testu sa stránka zmaže celá."}</span>
+    </div>);
 }
 
 // ============================================================
@@ -1597,7 +1624,7 @@ type Riadok = { t: string; s?: string; v?: string; prep?: [boolean, () => void];
 
 /** OPRAVY 186: Nastavenia farnosti = tie isté Nastavenia ako charita; farnosť mení len riadky Príjem darov, Ľudia, Údaje a Predplatné */
 export interface NastFarnosti { ludia: () => void; predplatne: () => void; hlavna: () => void; n: (id: string) => void; /** OPRAVY 243: Vzhľad stránky · Farba línií */ vzhlad?: React.ReactNode }
-export function ObrNastavenia({ tier, otvor, mobil, farnost, vzhlad, charita }: { /** OPRAVY 404: Ľudia v správe charity */ charita?: boolean; tier: Tier; otvor: (s: Sub) => void; mobil: boolean; farnost?: NastFarnosti; /** OPRAVY 396: Vzhľad stránky charity pod Témou */ vzhlad?: React.ReactNode }) {
+export function ObrNastavenia({ tier, otvor, mobil, farnost, vzhlad, charita, naLudi }: { /** OPRAVY 404: Ľudia v správe charity */ charita?: boolean; /** OPRAVY 502: Správcovia a prístupy → Ľudia → Štatutár a pracovníci */ naLudi?: () => void; tier: Tier; otvor: (s: Sub) => void; mobil: boolean; farnost?: NastFarnosti; /** OPRAVY 396: Vzhľad stránky charity pod Témou */ vzhlad?: React.ReactNode }) {
   const n = useNastaveniaAppky();
   const { tema, nastavTemu } = useMotiv();
   const [tuk, setTuk] = useState(potvrditTuknutim);
@@ -1614,7 +1641,9 @@ export function ObrNastavenia({ tier, otvor, mobil, farnost, vzhlad, charita }: 
   const sekcie: [string, Riadok[]][] = [
     ["OZNÁMENIA", [{ t: "Čo chcete dostávať", s: "dary, zbierky, doklady, ľudia, správy", tap: nn("notif") }, { t: "Tichý čas", s: "22:00 – 7:00", prep: [tichy, () => setTichy((x) => !x)] }]],
     ["PRÍJEM DAROV", [{ t: "Dary v eurách", v: eurText(), tap: nn("eur") }, { t: "Dary v EURC", v: eurcText(), tap: nn("krypto") }, { t: "Správa účtov", s: "hlavný účet a účty zbierok", tap: nn("ucty") }]],
-    ["SPRÁVCOVIA", [{ t: charita ? "Ľudia v správe" : "Správcovia a prístupy", s: charita ? "štatutár a pracovníci, čo kto smie" : "kto spravuje stránku, pozvať ďalšieho", v: String(charita ? pocetLudiCharity() : pocetSpravcov()), tap: nn("spravcovia") }]],
+    // OPRAVY 502 (3): charita pridáva ľudí len v Ľuďoch — tu len odkaz tam
+    ["SPRÁVCOVIA", [charita ? { t: "Správcovia a prístupy", s: `štatutár a pracovníci · ${pocetLudiCharity()}`, v: "v Ľuďoch", tap: naLudi ?? nn("spravcovia") }
+      : { t: "Správcovia a prístupy", s: "kto spravuje stránku, pozvať ďalšieho", v: String(pocetSpravcov()), tap: nn("spravcovia") }]],
     ["ORGANIZÁCIA", [{ t: "Údaje organizácie", s: "IČO, sídlo, fakturačné údaje", tap: nn("udaje") }, { t: "Program a predplatné", v: PROG[Math.min(3, tier)][0], tap: nn("program") }]],
     ["BEZPEČNOSŤ A ÚDAJE", [{ t: "Prihlásené zariadenia", v: String(pocetZariadeni()), tap: nn("zariadenia") }, { t: "Súhlasy", s: "čo organizácia odsúhlasila", tap: nn("suhlasy") }, { t: "Stiahnuť údaje charity", s: "zbierky, darcovia a doklady v jednom súbore", tap: nn("stiahnut") }]],
     ["POMOC", [{ t: "Časté otázky", tap: nn("faq") }, { t: "Napísať podpore", tap: nn("podpora") }]],

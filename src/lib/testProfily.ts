@@ -215,6 +215,7 @@ export interface TestProfil {
   logo?: string;
   /** OPRAVY 414 (4, 8): skutočná charita — centrálna zbierka nevzniká sama; dlaždice a blok len zo zbierok v databáze */
   bezCentralnej?: boolean;
+  /** OPRAVY 478: skutočná charita z databázy — Naživo a Od začiatku zo skutočných darov */ zivaCharita?: boolean;
 }
 /** KARTA 50 · farnosť: bez štítu, bez dokladov a „doložené", bez dorovnania firmy */
 export const jeFarnost = (p: Pick<TestProfil, "typ">) => p.typ === "farnost";

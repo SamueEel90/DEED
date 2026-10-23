@@ -74,7 +74,7 @@ export function StrankaTvorcu({ profil, onBack, onStream, onDetail, onZaznam }: 
     <div style={{ position: "relative", height: pc ? 340 : 300, background: bgU(profil.titulka) }}>
       <span style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(10,8,5,.45) 0%,rgba(10,8,5,.05) 35%,rgba(10,8,5,.9) 100%)" }} />
       <div style={{ position: "absolute", left: pc ? 32 : 12, right: pc ? 32 : 12, top: pc ? 20 : "max(12px, env(safe-area-inset-top))", display: "flex", alignItems: "center", gap: 10 }}>
-        <button type="button" onClick={onBack} aria-label="Späť" style={{ ...tlTmave, padding: "0 14px 0 8px", gap: 4, fontSize: 14, fontWeight: 800, color: "#fff", fontFamily: "inherit" }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>Späť</button>
+        <button type="button" onClick={onBack} aria-label="Späť" style={{ ...tlTmave, background: "#4B7A35", padding: "0 14px 0 8px", gap: 4, fontSize: 14, fontWeight: 800, color: "#fff", fontFamily: "inherit" }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>Späť</button>
         <span style={{ flex: 1 }} />
         <button type="button" aria-label="Zdieľať · QR" style={{ ...tlTmave, width: 44 }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 12v8h16v-8M16 6l-4-4-4 4M12 2v14" /></svg></button>
       </div>

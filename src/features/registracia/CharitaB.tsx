@@ -10,9 +10,10 @@ import { nastavAktivnuCharitu, noveIdCharity, pridajLokalnuStranku, zapisCasRegi
 import { ulozIbanOrg, ulozTypStranky } from "@/features/rola/stav";
 import { overIban } from "@/features/rola/segmenty";
 import type { RegistrIcoVysledok } from "@/types";
-import { Obrazovka, Nadpis, Svetlo, Bublina, Pole, Volby, Prepinace, Cipy, KycKarty, PlanKapitol, Register, Odomknute, kapitoly, naServeri, pockaj, vibruj, IK, U } from "./RegB";
+import { Obrazovka, Nadpis, Svetlo, Bublina, Pole, PoleKodu, Volby, Prepinace, Cipy, KycKarty, PlanKapitol, Register, Odomknute, kapitoly, naServeri, pockaj, vibruj, IK, U } from "./RegB";
 import { ulozKrok } from "./OsobaB";
 import { FarnostB } from "./FarnostB";
+import { overKod, pripniKod, kodCely } from "@/lib/pristupoveKody";
 import { ulozRegistra, ulozStatutara, vznikText } from "@/lib/udajeRegistra";
 import { nacitajNastavenia } from "@/lib/nastaveniaStranky";
 
@@ -42,6 +43,8 @@ export function CharitaB({ prihlaseny, onSpat, onPrihlasit, onBezUctu, onHotovo,
   const [moz, setMoz] = useState([true, false]);
   // registrácia farnosti (testovacia verzia): vlastná krátka cesta FarnostB
   const [typOrg, setTypOrg] = useState(0), [farnost, setFarnost] = useState(false);
+  // 0158: prístupový kód (nepovinný); kodNepripol = organizácia vznikla, ale kód sa nepripol → ostáva testovacia
+  const [kod, setKod] = useState(""), [kodChyba, setKodChyba] = useState(""), [kodNepripol, setKodNepripol] = useState(false);
 
   const nazov = reg?.nazov ?? "";
   const statutar = prihlaseny?.meno ?? ""; // DEMO register: štatutár = prihlásená osoba (ostrý register vráti meno z ORSR / registra MV)
@@ -106,7 +109,17 @@ export function CharitaB({ prihlaseny, onSpat, onPrihlasit, onBezUctu, onHotovo,
     })) ides("nahlad");
   };
   const zverejni = async () => {
-    if (await server(async () => { await db.ulozBalik(org!.id, "free"); await db.dokonciRegistraciu(org!.id); })) { vibruj([10, 50, 14, 50, 20]); ulozKrok(null); ides("hotovo"); }
+    setKodChyba("");
+    if (kod && naServeri) {
+      if (!kodCely(kod)) { setKodChyba("Kód má 8 znakov, napríklad K7M2-QX9P."); return; }
+      let ok: boolean;
+      try { ok = await overKod(kod); } catch { toast("Kód sa nepodarilo overiť. Skontrolujte pripojenie a skúste to znova."); return; }
+      if (!ok) { setKodChyba("Kód neplatí alebo už bol použitý. Skontrolujte ho, alebo pole nechajte prázdne."); return; }
+    }
+    if (await server(async () => { await db.ulozBalik(org!.id, "free"); await db.dokonciRegistraciu(org!.id); })) {
+      if (kod && naServeri && prihlaseny?.ucetId && strankaId) { try { await pripniKod(strankaId, kod); } catch { setKodNepripol(true); } }
+      vibruj([10, 50, 14, 50, 20]); ulozKrok(null); ides("hotovo");
+    }
   };
   const koniec = (ciel: "prehlad" | "program") => {
     ulozTypStranky("charita");
@@ -197,12 +210,14 @@ export function CharitaB({ prihlaseny, onSpat, onPrihlasit, onBezUctu, onHotovo,
           </div>
         </div>
         <Bublina>Začínate s Bronzovým štítom. Rastie s vašimi činmi a aktivitou. Logo a fotky pridáte v Správe.</Bublina>
+        <PoleKodu value={kod} onChange={(v) => { setKod(v); setKodChyba(""); }} chyba={kodChyba} />
       </Obrazovka>);
     case "hotovo": return (
       <Obrazovka {...zak} cta="Do Správy organizácie" onCta={() => koniec("prehlad")} alt="Program a predplatné" onAlt={() => koniec("program")}>
         <Svetlo vyska={200} radost />
         <Nadpis stred t={`${nazov} je v DEED+`} sub={jaStatutar === 0 ? "Organizácia aj štatutár sú overení. Prvú zbierku máte zadarmo." : "Organizácia je overená, štatutár dostal pozvánku. Prvú zbierku máte zadarmo."} />
         <Odomknute polozky={["Prvá zbierka zadarmo", "Skutky a Iskry za organizáciu", "Profil v adresári"]} />
+        {kodNepripol && <Bublina>Prístupový kód sa nepodarilo pripojiť, organizácia je zatiaľ testovacia. Napíšte nám a kód pripojíme.</Bublina>}
       </Obrazovka>);
   }
 }

@@ -5,11 +5,11 @@
 // Úložisko ako Správcovia charity (karta 35): nastavenia_stranky (0050), kľúče „duch“ a „ludia“ — ukladá sa samo.
 // OPRAVY 392 (0125): pozvaný (e-mailom aj cez QR) dostane v appke Prijať · Odmietnuť, práva má až po Prijať.
 // U farára pri človeku stav: Pozvaný · Prijal ✓ · Odmietol.
+// OPRAVY 502: pozvánka cez odkaz „čaká · platí ešte 31 h“, po 48 h „Pozvánka vypršala“ + Poslať znova (PozvankaOdkazom, spoločné s charitou).
 // OPRAVY 393 (0124): dve úrovne — Farár (všetko) a Pomocník (celá Správa okrem Nastavení: účet farnosti, predplatné, ľudia).
 // Názov pri človeku (kaplán, sestra Mária, dobrovoľník …) si farár napíše sám, je to len popis („p“). Server dá práva podľa
 // e-mailu v zozname, kým tam človek je. Pomocník tu zoznam len vidí.
 // ============================================================
-import { QrNaUkazanie } from "@/components/qrNaUkazanie";
 import { KartaNastavenia, IK_PRIDAT_CLOVEKA } from "@/features/rola/KartaNastavenia";
 import { odkazPozvanky } from "@/lib/pozvankaSpravy";
 import { DeedZnacka } from "@/components/DeedZnacka";
@@ -18,7 +18,7 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import { citajNastavenie, maNastavenie, zapisNastavenie, useZmenyNastaveni } from "@/lib/nastaveniaStranky";
 import { useSlovaFarnosti } from "@/lib/mojeFarnosti";
 import { usePouzivatel } from "@/lib/pouzivatel";
-import { zdielaj, kopiruj } from "@/lib/zdielanie";
+import { novaPozvanka, stavPozvanky, useMinuta, KartaPozvanky, AkoPrebieha } from "./PozvankaOdkazom";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
 import { nacitajProfil, zapisDuchovneho } from "@/lib/profilStranky";
 import { obnovFarara } from "@/lib/farnostPrispela";
@@ -69,6 +69,8 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children, 
   const [popis, setPopis] = useState("");
   const [poz, setPoz] = useState<{ id: number; r: string; do: string } | null>(null);
   const [hl, setHl] = useState<{ id: string; t: string } | null>(null);
+  const [znova, setZnova] = useState<number | null>(null); // OPRAVY 502: pri ktorom človeku je nová pozvánka (Poslať znova)
+  const teraz0 = useMinuta();
   const tm = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(tm.current), []);
   const hlas = (id: string, t: string) => { window.clearTimeout(tm.current); setHl({ id, t }); tm.current = window.setTimeout(() => setHl(null), 3500); };
@@ -102,8 +104,6 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children, 
   const base: Clovek[] = somF
     ? [{ id: -1, n: celeMeno || jaMeno, k: "", r: T, caka: false, vlastny: true, jaT: `${T} · vy`, foto: D0u.foto || ja.foto || "" }]
     : [{ id: -2, n: celeMeno || T, k: "", r: T, caka: false, vlastny: true, jaT: inyF ? "má účet v DEED+" : "bez účtu v DEED+", foto: D0u.foto }, { id: -1, n: jaMeno, k: "", r: "Správca stránky", caka: false, vlastny: true, jaT: "Správca stránky · vy", foto: ja.foto || "" }];
-  // OPRAVY 392: stav pri človeku — Pozvaný · Prijal ✓ · Odmietol
-  const cakaT = (c: Caka) => (c === "odmietol" ? "Odmietol" : c === "odkaz" ? "Pozvaný · pozvánka cez QR" : "Pozvaný · čaká na prijatie");
   const duchovnych = [...base, ...L].filter((x) => (x.r === T || x.r === "Dozorca") && !x.caka).length;
   // OPRAVY 284 (5): hromadný výber — duchovný alebo dozorca musí ostať aspoň jeden
   const hv = useHromadnyVyber();
@@ -113,10 +113,12 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children, 
   const okMail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail.trim());
   const rola = nr !== null ? ROLY[Math.min(nr, ROLY.length - 1)][0] : "";
   const pozvat = () => { if (!okMail || !rola) return; const id = teraz(); ulozL([...L, { id, n: "", k: mail.trim(), r: rola, caka: true, p: popis.trim() || undefined }]); setMail(""); setPopis(""); setPrid(false); setNr(null); hlas(String(id), "Pozvaný ✓ Príde mu oznámenie v appke. Keď ťukne Prijať, môže začať."); };
-  const vytvor = () => { const dt = new Date(teraz() + 48 * 3600e3); const doT = `${dt.getDate()}. ${dt.getMonth() + 1}. o ${dt.getHours()}:${String(dt.getMinutes()).padStart(2, "0")}`; const id = teraz();
-    ulozL([...L, { id, n: "", k: `pozvánka cez odkaz · platí do ${doT}`, r: rola, caka: "odkaz", do: doT, dos: dt.getTime(), p: popis.trim() || undefined }]); setPoz({ id, r: rola, do: doT }); };
-  const odkaz = poz ? odkazPozvanky(strankaId, poz.id) : "";
-  const sprava = poz ? `${menoFarnosti || "Farnosť"} vás pozýva do správy stránky ako ${poz.r}. Ťuknite na odkaz, prihláste sa a ťuknite Prijať: ${odkaz.replace("https://", "")} · platí do ${poz.do}.` : "";
+  const vytvor = () => { const { id, dos, doT } = novaPozvanka();
+    ulozL([...L, { id, n: "", k: `pozvánka cez odkaz · platí do ${doT}`, r: rola, caka: "odkaz", do: doT, dos, p: popis.trim() || undefined }]); setPoz({ id, r: rola, do: doT }); };
+  const spravaZ = (id: number, r: string, doT: string) => `${menoFarnosti || "Farnosť"} vás pozýva do správy stránky ako ${r}. Ťuknite na odkaz, prihláste sa a ťuknite Prijať: ${odkazPozvanky(strankaId, id).replace("https://", "")} · platí do ${doT}.`;
+  // OPRAVY 502: vypršaná pozvánka → nová s tou istou rolou (nové id = starý odkaz už neplatí)
+  const poslatZnova = (x: Clovek) => { const { id, dos, doT } = novaPozvanka();
+    ulozL(L.map((y) => (y.id === x.id ? { ...y, id, k: `pozvánka cez odkaz · platí do ${doT}`, caka: "odkaz" as Caka, do: doT, dos } : y))); setZnova(id); hlas(String(id), "Nová pozvánka ✓ Platí 48 hodín. Pošlite mu ju."); };
   const ako: [string, string][] = cesta === 0 ? [
     ["Napíšete jeho e-mail", "Ten, s ktorým sa prihlasuje do DEED+. Ťuknete Pozvať."],
     ["Príde mu oznámenie", `V appke uvidí: „${menoFarnosti || "Farnosť"} vás pozýva ako ${rola}“ a ťukne Prijať.`],
@@ -153,26 +155,9 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children, 
         </> : !poz ? <>
           <button type="button" onClick={vytvor} style={plne(true)}>Vytvoriť pozvánku</button>
           <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>Appka vytvorí QR a odkaz pre jedného človeka s rolou, ktorú ste vybrali. Platí 48 hodín.</span>
-        </> : <div style={{ ...karta, padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
-            <QrNaUkazanie qr={{ data: odkaz }} size={112} popis={`Pozvánka do správy stránky · ${poz.r}`} ram={{ border: "1px solid var(--cardBd)", overflow: "hidden" }} />
-            <span style={{ flex: 1, minWidth: 160, display: "flex", flexDirection: "column", gap: 4 }}><b style={{ fontSize: 15.5 }}>Pozvánka · {poz.r}</b><span style={{ fontSize: 13.5, color: "var(--ink3)" }}>Platí do {poz.do}. Naskenuje QR alebo ťukne na odkaz.</span></span>
-          </div>
-          <span style={kick}>TAKTO PRÍDE SPRÁVA</span>
-          <span style={{ fontSize: 14.5, lineHeight: 1.5, padding: "10px 12px", borderRadius: 12, background: "var(--field)" }}>{sprava}</span>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" onClick={() => void zdielaj({ titul: "Pozvánka do správy stránky", text: sprava, url: odkaz })} style={plne(true)}>Zdieľať pozvánku</button>
-            <button type="button" onClick={() => void kopiruj(odkaz)} style={obrys}>Kopírovať odkaz</button>
-          </div>
-          <button type="button" onClick={() => { ulozL(L.filter((y) => y.id !== poz.id)); setPoz(null); hlas("zoz", "Pozvánka zrušená ✓"); }} style={{ ...obrys, alignSelf: "flex-start", color: CERV }}>Zrušiť pozvánku</button>
-        </div>}
-        <span style={kick}>{cesta === 0 ? "AKO TO PREBIEHA · MÁ ÚČET" : "AKO TO PREBIEHA · NEMÁ ÚČET"}</span>
-        <div style={{ ...karta, padding: "0 14px" }}>
-          {ako.map(([t, s], i) => <div key={t} style={{ display: "flex", gap: 12, padding: "12px 0", borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
-            <span style={{ width: 26, height: 26, flex: "none", borderRadius: "50%", background: "var(--gSoft)", color: "var(--gInk)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800 }}>{i + 1}</span>
-            <span style={{ display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 14.5 }}>{t}</b><span style={{ fontSize: 13.5, lineHeight: 1.45, color: "var(--ink2)" }}>{s}</span></span>
-          </div>)}
-        </div>
+        </> : <KartaPozvanky odkaz={odkazPozvanky(strankaId, poz.id)} rola={poz.r} doT={poz.do} sprava={spravaZ(poz.id, poz.r, poz.do)}
+          onZrus={() => { ulozL(L.filter((y) => y.id !== poz.id)); setPoz(null); hlas("zoz", "Pozvánka zrušená ✓"); }} />}
+        <AkoPrebieha nadpis={cesta === 0 ? "AKO TO PREBIEHA · MÁ ÚČET" : "AKO TO PREBIEHA · NEMÁ ÚČET"} kroky={ako} />
       </>}
       <button type="button" onClick={() => { setPrid(false); setNr(null); setPoz(null); }} style={zbal}>Zbaliť ⌃</button>
     </section>);
@@ -231,6 +216,7 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children, 
         const vlastny = !!x.vlastny, rr = ROLY[rI(x.r)];
         const posledny = (x.r === T || x.r === "Dozorca") && !x.caka && duchovnych <= 1;
         const vyb = hv.zap && !vlastny && !posledny, on = hv.vyb.has(String(x.id)); // OPRAVY 284 (5): hromadný výber
+        const stav = x.caka ? stavPozvanky(x.caka, x.dos, teraz0) : null;
         return (
           <div key={x.id} onClick={vyb ? () => hv.prepni(String(x.id)) : undefined} style={{ padding: "12px 0", borderTop: i ? "1px solid var(--cardBd)" : "none", display: "flex", flexDirection: "column", gap: 8, cursor: vyb ? "pointer" : undefined }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
@@ -239,7 +225,7 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children, 
               <span aria-hidden="true" style={{ width: 42, height: 42, flex: "none", borderRadius: "50%", background: x.foto ? `url("${x.foto}") center/cover no-repeat` : x.caka ? "var(--btn)" : "var(--gSoft)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "var(--ink2)" }}>{x.foto ? "" : inic(x.n || "?")}</span>
               <span style={{ flex: 1, minWidth: 140, display: "flex", flexDirection: "column", gap: 2 }}>
                 <b style={{ fontSize: 15 }}>{x.n || x.k || "Pozvaný"}</b>
-                {x.caka ? <span style={{ alignSelf: "flex-start", padding: "2px 8px", borderRadius: 8, background: x.caka === "odmietol" ? "var(--rBg, #F6E3DC)" : "var(--goldBg)", color: x.caka === "odmietol" ? "#A34A2A" : undefined, fontSize: 12, fontWeight: 800 }}>{cakaT(x.caka)}</span>
+                {stav ? <span style={{ alignSelf: "flex-start", padding: "2px 8px", borderRadius: 8, background: stav.zly ? "var(--rBg, #F6E3DC)" : "var(--goldBg)", color: stav.zly ? "#A34A2A" : undefined, fontSize: 12, fontWeight: 800 }}>{stav.t}</span>
                   : x.prijal ? <span style={{ alignSelf: "flex-start", padding: "2px 8px", borderRadius: 8, background: "var(--gSoft)", color: "var(--gInk)", fontSize: 12, fontWeight: 800 }}>Prijal ✓</span> : null}
                 <span style={{ fontSize: 13, color: "var(--ink3)" }}>{vlastny ? x.jaT : `${popisZ(x) ? `${popisZ(x)} · ` : ""}${rr[0]} · ${rr[1]}`}</span>
               </span>
@@ -251,11 +237,14 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children, 
               onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }} style={{ ...pole, height: 44, maxWidth: 320 }} />}
             {farar && !vlastny && !hv.zap && <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {x.caka === "odmietol" && <button type="button" onClick={() => { ulozL(L.map((y) => (y.id === x.id ? { ...y, caka: true } : y))); hlas(String(x.id), "Pozvaný znova ✓ Príde mu oznámenie v appke."); }} style={obrys}>Pozvať znova</button>}
+              {stav?.vyprsala && <button type="button" onClick={() => poslatZnova(x)} style={obrys}>Poslať znova</button>}
               {posledny ? <span style={{ fontSize: 13, color: "var(--ink3)" }}>{SL.dozorca ? `${T} alebo dozorca musí ostať aspoň jeden.` : `${T} musí ostať aspoň jeden.`}</span>
                 : <DrzTlacidlo ms={1200} styl={{ minHeight: 44, padding: "0 14px", borderRadius: 12, border: `1.5px solid ${CERV}`, background: "transparent", color: CERV, fontSize: 14, fontWeight: 800 }}
                   onHotovo={() => { ulozL(L.filter((y) => y.id !== x.id)); hlas("zoz", `${x.caka && x.caka !== "odmietol" ? "Pozvánka zrušená ✓" : "Odobratý ✓"} ${x.n || x.k}`); }}>{x.caka && x.caka !== "odmietol" ? "Podržte · zrušiť" : "Podržte · odobrať"}</DrzTlacidlo>}
             </div>}
             {hl?.id === String(x.id) && <span role="status" style={hlaskaSt}>{hl.t}</span>}
+            {farar && znova === x.id && x.caka === "odkaz" && x.do && <KartaPozvanky odkaz={odkazPozvanky(strankaId, x.id)} rola={rr[0]} doT={x.do} sprava={spravaZ(x.id, rr[0], x.do)}
+              onZrus={() => { ulozL(L.filter((y) => y.id !== x.id)); setZnova(null); hlas("zoz", "Pozvánka zrušená ✓"); }} />}
           </div>); })}
     </section>
     {hl?.id === "zoz" && <span role="status" style={hlaskaSt}>{hl.t}</span>}

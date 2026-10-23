@@ -144,7 +144,7 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, 
 
   return (
     <div ref={rootRef} style={{ position: "relative", display: "flex", flexDirection: "column", color: "var(--ink)" }}>
-      <KartaStavu refId={refId} zaklad={zaklad} ciel={ciel} ludiaZaklad={ludiaZ} koniecPruhu={koniecPruhu} bezMilnikov={bezObjektu && !ciel} /* OPRAVY 388: zvonček */ />
+      <KartaStavu nazovZbierky={sektor.nazov} refId={refId} zaklad={zaklad} ciel={ciel} ludiaZaklad={ludiaZ} koniecPruhu={koniecPruhu} bezMilnikov={bezObjektu && !ciel} /* OPRAVY 388: zvonček */ />
       {dorovnanie && <div style={{ marginTop: 12 }}>
         <KartaDorovnava d={dorovnanie} />
         {k20 > 0 && <div style={{ margin: "-4px 0 0", textAlign: "center", fontSize: 13.5, fontWeight: 700, color: "var(--gold)", fontVariantNumeric: "tabular-nums" }}>daruješ 20 € → do {kam} ide {eurT(20 + k20)}</div>}

@@ -29,6 +29,10 @@ const F_KOSTOL = IMG("photo-1438032005730-c779502df39b", 1800);
 const F_PUT = IMG("photo-1542601906990-b4d3fb778b09", 900);
 const F_DETI = IMG("photo-1488521787991-ed7bbaae773c", 700);
 const F_DOZINKY = IMG("photo-1507842217343-583bb7270b66", 600);
+// OPRAVY 508: kostol Panny Márie, kaplnka sv. Anny a fara — voľné fotky Unsplash (Unsplash License, autor sa uvádzať nemusí)
+const F_PANNY = IMG("photo-1694974247470-1f7bf1562fbe", 1200); // kaplnka Madony vo Val d'Orcia
+const F_ANNA = IMG("photo-1696136562573-53a994c4101d", 1200); // malý biely kostolík
+const F_FARA = IMG("photo-1669207261126-edf4321e6633", 1200); // stará budova, Bratislava
 const foto = (id: number, src: string): MediumZbierky => ({ id, typ: "foto", src });
 
 const DEN = 864e5;
@@ -54,13 +58,14 @@ export const VZOR_PROFIL: ProfilStranky = {
   },
   logo: null, tvar: "kruh", logoRezim: "vyplnit", logoPozadie: "biele", bezLoga: true, inicialy: "FV",
   cover: { src: F_KOSTOL, w: 1800, h: 1200, priemer: "", vyrez: { rezim: "cela", zoom: 1, x: 0, y: 0 } }, ram: "bez",
+  fotoFary: F_FARA,
 };
 
 // ---- kostoly a omše ----
 const miesta: Miesto[] = [
   { id: "0", druh: "farsky", nazov: "Svätého Michala", adresa: "Farské námestie 1", media: [foto(1, F_KOSTOL)], popis: "Najcennejšia a najstaršia sakrálna pamiatka v meste.", historia: "", vytvorene: d(-400) },
-  { id: "k1", druh: "kostol", nazov: "Panny Márie", adresa: "Mariánska 2", media: [], popis: "Menší kostol, ranná omša vo štvrtok.", historia: "", vytvorene: d(-400) },
-  { id: "k2", druh: "kaplnka", nazov: "Svätej Anny", adresa: "Nemocničná 3", media: [], popis: "Spätá so stredovekým mestským špitálom.", historia: "", vytvorene: d(-400) },
+  { id: "k1", druh: "kostol", nazov: "Panny Márie", adresa: "Mariánska 2", media: [foto(1, F_PANNY)], popis: "Menší kostol, ranná omša vo štvrtok.", historia: "", vytvorene: d(-400) },
+  { id: "k2", druh: "kaplnka", nazov: "Svätej Anny", adresa: "Nemocničná 3", media: [foto(1, F_ANNA)], popis: "Spätá so stredovekým mestským špitálom.", historia: "", vytvorene: d(-400) },
 ];
 const kostol = (k: Partial<KalKostol>): KalKostol => ({ casy: [["6:30", "7:00", "7:30"], ["18:00"], ["10:30"]], casyOk: true, vzor: {}, zrus: {}, posun: {}, extra: {}, ...k });
 const nPut = najblizsi(5, 3), nDeti = najblizsi(5, nPut + 1), nOdpust = najblizsi(6, 2), nBrig = najblizsi(5, 1), nStretko = najblizsi(4, 1);

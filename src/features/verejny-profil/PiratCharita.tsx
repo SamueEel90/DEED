@@ -3,6 +3,8 @@
 //   3 Kam poslať (4 stĺpce, vybraný flex 2,4, modul hneď vedľa v stĺpci 420 px s vlastným posunom) ·
 //   4 Naša cesta (prerušovaná zlatá krivka, zastávky = posledné skutky a ukončené zbierky + DNES) · 5 Ďalšie teraz (karty 2a) · 6 Videá z Iskier.
 // Mobil: rovnaké sekcie pod sebou; Kam poslať = 4 pásy (vybraný 220 px), modul pod nimi zmenšený (B, bod 151/3); cesta zvislá.
+import { useNazivoCharity } from "@/lib/nazivoCharity";
+import { dnesNazivo } from "./NazivoCharity";
 import { useOtvorHlavnuZQr } from "./otvor";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { eur, pct, tvar, jeFarnost, type Lokalita, type TestProfil, type TestSektor, type TestZbierka, type TestPraca } from "@/lib/testProfily";
@@ -34,6 +36,7 @@ export function PiratCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, h
   const [sel, setSel] = useState(-1);
   useOtvorHlavnuZQr(profil.k, profil.typ === "farnost", () => setSel(0)); // OPRAVY 162
   const d = useCharitaData(profil, lok, domace);
+  const nz = useNazivoCharity(profil.k, !!profil.zivaCharita); // OPRAVY 478
   const stit = profil.stit.toLowerCase();
   const farnost = jeFarnost(profil);
   const meno = profil.meno.replace(/\s+o\.\s?z\.$/i, "");
@@ -49,10 +52,10 @@ export function PiratCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, h
     <section style={{ position: "relative", height: pc ? 820 : "min(780px, 100dvh)", flex: "none", background: bgF(profil.titulka) }}>
       <span style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(10,8,5,.5) 0%,rgba(10,8,5,.05) 30%,rgba(10,8,5,.92) 100%)" }} />
       <div style={{ position: "absolute", left: pc ? 48 : 16, right: pc ? 48 : 16, top: pc ? 24 : "max(16px, env(safe-area-inset-top))", display: "flex", alignItems: "center", gap: 10 }}>
-        <button type="button" onClick={onBack} aria-label="Späť" style={{ height: 44, padding: pc ? "0 14px 0 8px" : 0, width: pc ? undefined : 44, borderRadius: 14, border: "none", background: "rgba(10,8,5,.5)", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, fontSize: 14, fontWeight: 800, color: "#fff", cursor: "pointer", fontFamily: "inherit", boxShadow: "none" }}>
+        <button type="button" onClick={onBack} aria-label="Späť" style={{ height: 44, padding: pc ? "0 14px 0 8px" : 0, width: pc ? undefined : 44, borderRadius: 14, border: "none", background: "#4B7A35", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, fontSize: 14, fontWeight: 800, color: "#fff", cursor: "pointer", fontFamily: "inherit", boxShadow: "none" }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>{pc && "Späť"}</button>
         <span style={{ flex: 1 }} />
-        <span style={{ height: 44, padding: "0 16px", borderRadius: 22, background: "rgba(10,8,5,.6)", display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 800, color: "#fff" }}>{bodka}{pc ? `NAŽIVO · dnes ${eur(d.dnes)} od ${tvar(d.darcovia.length, ["človeka", "ľudí", "ľudí"])}` : `dnes ${eur(d.dnes)}`}</span>
+        <span style={{ height: 44, padding: "0 16px", borderRadius: 22, background: "rgba(10,8,5,.6)", display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 800, color: "#fff" }}>{bodka}{nz ? (pc ? `NAŽIVO · ${dnesNazivo(nz)}` : nz.dnesLudi ? `dnes ${eur(nz.dnesSuma)}` : "dnes bez darov") : pc ? `NAŽIVO · dnes ${eur(d.dnes)} od ${tvar(d.darcovia.length, ["človeka", "ľudí", "ľudí"])}` : `dnes ${eur(d.dnes)}`}</span>
       </div>
       <div style={{ position: "absolute", left: pc ? 48 : 20, right: pc ? 48 : 20, bottom: pc ? 56 : 24, display: "flex", alignItems: "flex-end", gap: pc ? 28 : 12 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: pc ? 18 : 14, flex: 1, minWidth: 0 }}>

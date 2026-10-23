@@ -47,13 +47,19 @@ const skutky = new Map<string, string>();
 export function nastavSkutokDaru(refId: string, skutok: string | null) { if (skutok) skutky.set(refId, skutok); else skutky.delete(refId); }
 
 /** 0084: meno darcu (voľba „Meno z profilu“, inak bez mena) a v testovacom režime platba naoko — dar sa zapíše ako testovací */
-export async function zapisDarZbierky(refId: string, eur: number, kanal: KanalDaru, objekt?: ObjektZbierky, menoDarcu?: string): Promise<void> {
+/** OPRAVY 492: `retaz` = dar z verzie zbierky u toho, kto reťazí — ide cez retaz_dar (podiel zbierka / ten, kto reťazí, zapečatený v reťazi) */
+export async function zapisDarZbierky(refId: string, eur: number, kanal: KanalDaru, objekt?: ObjektZbierky, menoDarcu?: string, retaz?: string): Promise<void> {
   const id = idZbierkyDB(refId, objekt);
   if (!supabase || !id || !(eur > 0)) return;
   const [dbKanal, mena, suma] = kanal === "deed" ? ["deed", "DEED", Math.round(eur * DEED_ZA_EUR * 10000) / 10000]
     : kanal === "sepa" ? ["sepa", "EUR", eur] : ["fiat", "EUR", eur];
   let idem: string;
   try { idem = crypto.randomUUID(); } catch { idem = `dar-${Date.now()}-${Math.round(Math.random() * 1e9)}`; }
+  if (retaz) { // príznak test píše server (0157), darca ostáva darcom
+    const { error } = await supabase.rpc("retaz_dar", { p_retaz: retaz, p_idem: idem, p_suma: suma, p_mena: mena, p_kanal: dbKanal, p_meno_darcu: menoDarcu ?? null, p_test: false });
+    if (error) throw error;
+    return;
+  }
   const zv = refId.match(ZV_REF);
   if (zv) { // dar do zvončekovej: omšu (okno) určí server v okamihu daru
     const { error } = await supabase.rpc("zvoncek_dar", { p_stranka: zv[1], p_kostol: zv[2], p_idem: idem, p_suma: suma, p_mena: mena, p_kanal: dbKanal, p_meno_darcu: menoDarcu ?? null, p_test: TESTOVACIA });
@@ -83,7 +89,8 @@ export async function zapisDarZbierky(refId: string, eur: number, kanal: KanalDa
 /** dar zbierky tak, ako je v ledgeri (rpc zbierka_dary, 0067) */
 export interface DarZLedgera { id: string; cas: number; eur: number; kanal: KanalDaru; meno: string | null; registrovany: boolean; moj: boolean;
   /** OPRAVY 294 (0096): skončená zvončeková omša v Hlavnej zbierke = jeden riadok, meno = „Ranná omša 6:00“ */ omsa?: boolean;
-  /** OPRAVY 438 (3) · 0140: dar prišiel cez skutok charity (názov skutku) */ cezSkutok?: string; /** OPRAVY 490 */ cezSkutokId?: string }
+  /** OPRAVY 438 (3) · 0140: dar prišiel cez skutok charity (názov skutku) */ cezSkutok?: string; /** OPRAVY 490 */ cezSkutokId?: string;
+  /** OPRAVY 492 · 0159: dar prišiel cez reťaz (id reťaze) */ cezRetaz?: string }
 /** dary zbierky z ledgera; `skryte` = zbierka rodiny a ja nie som príjemca ani darca (0075b, KARTA 57 A.7) —
  *  server poslal len počet darov, žiadne sumy ani mená */
 export interface DaryZbierky { dary: DarZLedgera[]; skryte: boolean; pocet: number }
@@ -96,7 +103,7 @@ export async function nacitajDaryZbierky(id: string): Promise<DaryZbierky> {
     : await supabase.rpc("zbierka_dary", { p_zbierka: id, p_limit: 200 });
   if (error) throw error;
   const odp = (data ?? {}) as { dary?: unknown[]; skryte?: boolean; pocet?: number };
-  const dary = (odp.dary ?? []) as { id: string; cas: string; mena: string; kanal: string; meno: string | null; registrovany: boolean; moj: boolean; suma: number; omsa?: boolean; skutok_nazov?: string | null; skutok?: string | null }[];
+  const dary = (odp.dary ?? []) as { id: string; cas: string; mena: string; kanal: string; meno: string | null; registrovany: boolean; moj: boolean; suma: number; omsa?: boolean; skutok_nazov?: string | null; skutok?: string | null; retaz?: string | null }[];
   return {
     skryte: !!odp.skryte, pocet: Number(odp.pocet ?? dary.length),
     dary: dary.map((d) => ({
@@ -104,6 +111,7 @@ export async function nacitajDaryZbierky(id: string): Promise<DaryZbierky> {
       kanal: d.kanal === "deed" ? "deed" : d.kanal === "sepa" ? "sepa" : "psp", meno: d.meno, registrovany: d.registrovany, moj: d.moj, ...(d.omsa ? { omsa: true } : {}),
       ...(d.skutok_nazov ? { cezSkutok: d.skutok_nazov } : {}),
       ...(d.skutok ? { cezSkutokId: d.skutok } : {}), // OPRAVY 490: id skutku (0140) — Pozri › otvorí priamo skutok
+      ...(d.retaz ? { cezRetaz: d.retaz } : {}),
     })),
   };
 }

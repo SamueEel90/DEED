@@ -84,7 +84,11 @@ function Ludia({ pocet, fanusikov, org = 0, cezSkutok = 0 }: { pocet: number; fa
   );
 }
 
-export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, koniecPruhu, cezTvorcu, skryta, bezMilnikov, organizacia }: {
+export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, koniecPruhu, cezTvorcu, skryta, bezMilnikov, organizacia, fialova, nazovZbierky }: {
+  /** OPRAVY 484: názov zbierky pre riadok skutku */
+  nazovZbierky?: string;
+  /** OPRAVY 492 · balík 42: verzia zbierky u toho, kto reťazí — fialová karta „Vyzbierané cez …“ */
+  fialova?: boolean;
   /** OPRAVY 490: organizácia, ktorá zbiera — logo a štít pri vlastnom vklade a pri skutku */
   organizacia?: OrgZbierky;
   /** OPRAVY 388: zvončeková zbierka — nemá cieľ ani míľniky, len suma */
@@ -108,7 +112,7 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, ko
   const suma = (cezTvorcu ? 0 : zaklad) + dary.reduce((a, r) => a + r.suma, 0);
   const org = useUsekyOrganizacii(refId);
   // OPRAVY 490: kto prispel — organizácia → firmy → reťaze → skutky → ľudia (úseky pruhu, legenda, riadky)
-  const kto = useKtoPrispel(refId, dary, organizacia);
+  const kto = useKtoPrispel(refId, dary, organizacia, nazovZbierky);
   // OPRAVY 222: dary organizácií (farnosť, vlastné peniaze) nie sú ľudia
   const ludia = Math.max(0, (cezTvorcu ? 0 : ludiaZaklad) + dary.filter((r) => !r.firma).length - (cezTvorcu ? 0 : org.darovOrg));
   const nadpisVyzbierane = cezTvorcu ? `Vyzbierané cez ${cezTvorcu.menoAkuzativ}` : "Vyzbierané";
@@ -129,13 +133,14 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, ko
     predosly.current = dosiahnuty;
   }, [dosiahnuty]);
 
-  const karta: CSSProperties = { margin: "0 0 12px", borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: maCiel ? "18px 18px 14px" : "16px 18px 14px" };
+  const karta: CSSProperties = { margin: "0 0 12px", borderRadius: 22, background: fialova ? "color-mix(in srgb, #8467B4 16%, var(--card))" : "var(--card)", border: fialova ? "1.5px solid rgba(166,139,208,.55)" : "1px solid var(--cardBd)", padding: maCiel ? "18px 18px 14px" : "16px 18px 14px" };
+  const nadpisSt: CSSProperties = fialova ? { fontSize: 11.5, fontWeight: 800, letterSpacing: ".07em", textTransform: "uppercase", color: "#A68BD0" } : { fontSize: 12.5, fontWeight: 700, color: "var(--ink3)" };
   const velka: CSSProperties = { fontSize: 32, fontWeight: 800, letterSpacing: "-.02em", lineHeight: 1.1, fontVariantNumeric: "tabular-nums", color: "var(--ink)" };
 
   if (maCiel && cezTvorcu) {
     return (
       <div style={karta}>
-        <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink3)" }}>{nadpisVyzbierane}</div>
+        <div style={nadpisSt}>{nadpisVyzbierane}</div>
         <div style={{ ...velka, marginTop: 2, marginBottom: 12 }} data-zb-suma={refId}>{eur(zobrazena)}</div>
         <Pruh podiel={suma / ciel!} vyska={10} koniec={koniecPruhu} />
         <TempoDarov refId={refId} rezim={tempo} cezTvorcu={cezTvorcu.id} />
@@ -168,7 +173,7 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, ko
     const odhalena = dary.some((r) => r.moj);
     return (
       <div style={karta}>
-        <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink3)" }}>{nadpisVyzbierane}</div>
+        <div style={nadpisSt}>{nadpisVyzbierane}</div>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 2 }}>
           <div style={{ ...velka, filter: odhalena ? "none" : "blur(9px)", userSelect: odhalena ? undefined : "none" }} aria-hidden={odhalena ? undefined : true} data-zb-suma={refId}>{eur(odhalena ? zobrazena : 0)}</div>
           {!odhalena && <span style={{ fontSize: 13, lineHeight: 1.35, fontWeight: 700, color: "var(--ink3)" }}>suma sa ukáže<br />po vašom dare</span>}
@@ -184,7 +189,7 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, ko
   const zakladMilnika = oslava ? 1 : suma / dalsi;
   return (
     <div style={karta}>
-      <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink3)" }}>{nadpisVyzbierane}</div>
+      <div style={nadpisSt}>{nadpisVyzbierane}</div>
       <div style={{ ...velka, marginTop: 2 }} data-zb-suma={refId}>{eur(zobrazena)}</div>
       {dnes > 0 && <div style={{ fontSize: 13, fontWeight: 700, color: "var(--green)", marginTop: 4 }}>dnes +{eur(dnes)}</div>}
       {bezMilnikov ? <div ref={koniecPruhu} style={{ height: 0 }} /> : <>

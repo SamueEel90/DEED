@@ -7,7 +7,7 @@ import { vMeste } from "./casti";
 import { ModulProfilu } from "./ModulProfilu";
 import { useOtvorHlavnuZQr } from "./otvor";
 
-const bg = (f: string) => `url('${f}') center/cover no-repeat #3a3530`;
+const bg = (f: string) => f.startsWith("logo|") ? `url(${JSON.stringify(f.split("|").slice(2).join("|"))}) center/auto 58% no-repeat ${f.split("|")[1]}` : `url('${f}') center/cover no-repeat #3a3530`; // OPRAVY 479
 export type RezPodpory = "pc" | "tab" | "mob";
 /** 5. 10. · čo je vybraté na darovanie: index dlaždice (0 centrálna, 1–3 sektory) alebo konkrétna zbierka (PC Pirát / Výklad) */
 export type Vyber = number | TestZbierka | null;
@@ -39,7 +39,7 @@ export function PodporaProfilu({ profil, lok, domace, rez, stlpce = rez === "tab
   const [modVl, setModVl] = useState<Vyber>(null);
   const mod = onMod ? (modP ?? null) : modVl;
   const setMod = (i: Vyber) => (onMod ? onMod(i) : setModVl(i));
-  useOtvorHlavnuZQr(profil.k, jeFarnost(profil), () => setMod(0)); // OPRAVY 162
+  useOtvorHlavnuZQr(profil.k, jeFarnost(profil) || (profil.typ === "charita" && !profil.bezCentralnej), () => setMod(0)); // OPRAVY 162 · 483: aj QR charity pri bežiacej centrálnej
   const nadpisRef = useRef<HTMLSpanElement | null>(null);
   const sk = lok === "Celé Slovensko";
   const mestoV = sk ? "celom Slovensku" : vMeste(lok);

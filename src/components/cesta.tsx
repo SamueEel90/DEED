@@ -3,14 +3,14 @@
 import { useT } from "@/i18n";
 import type { ReactNode } from "react";
 
-/** naFotke = Späť položené na fotke/videu: rovnaké písmo, veľkosť a farba, len na svetlej pilulke, aby bolo čitateľné */
+/** naFotke = Späť položené na fotke/videu: OPRAVY 494 plné zelené pole s bielym textom (ako potvrdzovacie tlačidlá), svetlý aj tmavý režim */
 export function SpatTlacidlo({ onClick, naFotke }: { onClick: () => void; naFotke?: boolean }) {
   const t = useT();
   return (
     <button type="button" onClick={onClick} aria-label={t("sp.spat")}
       style={{ display: "flex", alignItems: "center", gap: 4, height: naFotke ? 36 : 44, padding: naFotke ? "0 14px 0 8px" : "0 6px 0 0", border: "none",
-        background: naFotke ? "rgba(var(--panel-rgb), .92)" : "transparent", borderRadius: naFotke ? 999 : 0, boxShadow: "none",
-        cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 700, color: "var(--a-green)", flex: "none" }}>
+        background: naFotke ? "#4B7A35" : "transparent", borderRadius: naFotke ? 999 : 0, boxShadow: "none",
+        cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 700, color: naFotke ? "#fff" : "var(--a-green)", flex: "none" }}>
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
       {t("sp.spat")}
     </button>

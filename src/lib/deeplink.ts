@@ -26,6 +26,7 @@ export function druhNaModul(druh: QrDruh): ModulCiel {
 /** Prečíta deep-link zo súčasnej URL (alebo null, ak žiadny). */
 export function precitajDeepLink(): { slug: string } | null {
   if (typeof window === "undefined") return null;
+  if (/^\/r\/rt-/.test(window.location.pathname)) return null; // OPRAVY 492: QR reťaze dobra rieši lib/retazVerzia
   return parseDeepLink(window.location.pathname);
 }
 

@@ -143,6 +143,7 @@ function obnovZLedgera(refId: string, id: string) {
       ...(d.omsa ? { omsa: { nazov: (d.meno ?? "Svätá omša").trim(), stranka } } : {}),
       ...(d.cezSkutok ? { cezSkutok: d.cezSkutok } : {}),
       ...(d.cezSkutokId ? { cezSkutokId: d.cezSkutokId } : {}),
+      ...(d.cezRetaz ? { cezTvorcu: d.cezRetaz } : {}), // OPRAVY 492: verzia u toho, kto reťazí, počíta dary svojej reťaze
     }));
     sklad.set(refId, [...firmy, ...dary].sort((a, b) => b.cas - a.cas));
     emit();
@@ -207,6 +208,8 @@ export function useDarcovia(refId: string): DarRiadok[] {
  *   · beží na zbierke dorovnanie firmy → firma pridá svoj diel a zapíše sa ako darca
  *   · daruje samotná firma (je prepnutá do svojej roly) → zbierka sa jej pripne
  *  Keby to viselo na obrazovkách, každá nová obrazovka by na to zabudla. */
+/** OPRAVY 492: cezTvorcu = id reťaze dobra (rt-…) → dar ide cez retaz_dar; iné (ukážkový tvorca) zostáva lokálne */
+const jeRetaz = (id?: string): id is string => !!id && id.startsWith("rt-");
 export function pridajDar(vstup: {
   refId: string; suma: number; kanal: KanalDaru; registrovany: boolean; volba?: VolbaDaru; firma?: string;
   /** dar prišiel cez QR (split) tohto tvorcu — rozhoduje o tvorcovskom dorovnaní */
@@ -234,7 +237,7 @@ export function pridajDar(vstup: {
     window.setTimeout(() => obnovZLedgera(vstup.refId, lid), 8000);
   } else if (lid && !vstup.firma) {
     // 0066/0067: dar sa ukáže až keď vznikne v ledgeri
-    void zapisDarZbierky(vstup.refId, vstup.suma, vstup.kanal, vstup.objekt, reg && volba.verzia !== 4 ? vstup.menoDarcu : undefined)
+    void zapisDarZbierky(vstup.refId, vstup.suma, vstup.kanal, vstup.objekt, reg && volba.verzia !== 4 ? vstup.menoDarcu : undefined, jeRetaz(vstup.cezTvorcu) ? vstup.cezTvorcu : undefined)
       .then(() => obnovZLedgera(vstup.refId, lid))
       .catch((e: { message?: string }) => toast(`Dar sa nezapísal${e?.message ? ` · ${e.message}` : ""}`));
   } else {

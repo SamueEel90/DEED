@@ -5,6 +5,7 @@
 // dáva server (0107); kým ich nedá, je pod nadpisom „—“ bez vety (odpovede 18. 10.).
 // Zdroje: Hlavná (dary bez riadkov omší), Zvončeková (uzavreté omše + bežiaca), ďalšie zbierky farnosti, príspevky veriacich.
 // ============================================================
+import { darcoviaZDarov, daryStranky } from "@/lib/nazivoCharity";
 import { useState, type CSSProperties } from "react";
 import { darcoviaPre, identitaDarcu, useZmenyDarov, type DarRiadok } from "@/lib/darcovia";
 import { useZvoncekOkno } from "@/lib/zvoncekOmse";
@@ -61,6 +62,8 @@ export function StatistikyFarnosti({ strankaId, mobil, charita = false }: { stra
   const v = vsetko.filter((x) => x.cas >= od);
   const suma = v.reduce((a, x) => a + x.suma, 0), pocet = v.reduce((a, x) => a + x.darov, 0);
   const srv = useStatistikyFarnosti(strankaId, od);
+  // OPRAVY 478 doplnok: charita — darcovia z tých istých darov ako Vyzbierané (rovnaké počítanie ako „12 ľudí“ pri zbierke)
+  const dcCh = darcoviaZDarov(charita ? daryStranky(strankaId).map((x) => x.r) : [], od);
   const prispevky = odFarnikov(strankaId).filter((x) => x.k !== "umysel" && !x.stav && x.cas >= od).length;
   // OPRAVY 423: skutky charity zverejnené za obdobie (server 0133, inak zo Správy na tomto zariadení)
   const skutky = charita ? (skutkyStrankyZPamate(strankaId) ?? skutkyOrg(strankaId)).filter((s) => !s.stiahnuty && (s.datum || 0) >= od).length : 0;
@@ -68,9 +71,9 @@ export function StatistikyFarnosti({ strankaId, mobil, charita = false }: { stra
     ["Vyzbierané", eur(suma), OBD_T[ob]],
     ["Počet darov", String(pocet), OBD_T[ob]],
     ["Priemerný dar", pocet ? eur(suma / pocet) : "—", pocet ? OBD_T[ob] : "zatiaľ žiadne dary"],
-    ["Noví darcovia", srv ? String(srv.noviDarcovia) : "—", srv ? OBD_T[ob] : ""],
+    ["Noví darcovia", charita ? String(dcCh.novi) : srv ? String(srv.noviDarcovia) : "—", charita || srv ? OBD_T[ob] : ""],
     ["Pravidelná podpora", srv?.pravidelna != null ? String(srv.pravidelna) : "—", srv?.pravidelna != null ? (charita ? "zapnutá na centrálnej zbierke" : "zapnutá na hlavnej zbierke") : ""],
-    ["Darcovia spolu", srv ? String(srv.darciaSpolu) : "—", srv ? "od začiatku" : ""],
+    ["Darcovia spolu", charita ? String(dcCh.spolu) : srv ? String(srv.darciaSpolu) : "—", charita || srv ? "od začiatku" : ""],
     ["Sledujúci", srv ? String(srv.sledujuci) : "—", srv ? `+${srv.sledujuciNovi30} za 30 dní` : ""],
     charita ? ["Skutky", String(skutky), `${OBD_T[ob]} · zverejnené`] : ["Príspevky od veriacich", String(prispevky), `${OBD_T[ob]} · na stránke`],
   ];

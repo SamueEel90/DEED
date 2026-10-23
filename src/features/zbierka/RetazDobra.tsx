@@ -15,6 +15,10 @@ import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 import PodrzTlacidlo from "./PodrzTlacidlo";
 import { potvrditTuknutim } from "./Platba";
 import { sumaEur } from "@/lib/suma";
+import { kopiruj } from "@/lib/zdielanie";
+import { stiahniDeedQr } from "@/components/deedqr";
+import { PocitadloSheet } from "@/features/overlay/PocitadloSheet";
+import { toast } from "@/components/toast";
 
 type Krok = "nastavenie" | "vyber" | "zhrnutie" | "bezi";
 type VRade = { zbierkaId: string; pct: number };
@@ -285,6 +289,8 @@ function RetazDobraOkno({ zbierka, onClose }: { zbierka: ZbierkaHaroka; onClose:
           <span style={{ background: "#fff", padding: 10, borderRadius: 16, lineHeight: 0 }}>
             <DeedQr data={`${ADRESA}/r/${retaz.id}${b ? `/${b.zbierkaId}` : ""}`} odznak="D++" retaz size={180} />
           </span>
+          {/* balík 42 · 43 (501): QR (Stiahnuť) · Kopírovať odkaz · Počítadlo do streamu — všetko na prenos na jednom mieste */}
+          <AkcieQrRetaze retaz={retaz} />
           <div style={{ padding: "9px 16px", borderRadius: 999, background: "#1D211B", color: "#F1ECE1", fontSize: 14.5, fontWeight: 800, textAlign: "center" }}>{stitokDarcu(b?.pct ?? 100, b?.zbierkaId ?? null)}</div>
           <div style={{ fontSize: 12.5, color: "var(--ink3)", fontVariantNumeric: "tabular-nums" }}>Dostali ste {e2(retaz.dostal)} · ďalej poslané {e2(retaz.poslane)}</div>
         </div>
@@ -331,4 +337,42 @@ function RetazDobraOkno({ zbierka, onClose }: { zbierka: ZbierkaHaroka; onClose:
     {/* balík 8 C · 10: Testovanie v plnej miere — len testovací režim */}
     {TESTOVACIA && krok !== "vyber" && <TestovanieRetaze onOdznova={() => { setChyst(null); setChyba(null); setKrok("nastavenie"); }} />}
   </div></Harok>;
+}
+
+/** balík 42 · „Kopírovať odkaz“ pri QR toho, kto reťazí → na tlačidle „Skopírované ✓“ */
+function KopirovatOdkaz({ odkaz }: { odkaz: string }) {
+  const [stav, setStav] = useState<"" | "ok" | "chyba">("");
+  useEffect(() => { if (!stav) return; const t = window.setTimeout(() => setStav(""), 2500); return () => window.clearTimeout(t); }, [stav]);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, width: "100%" }}>
+      <span style={{ fontSize: 12.5, color: "var(--ink3)", overflowWrap: "anywhere", textAlign: "center" }}>{odkaz.replace(/^https:\/\//, "")}</span>
+      <button type="button" aria-live="polite" onClick={() => { void kopiruj(odkaz).then((ok) => setStav(ok ? "ok" : "chyba")); }}
+        style={{ minHeight: 44, padding: "0 18px", borderRadius: 12, border: `1.5px solid ${stav === "ok" ? "var(--green)" : "var(--cardBd)"}`, background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: stav === "ok" ? "var(--gInk)" : "var(--ink)", boxShadow: "none" }}>
+        {stav === "ok" ? "Skopírované ✓" : stav === "chyba" ? "Nepodarilo sa, skúste znova" : "Kopírovať odkaz"}
+      </button>
+    </div>);
+}
+
+/** balík 43 (501) · pod QR reťaze: Stiahnuť QR · Kopírovať odkaz · Počítadlo do streamu (OBS, /overlay/{reťaz}) — Reťaz dobra aj Moje QR kódy */
+export function AkcieQrRetaze({ retaz }: { retaz: Retaz }) {
+  const b = beziaca(retaz);
+  const odkaz = `${ADRESA}/r/${retaz.id}${b ? `/${b.zbierkaId}` : ""}`;
+  const nazov = b ? zbierkaVRetazi(b.zbierkaId)?.nazov : undefined;
+  const [pocitadlo, setPocitadlo] = useState(false);
+  const [stahujem, setStahujem] = useState(false);
+  const tl: CSSProperties = { flex: "1 1 0", minWidth: 0, minHeight: 44, padding: "0 12px", borderRadius: 12, border: "1.5px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)", boxShadow: "none" };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button type="button" aria-busy={stahujem} onClick={async () => {
+          if (stahujem) return; setStahujem(true);
+          try { await stiahniDeedQr({ data: odkaz, odznak: "D++", retaz: true, variant: "svetly", nazov: `QR reťaze ${nazov ?? ""}`.trim() }); toast("QR stiahnuté (PNG na tlač)"); }
+          catch { toast("QR sa nepodarilo stiahnuť. Skúste znova."); }
+          finally { setStahujem(false); }
+        }} style={tl}>{stahujem ? "Sťahujem…" : "Stiahnuť QR"}</button>
+        <button type="button" onClick={() => setPocitadlo(true)} style={tl}>Počítadlo do streamu</button>
+      </div>
+      <KopirovatOdkaz odkaz={odkaz} />
+      {pocitadlo && <PocitadloSheet splitId={retaz.id} nazov={nazov} toast={toast} onClose={() => setPocitadlo(false)} />}
+    </div>);
 }

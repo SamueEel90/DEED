@@ -17,7 +17,8 @@ import { ulozStav } from "@/features/viera/stav";
 import { ibanPlatny } from "@/features/rola/OverenieUctu";
 import { nacitajNastavenia, zapisNastavenie } from "@/lib/nastaveniaStranky";
 import type { Miesto } from "@/lib/miestaFarnosti";
-import { Obrazovka, Nadpis, Svetlo, Bublina, Pole, Volby, Odomknute, kapitoly, naServeri, pockaj, vibruj } from "./RegB";
+import { Obrazovka, Nadpis, Svetlo, Bublina, Pole, PoleKodu, Volby, Odomknute, kapitoly, naServeri, pockaj, vibruj } from "./RegB";
+import { overKod, pripniKod, kodCely } from "@/lib/pristupoveKody";
 import { ulozKrok } from "./OsobaB";
 
 type Krok = "cirkev" | "zaklad" | "kostol" | "ucet" | "suhrn" | "hotovo";
@@ -33,6 +34,8 @@ export function FarnostB({ prihlaseny, onSpat, onHotovo }: { prihlaseny: { meno:
   const [iban, setIban] = useState(""), [bezUctu, setBezUctu] = useState(false);
   const [busy, setBusy] = useState(false), [chyba, setChyba] = useState("");
   const [id, setId] = useState<string | null>(null);
+  // 0158: prístupový kód (nepovinný); kodNepripol = farnosť vznikla, ale kód sa nepripol → ostáva testovacia
+  const [kod, setKod] = useState(""), [kodChyba, setKodChyba] = useState(""), [kodNepripol, setKodNepripol] = useState(false);
 
   const ides = (k: Krok) => { setChyba(""); setKrok(k); };
   const spat = () => { const i = PORADIE.indexOf(krok); if (i <= 0) onSpat(); else ides(PORADIE[i - 1]); };
@@ -43,6 +46,13 @@ export function FarnostB({ prihlaseny, onSpat, onHotovo }: { prihlaseny: { meno:
     if (busy || !cirkev) return;
     setBusy(true); setChyba("");
     const ucet = bezUctu || !ibanOk ? null : iban.replace(/\s/g, "").toUpperCase();
+    setKodChyba("");
+    if (kod && naServeri) {
+      if (!kodCely(kod)) { setKodChyba("Kód má 8 znakov, napríklad K7M2-QX9P."); setBusy(false); return; }
+      let ok: boolean;
+      try { ok = await overKod(kod); } catch { setChyba("Kód sa nepodarilo overiť. Skontrolujte pripojenie a skúste to znova."); setBusy(false); return; }
+      if (!ok) { setKodChyba("Kód neplatí alebo už bol použitý. Skontrolujte ho, alebo pole nechajte prázdne."); setBusy(false); return; }
+    }
     try {
       let nove: string;
       if (naServeri && prihlaseny.ucetId) nove = await db.zalozFarnost({ nazov: nazov.trim(), obec: obec.trim(), cirkev, kostol: kostol.trim(), iban: ucet });
@@ -56,6 +66,7 @@ export function FarnostB({ prihlaseny, onSpat, onHotovo }: { prihlaseny: { meno:
         await nastavCirkevFarnosti(nove, cirkev);
         if (ucet) { await nacitajNastavenia(nove); zapisNastavenie("ucetFarnosti", ucet); }
       }
+      if (kod && naServeri && prihlaseny.ucetId) { try { await pripniKod(nove, kod); } catch { setKodNepripol(true); } }
       setId(nove); vibruj([10, 50, 14, 50, 20]); ulozKrok(null); ides("hotovo");
     } catch (e) {
       const k = (e as { code?: string })?.code;
@@ -114,6 +125,7 @@ export function FarnostB({ prihlaseny, onSpat, onHotovo }: { prihlaseny: { meno:
             <div key={k} style={{ display: "flex", gap: 12, padding: "12px 0", borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
               <dt style={{ flex: "none", width: 104, fontSize: 13.5, color: "var(--ink3)" }}>{k}</dt><dd style={{ margin: 0, flex: 1, minWidth: 0, fontSize: 14.5, fontWeight: 800, overflowWrap: "anywhere" }}>{v}</dd></div>))}
         </dl>
+        <PoleKodu value={kod} onChange={(v) => { setKod(v); setKodChyba(""); }} chyba={kodChyba} />
         {chybaEl}
       </Obrazovka>);
     case "hotovo": return (
@@ -121,6 +133,7 @@ export function FarnostB({ prihlaseny, onSpat, onHotovo }: { prihlaseny: { meno:
         <Svetlo vyska={200} radost />
         <Nadpis stred t={`${nazov.trim()} je v DEED+`} sub="Ste farár a hlavný správca. Pozrite si Správu, nastavte omše a pozvite ľudí." />
         <Odomknute polozky={["Stránka farnosti a Adresár", "Omše, oznamy a zbierky", !bezUctu && ibanOk ? "Overiť účet farnosti v Správe" : "Účet farnosti zadáte v Správe"]} />
+        {kodNepripol && <Bublina>Prístupový kód sa nepodarilo pripojiť, farnosť je zatiaľ testovacia. Napíšte nám a kód pripojíme.</Bublina>}
       </Obrazovka>);
   }
 }
