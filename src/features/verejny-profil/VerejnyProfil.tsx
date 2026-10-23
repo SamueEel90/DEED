@@ -53,6 +53,8 @@ import { useProgramStranky } from "@/lib/programStranky";
 import { nacitajOznamyStranky, oznamyStranky, bezi as oznamBezi, useZmenyOznamovCharity, type OznamCharity } from "@/lib/oznamyNove";
 import { nacitajZbierkyStranky, zbierkyStrankyZPamate, useZmenyZbierok, cielCislo, doplneniaHtml, type SpustenaZbierka } from "@/lib/novaZbierka";
 import { PomozCharita } from "./PomozCharita";
+import { useZverejnenie, strankaSaPripravuje } from "@/lib/zverejnenieStranky";
+import { StrankaSaPripravuje } from "@/features/rola/ZverejnenieStranky";
 
 /** OPRAVY 402: testovací profil, alebo novo založená charita (vlastné id ch-…) — prázdny profil s menom z registra */
 const profilKluca = (k: string): TestProfil | undefined =>
@@ -63,6 +65,11 @@ const profilKluca = (k: string): TestProfil | undefined =>
 export function VerejnyProfilView(p: { kluc: string; onBack: () => void; /** OPRAVY 249: len vrstva otvorená tlačidlom Náhľad v Správe */ nahlad?: boolean; /** OPRAVY 414: Náhľad neuloženého profilu charity */ profilNahlad?: ProfilStranky; /** OPRAVY 510: Ateliér — vzhľad, ktorý sa skúša */ vzhladAtelier?: Vzhlad }) {
   const k = p.kluc.startsWith("stream:") ? "tvorca" : p.kluc.startsWith("pribeh:") ? orgPribehu(p.kluc.slice(7)) : p.kluc;
   const tp = profilKluca(k);
+  // OPRAVY 511: QR alebo odkaz neverejnej stránky — návštevník uvidí „Stránka sa pripravuje“, správca svoju stránku
+  const zv = useZverejnenie(k);
+  const [pripravuje, setPripravuje] = useState(false);
+  useEffect(() => { let z = true; void strankaSaPripravuje(k).then((x) => { if (z) setPripravuje(x); }); return () => { z = false; }; }, [k]);
+  if (pripravuje && zv.stav !== "neverejna") return <StrankaSaPripravuje onBack={p.onBack} />;
   // KARTA 57C · 60: farnosť (testovacia aj ktorákoľvek z Adresára) = živá stránka z uloženého
   if (!tp || tp.typ === "farnost") return <SektorDarcuKontext.Provider value="viera"><FarnostStranka strankaId={k} onBack={p.onBack} nahlad={!!p.nahlad} stit={(tp?.stit as StitLevel | undefined) ?? "Silver"} /></SektorDarcuKontext.Provider>;
   return <SektorDarcuKontext.Provider value="ine"><VerejnyProfilObsah {...p} /></SektorDarcuKontext.Provider>;

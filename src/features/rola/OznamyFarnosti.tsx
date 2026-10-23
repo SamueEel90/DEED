@@ -10,6 +10,7 @@
 // Pozvať ľudí aj pri krátkom ozname (+ limit pri záväznom), Oznámenie: Parte · Svadba · Jubileum · Iné.
 // ============================================================
 import { BLOKY_STRANKY, PREMENOVAT, nadpisBloku, useUsporiadanie, type BlokStranky } from "@/lib/usporiadanieStranky";
+import { useNeverejna } from "@/lib/zverejnenieStranky";
 import { NADPIS_SEKCIE, farbaStitku } from "./KartaNastavenia";
 import { TlZbalit } from "@/features/verejny-profil/zbalit";
 import { CasPole } from "@/components/CasPole";
@@ -168,6 +169,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   /** KARTA 57 C.6: telefón — po výbere druhu ponuka zmizne, náhľad prilepený hore */ tel?: boolean; toast: (m: string) => void;
   /** + Pridať oznam (hlavička PC, zelené + na mobile) — otvorí formulár */ hore?: number;
   /** OPRAVY 341: Premenovať › / Ukázať na stránke › — Nástroje → Usporiadať stránku */ onUsporiadat?: () => void }) {
+  const neverejna = useNeverejna(strankaId); // OPRAVY 511
   const vz = useVzhlad(strankaId, false);
   const uspS = useUsporiadanie(strankaId); // OPRAVY 341: bloky stránky (poradie, skryté, nadpisy)
   // OPRAVY 204: parte zo šablóny má QR; v náhľade QR stránky farnosti (zbierka rodiny ho na Nástenke prepne na seba)
@@ -205,7 +207,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     setUklada(true); setChybaUl(null);
     const e = await zapisPrispevokIsto(strankaId, it, uprava);
     setUklada(false);
-    if (e) { chybaRef.current = e; setChybaUl(e); opakuj.current = znova ?? (() => { void ulozIsto(it, uprava).then((ok) => { if (ok) { setHotovo(uprava ? "Zmeny sú uložené ✓" : "Zverejnené ✓"); setEdit(null); setJubKon(null); zmazKoncept(`oznam.${strankaId}`); obnov((x) => x + 1); } }); }); return false; }
+    if (e) { chybaRef.current = e; setChybaUl(e); opakuj.current = znova ?? (() => { void ulozIsto(it, uprava).then((ok) => { if (ok) { setHotovo(uprava ? "Zmeny sú uložené ✓" : neverejna ? "Uložené ✓ Ukáže sa, keď zverejníte stránku." : "Zverejnené ✓"); setEdit(null); setJubKon(null); zmazKoncept(`oznam.${strankaId}`); obnov((x) => x + 1); } }); }); return false; }
     return true;
   };
   // OPRAVY 258: jubileum na mobile — Editor oznámení v ráme na celú obrazovku; rozpísané ostane (koncept) aj po Späť
@@ -406,7 +408,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     if (!(await ulozIsto(povodny ? { ...povodny, ...prazdne, ...it } : it, !!povodny))) { setChybaUl(null); opakuj.current = null; edRef.current?.vysledok({ ok: false, chyba: chybaRef.current }); return; }
     setPosledne(it.id); ulozenyRef.current = it.id;
     setJubKon(null); zmazKoncept(KON);
-    setHotovo(povodny ? "Zmeny sú uložené ✓" : "Oznámenie je zverejnené ✓");
+    setHotovo(povodny ? "Zmeny sú uložené ✓" : neverejna ? "Oznámenie je uložené ✓ Ukáže sa, keď zverejníte stránku." : "Oznámenie je zverejnené ✓");
     obnov((x) => x + 1);
     edRef.current?.vysledok({ ok: true, uprava: !!povodny, blok: p.typ === "parte" ? "Spomíname" : "Teš sa s nami" });
   };
@@ -469,7 +471,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     <div style={{ position: "sticky", top: 68, zIndex: 3, maxHeight: 330, overflowY: "auto", borderRadius: 22, boxShadow: "0 10px 24px rgba(30,28,20,.18)" }}>{nahladPisania}</div>);
   const potvrdenie = jub ? null : ch.length || chybaSab
       ? <div role="status" style={{ padding: "12px 14px", borderRadius: 12, background: "var(--goldBg)", border: `1.5px solid ${ZLATA}`, fontSize: 14.5, fontWeight: 800 }}>{ch.length ? `Ešte chýba: ${ch.join(", ")}` : chybaSab}</div>
-      : <div style={{ ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo key={edit ?? "novy"} label={edit ? "Podržte a uložte zmeny" : "Podržte a zverejnite"} trvanie={1500} onConfirm={zverejni} /></div>;
+      : <div style={{ ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo key={edit ?? "novy"} label={edit ? "Podržte a uložte zmeny" : neverejna ? "Podržte a uložte do prípravy" : "Podržte a zverejnite"} trvanie={1500} onConfirm={zverejni} /></div>;
   // OPRAVY 335: chyba pri ukladaní priamo nad tlačidlom Podržte… (na mobile aj okno uprostred), nikdy len hore vo formulári
   const chybaEl = <ChybaPriTlacidle text={chybaUl} uklada={uklada} onZnova={() => opakuj.current?.()} dovetok="Rozpísané ostáva." />;
   const polia = <>

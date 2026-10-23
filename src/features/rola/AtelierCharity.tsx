@@ -16,6 +16,7 @@ import { VerejnyProfilView } from "@/features/verejny-profil/VerejnyProfil";
 import { AtelierMobil, useUzkaObrazovka } from "./Atelier";
 import { AtelierZverejnit } from "./AtelierZverejnit";
 import { POVODNE } from "@/lib/usporiadanieStranky";
+import { useNeverejna } from "@/lib/zverejnenieStranky";
 
 type Zariadenie = "pc" | "tablet" | "mobil";
 const ZARIADENIA: [Zariadenie, string, number | null, { wide: boolean; desktop: boolean }][] = [
@@ -67,10 +68,12 @@ function ObrazovkaCharity({ strankaId, onZavri }: { strankaId: string; onZavri: 
   const aktualny = { vzhlad: vz, zmenene: koncept?.zmenene ?? "", naplanovane };
   const zmeny = zmenyKonceptuCharity(aktualny, naostro);
   const zVeta = zmeny.length ? "1 zmena čaká" : "Zatiaľ bez zmien";
+  const neverejna = useNeverejna(strankaId); // OPRAVY 511: kým stránka nie je verejná, vzhľad sa len uloží
   const otvorZverejnit = async () => {
     if (!zmeny.length) { setNap(true); return; }
     if (ul === "uklada") return;
     if (vz !== posl.current && !(await uloz(vz))) return;
+    if (neverejna) { setUl("uklada"); const e = await zverejniCharitaHned(strankaId, aktualny, naostro); if (e) { setUl("chyba"); setChyba(e); } else setUl("ok"); return; }
     setZver(true);
   };
 
@@ -105,7 +108,7 @@ function ObrazovkaCharity({ strankaId, onZavri }: { strankaId: string; onZavri: 
       </span>
       <button type="button" onClick={() => { void otvorZverejnit(); }} aria-disabled={!zmeny.length}
         style={{ flex: "none", whiteSpace: "nowrap", minHeight: 50, padding: "0 22px", borderRadius: 14, border: `1.5px solid ${zmeny.length ? "#4A743B" : "var(--cardBd)"}`, background: zmeny.length ? "#355A2B" : "transparent", color: zmeny.length ? "#fff" : "var(--ink3)", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" }}
-        >Zverejniť vzhľad ›</button>
+        >{neverejna ? "Uložiť vzhľad ›" : "Zverejniť vzhľad ›"}</button>
     </header>
     {ul === "chyba" && <div role="alert" style={{ flex: "none", display: "flex", alignItems: "center", gap: 12, padding: "10px 24px", background: "var(--goldBg)", borderBottom: "1.5px solid #C9A24A" }}>
       <img src="/svetlusik.png" alt="" width={34} height={34} style={{ flex: "none" }} />

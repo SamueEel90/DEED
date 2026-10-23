@@ -11,6 +11,7 @@
 // po spustení na tom istom mieste „Hlavná zbierka beží" a ďalší krok (QR plagát).
 // ============================================================
 import { naviazObjekt } from "@/lib/darZbierky";
+import { useNeverejna } from "@/lib/zverejnenieStranky";
 import { SumyPriDarcoch } from "./SumyPriDarcoch";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -67,6 +68,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const h = sek ? String(typ) : "0";
   const kluc = sek ? sek.id : "centralna";
   const idZbierky = `${strankaId}-${kluc}`;
+  const neverejna = useNeverejna(strankaId); // OPRAVY 511
   // OPRAVY 445 (2): centrálna charity = dary z ledgera (stranka:hlavna), ten istý zdroj ako profil a zoznam v Správe
   if (!farnost && !sek) naviazObjekt(idZbierky, { stranka: strankaId, hlavna: true, nazov: "Celá činnosť" });
   const [tab, setTab] = useState(startQr ? 5 : 0); // OPRAVY 453: aj charita
@@ -262,11 +264,13 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
     <section key="bezi" role="status" style={{ ...kartaK, background: "var(--gSoft)", border: "2px solid var(--green)" }}>
       <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <span aria-hidden="true" style={{ flex: "none", width: 44, height: 44, borderRadius: "50%", background: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l5 5 9-10" /></svg></span>
-        <b style={{ fontSize: 19, color: "var(--gInk)" }}>Hlavná zbierka beží</b>
+        <b style={{ fontSize: 19, color: "var(--gInk)" }}>{neverejna ? "Hlavná zbierka je pripravená" : "Hlavná zbierka beží"}</b>
       </span>
+      {neverejna ? <span style={{ fontSize: 15, lineHeight: 1.5, color: "var(--ink)" }}><b>Spustí sa po zverejnení stránky.</b> Dovtedy ju nikto nevidí a dary sa neprijímajú. QR plagát bude k dispozícii po zverejnení.</span> : <>
       <span style={{ fontSize: 15, lineHeight: 1.5, color: "var(--ink)" }}>Je hore na vašom profile a ľudia už môžu darovať.</span>
-      <span style={{ fontSize: 15, lineHeight: 1.5, color: "var(--ink)" }}><b>Ďalší krok:</b> stiahnite QR plagát, vytlačte ho a dajte do kostola a k pokladničke.</span>
-      <button type="button" onClick={() => setPlOkno(true)} style={{ height: 56, border: "none", borderRadius: 15, background: "var(--green)", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "#fff", boxShadow: "none" }}>QR plagát · upraviť a stiahnuť ›</button>
+      <span style={{ fontSize: 15, lineHeight: 1.5, color: "var(--ink)" }}><b>Ďalší krok:</b> stiahnite QR plagát, vytlačte ho a dajte do kostola a k pokladničke.</span></>}
+      {neverejna ? <button type="button" disabled aria-disabled="true" style={{ height: 56, border: "1.5px dashed var(--cardBd)", borderRadius: 15, background: "transparent", cursor: "default", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "var(--ink3)", boxShadow: "none" }}>Stiahnuť QR plagát · po zverejnení</button>
+      : <button type="button" onClick={() => setPlOkno(true)} style={{ height: 56, border: "none", borderRadius: 15, background: "var(--green)", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "#fff", boxShadow: "none" }}>QR plagát · upraviť a stiahnuť ›</button>}
       <button type="button" onClick={farnost.onHotovo} style={{ height: 52, borderRadius: 15, border: "1.5px solid var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, color: "var(--gInk)", boxShadow: "none" }}>Hotovo · späť do Správy</button>
     </section>);
   // Martin 13:11 · ročné počítanie hlavnej zbierky (prepínač áno/nie, nič sa nemaže)

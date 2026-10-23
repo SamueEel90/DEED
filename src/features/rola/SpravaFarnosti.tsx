@@ -13,6 +13,8 @@ import { UsporiadatStranku } from "./UsporiadatStranku";
 import { FarbaLinii } from "./FarbaLinii";
 import { VzhladStranky } from "./VzhladStranky";
 import { Atelier } from "./Atelier";
+import { ListaNeverejna, KartyZverejnenia, OknoZverejnit } from "./ZverejnenieStranky";
+import { useNeverejna } from "@/lib/zverejnenieStranky";
 import { KostolyMiesta } from "./KostolyMiesta";
 import { useMiesta } from "@/lib/miestaFarnosti";
 import { ZdrojFotiekKontext, zdrojFarnosti } from "@/components/VyberZGalerie";
@@ -185,6 +187,8 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   // OPRAVY 186: obrazovka Nastavení (ako pri charite) — n:<id>
   const [nId, setNId] = useState("");
   const [atelier, setAtelier] = useState(false); // OPRAVY 467: Ateliér stránky (celá obrazovka)
+  const [oknoZv, setOknoZv] = useState(false); // OPRAVY 511: Zverejniť stránku?
+  const neverejna = useNeverejna(strankaId);
   useEffect(() => { void nacitajNastavenia(strankaId); }, [strankaId]);
   const go = (k: Sub) => { if (pomocnik && (k === "nast" || k === "penazenka" || k === "n")) return; setDet(null); setQrZ(null); setNavratQr(false); setZbStart(undefined); setSub(k); setPridat(false); setPinOtv(false); setOznamyHore(0); };
 
@@ -426,10 +430,10 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     <button key="hlavna" type="button" onClick={() => go("hlavna")} style={{ flex: "none", borderRadius: 22, border: "2px solid var(--green)", background: "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", gap: mobil ? 12 : 18, padding: mobil ? "12px 14px" : "18px 22px", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none", width: "100%" }}>
       {nahladFoto(fotoH)}
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
-        <span style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>{chipF("HLAVNÁ ZBIERKA", "var(--green)")}{chipF("AKTÍVNA", "#4B7A35")}</span>
+        <span style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>{chipF("HLAVNÁ ZBIERKA", "var(--green)")}{neverejna ? chipF("SPUSTÍ SA PO ZVEREJNENÍ STRÁNKY", "#8A6A1C") : chipF("AKTÍVNA", "#4B7A35")}</span>
         <b style={{ fontSize: mobil ? 17 : 20, lineHeight: 1.2 }}>{nazovHlavnej(hlavna)}</b>
         <span style={{ fontSize: 14, color: "var(--ink3)" }}>{hlavnySuhrn.darcov ? nDarov(hlavnySuhrn.darcov) : "zatiaľ žiadne dary"} · stála, aj mesačne</span>
-        {!hlavnySuhrn.darcov && <span style={{ fontSize: 14, color: "var(--ink)" }}><b>Ďalší krok:</b> stiahnite QR plagát a dajte ho do kostola ›</span>}
+        {!hlavnySuhrn.darcov && !neverejna && <span style={{ fontSize: 14, color: "var(--ink)" }}><b>Ďalší krok:</b> stiahnite QR plagát a dajte ho do kostola ›</span>}
       </span>
       <span style={{ flex: "none", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
         <b style={{ fontSize: mobil ? 18 : 24, fontVariantNumeric: "tabular-nums" }}>{eur(hlavnySuhrn.suma)}</b>
@@ -838,6 +842,11 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}><b style={{ fontSize: mobil ? 14.5 : 15, color: "var(--ink)" }}>{t}</b><span style={{ fontSize: mobil ? 12 : 12.5, color: "var(--ink3)" }}>{s}</span></span>
     </button>));
   const vrstvy = <>
+    {oknoZv && <OknoZverejnit strankaId={strankaId} farnost onZavri={() => setOknoZv(false)} polozky={[
+      { t: "Názov", ok: !!cistyNazov(prof.ulozeny?.meno ?? nazov ?? "").trim(), onDoplnit: () => go("profil") },
+      { t: "Titulná fotka", ok: !!prof.ulozeny?.cover?.src, onDoplnit: () => go("profil") },
+      { t: "Omše", ok: maOmse, onDoplnit: () => go("omse") },
+    ]} />}
     {pridat && createPortal(<div className="sprava-charity" data-stit="silver" style={{ minHeight: 0, background: "transparent" }}>
       <div onClick={() => setPridat(false)} style={{ position: "fixed", inset: 0, zIndex: 140, background: "rgba(20,17,11,.45)" }} />
       <div role="dialog" aria-modal="true" aria-label="Pridať do farnosti" style={mobil
@@ -896,6 +905,8 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
               {!BEZ_PRIDAT.includes(sub) && <button type="button" onClick={pridatTl} style={{ ...tlZ, height: 44, padding: "0 18px", borderRadius: 13, fontSize: 15 }}>{PRIDAT_T[sub] ?? "+ Pridať"}</button>}
             </header>
             {test}
+            {!pomocnik && <ListaNeverejna strankaId={strankaId} mobil={false} onZverejnit={() => setOknoZv(true)} />}
+            {sub === "prehlad" && !pomocnik && <KartyZverejnenia strankaId={strankaId} farnost onQrPlagat={() => go("hlavna")} />}
             <div key={sub} style={{ display: "flex", flexDirection: "column", gap: 14, animation: "spravaFade .2s ease both" }}>{obsah[sub]}</div>
           </main>
         </div>
@@ -924,6 +935,8 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
         </button> : sub !== "prehlad" && <span aria-hidden="true" style={{ flex: "none", width: 46 }} />}
       </header>
       <div key={sub} style={{ padding: "12px 14px 180px", display: "flex", flexDirection: "column", gap: 12, animation: "spravaFade .2s ease both", width: "100%", maxWidth: tablet ? 880 : undefined, margin: tablet ? "0 auto" : undefined, boxSizing: "border-box" }}>
+        {!pomocnik && <ListaNeverejna strankaId={strankaId} mobil onZverejnit={() => setOknoZv(true)} />}
+        {sub === "prehlad" && !pomocnik && <KartyZverejnenia strankaId={strankaId} farnost onQrPlagat={() => go("hlavna")} />}
         {obsah[sub]}
         {test}
       </div>

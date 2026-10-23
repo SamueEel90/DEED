@@ -6,6 +6,7 @@
 // Zverejnenie vždy podržaním (ten istý diel ako platba). Oznam ide sledujúcim po 5 min, verejný a výzva hneď.
 // ============================================================
 import { Galeria } from "@/features/zbierka/Vrch";
+import { useNeverejna } from "@/lib/zverejnenieStranky";
 import { CasPole, sNulou } from "@/components/CasPole";
 import { Volby, kartaVolby, FajkaVolby } from "@/components/Volby";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
@@ -151,6 +152,7 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
 }) {
   useZmenyOznamovCharity();
   useEffect(() => { void nacitajOznamyStranky(strankaId); }, [strankaId]);
+  const neverejna = useNeverejna(strankaId); // OPRAVY 511
   const ph = mobil && !tablet;
   const zadarmo = tier < 1;
   const zamknuty = (d: DruhOznamu) => tier < OZNAMY_CFG.odTieru[d];
@@ -238,7 +240,7 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
     const n = await zverejniOznam({ ...zData(), nadLimit: nadLimit || undefined });
     // OPRAVY 434: po zverejnení späť na zoznam, nový oznam prvý + zelená hláška
     setF(prazdny(zadarmo)); setPohlad("sprava");
-    setHlaska(n.druh === "oznam" ? `Zverejnené ✓ Oznámenie sledujúcim pošleme o ${OZNAMY_CFG.oneskorenieMin} minút, dovtedy ho môžete upraviť alebo zrušiť.`
+    setHlaska(neverejna ? "Uložené ✓ Ukáže sa, keď zverejníte stránku." : n.druh === "oznam" ? `Zverejnené ✓ Oznámenie sledujúcim pošleme o ${OZNAMY_CFG.oneskorenieMin} minút, dovtedy ho môžete upraviť alebo zrušiť.`
       : n.druh === "vyzva" ? `Zverejnené ✓ Výzva je vo feede Domov${mesto ? ` · ${mesto}` : ""}.` : "Zverejnené ✓ Akcia je na nástenke mesta.");
     if (nadLimit) toast(`Verejný oznam nad limit · ${OZNAMY_CFG.cenaNadLimit} €`);
   };
@@ -281,7 +283,7 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
     : druh === "oznam" ? `Oznámenie sledujúcim pošleme ${OZNAMY_CFG.oneskorenieMin} minút po zverejnení. Dovtedy ho môžete upraviť alebo zrušiť.`
     : druh === "vyzva" ? `Po zverejnení ju hneď uvidia ľudia vo feede Domov${mesto ? ` v meste ${mesto}` : ""}. Pred zverejnením si ju poriadne skontrolujte.`
     : "Po zverejnení ho hneď uvidí každý na nástenke mesta. Pred zverejnením si ho poriadne skontrolujte.";
-  const lblDrz = uprava ? "Podržte a uložte" : nadLimit ? `Podržte a zverejnite · ${OZNAMY_CFG.cenaNadLimit} €` : druh === "vyzva" ? "Podržte a zverejnite výzvu" : "Podržte a zverejnite";
+  const lblDrz = uprava ? "Podržte a uložte" : neverejna ? "Podržte a uložte do prípravy" /* OPRAVY 511 */ : nadLimit ? `Podržte a zverejnite · ${OZNAMY_CFG.cenaNadLimit} €` : druh === "vyzva" ? "Podržte a zverejnite výzvu" : "Podržte a zverejnite";
   const tuk = potvrditTuknutim();
 
   const lavy = (<>
