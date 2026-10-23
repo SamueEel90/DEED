@@ -372,3 +372,8 @@ Nič nekoliduje s dnešným stavom — väčšina sú budúce use-casy na 5 mech
 - Identity Card: 30 s QR, offline 24 h token, pulzujúci zelený kruh, **hlasová funkcia** („Každý dobrý skutok má reálnu hodnotu"), vzájomná identifikácia cez akciu #123. Nikde v dnešnom kóde — zásobník.
 - SOS poďakovanie = fáza 2/3.
 Uložené: zdroje/20-qr-katalog-v1.md, zdroje/21-qr-system-v11.md.
+
+## Doplnky 23. 10. večer (Martin + Paľo)
+- Ručné „Ukončiť" pri charite sa zjednotí s farnosťou: zastaví dary aj na serveri (dnes len v appke). Schválené.
+- Bežiace zbierky nad cieľom sa po migrácii uzavrú pri najbližšom dare — Samo nič ručne neprepína. Schválené.
+- **Overené: minimum 5 % pri reťazi JE v kóde** (slider reťaze tvorcu) — bod 3 z kontroly júlových špec uzavretý.
