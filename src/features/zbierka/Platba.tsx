@@ -70,7 +70,7 @@ const VYHODY: [string, string, string][] = [
   ["Peniaze a výhody", "Zaujímavé ponuky zdarma", "Veci a služby, ktoré firmy rozdávajú ako dobrý skutok. Súťaží o ne len registrovaný."],
   ["Peniaze a výhody", "Zľava za status v prevádzkach", "Naskenuješ QR na mieste a uplatníš, ak chceš."],
   ["Peniaze a výhody", "Podpora tvorcov a reťaz dobra", "Mikrodary v DeeD, kde euro dorazí ako euro."],
-  ["Tvoje okolie", "Feed tvojho okolia", "Skutky, pomoc a zbierky z tvojej štvrte; sleduješ, koho chceš, vrátane farnosti či zboru."],
+  ["Tvoje okolie", "Domov z tvojho okolia", "Skutky, pomoc a zbierky z tvojej štvrte; sleduješ, koho chceš, vrátane farnosti či zboru."],
   ["Tvoje okolie", "Nástenka a pozvánky podľa záujmov", "Koncerty, trhy, prednášky; vyberáš si, kam ťa smú pozvať."],
   ["Tvoje okolie", "Dobrovoľníctvo s overenou dochádzkou", "Tvoja účasť na brigáde či akcii je dokázaná QR kódom, nie sľubom."],
   ["Tvoje okolie", "Ponuky dobrovoľníckej činnosti z okolia", "Keď niekto blízko potrebuje ruky, dozvieš sa to."],

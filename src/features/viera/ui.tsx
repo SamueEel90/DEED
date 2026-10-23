@@ -101,7 +101,7 @@ export function A9Potvrdenie({ nazov, onConfirm, onCancel }: { nazov: string; on
   return (
     <div style={{ background: N.goldBg, border: `1px solid ${N.goldEdge}`, borderRadius: RADIUS.sm, padding: SPACE.gutter }}>
       <div style={{ fontSize: 12, color: N.txt2, marginBottom: SPACE.sm, lineHeight: 1.5 }}>
-        Nastaviť <b style={{ color: N.txt }}>{nazov}</b> ako domovskú cirkev? Je to <b>súhlas o tvojom vierovyznaní (A9)</b> — riadi mäkkú stenu feedu. Dá sa kedykoľvek zmeniť.
+        Nastaviť <b style={{ color: N.txt }}>{nazov}</b> ako domovskú cirkev? Je to <b>súhlas o tvojom vierovyznaní (A9)</b> — riadi mäkkú stenu zoznamu. Dá sa kedykoľvek zmeniť.
       </div>
       <div style={{ display: "flex", gap: SPACE.sm }}>
         <button onClick={onConfirm} style={{ ...a9Btn(N.ind, true), flex: 1 }}>Áno, potvrdiť</button>

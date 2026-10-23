@@ -70,7 +70,7 @@ const UDALOST: Kat = {
   ],
 };
 const OZNAM: Kat = {
-  id: "oznam", emoji: "oznam", titul: "Oznam", popis: "Dátum nemusí — objaví sa vo feede",
+  id: "oznam", emoji: "oznam", titul: "Oznam", popis: "Dátum nemusí — objaví sa v zozname",
   uzly: [
     { id: "o-zmena", emoji: "zvon", titul: "Zmenové (omša nebude / zmena programu)", popis: "Notifikácia default zapnutá · názov povinný (headline)", kto: "F",
       polia: ["Názov", "Text", "Platnosť od–do (voliteľné)"], feed: "farský · notif default ON" },
@@ -228,7 +228,7 @@ function KontextPas({ farnost }: { farnost?: Farnost }) {
 function publishText(u: Uzol, farar: boolean): string {
   if (u.helpWizard) return "Otváram Help sprievodcu…";
   if (!farar) return `Oznam „${u.titul}" zverejnený (auto-publish · farár môže zmazať)`;
-  return `„${u.titul}" zverejnené do farnosti · feed: ${u.feed}`;
+  return `„${u.titul}" zverejnené do farnosti · zoznam: ${u.feed}`;
 }
 
 // ---- zostavenie REÁLNEHO príspevku z formulára (ntyp/ukat/reakcia z uzla) ----

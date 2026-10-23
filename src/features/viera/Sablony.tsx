@@ -344,7 +344,7 @@ export function FormularOznamu({ u, onU, mobil, bezFotky, upozornenie = true }: 
     </div>);
 }
 
-/** popis do feedu / zoznamu z údajov oznámenia */
+/** popis na Domov / zoznamu z údajov oznámenia */
 export function popisOznamu(u: UdajeOznamu): string {
   const v = vekOznamu(u.nar, u.umr);
   const kk = kedyText(u);

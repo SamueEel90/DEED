@@ -1,5 +1,5 @@
 // Doplnky 4. 10. (karta 45 · 5b) · detaily z kroniky (Kronika, História vo Výklade, roky) — len na čítanie, BEZ platobného modulu
-// (modul je len v Aktuálne). Ťuk na skutok = detail skutku ako vo feede (fotka, text, kto pomáhal, Páči sa mi, Zdieľať).
+// (modul je len v Aktuálne). Ťuk na skutok = detail skutku ako na Domove (fotka, text, kto pomáhal, Páči sa mi, Zdieľať).
 // Ťuk na ukončenú zbierku = Zbierka skončila, Splnili sme, správa a doklady, darcovia. Návrh obrazoviek zatiaľ nie je.
 import { ZbalitASpat, ZmensenyModul } from "@/features/zbierka/ZmensenyModul";
 import { ModulPlatby } from "./ModulProfilu";
@@ -38,7 +38,7 @@ function Obal({ pc, onBack, children }: { pc: boolean; onBack: () => void; child
 const Foto = ({ src }: { src: string }) => <span style={{ display: "block", width: "100%", aspectRatio: "16/9", borderRadius: 22, background: `url('${src}') center/cover no-repeat #3a3530` }} />;
 const datum = (p: PolCh) => `${p.d} ${p.m.toLocaleLowerCase("sk-SK")} ${p.rok}`;
 
-/** detail skutku (aj minulej akcie) z kroniky = ten istý DeedDetail ako vo feede Aktivít, staré roky bez podpory */
+/** detail skutku (aj minulej akcie) z kroniky = ten istý DeedDetail ako na Domove Aktivít, staré roky bez podpory */
 export function DetailSkutku({ profil, p, onBack }: { pc: boolean; profil: TestProfil; p: PolCh; onBack: () => void }) {
   const sk = profil.skutky.find((s) => s.id === p.id);
   const [hlasy, setHlasy] = useState<Record<number, string>>({});

@@ -1,5 +1,5 @@
 // ============================================================
-// OPRAVY 431 · Výzvy na súrnu pomoc do feedu Domov.
+// OPRAVY 431 · Výzvy na súrnu pomoc na Domov Domov.
 // Bežiace výzvy charít (oznam_charity druh vyzva, nezrušené, „Pomoc treba do“ ≥ dnes, zverejnené pred ≤ 10 dňami)
 // s údajmi charity (názov, logo, mesto zo sídla, štít). Testovacie stránky nie. Bez DB z pamäte relácie.
 // ============================================================

@@ -22,7 +22,7 @@ export function lokalneStranky(): LokalnaStranka[] {
 export function pridajLokalnuStranku(s: LokalnaStranka) {
   try { localStorage.setItem(KLUC, JSON.stringify([...lokalneStranky().filter((x) => x.k !== s.k), s])); } catch { /* bez úložiska */ }
 }
-/** OPRAVY 402: testovacie „+ Založiť charitu (test)“ na feede Charity → App otvorí registráciu organizácie */
+/** OPRAVY 402: testovacie „+ Založiť charitu (test)“ na Domove Charity → App otvorí registráciu organizácie */
 export const UDALOST_ZALOZ_CHARITU = "deed:zaloz-charitu";
 /** nové id stránky charity (bez databázy); s databázou ho dá server */
 export const noveIdCharity = () => `ch-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;

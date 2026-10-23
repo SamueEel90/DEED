@@ -117,7 +117,7 @@ export function SmutocnyOznamBlok({ s, onKondolencia, onZvacsit }: { s: Smutocny
 }
 
 // ============================================================
-// MINI PARTE — feed thumbnail (bod 23): do feedu ide vyrenderovaná dôstojná
+// MINI PARTE — feed thumbnail (bod 23): na Domov ide vyrenderovaná dôstojná
 // parte kartička, NIE surová osobná fotka tváre. Obrázkový režim = zmenšené
 // celé parte (portrét, contain), šablóna = mini dlaždica s † a menom.
 // ============================================================
@@ -201,7 +201,7 @@ export function SmutocnyForm({ farnost, autor, farar, onPublish }: {
 
       {lab("NÁZOV OZNAMU — PREDVYPLNENÝ, UPRAVITEĽNÝ")}
       <Input value={nazov} onChange={setNazov} placeholder={u.meno.trim() ? `Oznámenie o úmrtí — ${u.meno.trim()}` : "Oznámenie o úmrtí — …"} />
-      {lab("PLATNOSŤ VO FEEDE (DNÍ)")}
+      {lab("PLATNOSŤ V ZOZNAME (DNÍ)")}
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm }}>
         <div style={{ width: 90 }}><Input value={platnost} onChange={setPlatnost} type="number" placeholder="7" /></div>
         <div style={{ fontSize: 11, color: N.txt3, lineHeight: 1.4 }}>Predvolene 7 dní · oznam nezmizne pred rozlúčkou (+3 dni po nej).</div>

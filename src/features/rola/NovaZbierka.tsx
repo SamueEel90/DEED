@@ -189,7 +189,7 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
     <section ref={hore as never} style={{ ...panel, alignItems: "center", textAlign: "center", padding: ph ? "36px 20px" : "56px 32px", gap: 14 }}>
       <span style={{ width: 72, height: 72, borderRadius: "50%", background: "var(--gSoft)", border: "1.5px solid var(--gBd)", color: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d={I.fajka} s={34} w={2.6} /></span>
       <span style={{ fontSize: 26, fontWeight: 800 }}>{neverejna ? "Zbierka je pripravená" : "Zbierka beží"}</span>
-      <span style={{ maxWidth: 560, fontSize: 15.5, lineHeight: 1.55, color: "var(--ink2)" }}>„{hotovo.nazov}“ je zapečatená a vidia ju darcovia{ph ? "." : " na vašom profile aj vo feede. Fotky a video môžete pridávať aj teraz."}</span>
+      <span style={{ maxWidth: 560, fontSize: 15.5, lineHeight: 1.55, color: "var(--ink2)" }}>„{hotovo.nazov}“ je zapečatená a vidia ju darcovia{ph ? "." : " na vašom profile aj na Domove. Fotky a video môžete pridávať aj teraz."}</span>
       {/* OPRAVY 511: počas prípravy stránky sa zbierka nespúšťa a QR plagát nie je */}
       {neverejna && <span style={{ maxWidth: 560, fontSize: 15, lineHeight: 1.5, color: "var(--ink)" }}><b>Spustí sa po zverejnení stránky.</b> Dovtedy ju nikto nevidí a dary sa neprijímajú. QR plagát bude k dispozícii po zverejnení.</span>}
       {onQr && !neverejna && <span style={{ maxWidth: 560, fontSize: 15, lineHeight: 1.5, color: "var(--ink)" }}><b>Ďalší krok:</b> stiahnite QR plagát, vytlačte ho a dajte ho tam, kde vás ľudia vidia.</span>}

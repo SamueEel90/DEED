@@ -84,7 +84,7 @@ export function vekZDatumov(nar: string, umr: string): number | null {
 }
 
 // TTL oznamu (§8b): default 7 dní; pri úmrtí platí min. do rozlúčky + 3 dni — čo je neskôr.
-// „Preč z feedu" ≠ hard delete — expirovaný sa len nefiltruje do feedu (záznam ostáva v localStorage).
+// „Preč z Domova" ≠ hard delete — expirovaný sa len nefiltruje na Domov (záznam ostáva v localStorage).
 const DEN_MS = 86400000;
 export function oznamAktivny(it: VieraFeedItem): boolean {
   if (it.ntyp !== "oznam" || !it.vytvorene) return true; // TTL zatiaľ len pre oznamy s časom vzniku
@@ -501,7 +501,7 @@ export const FARNOST_PODLA_ID = (id?: string): Farnost | undefined => FARNOSTI.f
 // farnosti scopnuté podľa zvolenej cirkvi/vyznania (§10: nie všetky vyznania v jednom zozname)
 export const farnostiCirkvi = (cirkevMeno: string): Farnost[] => FARNOSTI.filter((f) => f.cirkev === cirkevMeno);
 
-// komunita (text vo feede) → farnostId (fallback, ak položka nemá vlastný farnostId)
+// komunita (text na Domove) → farnostId (fallback, ak položka nemá vlastný farnostId)
 export const KOMUNITA_FARNOST: Record<string, string> = {
   "Farnosť Trenčín — mesto": "tn-mesto",
   "Farnosť Trenčín": "tn-gkc",
@@ -515,7 +515,7 @@ export const farnostIdOf = (it: VieraFeedItem): string => it.farnostId ?? KOMUNI
 // PridatSheet po „Publikovať" uloží reálnu položku; feedy/taby/kalendár ju čítajú
 // cez obsahFarnosti (vlastné navrchu — najnovšie prvé). Mock bez backendu.
 export const vlastnePrispevky = (fid: string): VieraFeedItem[] =>
-  nacitajStav<VieraFeedItem[]>("prispevky", fid, []).filter(oznamAktivny); // TTL §8b — expirované z feedu von, záznam ostáva
+  nacitajStav<VieraFeedItem[]>("prispevky", fid, []).filter(oznamAktivny); // TTL §8b — expirované z Domova von, záznam ostáva
 export function pridajPrispevok(fid: string, it: VieraFeedItem) {
   ulozStav("prispevky", fid, [it, ...nacitajStav<VieraFeedItem[]>("prispevky", fid, [])]);
   void vytvorPrispevokDB(fid, it); // dual-write → prenos medzi zariadeniami (mock = no-op)

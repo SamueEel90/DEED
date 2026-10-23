@@ -54,9 +54,9 @@ export interface MojSkutok {
   /** Obsah → Skutky (charita): stiahnutý z profilu a feedu, ISO; upravený po zverejnení, ISO */
   stiahnuty?: string;
   upraveny?: string;
-  /** id položky vo feede (skutok za charitu) — úprava a stiahnutie ju zmenia aj tam */
+  /** id položky na Domove (skutok za charitu) — úprava a stiahnutie ju zmenia aj tam */
   feedId?: number;
-  /** OPRAVY 436: id príspevku vo feede Domov na serveri (prispevok) — úprava a zmazanie skutku ho zmenia aj tam */
+  /** OPRAVY 436: id príspevku na Domove na serveri (prispevok) — úprava a zmazanie skutku ho zmenia aj tam */
   prispevokId?: string;
   /** uložený bez hodnotenia (AI nedostupná) — podklady na dodatočné ohodnotenie (features/skutok/dohodnotenie.ts) */
   caka?: { opis: string; text: string; miesto: string; maVideo: boolean; dokaz: boolean; autor: string; ucetId: string | null; lat?: number; lng?: number };
@@ -162,8 +162,8 @@ function seed(): MojSkutok[] {
     ({ id, stav, nazov, popis: `<p>${nazov}.</p>`, oblast, miesto, datum, karma, det, fotky: [], grad, ...x });
   const teraz: MojSkutok[] = [
     s("d1", "mesto", "Vyčistili sme skládku pri potoku", "Príroda", "Trenčín, Zámostie", dnes - 3600000, 84, "S tebou 8 ľudí · 12 overujem · 0 namietam. Vďaka komunite sa skutok ukazuje v celom meste a s väčšou fotkou.", G.zelena, { ucastnici: ["Lucia H.", "Tomáš B.", "Jana N.", "Peťo K.", "Mária S.", "Ondrej V.", "Katka L.", "Miro D."] }),
-    s("d2", "ok", "Zabezpečil som susede pitný režim na mesiac", "Pomoc", "Trenčín", dnes - 2 * DEN, 48, "20 kartónov vody na 5. poschodie bez výťahu a fotka plnej špajze. Dôkaz stačil do feedu štvrte.", G.modra),
-    s("d3", "ok", "Odviezol som suseda na dialýzu", "Pomoc", "Trenčín", dnes - DEN, 30, "3 overujem · 0 namietam. Keď ho overí viac ľudí, dostane sa do feedu mesta.", G.modra),
+    s("d2", "ok", "Zabezpečil som susede pitný režim na mesiac", "Pomoc", "Trenčín", dnes - 2 * DEN, 48, "20 kartónov vody na 5. poschodie bez výťahu a fotka plnej špajze. Dôkaz stačil na Domov v štvrti.", G.modra),
+    s("d3", "ok", "Odviezol som suseda na dialýzu", "Pomoc", "Trenčín", dnes - DEN, 30, "3 overujem · 0 namietam. Keď ho overí viac ľudí, dostane sa na Domov v meste.", G.modra),
     s("d4", "ai", "Pomohol som na brigáde v parku", "Komunita", "Trenčín", dnes - DEN - 3600000, null, "AI potrebuje fotku výsledku. Doplň ju a kontrola pokračuje.", G.svetla),
     s("d5", "nam", "Hasili sme horiaci dom", "Pomoc", "Komárno", dnes - 4 * DEN, 60, "Namietka: „V Komárne v ten deň nikde nehorelo.“ Namietku posúdi AI a náš tím. Kým platí, skutok nestúpa vyššie.", G.cervena),
     s("d6", "ja", "Prvý raz na bicykli 5 km", "Šport", "osobný rozvoj", dnes - 7200000, 5, "Ostáva v tvojom denníku, nikto iný ho nevidí.", G.zlata, { osobny: true }),

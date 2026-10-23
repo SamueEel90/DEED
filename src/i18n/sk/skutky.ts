@@ -28,7 +28,7 @@ export const skutky: Slovnik = {
   "skutky.mot3.t": "Aj rozvoj seba je skutok.",
   "skutky.mot3.s": "Prečítaná kniha, prvý beh, nový jazyk. Také skutky sa ti zapíšu do tvojho denníka.",
   "skutky.ukazka1.t": "Zabezpečil som susede pitný režim",
-  "skutky.ukazka1.s": "Pomoc · s fotkou vody a špajze ide do feedu",
+  "skutky.ukazka1.s": "Pomoc · s fotkou vody a špajze ide na Domov",
   "skutky.ukazka2.t": "Prvý beh 5 km",
   "skutky.ukazka2.s": "Šport · do tvojho denníka",
   "skutky.ukazka3.t": "Vyčistili sme breh potoka",

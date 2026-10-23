@@ -331,7 +331,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   const mojePrava = useMojePrava(); // OPRAVY 404: pracovník charity — len to, čo povolil štatutár (null = plné práva)
   // OPRAVY 400: charita sa volá podľa registra (keď je vyplnený), nie napevno
   const regV = useRegistra(strankaId), regNazov = regV.nazov.trim();
-  /** OPRAVY 431: mesto charity zo sídla v registri (výzva ide do feedu Domov v tomto meste) */
+  /** OPRAVY 431: mesto charity zo sídla v registri (výzva ide na Domov Domov v tomto meste) */
   const mestoCh = mestoZoSidla(regV.sidlo) ?? "";
   const nazov = (typ === "charita" && regNazov) || nazov0;
   const inicialy = typ === "charita" && regNazov ? regNazov.replace(/,?\s*(o\.\s?z\.|n\.\s?o\.|s\.\s?r\.\s?o\.)$/i, "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("") : inicialy0;
@@ -1554,7 +1554,7 @@ function ObrZbierky(s: Spolocne) {
   };
   const vysvetlenie = vysvetli && <div role="status" style={{ borderRadius: 16, background: "var(--goldBg)", border: "1.5px solid #C9A24A", padding: "14px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
     <b style={{ fontSize: 15.5 }}>{vysvetli === "segment" ? "Sektorová zbierka" : vysvetli === "centralna" ? "Centrálna zbierka" : "Materiálna zbierka"} je od programu {odProgramu(vysvetli)}</b>
-    <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>{vysvetli === "segment" ? "Jedna téma zo stanov, napríklad Seniori, s vlastným transparentným účtom a QR. Beží popri centrálnej zbierke, len na vašej stránke." : vysvetli === "centralna" ? "Pravidelná podpora celej vašej činnosti. Je len na vašej stránke, nie vo feede." : "Ľudia prinesú veci namiesto peňazí a zapíšu sa cez QR pri krabici."} Máte program {PROGRAM_NAZOV[tier]}.</span>
+    <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>{vysvetli === "segment" ? "Jedna téma zo stanov, napríklad Seniori, s vlastným transparentným účtom a QR. Beží popri centrálnej zbierke, len na vašej stránke." : vysvetli === "centralna" ? "Pravidelná podpora celej vašej činnosti. Je len na vašej stránke, nie na Domove." : "Ľudia prinesú veci namiesto peňazí a zapíšu sa cez QR pri krabici."} Máte program {PROGRAM_NAZOV[tier]}.</span>
     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
       <button type="button" onClick={() => otvor("n:program")} style={{ ...zeleneTl, height: 48 }}>Porovnať programy ›</button>
       <button type="button" onClick={() => setVysvetli(null)} style={{ height: 48, padding: "0 16px", borderRadius: 13, border: "1px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--ink2)", boxShadow: "none" }}>Zavrieť</button>
@@ -1564,11 +1564,11 @@ function ObrZbierky(s: Spolocne) {
   const vyberEl = s.vyberZb && <section style={{ width: "100%", maxWidth: 900, borderRadius: 22, background: "var(--card)", border: "2px solid var(--green)", padding: ph ? "16px 14px" : "18px 20px", display: "flex", flexDirection: "column", gap: 12, boxSizing: "border-box" }}>
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}><b style={{ flex: 1, fontSize: 19 }}>Akú zbierku pridávate?</b>
       <button type="button" onClick={() => { setVysvetli(null); s.zavriVyberZb?.(); }} aria-label="Zavrieť" style={{ width: 44, height: 44, borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--field)", cursor: "pointer", fontSize: 18, color: "var(--ink2)", boxShadow: "none" }}>×</button></div>
-    {!cenBezi && vidnoPolozku("centralna", tier) && volba(IK_CENTRALNA, "Centrálna zbierka", "na celú činnosť · len na vašej stránke, nie vo feede",
+    {!cenBezi && vidnoPolozku("centralna", tier) && volba(IK_CENTRALNA, "Centrálna zbierka", "na celú činnosť · len na vašej stránke, nie na Domove",
       () => { if (zamok("centralna")) { setVysvetli("centralna"); return; } s.zavriVyberZb?.(); otvorCen(0); }, { id: "centralna" })}
     {vidnoPolozku("segment", tier) && volba(IK_SEKTOR, "Sektorová zbierka", !zamok("segment") && !cenBezi ? "najprv založte centrálnu zbierku" : "jedna téma zo stanov · vlastný transparentný účet",
       () => { if (zamok("segment")) { setVysvetli("segment"); return; } if (!cenBezi) { s.zavriVyberZb?.(); otvorCen(0); return; } s.zavriVyberZb?.(); chcemNovySektor(); otvorCen(0); }, { id: "segment", siva: !cenBezi })}
-    {volba(IK_BEZNA, "Bežná zbierka", "pre niekoho, s cieľom · ide do feedu", () => s.novaBezna?.())}
+    {volba(IK_BEZNA, "Bežná zbierka", "pre niekoho, s cieľom · ide na Domov", () => s.novaBezna?.())}
     {vidnoPolozku("materialne", tier) && volba("M12 3l8 4.5v9L12 21l-8-4.5v-9zM12 12l8-4.5M12 12v9M12 12L4 7.5", "Materiálna zbierka", "veci namiesto peňazí",
       () => { if (zamok("materialne")) { setVysvetli("materialne"); return; } s.novaMaterialna?.(); }, { id: "materialne" })}
     {vysvetlenie}

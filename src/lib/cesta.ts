@@ -1,7 +1,7 @@
 // CESTA SPÄŤ (karta 03) — zásobník krokov v rámci JEDNÉHO modulu.
 // · feed → zbierka → stránka charity → iná zbierka → …; Späť ide o krok, Krížik zavrie celú cestu.
 // · Každý krok má vlastný kľúč obrazovky → useScrollPamat(kluc) mu pamätá scroll,
-//   takže Späť vráti presne na miesto (aj vo feede, kde si vstúpil).
+//   takže Späť vráti presne na miesto (aj na Domove, kde si vstúpil).
 // · Rozbalené časti (pole charity, „… viac", darcovia…) sa ukladajú do `stav` kroku.
 // · Platobné kroky sa do cesty NEzapisujú (platba je hárok nad stránkou).
 // · Cesta žije v module → prepnutie modulu ju zruší (modul sa odmontuje).

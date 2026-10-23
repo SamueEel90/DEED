@@ -62,7 +62,7 @@ type ZbierkaDetail = {
   tag?: string;
   tagCol?: string;
   overena?: boolean;
-  popis: string;         // krátky text — karta vo feede
+  popis: string;         // krátky text — karta na Domove
   pribeh?: string;       // dlhší príbeh — detail (fallback = popis)
   vyzbierane?: number;
   ciel?: number;         // bez cieľa ⇒ dobrovoľníctvo/materiál (bez progresu)
@@ -124,7 +124,7 @@ export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
   const otvorZbierku = (z: ZbierkaDetail) => cesta.otvor(z.nazov, { typ: "zbierka", z });
   const krokCesty = () => {
     const krok = cesta.aktualny!;
-    const spatNazov = cesta.predosly?.nazov ?? "Tvoj feed";
+    const spatNazov = cesta.predosly?.nazov ?? "Charita";
     const { z } = krok.data;
     // OPRAVY 403: organizácia = jej skutočný verejný profil (nie katalóg ukážkových organizácií)
     return (<SwipeBack onBack={cesta.spat}><ZbierkaModul key={krok.id}
@@ -138,7 +138,7 @@ export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
 
   const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: SIRKA.stlpec, maxDesktop: SIRKA.citanie });
 
-  // OPRAVY 403: vyhľadávanie len v tom, čo je v databáze (zbierky a skutky z feedu + zaregistrované organizácie)
+  // OPRAVY 403: vyhľadávanie len v tom, čo je v databáze (zbierky a skutky z Domova + zaregistrované organizácie)
   const { data: feedData = [] } = useCharitaFeed();
   const { data: adresar = [] } = useCharitaAdresar();
   const hladajData = [

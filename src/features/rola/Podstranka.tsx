@@ -131,7 +131,7 @@ export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack
   const { wide, desktop } = useLayout();
   const ts = useTestStav(); // OPRAVY 147: testovací prázdny profil
   const tier: Tier = TESTOVACIA && ts.program !== null ? ts.program : tierStranky; // OPRAVY 147: testovací program
-  const siroke = wide || desktop;   // tablet a PC → mriežka kariet ako vo feede
+  const siroke = wide || desktop;   // tablet a PC → mriežka kariet ako na Domove
   const ja = usePouzivatel();
   const s = SUBJEKTY[pozicia];
   // OPRAVY 107: uložený profil zo správy (lib/profilStranky); staré úložisko len záloha, kým nie je nič uložené
@@ -626,7 +626,7 @@ export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack
     );
   };
 
-  // TABLET / PC — karta do mriežky (fotka hore, ako vo feede)
+  // TABLET / PC — karta do mriežky (fotka hore, ako na Domove)
   const kartaPolozky = (x: Zbalena) => (
     <div key={x.kluc} {...pressable(() => otvor(x), x.titul)}
       style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, overflow: "hidden", cursor: "pointer", display: "flex", flexDirection: "column" }}>

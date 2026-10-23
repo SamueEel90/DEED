@@ -113,7 +113,7 @@ function Riadok({ s, strankaId, mobil, onZmazany }: { s: MojSkutok; strankaId: s
       onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); setUprava(true); } }} style={{ ...karta, cursor: "pointer" }}>
       {obsah}
       <div onClick={stop} onKeyDown={stop} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <span style={{ fontSize: 13.5, color: "var(--ink3)", textAlign: "center" }}>Zmizne zo stránky aj z feedu.</span>
+        <span style={{ fontSize: 13.5, color: "var(--ink3)", textAlign: "center" }}>Zmizne zo stránky aj z Domova.</span>
         <PodrzTlacidlo farba="cervena" trvanie={1500} label="Podržte a zmažte skutok" onConfirm={zmaz} />
       </div>
     </section>);

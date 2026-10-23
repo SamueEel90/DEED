@@ -93,7 +93,7 @@ export default function ModulDomov({ wide, otvorModul, otvorId, onOtvorene }: { 
   // pamäť scrollu: „Späť" z detailu vráti feed tam, kde používateľ skončil (nie skok hore)
   useScrollPamat(screen);
 
-  // pod-obrazovka = vrstva histórie → browser Back sa vráti na feed (nie von z appky)
+  // pod-obrazovka = vrstva histórie → browser Back sa vráti na Domov (nie von z appky)
   useVrstva(screen !== "home", () => setScreen("home"), screen);
 
   // deep-link na presný detail (/c/{slug} → App resolvne id → sem)
@@ -192,7 +192,7 @@ export default function ModulDomov({ wide, otvorModul, otvorId, onOtvorene }: { 
 
 type HomeProps = {
   wide?: boolean;
-  /** OPRAVY 431: ťuk na výzvu charity vo feede */ onVyzva: (v: VyzvaVoFeede) => void;
+  /** OPRAVY 431: ťuk na výzvu charity na Domove */ onVyzva: (v: VyzvaVoFeede) => void;
   toast: (m: string) => void;
   otvorModul?: (m: string) => void;
   pohlad: "okolie" | "mojdeed";
@@ -233,9 +233,9 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
   // frekvenčný strop → zoradenie. Veľkosť karty (Časť A) cez zobrazVelkost.
   // Lacné: pracuje len s uloženým skóre, žiadne AI. (Neskôr: GET /feed na backende.)
   const feed = pripravFeed(POLOZKY as any, user).map((it: any) => ({ ...it, velkost: zobrazVelkost(it) })) as GoodPolozka[];
-  // OPRAVY 485: skutok charity z feedu = ten istý detail ako na jej stránke (Podporiť zbierku · modul zbierky, na ktorú skutok zbiera)
+  // OPRAVY 485: skutok charity z Domova = ten istý detail ako na jej stránke (Podporiť zbierku · modul zbierky, na ktorú skutok zbiera)
   const karta = (it: GoodPolozka) => <DomovKarta key={it.id} it={it} wide={wide} onDetail={() => (it.stranka && it.typ === "skutok" ? otvorVerejnyProfil(it.stranka, { doSkutku: String(it.id), spatNaFeed: true }) : onDetail(it.id))} />;
-  // OPRAVY 431: výzvy charít na súrnu pomoc — hore vo feede, v meste charity (Celá SR = všetky) a tým, čo charitu sledujú
+  // OPRAVY 431: výzvy charít na súrnu pomoc — hore na Domove, v meste charity (Celá SR = všetky) a tým, čo charitu sledujú
   const { data: VYZVY = [] } = useQuery({ queryKey: ["vyzvy-domov"], queryFn: vyzvyDomov, staleTime: 60_000 });
   useEffect(() => { void nacitajUcasti(VYZVY.map((v) => v.o.id)); }, [VYZVY]);
   const mesto = (s?: string) => (s ?? "").trim().toLocaleLowerCase("sk-SK");
@@ -378,10 +378,10 @@ function MojDeedObsah({ onDetail, onBoard, toast }: { onDetail: (id: string | nu
 
   const maZaujmy = zaujmy.length > 0;
 
-  // ľudia + ich najnovší príspevok (z feedu Domov)
+  // ľudia + ich najnovší príspevok (z Domova)
   const ludia = sledovani.map((s) => ({ s, last: POLOZKY.find((p) => p.autor === s.meno) }));
 
-  // podpory — kde sa dá, dotiahni živý progres z feedu (inak snapshot „k momentu podpory")
+  // podpory — kde sa dá, dotiahni živý progres z Domova (inak snapshot „k momentu podpory")
   const podporyRows = podpory.map((p) => {
     const live = POLOZKY.find((x) => String(x.id) === String(p.refId));
     return {
@@ -691,7 +691,7 @@ function TopPruh({ feed, onDetail }: { feed: GoodPolozka[]; onDetail: (id: strin
       {wide ? (
         /* tablet/desktop: kompaktné mini-karty */
         <div style={{ display: "flex", gap: SPACE.sm, overflowX: "auto", padding: `0 ${SPACE.gutter}px ${SPACE.xs}px` }}>
-          {/* OPRAVY 442 (1): rovnaká karta ako vo feede (skutok charity = 426), nie mini-karta */}
+          {/* OPRAVY 442 (1): rovnaká karta ako na Domove (skutok charity = 426), nie mini-karta */}
           {vidno.map((it) => <div key={it.id} style={{ flex: "0 0 320px", minWidth: 0 }}><DomovKarta it={it} wide onDetail={() => onDetail(it.id)} /></div>)}
         </div>
       ) : (

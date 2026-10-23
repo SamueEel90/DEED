@@ -17,7 +17,7 @@ import { ohodnot, nacitajLog, stiahniCsv, ScoreChyba, type ScoreOdpoved, type Lo
 
 const MAX_FOTIEK = 3;
 const PASMA_POPIS: Record<number, string> = {
-  0: "pod prahom — len karma (profil, nie feed)",
+  0: "pod prahom — len karma (profil, nie Domov)",
   1: "1 riadok — drobná pomoc",
   2: "2 riadky — bežná pomoc",
   3: "3 riadky — špička bežných skutkov",
@@ -144,7 +144,7 @@ export default function Skore({ wide }: WideProps) {
             </label>
             <label style={{ display: "flex", alignItems: "center", gap: SPACE.sm, fontSize: 13, color: C.textSec }}>
               <Switch on={anonymne} onChange={setAnonymne} ariaLabel="Zverejniť anonymne" />
-              Zverejniť anonymne (skryť pred feedom)
+              Zverejniť anonymne (skryť z Domova)
             </label>
 
             <Button full disabled={posielam || !opis.trim()} onClick={() => void odosli(1, opis)}>
@@ -213,7 +213,7 @@ function Nahlad({ v, onPotvrd, onZahod }: { v: ScoreOdpoved; onPotvrd: () => voi
       <Card accent="var(--a-green)">
         <div style={{ display: "flex", flexDirection: "column", gap: SPACE.sm }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: C.textTer, letterSpacing: 0.4, display: "flex", alignItems: "center", gap: 8 }}>
-            NÁHĽAD KARTY PRE FEED
+            NÁHĽAD KARTY NA DOMOV
             {v.mock && <span style={{ padding: "2px 8px", borderRadius: 999, background: "rgba(230,160,40,.16)", color: "var(--a-gold, #b8860b)", fontWeight: 800 }}>MOCK simulácia — bez Opusa</span>}
           </div>
           <div style={{ fontSize: 15, lineHeight: 1.5 }}>{v.ucesanyText}</div>

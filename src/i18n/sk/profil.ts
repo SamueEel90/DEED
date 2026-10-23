@@ -28,7 +28,7 @@ export const profil: Slovnik = {
   // Moje záujmy
   "profil.zaujmy.titul": "Moje záujmy",
   "profil.zaujmy.pocet": "{a} z {n} oblastí",
-  "profil.zaujmy.popis": "Podľa nich ti DEED+ skladá nástenku, pozvánky a ponuky z okolia. Feed skutkov ich nečíta.",
+  "profil.zaujmy.popis": "Podľa nich ti DEED+ skladá nástenku, pozvánky a ponuky z okolia. Domov pri skutkoch ich nečíta.",
   "profil.zaujmy.cela": "celá oblasť",
   "profil.zaujmy.nevybrate": "nevybraté",
   "profil.zaujmy.celaOblast": "Celá oblasť",

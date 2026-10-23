@@ -21,7 +21,7 @@ const zmena = () => { verzia++; posluchaci.forEach((f) => f()); };
 let zoSpravy = false;
 // OPRAVY 315: ťuk na upozornenie „Farár zverejnil váš príspevok“ → stránka presne pri príspevku
 let doOznamu: string | null = null;
-export function otvorVerejnyProfil(k: string, o?: { zoSpravy?: boolean; doOznamu?: string; doVecnej?: string; doSkutku?: string; /** OPRAVY 485: Späť zo skutku vráti rovno na feed */ spatNaFeed?: boolean }) { otvorene = true; kluc = k; zoSpravy = !!o?.zoSpravy; doOznamu = o?.doOznamu ?? null; doVecnej = o?.doVecnej ?? null; doSkutku = o?.doSkutku ?? null; skutokZFeedu = !!o?.spatNaFeed; zmena(); }
+export function otvorVerejnyProfil(k: string, o?: { zoSpravy?: boolean; doOznamu?: string; doVecnej?: string; doSkutku?: string; /** OPRAVY 485: Späť zo skutku vráti rovno na Domov */ spatNaFeed?: boolean }) { otvorene = true; kluc = k; zoSpravy = !!o?.zoSpravy; doOznamu = o?.doOznamu ?? null; doVecnej = o?.doVecnej ?? null; doSkutku = o?.doSkutku ?? null; skutokZFeedu = !!o?.spatNaFeed; zmena(); }
 let skutokZFeedu = false;
 export const skutokOtvorenyZFeedu = (): boolean => skutokZFeedu;
 // OPRAVY 490: „Pozri ›“ pri skutku v module zbierky → stránka charity s otvoreným detailom skutku (číta sa bez mazania, zmaže zrusDoSkutku)
@@ -37,7 +37,7 @@ export const cielOznamu = (): string | null => doOznamu;
 export function zrusDoOznamu() { doOznamu = null; }
 /** stránka je otvorená ako náhľad zo Správy */
 export const nahladZoSpravy = (): boolean => zoSpravy;
-/** KARTA 55 · E: odkaz z feedu „Celý príbeh na stránke … ›" — stránka Príbeh nad feedom, „Späť do feedu" vráti na to isté miesto */
+/** KARTA 55 · E: odkaz z Domova „Celý príbeh na stránke … ›" — stránka Príbeh nad feedom, „Späť na Domov" vráti na to isté miesto */
 export function otvorPribeh(zbierkaId: string) { otvorVerejnyProfil(`pribeh:${zbierkaId}`); }
 export function zavriVerejnyProfil() { otvorene = false; zoSpravy = false; doOznamu = null; zmena(); } // OPRAVY 249: náhľad sa neprenesie na ďalšie otvorenie
 /** kľúč profilu, ktorý je otvorený (číta sa bez mazania — StrictMode volá inicializáciu dvakrát) */
@@ -121,7 +121,7 @@ export function useVerejnyProfilOtvoreny(): boolean {
   return otvorene;
 }
 
-// koľko vrstiev profilu je práve na obrazovke (Host aj vložený z feedu) — appka vtedy skryje plávajúce „+"
+// koľko vrstiev profilu je práve na obrazovke (Host aj vložený z Domova) — appka vtedy skryje plávajúce „+"
 let vrstvy = 0;
 export function vrstvaProfiluPripoj(): () => void { vrstvy++; zmena(); return () => { vrstvy--; zmena(); }; }
 export function useVrstvaProfiluOtvorena(): boolean {

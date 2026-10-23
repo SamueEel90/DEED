@@ -1,7 +1,7 @@
 // ============================================================
 // KARTA 57 C.7 — Príhovor farára (Iskra): krátke video do 45 s na stránke farnosti.
 // OPRAVY 269: video alebo len zvuk, viac príhovorov (oblasť „prihovory"), odkazy na videá inde; len v bloku Vypočuj si.
-// Nie vo feede Iskier. Video ide do Storage (nahrajSubory,
+// Nie na Domove Iskier. Video ide do Storage (nahrajSubory,
 // priečinok „prihovor"); bez DB/session ostane len v tejto relácii (mock).
 // Stav = KV oblasť „prihovor" (zrkadlo naboz_stav).
 // KARTA 57 C.8 · OPRAVY 177 — Online omše: odkaz a pravidlá vysielania (oblasť „online", rules: [{ wd, d, t, kazdy }]).

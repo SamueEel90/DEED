@@ -51,7 +51,7 @@ export function FunZona({ onBack, toast }: FunZonaProps) {
               <div style={{ fontSize: 13.5, fontWeight: 700, marginTop: SPACE.xxs, lineHeight: 1.35 }}>„{f.verdikt}"</div>
               <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, marginTop: SPACE.xs }}>
                 <span style={{ fontSize: 11, fontWeight: 800, color: "var(--a-green)" }}>{f.odmena}</span>
-                <span style={{ fontSize: 10, color: C.textTer }}>· {f.riadky} riadky vo feede 😅</span>
+                <span style={{ fontSize: 10, color: C.textTer }}>· {f.riadky} riadky na Domove 😅</span>
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, marginTop: SPACE.sm }}>

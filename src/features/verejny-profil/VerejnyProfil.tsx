@@ -140,7 +140,7 @@ function sUdajmiCharity(p: TestProfil, prof: ProfilStranky | null, tier = 0): Te
 
 function VerejnyProfilObsah({ kluc, onBack, profilNahlad, vzhladAtelier }: { kluc: string; onBack: () => void; profilNahlad?: ProfilStranky; vzhladAtelier?: Vzhlad }) {
   const zStreamu = kluc.startsWith("stream:") ? kluc.slice(7) : null;
-  // KARTA 55 · E: „pribeh:{zbierka}" (odkaz z feedu) → stránka Príbeh; „{Organizácia} ›" otvorí jej profil
+  // KARTA 55 · E: „pribeh:{zbierka}" (odkaz z Domova) → stránka Príbeh; „{Organizácia} ›" otvorí jej profil
   const zPribehu = kluc.startsWith("pribeh:") ? kluc.slice(7) : null;
   const kl0 = zStreamu ? "tvorca" : zPribehu ? orgPribehu(zPribehu) : kluc;
   // OPRAVY 402: novo založená charita (vlastné id) — prázdny profil s menom z registra
@@ -152,7 +152,7 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad, vzhladAtelier }: { klu
   const [stream, setStream] = useState<string | null>(null);
   // doplnky 4. 10.: záznam z kroniky / rokov — skutok, akcia, ukončená zbierka (bez platby), Iskra = Iskry na tom videu
   const [zaznam, setZaznam] = useState<PolCh | null>(null);
-  const [zaznamZFeedu, setZaznamZFeedu] = useState(false); // OPRAVY 485: skutok z hlavného feedu — Späť rovno na feed
+  const [zaznamZFeedu, setZaznamZFeedu] = useState(false); // OPRAVY 485: skutok z hlavného feedu — Späť rovno na Domov
   const [novyOdF, setNovyOdF] = useState<string | null>(null); // KARTA 56I: nová položka Od veriacich je zvýraznená
   const pc = usePc1200();
   const otvorZaznam = (p: PolCh) => {
@@ -200,7 +200,7 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad, vzhladAtelier }: { klu
   useEffect(() => {
     const id = cielSkutku();
     if (!id || !kCh || !profil0) return;
-    const sk = (skutkyStrankyZPamate(kCh) ?? skutkyOrg(kCh)).find((x) => x.id === id || x.prispevokId === id); // OPRAVY 485: z feedu id príspevku
+    const sk = (skutkyStrankyZPamate(kCh) ?? skutkyOrg(kCh)).find((x) => x.id === id || x.prispevokId === id); // OPRAVY 485: z Domova id príspevku
     if (!sk) return;
     const t = skutokProfilu(sk, profil0);
     setZaznamZFeedu(skutokOtvorenyZFeedu());

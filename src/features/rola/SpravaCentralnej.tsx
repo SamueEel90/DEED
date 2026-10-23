@@ -136,7 +136,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const dary = realne;
   const nazovPol = sek ? sek.nazov : farnost ? nazovHlavnej(d) : "Celá činnosť";
   const chip = sek ? `SEKTOR ${typ}` : farnost ? "HLAVNÁ ZBIERKA" : "CENTRÁLNA ZBIERKA";
-  const podnadpis = sek ? "jedna téma · peniaze idú len sem · bez cieľa a konca" : farnost ? "stála zbierka farnosti · hore na profile" /* OPRAVY 350 */ : "na celú činnosť · stále hore na profile · nikdy vo verejnom feede";
+  const podnadpis = sek ? "jedna téma · peniaze idú len sem · bez cieľa a konca" : farnost ? "stála zbierka farnosti · hore na profile" /* OPRAVY 350 */ : "na celú činnosť · stále hore na profile · nikdy na Domove";
   const profil = profilZPamate(strankaId).ulozeny;
   const foto = d.media.find((m) => m.typ === "foto")?.src ?? (sek?.foto || profil?.cover || "");
   const bgFoto = "#3a3530";

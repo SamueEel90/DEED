@@ -1,5 +1,5 @@
 // ============================================================
-// OPRAVY 390 · hosť (Len prispievať, bez registrácie / QR bez účtu) — jedna veta hore vo feede.
+// OPRAVY 390 · hosť (Len prispievať, bez registrácie / QR bez účtu) — jedna veta hore na Domove.
 // „Prezeráte ako hosť · Zaregistrujete sa kedykoľvek ›“, × ju zbalí natrvalo (tento prehliadač).
 // ============================================================
 import { useState } from "react";

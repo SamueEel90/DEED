@@ -1,6 +1,6 @@
 // ============================================================
 // KARTA 39 · bod 3 — Centrálna zbierka charity (od P1).
-// Na celú činnosť · nikdy vo verejnom feede · stále hore na stránke charity · nie je zapečatená.
+// Na celú činnosť · nikdy na Domove · stále hore na stránke charity · nie je zapečatená.
 // DB: profil_stranky.centralna (migrácia 0032). Bez DB drží appka údaje v pamäti relácie.
 // ============================================================
 import { bezDataUrl } from "./uploadFoto";

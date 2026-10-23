@@ -227,7 +227,7 @@ export function Rebricky({ ocenenia = [], ludia = [], pred = null }: { ocenenia?
 //   [počet v okruhu] · [mesačná štatistika] · [poloha + výber okruhu]
 // rovnaký dizajn aj poloha (hneď pod rebríčkom) vo všetkých moduloch
 // ============================================================
-/** Martin 21. 10. „iba skutočné“: koľko položiek vo feede vzniklo tento mesiac — len keď je feed celý načítaný
+/** Martin 21. 10. „iba skutočné“: koľko položiek na Domove vzniklo tento mesiac — len keď je feed celý načítaný
  *  a každá položka má čas vzniku zo servera; inak nič (segment sa skryje, žiadne vymyslené číslo) */
 export function pocetTentoMesiac(items: { vytvorene?: string }[], celyNacitany: boolean): number | undefined {
   if (!celyNacitany || !items.length || items.some((x) => !x.vytvorene)) return undefined;
@@ -432,7 +432,7 @@ export function OkruhVyber({ radius, onPick, onClose, akcent = "var(--a-info)" }
     <Sheet onClose={onClose}>
       {/* ── MESTO — vyhľadaj a prepni (stred feedu/mapy) ── */}
       <div style={{ fontSize: 16, fontWeight: 800 }}>Mesto</div>
-      <div style={{ fontSize: 12.5, color: C.textTer, margin: `${SPACE.xxs}px 0 ${SPACE.sm}px` }}>Vyhľadaj a prepni mesto — feed aj mapa sa prepočítajú okolo neho.</div>
+      <div style={{ fontSize: 12.5, color: C.textTer, margin: `${SPACE.xxs}px 0 ${SPACE.sm}px` }}>Vyhľadaj a prepni mesto — Domov aj mapa sa prepočítajú okolo neho.</div>
       <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Hľadať mesto…" style={inpCity} />
       <div style={{ maxHeight: 200, overflowY: "auto", marginBottom: SPACE.gutter }}>
         {najdene.map((m) => {
@@ -454,7 +454,7 @@ export function OkruhVyber({ radius, onPick, onClose, akcent = "var(--a-info)" }
 
       <div style={{ borderTop: `1px solid ${C.line}`, margin: `0 0 ${SPACE.gutter}px` }} />
 
-      <div style={{ fontSize: 16, fontWeight: 800 }}>Okruh feedu</div>
+      <div style={{ fontSize: 16, fontWeight: 800 }}>Okruh Domova</div>
       <div style={{ fontSize: 12.5, color: C.textTer, margin: `${SPACE.xxs}px 0 ${SPACE.gutter}px` }}>Väčší okruh = vyšší prah významnosti — vidíš len špičku.</div>
       {Object.entries(FEED_CFG.radiusy).map(([k, r]) => {
         const on = radius === k;

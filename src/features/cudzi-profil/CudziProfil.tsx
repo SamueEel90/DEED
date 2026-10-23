@@ -58,7 +58,7 @@ interface CudziProfilProps {
 export function CudziProfil({ subjekt = {} as CudziSubjekt, onBack, toast, onKampan, onZavriet }: CudziProfilProps) {
   const { wide, desktop } = useLayout();
   // KARTA 43: tri testovacie stránky (Svetlo pomoci, Pekáreň Dobrota, Martin Konaľ) otvoria
-  // svoj verejný profil (Kronika / Výklad / Pirát) aj z feedu, zbierky a adresára.
+  // svoj verejný profil (Kronika / Výklad / Pirát) aj z Domova, zbierky a adresára.
   const testProfil = testProfilPreMeno(subjekt.meno);
   if (testProfil) return <VrstvaProfilu><VerejnyProfilView kluc={testProfil.k} onBack={onZavriet ?? onBack ?? (() => {})} /></VrstvaProfilu>;
   const inner = subjekt.typ === "org"
@@ -85,7 +85,7 @@ function OrgProfil({ s, onBack, toast, onKampan, onZavriet }: { s: CudziSubjektO
   const meno = s.meno || "Detská nemocnica — nadácia";
   const org = najdiOrg(meno); // register: cover, logo, o nás, štatistiky, kampane s fotkami
   // TEST REŽIM: prihlásený smie prehodiť profilovku aj titulku na KAŽDOM profile.
-  // najdiOrg už nahraté fotky domerguje (vidno ich aj v adresári a vo feede) —
+  // najdiOrg už nahraté fotky domerguje (vidno ich aj v adresári a na Domove) —
   // hook tu drží zápis a prekreslenie po zmene.
   const [vlastne, zmenFotky] = useFotkyEntity(klucEntity("org", meno));
   const smiemUpravit = FOTO_TEST_REZIM;

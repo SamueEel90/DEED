@@ -200,7 +200,7 @@ export default function ModulMapa({ wide }: { wide?: boolean }) {
                   </>}
             </div>
           )}
-          <div style={{ fontSize: 10.5, color: C.textTer, margin: "8px 2px 0", lineHeight: 1.5 }}>Reálne body z DB v okolí mesta {lok.mesto}. Mení len, čo vidíš vo feede a na nástenke — nie karmu ani odmeny.</div>
+          <div style={{ fontSize: 10.5, color: C.textTer, margin: "8px 2px 0", lineHeight: 1.5 }}>Reálne body z DB v okolí mesta {lok.mesto}. Mení len, čo vidíš na Domove a na nástenke — nie karmu ani odmeny.</div>
 
           <button onClick={() => toast(`Rádius nastavený: ${jeStvrt ? km + " km · štvrť" : FEED_CFG.radiusy[uroven].label}`)}
             style={{ width: "100%", height: 50, borderRadius: RADIUS.md, marginTop: SPACE.gutter, border: "none", background: GRAD, color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 8px 26px color-mix(in srgb, var(--a-green) 32%, transparent)" }}>

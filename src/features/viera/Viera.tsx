@@ -143,7 +143,7 @@ function PasAdresar() {
 function VieraDetail({ z, farar, onBack, onProfil }: { z: VieraFeedItem; farar: boolean; onBack: () => void; onProfil: (f: Farnost) => void }) {
   const { wide } = useLayout();
   const otvorGaleriu = useGaleria();
-  // parte režim 2: „Pridať zbierku" nastaví cieľ aj lokálne (z je snapshot z feedu)
+  // parte režim 2: „Pridať zbierku" nastaví cieľ aj lokálne (z je snapshot z Domova)
   const [cielLocal, setCielLocal] = useState<number | null>(z.ciel ?? null);
   const maCiel = cielLocal != null; // aj udalosti s voliteľnou zbierkou (púť/pohreb)
   const [suma, setSuma] = useState(z.vyzbierane ?? 0);

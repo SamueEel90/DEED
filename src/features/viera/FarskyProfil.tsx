@@ -406,7 +406,7 @@ function ModeraciaSheet({ fid, onClose, toast }: { fid: string; onClose: () => v
   };
   return (
     <SheetPanel title="Moderácia príspevkov" onClose={onClose}>
-      <div style={{ fontSize: 12, color: N.txt3, marginBottom: SPACE.md, lineHeight: 1.5 }}>Oznam veriaceho môžeš <b>upraviť</b> (preklep, zlý čas) alebo <b>zmazať</b> — odstráni sa z feedu aj z profilu.</div>
+      <div style={{ fontSize: 12, color: N.txt3, marginBottom: SPACE.md, lineHeight: 1.5 }}>Oznam veriaceho môžeš <b>upraviť</b> (preklep, zlý čas) alebo <b>zmazať</b> — odstráni sa zo zoznamu aj z profilu.</div>
       {polozky.length === 0 ? (
         <EmptyState emoji={<Emo e="🛡" />} title="Žiadne oznamy na moderáciu" text="Keď veriaci pridajú oznamy, objavia sa tu." />
       ) : polozky.map((it) => {
