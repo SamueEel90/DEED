@@ -430,3 +430,6 @@ Jubilejná:
 „Zbierka je ukončená — dúfame, že urobila radosť.
 Podporiť nás môžete dobrovoľným príspevkom nižšie, aby sme to isté mohli spraviť pre ďalších.
 [Podporiť DEED+]"
+
+### Obrazovka príspevku po ukončení — schválená (23. 10. večer)
+Soňa dodala návrh, Fero schválil: svetlúšik hore, „ZBIERKA JE UKONČENÁ", schválené texty, predvoľby 3/5/10 € + Vlastná suma, „Podržte a podporte DEED+" (vzor podržania), dole „Dobrovoľné. Bez príspevku sa nič nestane." Farby = dva režimy témy (svetlý/tmavý), nie rozlíšenie typu zbierky — pohrebná bordová/zlatá, jubilejná zelená, v oboch režimoch.
