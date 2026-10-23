@@ -39,6 +39,8 @@
           // rovno do appky: prihlásený testovací účet, úvod preskočený
           if (!window.localStorage.getItem("deed.session")) window.localStorage.setItem("deed.session", JSON.stringify({ demo: true }));
           if (!window.localStorage.getItem("deed.intro.v1")) window.localStorage.setItem("deed.intro.v1", "1");
+          // vstup z Helpu (/svetlo/) → rovno Správa Svetla pomoci; raz za kartu, ďalej sa chodí normálne
+          if (/^\/svetlo\/?$/.test(window.location.pathname) && !window.sessionStorage.getItem("svetlo.vstup")) { window.sessionStorage.setItem("svetlo.vstup", "1"); window.sessionStorage.setItem("deed.otvorSpravuCharity", "1"); }
         } catch (e) { /* bez úložiska */ }
       })();
     </script>
