@@ -73,3 +73,20 @@
 **C-doplnky — otvorené:** advokácia a právna pomoc (vlastná vypínateľná sekcia vs. von) · vekové obmedzenia z jún v3.1 (Kids do 15, 15–18 obmedzené) — platí ešte? · oceňovanie vecných darov · DEED Match len cez DPIA/„cez charitu".
 
 *Partneri: zoznam 61 organizácií na oslovenie (xlsx u Martina, hárok so stavom oslovenia) — biznis pipeline, do repa nejde.*
+
+## E · NAVYŠE OPROTI NÁVRHOM (opačný smer — kód/dizajn, s ktorým sa pôvodne neuvažovalo)
+
+*Martin 23. 10.: strážiť aj opačne — čo vzniklo bez pôvodného návrhu. Dve kategórie: „dodatočne schválené" (Martin prijal, platí) a „na rozhodnutie" (vzniklo, nikto neodklepol).*
+
+**Dodatočne schválené (platí, len nech sa vie, že to v pôvodných plánoch nebolo):**
+- Výber vzhľadov stránky (Kronika/Výklad/Moderné + Ateliér, skúšobný režim, Zverejniť vzhľad) — s výberom vizuálu sa pôvodne vôbec neuvažovalo; vznikol u Soni, Martin schválil (balíky 32–34, 45–46, 510).
+- Farba línií podľa cirkevného roka (FarbaLinii) — vznikla popri vzhľadoch, overená naživo.
+- Štít na web (StitNaWeb) — v kóde UŽ JE a páruje sa s rešeršou (badge dôvery) — spárované, OK.
+- Usporiadať stránku (UsporiadatStranku) — v registri viselo ako „nezadané", v kóde existuje → spárovať s dohodou, či robí to, čo malo.
+
+**Na preverenie/rozhodnutie (vzniklo, dohodu nepoznám):**
+- PozvankaOdkazom — dohoda znela „pozvánka QR s časovou platnosťou, bez SMS"; pozvánka ODKAZOM je navyše — schvaľuješ?
+- PrihovorKarta / PrihovorNaStranke — príhovor na stránke; v dohodách som nenašiel.
+- NahladNastenky, OnasKratky, Podstranka — drobné, spárovať pri najbližšej kontrole kódu.
+
+*Postup odteraz: pri každej nočnej kontrole kódu jeden blok = párovanie nových súborov proti dohodám; čo nemá dohodu, pristane sem ako „na rozhodnutie". Platí pre všetkých aktérov.*
