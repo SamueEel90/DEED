@@ -86,7 +86,7 @@
 
 **Na preverenie/rozhodnutie (vzniklo, dohodu nepoznám):**
 - ~~PozvankaOdkazom~~ SPÁROVANÉ: je to OPRAVY 502 / balík 44 (pozvánka QR + odkaz, 48 h, server 0125) — schválené, nie je navyše.
-- PrihovorKarta / PrihovorNaStranke — príhovor na stránke; v dohodách som nenašiel.
+- ~~PrihovorKarta / PrihovorNaStranke~~ SPÁROVANÉ: KARTA 57 C.7–C.8 (príhovor farára do bloku Vypočuj si + Online omše NAŽIVO, OPRAVY 177/269) — schválené, nie je navyše.
 - NahladNastenky, OnasKratky, Podstranka — drobné, spárovať pri najbližšej kontrole kódu.
 
 *Postup odteraz: pri každej nočnej kontrole kódu jeden blok = párovanie nových súborov proti dohodám; čo nemá dohodu, pristane sem ako „na rozhodnutie". Platí pre všetkých aktérov.*
