@@ -433,3 +433,22 @@ Podporiť nás môžete dobrovoľným príspevkom nižšie, aby sme to isté moh
 
 ### Obrazovka príspevku po ukončení — schválená (23. 10. večer)
 Soňa dodala návrh, Fero schválil: svetlúšik hore, „ZBIERKA JE UKONČENÁ", schválené texty, predvoľby 3/5/10 € + Vlastná suma, „Podržte a podporte DEED+" (vzor podržania), dole „Dobrovoľné. Bez príspevku sa nič nestane." Farby = dva režimy témy (svetlý/tmavý), nie rozlíšenie typu zbierky — pohrebná bordová/zlatá, jubilejná zelená, v oboch režimoch.
+
+## Rozhodnuté 24. 10. ráno — Paľov blok odchýlok (Martin)
+- **ZÁSADA (do FERO/dizajn pravidiel): čo je dohodnuté a overené, berie sa 1:1 — žiadne improvizácie**, pokiaľ zadanie nepovie inak (vzor: overená centrálna zbierka fary).
+- 1+3: ručné „Ukončiť" zbierky charity AJ centrálnej zastaví dary aj na serveri (diera — pri charite sa zapisoval len stav pre Správu). QR ukončenej → hláška „Zbierka skončila". Oprava jednou migráciou 0174 (Paľo pre Sama). SCHVÁLENÉ.
+- **Model účtov charity ≠ farnosť: charita má centrálny účet, ale každá ďalšia zbierka MÔŽE mať vlastný transparentný účet** — nie je viazaná na jeden. Paľovi napísať samostatne, nech nestavia na farskom vzore „všetko na jeden účet".
+- 2: zbierky už nad cieľom sa po 0168 uzavrú pri najbližšom dare — nechať, Samo nič neprepína.
+- 4: advokácia JE v číselníku, podskupiny schválené: ľudské práva, právna pomoc, transparentnosť a protikorupcia. Varovanie na politiku + ban 10 rokov platí.
+- 5: v teste stačí tvar IBAN; reálne overenie účtu sektora → checklist pred ostrou.
+- 6: rozpracovaná sektorová len v otvorenej appke — OK pre teraz.
+- 7: samoukladanie názvu sektora — OTVORENÉ, rozoberie sa.
+- 8: „Pozrieť ako" len v appke, server podľa skutočného programu — potvrdené.
+- 10: počítadlo „0 ľudí dáva mesačne" napevno → checklist pred ostrou (počítať alebo skryť).
+- „+ Pridať sektor" v centrálnej zbierke je ZLE — sektor je sektorová zbierka, v centrálnej nemá čo hľadať (Martin dal aj Soni do oprav).
+- **Výber oblastí (podskupiny zo stanov) patrí do REGISTRÁCIE, nie do Správy.** UI: rolovacie sekcie — klik na hlavnú sekciu (napr. Zdravie a pacienti) → podpoložky sa rozbalia na boku na zakliknutie → ďalšia sekcia. Žiadny chaos všetkého naraz. Pri sektorových zbierkach pre testerov zatiaľ len hlavné kmeňové sektory.
+- PRIORITA: zbierky charity nefungujú od utorka — najprv sfunkčniť a dať Martinovi testovať, žiadne vymýšľanie navyše.
+
+### Checklist pred ostrou — doplnené
+- Reálne overenie účtu sektorovej zbierky (teraz len tvar IBAN).
+- Počítadlo pravidelných darcov pri centrálnej: počítať alebo skryť (teraz napevno 0).
