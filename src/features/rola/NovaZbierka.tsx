@@ -35,6 +35,7 @@ import { ZAUJMY_KATALOG } from "@/lib/personalizaciaStore";
 import { Ik, I, Zamok, vyber, panel, pole, pozn, fmtEur, fmtSek, cis, cistyText, Media, Volby, Nadpis, Zaskrtnutie, odkaz, PravidlaObsahu, TextovePolia, GaleriaEditor } from "./obsahZbierky";
 import { AnoNie } from "@/components/AnoNie";
 import { RamPisania } from "@/components/RamPisania";
+import { RiadokAutoUzavriet } from "./AutoUzavriet";
 
 /** OPRAVY 416: účet zbierky nie je overený pre stránku — návod namiesto „Skúsiť znova“ */
 const UCET_NEOVERENY = "Najprv overte účet · Nastavenia → Účet ›";
@@ -302,6 +303,8 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
           <input value={cielCislo(d) ? cielCislo(d).toLocaleString("sk-SK").replace(/\u00A0/g, " ") : ""} onChange={(e) => zmen({ ciel: e.target.value.replace(/\D/g, "").slice(0, 7) })} inputMode="numeric" placeholder="Napríklad 4 000" aria-label="Cieľová suma v eurách" style={{ ...pole, paddingRight: 40 }} />
           <span style={{ position: "absolute", right: 16, top: 15, fontSize: 16, fontWeight: 800, color: "var(--ink3)" }}>€</span>
         </label>}
+        {/* OPRAVY 526: cieľ nie je strop — po naplnení sa zbierka (predvolene) sama uzavrie, dar sa pripíše celý */}
+        {maCiel && !oprava && <div style={{ maxWidth: ph ? undefined : 560 }}><RiadokAutoUzavriet on={d.autoUzavriet !== false} onZmena={(v) => zmen({ autoUzavriet: v })} /></div>}
         {farnost ? <>
           <Nadpis t="Kam prídu peniaze" />
           <div style={{ ...pole, display: "flex", alignItems: "center", gap: 10, background: "var(--btn)", color: "var(--ink2)", maxWidth: ph ? undefined : 520 }}><Zamok s={15} /><span>Na účet hlavnej zbierky</span></div>

@@ -51,6 +51,8 @@ export interface NovaZbierkaData {
   rozdelenie?: PodielZbierky[];
   /** OPRAVY 338 · migrácia 0104: id osobného overenia príjemcu (sken QR + kód) — server podľa neho pustí registrovaný účet */
   overenie_prijemcu?: string;
+  /** OPRAVY 526 (0168): po naplnení cieľa zbierku automaticky uzavrieť (predvolene áno; len zbierka s cieľom) */
+  autoUzavriet?: boolean;
   /** OPRAVY 430: Komu to pomáha — oblasť a najviac 2 podpoložky z ZAUJMY_KATALOG (čipy na karte, výber na Domove) */
   komu?: { oblast: string; pod: string[] };
 }
@@ -125,6 +127,8 @@ export interface SpustenaZbierka extends NovaZbierkaData {
   stav?: "aktivna" | "ukoncena" | "vyuctovana";
   /** KARTA 57 A.8: čas ukončenia zo servera (zbierka.koniec, migrácia 0068) — archív */
   koniec?: string;
+  /** OPRAVY 526: prepínač zo stĺpca zbierka.auto_uzavriet (0168) — v nastavenie sa neukladá (tam ostáva pôvodná hodnota) */
+  autoUzavrietDb?: boolean;
   /** OPRAVY 473 · 0155: doplnenia textu charity po spustení — len pribúdajú, uložené sa nemenia */
   doplnenia?: DoplnenieZbierky[];
 }
@@ -172,7 +176,8 @@ export async function nacitajZbierkyStranky(stranka: string): Promise<SpustenaZb
   if (jeVzor(stranka)) return zbierkyStrankyZPamate(stranka);
   if (supabase) {
     const dotaz = (stlpce: string) => supabase!.from("zbierka").select(stlpce).eq("stranka", stranka).order("vytvorene", { ascending: false });
-    let { data, error } = await dotaz("id, vs, nastavenie, zapecatena, stav, koniec");
+    let { data, error } = await dotaz("id, vs, nastavenie, zapecatena, stav, koniec, auto_uzavriet");
+    if (error?.code === "42703") ({ data, error } = await dotaz("id, vs, nastavenie, zapecatena, stav, koniec")); // kým nebeží 0168
     if (error?.code === "42703") ({ data, error } = await dotaz("id, vs, nastavenie, zapecatena, stav")); // kým nebeží 0068
     if (!error && !data?.length) {
       // nie som správca (RLS na zbierka) → spustené zbierky z verejného pohľadu (0069b, bez účtu a IBAN)
@@ -180,8 +185,9 @@ export async function nacitajZbierkyStranky(stranka: string): Promise<SpustenaZb
       if (!v.error && v.data) data = v.data as unknown as typeof data;
     }
     if (!error && data) {
-      const riadky = data as unknown as { vs: string | null; nastavenie: unknown; stav: string | null; koniec?: string | null }[];
-      const l = riadky.filter((r) => r.nastavenie).map((r) => ({ ...(r.nastavenie as SpustenaZbierka), vs: r.vs ?? undefined, stav: (r.stav as SpustenaZbierka["stav"]) ?? "aktivna", koniec: r.koniec ?? undefined }));
+      const riadky = data as unknown as { vs: string | null; nastavenie: unknown; stav: string | null; koniec?: string | null; auto_uzavriet?: boolean | null }[];
+      const l = riadky.filter((r) => r.nastavenie).map((r) => ({ ...(r.nastavenie as SpustenaZbierka), vs: r.vs ?? undefined, stav: (r.stav as SpustenaZbierka["stav"]) ?? "aktivna", koniec: r.koniec ?? undefined,
+        ...(typeof r.auto_uzavriet === "boolean" ? { autoUzavrietDb: r.auto_uzavriet } : {}) }));
       spustene.set(stranka, l); zmena(); return l;
     }
   }
@@ -197,7 +203,7 @@ export async function upravZbierku(stranka: string, id: string, p: Partial<Pick<
   const n = { ...z, ...p };
   spustene.set(stranka, l.map((x) => (x.id === id ? n : x))); zmena();
   // vs, stav a koniec sú stĺpce zbierky, nie súčasť zapečateného nastavenia — inak by ich zámok 0041 bral ako zmenu
-  const { vs: _vs, stav: _stav, koniec: _koniec, ...nastavenie } = n;
+  const { vs: _vs, stav: _stav, koniec: _koniec, autoUzavrietDb: _auto, ...nastavenie } = n;
   if (!supabase) return null;
   let cista: typeof nastavenie;
   try { cista = await bezDataUrl(nastavenie, "zbierky"); } catch { return "Fotku sa nepodarilo nahrať. Skúste znova."; }
@@ -218,7 +224,7 @@ export async function zapecatDoplnenie(stranka: string, id: string, p: { doplnen
   }
   if (p.media) n.media = [...z.media, ...p.media];
   if (supabase) {
-    const { vs: _vs, stav: _stav, koniec: _koniec, ...nastavenie } = n;
+    const { vs: _vs, stav: _stav, koniec: _koniec, autoUzavrietDb: _auto, ...nastavenie } = n;
     let cista: typeof nastavenie;
     try { cista = await bezDataUrl(nastavenie, "zbierky"); } catch { return "Fotku sa nepodarilo nahrať. Skúste znova."; }
     const { data, error } = await supabase.from("zbierka").update({ nastavenie: cista }).eq("id", id).select("id").then((x) => x, () => ({ data: null, error: { message: "", code: "" } }));
@@ -238,7 +244,7 @@ export async function opravZbierku(stranka: string, id: string, d: NovaZbierkaDa
   delete n.doplnenia;
   if (supabase) {
     try { n = await bezDataUrl(n, "zbierky"); } catch { return "Fotku sa nepodarilo nahrať. Skúste znova."; }
-    const { vs: _vs, stav: _stav, koniec: _koniec, ...nastavenie } = n;
+    const { vs: _vs, stav: _stav, koniec: _koniec, autoUzavrietDb: _auto, ...nastavenie } = n;
     const r = await supabase.rpc("oprav_zbierku", { p_zbierka: id, p_nazov: d.nazov, p_ciel: d.cielTyp === "ciel" ? cielCislo(d) : null, p_nastavenie: nastavenie }).then((x) => x, () => ({ error: { message: "", code: "" } }));
     if (r.error) {
       const e = r.error as { message?: string; code?: string; details?: string };
@@ -274,6 +280,19 @@ export async function spustiZbierku(stranka: string, d: NovaZbierkaData, ucet: s
   koncepty.set(stranka, null);
   zmena();
   return z;
+}
+
+/** OPRAVY 526: platný stav prepínača (stĺpec servera, inak pôvodná voľba pri spustení, inak áno) */
+export const autoUzavrietZbierky = (z: Pick<SpustenaZbierka, "autoUzavriet" | "autoUzavrietDb">) => z.autoUzavrietDb ?? z.autoUzavriet ?? true;
+/** OPRAVY 526 · prepínač „Po naplnení cieľa zbierku automaticky uzavrieť“ (server 0168). Zapnutie pri už naplnenej zbierke ju hneď uzavrie. */
+export async function nastavAutoUzavriet(stranka: string | undefined, id: string, zapnute: boolean): Promise<{ chyba: string } | { uzavreta: boolean }> {
+  if (!supabase) return { uzavreta: false };
+  const { data, error } = await supabase.rpc("zbierka_auto_uzavriet", { p_id: id, p_zapnute: zapnute }).then((x) => x, () => ({ data: null, error: { message: "siet", code: "" } }));
+  if (error) return { chyba: /nemate_povolene/.test(error.message ?? "") ? "Túto zbierku nespravujete." : /PGRST202|42883|zbierka_auto_uzavriet/.test(`${error.code ?? ""} ${error.message ?? ""}`) ? "Prepínač ešte nie je zapnutý na serveri." : "Neuložilo sa. Skontrolujte pripojenie a skúste znova." };
+  const uzavreta = !!(data as { uzavreta?: boolean } | null)?.uzavreta;
+  if (stranka) { spustene.set(stranka, zbierkyStrankyZPamate(stranka).map((x) => (x.id === id ? { ...x, autoUzavrietDb: zapnute } : x))); zmena(); }
+  if (uzavreta && stranka) void nacitajZbierkyStranky(stranka);
+  return { uzavreta };
 }
 
 /** KARTA 56D §6: ukončiť zbierku — dary sa zastavia, počítadlo ostáva na profile. Stav je životný cyklus (zámok 0041 ho dovoľuje). */

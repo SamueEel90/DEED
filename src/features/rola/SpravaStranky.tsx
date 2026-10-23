@@ -37,7 +37,7 @@ import { cisloObjektu } from "@/lib/cisloObjektu";
 import { useDorovnania, stavCharity } from "@/lib/dorovnanie";
 import { nacitajStav, pridajDni, SPRAVA_ZBIERKY_CFG } from "@/lib/zbierkaSprava";
 import { SUBJEKTY } from "./mock";
-import { upravZbierku, useZmenyZbierok, zbierkyStrankyZPamate, nacitajZbierkyStranky, konceptZbierkyZPamate, nacitajKonceptZbierky, cielCislo, jeIne, UCELY, KROKY_ZBIERKY, type SpustenaZbierka, type NovaZbierkaData } from "@/lib/novaZbierka";
+import { upravZbierku, autoUzavrietZbierky, useZmenyZbierok, zbierkyStrankyZPamate, nacitajZbierkyStranky, konceptZbierkyZPamate, nacitajKonceptZbierky, cielCislo, jeIne, UCELY, KROKY_ZBIERKY, type SpustenaZbierka, type NovaZbierkaData } from "@/lib/novaZbierka";
 import { UpravitProfilCharity, VerejnyProfilOkno, zakladnyProfil } from "./UpravitProfilCharity";
 import { VerejnyProfilVSprave } from "@/features/verejny-profil/VerejnyProfil";
 import { PonukyPrace } from "./PonukyPrace";
@@ -271,7 +271,7 @@ const naSpravu = (z: ZbRiadok): ZbierkaNaSpravu => {
   const darc = z.darcovia ?? Number(/(\d[\d\s]*) darcov/.exec(z.s)?.[1].replace(/\s/g, "") ?? 0), dni = z.zostava ?? Number(/končí o (\d+)/.exec(z.s)?.[1] ?? 30);
   // OPRAVY 442 doplnok: skutočná zbierka (zdroj) — súčet a darcov dopočíta Správa zbierky z ledgera, riadok ich nesmie pridať druhýkrát
   const real = !!z.zdroj;
-  return { id: z.id ?? `ukazka-${z.t.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-")}`, nazov: z.t, bg: z.bg, ciel: z.c, vyzbierane: real ? 0 : z.v, darcovia: real ? 0 : darc, zostavaDni: dni, ukoncena: z.konc, lehotaText: z.lehotaText, lehota: z.lehota, bezPredlzenia: z.bezPredlzenia || /^Centrálna/.test(z.t), dlha: z.dlha, zaciatok: z.zaciatok, mesiace: z.mesiace, ucel: z.ucel, mesto: z.mesto, ...(z.zdroj ? { popis: z.zdroj.popis, popis2: z.zdroj.popis2, media: z.zdroj.media, sada: z.zdroj.sada, eurc: z.zdroj.eurc, sadaE: z.zdroj.sadaE, ucet: z.zdroj.ucet, vs: z.zdroj.vs } : {}) };
+  return { id: z.id ?? `ukazka-${z.t.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-")}`, nazov: z.t, bg: z.bg, ciel: z.c, vyzbierane: real ? 0 : z.v, darcovia: real ? 0 : darc, zostavaDni: dni, ukoncena: z.konc, lehotaText: z.lehotaText, lehota: z.lehota, bezPredlzenia: z.bezPredlzenia || /^Centrálna/.test(z.t), dlha: z.dlha, zaciatok: z.zaciatok, mesiace: z.mesiace, ucel: z.ucel, mesto: z.mesto, ...(z.zdroj ? { popis: z.zdroj.popis, popis2: z.zdroj.popis2, media: z.zdroj.media, sada: z.zdroj.sada, eurc: z.zdroj.eurc, sadaE: z.zdroj.sadaE, ucet: z.zdroj.ucet, vs: z.zdroj.vs, autoUzavriet: autoUzavrietZbierky(z.zdroj) } : {}) };
 };
 /** OPRAVY 114: spustená zbierka charity → karta v Prehľade a riadok v Moje zbierky */
 const fotoBg = (z: SpustenaZbierka) => { const f = z.media.find((m) => m.typ === "foto"); return f ? `url('${f.src}') center/cover no-repeat var(--track)` : "repeating-linear-gradient(135deg,var(--track) 0 12px,var(--btn) 12px 24px)"; };
@@ -280,7 +280,7 @@ const koniecZb = (z: SpustenaZbierka): number => { if (z.koniec) return new Date
 const kedyKonci = (z: SpustenaZbierka): string => { const dni = Math.max(0, Math.ceil((koniecZb(z) - Date.now()) / 86400000)); return dni === 0 ? "končí dnes" : `končí o ${dni} ${dni === 1 ? "deň" : dni <= 4 ? "dni" : "dní"}`; };
 const dnesEur = (id: string) => { const d = new Date(); d.setHours(0, 0, 0, 0); return darcoviaPre(id).filter((r) => r.cas >= d.getTime()).reduce((a, r) => a + r.suma, 0); };
 const naPh = (z: SpustenaZbierka): PhZbierka => ({ t: z.nazov, v: sucetDarov(z.id).suma, c: z.cielTyp === "ciel" ? cielCislo(z) : 0, d: kedyKonci(z), bg: fotoBg(z), dn: dnesEur(z.id) });
-const naRiadok = (z: SpustenaZbierka): ZbRiadok => ({ id: z.id, zdroj: z, lehotaText: z.lehota ? (/^\d/.test(z.lehota) ? `do ${z.lehota}` : z.lehota) : undefined, lehota: z.lehotaKluc ?? "30", bezPredlzenia: z.typ === "dlha", dlha: z.typ === "dlha", zaciatok: z.spustena, mesiace: z.mesiace, ucel: z.ucel != null ? (jeIne(z) ? z.ineT : UCELY[z.ucel][0]) : undefined, t: z.nazov, v: sucetDarov(z.id).suma, c: z.cielTyp === "ciel" ? cielCislo(z) : 0, bg: fotoBg(z), s: `${darcovT(sucetDarov(z.id).pocet)} · ${kedyKonci(z)}`, konc: false }); // OPRAVY 445 (2): z ledgera
+const naRiadok = (z: SpustenaZbierka): ZbRiadok => ({ id: z.id, zdroj: z, lehotaText: z.lehota ? (/^\d/.test(z.lehota) ? `do ${z.lehota}` : z.lehota) : undefined, lehota: z.lehotaKluc ?? "30", bezPredlzenia: z.typ === "dlha", dlha: z.typ === "dlha", zaciatok: z.spustena, mesiace: z.mesiace, ucel: z.ucel != null ? (jeIne(z) ? z.ineT : UCELY[z.ucel][0]) : undefined, t: z.nazov, v: sucetDarov(z.id).suma, c: z.cielTyp === "ciel" ? cielCislo(z) : 0, bg: fotoBg(z), s: `${darcovT(sucetDarov(z.id).pocet)} · ${kedyKonci(z)}`, konc: z.stav === "ukoncena" }); // OPRAVY 526: server mohol zbierku uzavrieť sám // OPRAVY 445 (2): z ledgera
 const darcovT = (n: number) => `${n} ${n === 1 ? "darca" : n >= 2 && n <= 4 ? "darcovia" : "darcov"}`;
 // KARTA 48 · testovacie zbierky 1 : 1 podľa prototypu „Zbierky zoznam"
 const ZB_LIST: ZbRiadok[] = [

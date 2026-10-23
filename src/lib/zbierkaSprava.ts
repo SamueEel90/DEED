@@ -109,6 +109,8 @@ export interface StavZbierky {
   vratitDo?: string;
   /** 5. 10. · prečo charita ukončila (Cieľ je splnený · Už to nepotrebujeme · Iný dôvod) */
   dovodUkoncenia?: string;
+  /** OPRAVY 526 (0168): zbierka sa po naplnení cieľa uzavrela sama (server) — bez 15 min Vrátiť a bez výsledku darcom, poďakuje správca */
+  autoUzavreta?: boolean;
   /** OPRAVY 459 (4): „Iný dôvod“ — krátky text, vidí ho len DEED (štatistiky), darcovia nie */
   dovodIny?: string;
   /** OPRAVY 459 (1): jediné poďakovanie darcom (HTML z TextovePolia) — odíde po 15 minútach spolu s výsledkom */
