@@ -419,7 +419,9 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
       })}
     </div>
   </>;
-  const pocty = `${tvar(bezice.length, ["zbierka", "zbierky", "zbierok"])} · ${tvar(oznamy.length, ["oznam", "oznamy", "oznamov"])}${aktSk.length ? ` · ${tvar(aktSk.length, ["skutok", "skutky", "skutkov"])}` : ""}${praca.length && !jeFarnost(profil) ? ` · hľadáme ${tvar(praca.length, ["človeka", "ľudí", "ľudí"])}` : ""}`;
+  // balík 48 · 522: počet zbierok ráta aj spustenú centrálnu a sektory charity (v zozname Aktuálne nie sú)
+  const nCenSek = profil.typ === "charita" ? (profil.bezCentralnej ? 0 : 1) + profil.sektory.length : 0;
+  const pocty = `${tvar(bezice.length + nCenSek, ["zbierka", "zbierky", "zbierok"])} · ${tvar(oznamy.length, ["oznam", "oznamy", "oznamov"])}${aktSk.length ? ` · ${tvar(aktSk.length, ["skutok", "skutky", "skutkov"])}` : ""}${praca.length && !jeFarnost(profil) ? ` · hľadáme ${tvar(praca.length, ["človeka", "ľudí", "ľudí"])}` : ""}`;
   const aktualne = (
     <section ref={(el) => { rf.current.akt = el; }} style={{ display: "flex", flexDirection: "column", gap: rez === "pc" ? 18 : rez === "tab" ? 16 : 12 }}>
       {rez === "pc"

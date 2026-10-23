@@ -25,7 +25,7 @@ export function ModulZbierky({ profil, z, onZbal }: { profil: TestProfil; z: Tes
     meno={z.zodpoveda ?? profil.meno} />;
 }
 
-export function PodporaProfilu({ profil, lok, domace, rez, stlpce = rez === "tab" ? 4 : 2, nadpis = "TIPY NA PRAVIDELNÝ DAR", vyska, mod: modP, onMod }: {
+export function PodporaProfilu({ profil, lok, domace, rez, stlpce = rez === "tab" ? 4 : 2, nadpis: nadpisP, vyska, mod: modP, onMod }: {
   profil: TestProfil; lok: Lokalita; domace: Mesto; rez: RezPodpory;
   /** počet dlaždíc v rade (tablet 4, inak 2) */
   stlpce?: number;
@@ -36,6 +36,10 @@ export function PodporaProfilu({ profil, lok, domace, rez, stlpce = rez === "tab
   /** KARTA 45 · Pirát: otvorený modul riadi rodič (ťuk na „Darovať na celú činnosť" / sektor) */
   mod?: Vyber; onMod?: (i: Vyber) => void;
 }) {
+  // balík 48 · 528: charita — „Podporte nás“ (Zadarmo), od P1 „Podporte nás · aj pravidelne“; ostatné stránky po starom
+  const charita = profil.typ === "charita";
+  const nadpis = nadpisP ?? (charita ? "PODPORTE NÁS" : "TIPY NA PRAVIDELNÝ DAR");
+  const podnadpis = nadpisP ? null : charita ? (profil.bezPravidelnej ? null : "· aj pravidelne") : "· aj jednorazovo, zrušíš kedykoľvek";
   const [modVl, setModVl] = useState<Vyber>(null);
   const mod = onMod ? (modP ?? null) : modVl;
   const setMod = (i: Vyber) => (onMod ? onMod(i) : setModVl(i));
@@ -54,7 +58,7 @@ export function PodporaProfilu({ profil, lok, domace, rez, stlpce = rez === "tab
   if (!sektory.length) return null; // OPRAVY 414: bez centrálnej a sektorov dlaždice nie sú
   return (
     <>
-      <span ref={nadpisRef} style={{ scrollMarginTop: 56, fontSize: 11.5, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)", paddingTop: rez === "mob" ? 6 : 4 }}>{nadpis}{nadpis === "TIPY NA PRAVIDELNÝ DAR" && <> <span style={{ fontWeight: 600, letterSpacing: 0, color: "var(--ink3)" }}>· aj jednorazovo, zrušíš kedykoľvek</span></>}</span>
+      <span ref={nadpisRef} style={{ scrollMarginTop: 56, fontSize: 11.5, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)", paddingTop: rez === "mob" ? 6 : 4 }}>{nadpis}{podnadpis && <> <span style={{ fontWeight: 600, letterSpacing: 0, color: "var(--ink3)" }}>{podnadpis}</span></>}</span>
       {mod == null && <div style={{ display: "grid", gridTemplateColumns: `repeat(${stlpce},minmax(0,1fr))`, gap: rez === "mob" ? 8 : 10 }}>
         {sektory.map((d, i) => {
           const on = mod === i;

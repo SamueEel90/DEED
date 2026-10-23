@@ -85,7 +85,23 @@ export function useSektory(stranka: string): SektorCharity[] {
   useEffect(() => { if (stranka) void nacitajSektory(stranka); }, [stranka]);
   return zoznam.get(stranka) ?? [];
 }
+/** 522: spustené sektory stránky pre verejný profil (sektor_stranky_verejny — bez účtu, bez konceptov) */
+export interface SektorVerejny { id: string; nazov: string; oblast: string; obsah: CentralnaZbierka }
+const verejne = new Map<string, SektorVerejny[]>();
+const nacitavaV = new Set<string>();
+export async function nacitajSektoryVerejne(stranka: string): Promise<void> {
+  if (!supabase || !stranka || nacitavaV.has(stranka)) return;
+  nacitavaV.add(stranka);
+  const { data, error } = await supabase.from("sektor_stranky_verejny").select("id, nazov, oblast, obsah, poradie")
+    .eq("stranka", stranka).order("poradie").then((x) => x, () => ({ data: null, error: { message: "siet" } }));
+  nacitavaV.delete(stranka);
+  if (error) return;
+  verejne.set(stranka, ((data ?? []) as { id: string; nazov: string; oblast: string; obsah: CentralnaZbierka | null }[]).map((r) => ({ id: r.id, nazov: r.nazov, oblast: r.oblast, obsah: { ...prazdnyObsah(), ...(r.obsah ?? {}) } })));
+  zmena();
+}
+export const sektoryVerejneZPamate = (stranka: string): SektorVerejny[] => verejne.get(stranka) ?? [];
 /** čísla sektora — z ledgera ich počíta volajúci (darcoviaPre), tu nič vymyslené */
+
 export const cislaSektora = (_id: string): CislaPolozky => NULA;
 export const obsahSektora = (id: string): CentralnaZbierka | null => obsah.get(id) ?? null;
 

@@ -193,7 +193,8 @@ export function VykladCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, 
     <ModulProfilu key={sektory[sel].id} profil={profil} sektor={sektory[sel]} poradie={sel} mestoV="" onZbal={() => setSel(-1)} dorovnanie={!farnost}
       typ={sektory[sel].typ} typ2={sektory[sel].typ2} info={sektory[sel].info} hlavna={farnost && !sel} />);
   const podporit = <>
-    {kicker(pc ? `PODPORIŤ ${meno.toLocaleUpperCase("sk-SK")} · AJ PRAVIDELNE` : "PODPORIŤ · AJ PRAVIDELNE", { paddingTop: mob ? 16 : 6 })}
+    {/* balík 48 · 528: charita „Podporte nás“, od P1 „· aj pravidelne“ */}
+    {kicker(farnost ? (pc ? `PODPORIŤ ${meno.toLocaleUpperCase("sk-SK")} · AJ PRAVIDELNE` : "PODPORIŤ · AJ PRAVIDELNE") : profil.bezPravidelnej ? "PODPORTE NÁS" : "PODPORTE NÁS · AJ PRAVIDELNE", { paddingTop: mob ? 16 : 6 })}
     {dlazdice}{modul}
   </>;
 
