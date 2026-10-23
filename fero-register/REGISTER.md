@@ -400,5 +400,5 @@ Minimum 5 % patrí LEN reťazi tvorcu. Kód sedí s dohodami, nič sa nemení. T
 - Nová sektorová zbierka ponúka LEN zakliknuté podskupiny charity (útulok nevidí seniorov).
 - Neskoršia zmena podskupín v Správe → ide na overenie („Pošlite zmenu stanov na overenie ›").
 - **Advokácia a právna pomoc: rieši sa pri sekcii registrácia** (tam patrí). Ak sa pridá, tak s DÔRAZNÝM varovaním na politiku a kokotiny — porušenie = ban 10 rokov.
-- OTVORENÉ (čaká na Martina): či sa zakliknuté podskupiny dajú použiť na sektorovú zbierku hneď po registrácii, alebo až po schválení stanov. Ferov návrh: hneď + štítok „čaká na overenie stanov", výplata aj tak až po overení; pri zamietnutí sa zbierka pozastaví.
+- Schvaľovanie pred/po stanovách: Paľo číselník nasadí, samotné pravidlo sa VYRIEŠI PRI SEKCII REGISTRÁCIA (Martin: „nechcem odskakovať od témy, teraz charita"). Ferov návrh na vtedy: hneď + štítok „čaká na overenie stanov", výplata až po overení.
 - Spolky (časť C) sa teraz nerobia.
