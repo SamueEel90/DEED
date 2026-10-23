@@ -358,3 +358,62 @@ Nič nekoliduje s dnešným stavom — väčšina sú budúce use-casy na 5 mech
 2. ForwardBlock (vrátenie peňazí kontroverzného tvorcu) — **odložené**: riešiť, až keby také problémy reálne nastali. Nie je v dohodách, ostáva v zdroji 18.
 3. 0 % = QR sa nevygeneruje — Martin preverí s Paľom (malo by platiť).
 4. Pravidlo 3 výstupov pri QR — bez akcie, existujúci stav stačí.
+
+## Kontrola 23. 10. — QR Katalóg v1 (júl) a QR systém v1.1 (máj+jún) vs. v2 a dnešný stav
+**Katalóg v1 = plne prekonaný v2** — rovnaké tabuľky, v2 len pridal 8 pravidiel, sekciu cirkví, frontu a Memory. Dva riadky ukazujú vývoj: „Honorár s reťazou" (v1 % z každého daru zamknuté → v2 fronta) a „Pridanie priateľa" (v1 Telegram štýl → v2 sprísnené: nikdy neotvára profil/skutky). Žiadne nové skutočnosti.
+
+**QR systém v1.1 = technická biblia, stále platná.** Nové/nestratiť:
+- **Balíčková matica rotujúceho QR** (Základný/Business/Enterprise): rotujúci až od Business (prednastavené 15 s, odhlásenie 80 %); priebežný QR 60 %, viac vstupných bodov a vlastný refresh len Enterprise; export dochádzky PDF (Business) / PDF+API (Enterprise). **NEROZHODNUTÉ: mapovanie na dnešné programy (charita Zadarmo/P1–P3, Viera S1–S3)** — staré názvy balíčkov nikde nepreložené.
+- Tri QR pri akcii: vstupný · priebežný (60 %) · odhlasovací — **odhlasovací QR neexistuje pred dosiahnutím % účasti**.
+- Typ akcie sa určí pri vytvorení: workshop = vstup+výstup+% / festival = len vstup, žiadny výstup.
+- Smer skenu: organizátor ZDIEĽA, účastník SKENUJE; server validuje každý sken vo vlastnom okne (10–15 s, nie 5).
+- Anti-fraud MVP: krátke okno + **1 sken = 1 device**; relay sa preventívne nerieši; GPS až pri reálnom výskyte (obrana úmerná hodnote).
+- Platobný QR: statický per user, 3 cesty (profil / QR / link deed.good/@meno), ERC-4337 gasless, len KYC, **denný limit prevodov v admin paneli** (v dnešnom kóde nie je).
+- Identity Card: 30 s QR, offline 24 h token, pulzujúci zelený kruh, **hlasová funkcia** („Každý dobrý skutok má reálnu hodnotu"), vzájomná identifikácia cez akciu #123. Nikde v dnešnom kóde — zásobník.
+- SOS poďakovanie = fáza 2/3.
+Uložené: zdroje/20-qr-katalog-v1.md, zdroje/21-qr-system-v11.md.
+
+## Doplnky 23. 10. večer (Martin + Paľo)
+- Ručné „Ukončiť" pri charite sa zjednotí s farnosťou: zastaví dary aj na serveri (dnes len v appke). Schválené.
+- Bežiace zbierky nad cieľom sa po migrácii uzavrú pri najbližšom dare — Samo nič ručne neprepína. Schválené.
+- **Overené: minimum 5 % pri reťazi JE v kóde** (slider reťaze tvorcu) — bod 3 z kontroly júlových špec uzavretý.
+
+## Slovníkové pravidlo 23. 10. — tri mechanizmy percent, NIKDY nemiešať (Paľo overil v kóde)
+1. **Reťaz dobra tvorcu** (modul, fronta zbierok — tvorca delí SVOJ príjem): min 5 %, krok 5, max 100. Stráži appka (RetazDobra.tsx, retaz.ts zaokrúhľuje) aj server (retaz_zapecat, 0094).
+2. **Podiel overovateľa pri súkromnej zbierke** (pohrebná, jubilejná — nejde do feedu): NIE JE reťaz, je to podiel overujúcej služby. Max 3 % + strop 100 €, ŽIADNE minimum (môže byť 0). Server vyšší odmietne.
+3. **Split QR** (delenie výnosu jednej zbierky, napr. pohreb rodina 97/kostol 3): mimo Viery min 5 %, vo Viere povolená aj 0.
+Minimum 5 % patrí LEN reťazi tvorcu. Kód sedí s dohodami, nič sa nemení. Text odišiel Paľovi.
+
+## Rozhodnuté 23. 10. večer — programy charity a testovanie (Martin + Paľo, balík 48)
+- **Bod 518 potvrdený podľa balíka:** sektorové aj centrálna od P1; P1 = centrálna + 3 zbierky; P2 = centrálna + 10; P3 vyššie/na mieru. Stará verzia „sektory od P2, P1 = 5 zbierok" neplatí.
+- **ZMENA pri Zadarmo: 1 zbierka, akákoľvek — bežná, centrálna ALEBO sektorová** (všetky typy dostupné, ale len jedna). BEZ pravidelnej podpory (recurring až od P1). OPRAVA: predtým som zapísal „bez centrálnej a sektorových" — kokotina, neplatí.
+- Martinove 3 testovacie charity: pevný program na serveri (Zadarmo / P1 / P2), P3 založí Samo na povel — reálne porovnanie vedľa seba.
+- Tester-charita (šéfka charity, čaká prvá): režim pozvanej charity = P3 zadarmo ako fara, ale **6 mesiacov od zverejnenia** (pozvané bežne 2 mes.), predĺženie keď bude málo. V tom istom režime aj Martinova ďalšia P3.
+- **Downgrade prepínač**: charita s vyšším programom si v appke (len na svojom zariadení) zníži program a vidí, čo by stratila. Voľby len skutočný program a nadol; server drží skutočný program a všetky dáta, nič sa nestráca. Charita so Zadarmo prepínač nemá.
+- Tlačidlá „Prejsť na P1…" na obrazovke Program a predplatné sa VYPÍNAJÚ (menili len prehliadač + falošná hláška). Program na server zapisuje zatiaľ len Samo cez SQL; skutočný nákup príde s ostrou.
+- Poradie balíka 48: prvý bod −1 = migrácia sektorov na server.
+
+## Rozhodnuté 23. 10. — číselník sekcií charity (Martin + Paľo)
+- Nový číselník sekcií (dokument 14. 9. + doplnky) ide na server NAMIESTO starého cis_segmenty z 0002; appka berie len nový. Paľo sekcie už má.
+- **Výber oblastí v registrácii (krok Stanovy): rolovacie okná podľa hlavnej sekcie (Zvieratá, Seniori a rodina…), v nich podskupiny na zakliknutie.** Charita kliká podskupiny podľa STANOV — upozornenie hore: „Vyberte len to, čo máte v stanovách. Overíme to pri kontrole stanov."
+- Zakliknuté podskupiny sa ukladajú na server — dôležité aj pre budúci matching user ↔ charita (triedenie podľa záujmu).
+- Nová sektorová zbierka ponúka LEN zakliknuté podskupiny charity (útulok nevidí seniorov).
+- Neskoršia zmena podskupín v Správe → ide na overenie („Pošlite zmenu stanov na overenie ›").
+- **Advokácia a právna pomoc: rieši sa pri sekcii registrácia** (tam patrí). Ak sa pridá, tak s DÔRAZNÝM varovaním na politiku a kokotiny — porušenie = ban 10 rokov.
+- Schvaľovanie pred/po stanovách: Paľo číselník nasadí, samotné pravidlo sa VYRIEŠI PRI SEKCII REGISTRÁCIA (Martin: „nechcem odskakovať od témy, teraz charita"). Ferov návrh na vtedy: hneď + štítok „čaká na overenie stanov", výplata až po overení.
+- Spolky (časť C) sa teraz nerobia.
+
+## Zdroj 22 prijatý — DOHODY 23. 10. (Soňa)
+Uložené verbatim v zdroje/22-dohody-23-10.md. Sedí s registrom (programy, cieľ-spúšťač, nezapečatený prepínač, poďakovanie od správcu — moje odpovede na Paľove rozpory už zapracované). Nové do evidencie:
+- Mená testovacích charít: **Pod korunami = Zadarmo · Pevný bod = P1 · Míľnik = P2** (P3 na požiadanie).
+- Slovo „feed" NIKDY v SK texte appky (512F); „ostrá verzia" len pre štart celej appky — pri stránke vždy „verejná/neverejná".
+- Vzhľad „Pirát" sa všade volá **„Moderné"**.
+- **Sektorová zbierka nepotrebuje centrálnu — stačí transparentný účet (527).**
+- Nadpis bloku podpory: Zadarmo „Podporte nás", od P1 „Podporte nás · aj pravidelne" (528).
+- Chyba: profil charity musí čítať skutočnú centrálnu (522, VerejnyProfil.tsx r. 73).
+- Ukončenie zbierky charity ako farnosť: bez darov zmazať + Vrátiť späť 15 min; s darmi Archív (523).
+- SpravaStranky.tsx obsluhuje všetky typy (spolok, klub, škola…) — novinky zapojené len pre charitu, zapnúť aj ostatným.
+- „Je pri vás" (524): QR 15 s, potvrdenie podržaním, bez e-mailu; charita aj farnosť.
+- „Pozrieť ako" (balík 50): pás „Pozeráte ako … · Vrátiť ›", zámky nad limit.
+- Komit k cieľu v balíku opravený: cbb2f07 (nie efcd8a2 — to je môj register-komit programov).
+- Otvorené u Soni: Míľnik vzhľad, poradie blokov, tablet v Ateliéri (509, Martin overí iPad), pekná adresa reťaze pred ostrou.

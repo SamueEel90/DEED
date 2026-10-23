@@ -31,13 +31,13 @@ import { aktivnychOznamov, aktivneOznamyText, nacitajOznamyStranky, useZmenyOzna
 import { centralnaZPamate, useZmenyCentralnej, prazdnaCentralna, nacitajCentralnuZbierku } from "@/lib/centralnaZbierka";
 import { useVecneZbierky } from "@/lib/vecnaZbierka";
 import { MaterialneCharita } from "./MaterialneCharita";
-import { useSektory, cislaSektora, nastavVyberCentralnej, chcemNovySektor, CENTRALNA_CISLA, NULA, SEKTORY_OD_TIERU } from "@/lib/sektoryCharity";
+import { useSektory, cislaSektora, nastavVyberCentralnej, chcemNovySektor, NULA, SEKTORY_OD_TIERU } from "@/lib/sektoryCharity";
 import { cistyText } from "@/lib/richtext";
 import { cisloObjektu } from "@/lib/cisloObjektu";
 import { useDorovnania, stavCharity } from "@/lib/dorovnanie";
 import { nacitajStav, pridajDni, SPRAVA_ZBIERKY_CFG } from "@/lib/zbierkaSprava";
 import { SUBJEKTY } from "./mock";
-import { upravZbierku, useZmenyZbierok, zbierkyStrankyZPamate, nacitajZbierkyStranky, konceptZbierkyZPamate, nacitajKonceptZbierky, cielCislo, jeIne, UCELY, KROKY_ZBIERKY, type SpustenaZbierka, type NovaZbierkaData } from "@/lib/novaZbierka";
+import { upravZbierku, autoUzavrietZbierky, useZmenyZbierok, zbierkyStrankyZPamate, nacitajZbierkyStranky, konceptZbierkyZPamate, nacitajKonceptZbierky, cielCislo, jeIne, UCELY, KROKY_ZBIERKY, type SpustenaZbierka, type NovaZbierkaData } from "@/lib/novaZbierka";
 import { UpravitProfilCharity, VerejnyProfilOkno, zakladnyProfil } from "./UpravitProfilCharity";
 import { VerejnyProfilVSprave } from "@/features/verejny-profil/VerejnyProfil";
 import { PonukyPrace } from "./PonukyPrace";
@@ -60,6 +60,7 @@ import { useRegistra } from "@/lib/udajeRegistra";
 import { mestoZoSidla } from "@/data/charita.supabase";
 import { nastavAktivnuCharitu, casRegistracieLokalne } from "@/lib/aktivnaCharita";
 import { supabase } from "@/lib/supabase";
+import { useProgramStranky } from "@/lib/programStranky";
 import { useMojePrava, smie, NEMATE_POVOLENE, type Pravo } from "@/lib/pravaPracovnika";
 import { LudiaCharity, pocetLudiCharity } from "./LudiaCharity";
 import { AtelierCharity } from "./AtelierCharity";
@@ -271,7 +272,7 @@ const naSpravu = (z: ZbRiadok): ZbierkaNaSpravu => {
   const darc = z.darcovia ?? Number(/(\d[\d\s]*) darcov/.exec(z.s)?.[1].replace(/\s/g, "") ?? 0), dni = z.zostava ?? Number(/končí o (\d+)/.exec(z.s)?.[1] ?? 30);
   // OPRAVY 442 doplnok: skutočná zbierka (zdroj) — súčet a darcov dopočíta Správa zbierky z ledgera, riadok ich nesmie pridať druhýkrát
   const real = !!z.zdroj;
-  return { id: z.id ?? `ukazka-${z.t.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-")}`, nazov: z.t, bg: z.bg, ciel: z.c, vyzbierane: real ? 0 : z.v, darcovia: real ? 0 : darc, zostavaDni: dni, ukoncena: z.konc, lehotaText: z.lehotaText, lehota: z.lehota, bezPredlzenia: z.bezPredlzenia || /^Centrálna/.test(z.t), dlha: z.dlha, zaciatok: z.zaciatok, mesiace: z.mesiace, ucel: z.ucel, mesto: z.mesto, ...(z.zdroj ? { popis: z.zdroj.popis, popis2: z.zdroj.popis2, media: z.zdroj.media, sada: z.zdroj.sada, eurc: z.zdroj.eurc, sadaE: z.zdroj.sadaE, ucet: z.zdroj.ucet, vs: z.zdroj.vs } : {}) };
+  return { id: z.id ?? `ukazka-${z.t.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-")}`, nazov: z.t, bg: z.bg, ciel: z.c, vyzbierane: real ? 0 : z.v, darcovia: real ? 0 : darc, zostavaDni: dni, ukoncena: z.konc, lehotaText: z.lehotaText, lehota: z.lehota, bezPredlzenia: z.bezPredlzenia || /^Centrálna/.test(z.t), dlha: z.dlha, zaciatok: z.zaciatok, mesiace: z.mesiace, ucel: z.ucel, mesto: z.mesto, ...(z.zdroj ? { popis: z.zdroj.popis, popis2: z.zdroj.popis2, media: z.zdroj.media, sada: z.zdroj.sada, eurc: z.zdroj.eurc, sadaE: z.zdroj.sadaE, ucet: z.zdroj.ucet, vs: z.zdroj.vs, autoUzavriet: autoUzavrietZbierky(z.zdroj) } : {}) };
 };
 /** OPRAVY 114: spustená zbierka charity → karta v Prehľade a riadok v Moje zbierky */
 const fotoBg = (z: SpustenaZbierka) => { const f = z.media.find((m) => m.typ === "foto"); return f ? `url('${f.src}') center/cover no-repeat var(--track)` : "repeating-linear-gradient(135deg,var(--track) 0 12px,var(--btn) 12px 24px)"; };
@@ -280,7 +281,7 @@ const koniecZb = (z: SpustenaZbierka): number => { if (z.koniec) return new Date
 const kedyKonci = (z: SpustenaZbierka): string => { const dni = Math.max(0, Math.ceil((koniecZb(z) - Date.now()) / 86400000)); return dni === 0 ? "končí dnes" : `končí o ${dni} ${dni === 1 ? "deň" : dni <= 4 ? "dni" : "dní"}`; };
 const dnesEur = (id: string) => { const d = new Date(); d.setHours(0, 0, 0, 0); return darcoviaPre(id).filter((r) => r.cas >= d.getTime()).reduce((a, r) => a + r.suma, 0); };
 const naPh = (z: SpustenaZbierka): PhZbierka => ({ t: z.nazov, v: sucetDarov(z.id).suma, c: z.cielTyp === "ciel" ? cielCislo(z) : 0, d: kedyKonci(z), bg: fotoBg(z), dn: dnesEur(z.id) });
-const naRiadok = (z: SpustenaZbierka): ZbRiadok => ({ id: z.id, zdroj: z, lehotaText: z.lehota ? (/^\d/.test(z.lehota) ? `do ${z.lehota}` : z.lehota) : undefined, lehota: z.lehotaKluc ?? "30", bezPredlzenia: z.typ === "dlha", dlha: z.typ === "dlha", zaciatok: z.spustena, mesiace: z.mesiace, ucel: z.ucel != null ? (jeIne(z) ? z.ineT : UCELY[z.ucel][0]) : undefined, t: z.nazov, v: sucetDarov(z.id).suma, c: z.cielTyp === "ciel" ? cielCislo(z) : 0, bg: fotoBg(z), s: `${darcovT(sucetDarov(z.id).pocet)} · ${kedyKonci(z)}`, konc: false }); // OPRAVY 445 (2): z ledgera
+const naRiadok = (z: SpustenaZbierka): ZbRiadok => ({ id: z.id, zdroj: z, lehotaText: z.lehota ? (/^\d/.test(z.lehota) ? `do ${z.lehota}` : z.lehota) : undefined, lehota: z.lehotaKluc ?? "30", bezPredlzenia: z.typ === "dlha", dlha: z.typ === "dlha", zaciatok: z.spustena, mesiace: z.mesiace, ucel: z.ucel != null ? (jeIne(z) ? z.ineT : UCELY[z.ucel][0]) : undefined, t: z.nazov, v: sucetDarov(z.id).suma, c: z.cielTyp === "ciel" ? cielCislo(z) : 0, bg: fotoBg(z), s: `${darcovT(sucetDarov(z.id).pocet)} · ${kedyKonci(z)}`, konc: z.stav === "ukoncena" }); // OPRAVY 526: server mohol zbierku uzavrieť sám // OPRAVY 445 (2): z ledgera
 const darcovT = (n: number) => `${n} ${n === 1 ? "darca" : n >= 2 && n <= 4 ? "darcovia" : "darcov"}`;
 // KARTA 48 · testovacie zbierky 1 : 1 podľa prototypu „Zbierky zoznam"
 const ZB_LIST: ZbRiadok[] = [
@@ -351,7 +352,9 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   useVerejneNastavenia(STRANKA_POZICIE[poz]); // rýchle sumy, krypto, viditeľnosť súm z DB (0070b)
   const sada = STIT_SADA_TYPU[typ];
   const [tiery, setTiery] = useState(nacitajTiery);
-  const tier = tiery[poz];
+  // OPRAVY 529 (Martin 23. 10.): charita má program zo servera (program_stranky) — testovací prepínač Program pri charite nie je
+  const programServer = useProgramStranky(typ === "charita" && supabase ? strankaId : null) as Tier;
+  const tier = typ === "charita" && supabase ? programServer : tiery[poz];
   const menu = menuTypu(typ, tier);
   const setTier = (t: Tier) => { const n = { ...nacitajTiery(), [poz]: t }; setTiery(n); ulozTiery(n); };
   const [stit, setStit] = useState<StitCharity>(nacitajStitCharity);
@@ -377,7 +380,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
 
   // OPRAVY 121 · bod 9: rola prihláseného v tejto stránke (zatiaľ vždy hlavný správca — rolu doplní server zo správcov stránky)
   const ts = useTestStav(); // OPRAVY 147: rola sa dá prepnúť v testovacom páse
-  const rola: RolaStranky = TESTOVACIA ? ts.rola : "hlavny";
+  const rola: RolaStranky = TESTOVACIA && typ !== "charita" ? ts.rola : "hlavny"; // OPRAVY 529: pri charite bez testovacej roly
   // OPRAVY 122 (2): centrálna zbierka charity — zatiaľ z ukážkových bežiacich zbierok (nová charita ju nemá); doplní server
   // OPRAVY 397: testovacia charita sa vždy tvorí od nuly — Správa bez ukážok (prepínač Profil: Vyplnený · Prázdny zmizol)
   // OPRAVY 403: charita nikdy neukazuje vymyslené dáta (ukážky ostávajú len testovacím stránkam Pekáreň a tvorca)
@@ -392,7 +395,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   useEffect(() => { void nacitajZbierkyStranky(strankaId); void nacitajKonceptZbierky(strankaId); void nacitajCentralnuZbierku(strankaId); }, [strankaId]);
   // OPRAVY 482: „Vytvorte prvú zbierku“ len keď charita nemá žiadnu — ani centrálnu, sektor, bežnú či vecnú
   useZmenyCentralnej();
-  const sektoryVsetky = useSektory();
+  const sektoryVsetky = useSektory(typ === "charita" ? strankaId : "");
   const vecneVsetky = useVecneZbierky(strankaId);
   const centralnaBezi = !!centralnaZPamate(strankaId)?.spustena;
   // limit je mimo centrálnej · OPRAVY 516: v programe Zadarmo sa centrálna počíta (jedna zbierka naraz: centrálna alebo pre niekoho)
@@ -560,7 +563,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   const dev = TESTOVACIA && FLAGS.dev_tier_switcher && (
     // OPRAVY 397: bez Vzhľad (je v Nastaveniach), Pozrieť profil (Verejný profil v menu) a Profil: Vyplnený · Prázdny (charita je vždy od nuly)
     <PrepinacPodania pas={!desktop} sektor={typ} style={desktop ? { padding: "2px 2px 4px" } : { marginTop: 14 }} bezProfilu
-      dalsie={<>
+      dalsie={typ === "charita" ? undefined : <>
         <TestVolba pas={!desktop} nazov="Typ" volby={TYPY_STRANOK.filter((t) => !TYP_SKRYTY[t]).map((t) => [t, TYP_NAZOV[t]] as [TypStranky, string])} hodnota={typ} onVolba={setTyp} />
         <TestVolba pas={!desktop} nazov="Rola" volby={[["hlavny", "Hlavný správca"], ["spravca", "Správca"], ["pomocnik", "Pomocník"], ["organizator", "Organizátor"]] as [RolaStranky, string][]} hodnota={rola} onVolba={(r) => zmenTestStav({ rola: r })} />
       </>}>
@@ -1515,7 +1518,7 @@ function ObrZbierky(s: Spolocne) {
   const dorBezi = stavyDor.filter((x) => x === "bezi").length;
   const ph = s.mobil && !s.tablet;
   const cenOtv = zbal["cen-sektory"] ?? !ph; // bod 145: mobil predvolene zbalené, PC a tablet rozbalené; pamätá sa ako Pripnuté
-  const sektory = useSektory();
+  const sektory = useSektory(menu.typ === "charita" ? strankaId : "");
   useZmenyCentralnej(); useZmenyDarov(); // OPRAVY 445 (2): sumy zbierok z ledgera
   const list: ZbRiadok[] = [...vlastne.map(naRiadok), ...(nova ? [] : ZB_LIST)];
   // OPRAVY 461: štítok „Nové v príbehu · …“ pri zbierke s najnovším zápisom v Priebehu
@@ -1538,7 +1541,7 @@ function ObrZbierky(s: Spolocne) {
     poslednyRiadok = null;
   }, []);
   // OPRAVY 445 (2): centrálna skutočnej stránky — tento mesiac z ledgera (ten istý refId ako detail centrálnej)
-  const cC = nova ? (() => { const z = new Date(); z.setDate(1); z.setHours(0, 0, 0, 0); return { ...NULA, mesiac: darcoviaPre(refCentralnej(strankaId)).filter((r) => r.cas >= z.getTime()).reduce((a, r) => a + r.suma, 0) }; })() : CENTRALNA_CISLA;
+  const cC = nova ? (() => { const z = new Date(); z.setDate(1); z.setHours(0, 0, 0, 0); return { ...NULA, mesiac: darcoviaPre(refCentralnej(strankaId)).filter((r) => r.cas >= z.getTime()).reduce((a, r) => a + r.suma, 0) }; })() : NULA; // balík 48 −1: bez vymyslených čísel
   // ---- OPRAVY 486 · „Akú zbierku pridávate?“ (charita, ako Viera) ----
   const [vysvetli, setVysvetli] = useState<null | "centralna" | "segment" | "materialne">(null);
   const zamok = (id: "centralna" | "segment" | "materialne") => !maPovolenie(id, tier);
@@ -1788,7 +1791,8 @@ function usePozvanaDo(strankaId: string): string {
 function DevSprava({ pas, tier, stit, onTier, onStit, charita }: { charita: boolean; pas: boolean; tier: Tier; stit: StitCharity; onTier: (t: Tier) => void; onStit: (s: StitCharity) => void }) {
   return (<>
     {/* OPRAVY 153: Typ a Rola sú pod „Ďalšie testovacie ›" */}
-    <TestVolba pas={pas} nazov="Program" volby={((charita ? [0, 1, 2, 3] : [0, 1, 2, 3, 4]) as Tier[]).map((t) => [t, PROGRAM_NAZOV[t]] as [Tier, string])} hodnota={tier} onVolba={onTier} />
+    {/* OPRAVY 529: pri charite len Štít (vzhľad), program je zo servera */}
+    {!charita && <TestVolba pas={pas} nazov="Program" volby={([0, 1, 2, 3, 4] as Tier[]).map((t) => [t, PROGRAM_NAZOV[t]] as [Tier, string])} hodnota={tier} onVolba={onTier} />}
     <StitVolba pas={pas} stit={stit} onStit={onStit} />
     {/* OPRAVY 433: prepínač Stav (Nová · pozvaná / Nová · zadarmo) zmazaný — úvod riadia skutočné dáta */}
   </>);

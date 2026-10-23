@@ -39,7 +39,8 @@ import { OznamDarcoviSheet } from "@/features/notifikacie/OznamDarcovi";
 import type { OrgZbierka } from "./mock";
 import { TextovePolia, GaleriaEditor } from "./obsahZbierky";
 import { ZapecatenyText, ZapecateneFotky } from "./ZapecatenyObsah";
-import type { MediumZbierky } from "@/lib/novaZbierka";
+import { nastavAutoUzavriet, type MediumZbierky } from "@/lib/novaZbierka";
+import { KartaAutoUzavriet } from "./AutoUzavriet";
 import type { FakturaOrg } from "@/lib/fakturyOrg";
 import { PlatbaOrganizacie, Zaplatene } from "./PlatbaOrganizacie";
 import { PribehEditor } from "./PribehEditor";
@@ -434,6 +435,7 @@ export interface ZbierkaNaSpravu {
   popis?: string; popis2?: string; media?: MediumZbierky[]; sada?: number; eurc?: boolean; sadaE?: number;
   ucet?: string; slug?: string; vs?: string; organizacia?: string; mesto?: string;
   /** OPRAVY 455 (0): stránka charity — príbeh sa ukladá k nej (bez nej ho server odmietol) */ stranka?: string;
+  /** OPRAVY 526: prepínač „Po naplnení cieľa automaticky uzavrieť“ (server 0168) */ autoUzavriet?: boolean;
   /** uloží zmenený obsah späť do spustenej zbierky */
   onObsah?: (o: ObsahZbierky) => void;
 }
@@ -478,6 +480,8 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
     else zmen(patch);
   };
   const vyzbierane = z.vyzbierane + darov.suma;
+  // OPRAVY 526 (0168): server zbierku uzavrel sám (cieľ naplnený) → aj Správa ju ukáže ukončenú (bez Vrátiť späť a bez výsledku darcom)
+  useEffect(() => { if (z.ukoncena && s.stav === "aktivna") zmen({ stav: "ukoncena", ukoncena: new Date().toISOString(), ...(z.ciel > 0 && vyzbierane >= z.ciel ? { dovodUkoncenia: "Cieľ je splnený", autoUzavreta: true } : {}) }); }, [z.ukoncena]); // eslint-disable-line react-hooks/exhaustive-deps
   const darcov = z.darcovia + darov.pocet;
   const [tab, setTab] = useState(startTab ?? 0);
   const [conf, setConf] = useState(false);
@@ -632,7 +636,17 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
   // OPRAVY 358: ten istý QR ako v QR nástrojoch — /z/{id} (adresa sa hľadá podľa id zbierky, nie podľa názvu)
   const qr = <QrKarta nazov={z.nazov} slug={z.id} odkaz={odkazQrZbierky(z.id)} cislo={cisloObjektu("Z", z.id, z.vs)} organizacia={z.organizacia} toast={toast} />;
   const vlavo = <>{stavKarta}{textKarta}{galeria}</>;
-  const vpravo = <>{predlzenie}{topovat}{dlhaKarty}{feedPodakovanie}{ako}{zap}{qr}</>;
+  // OPRAVY 526: zbierka s cieľom — prepínač automatického uzavretia (zmena hneď na serveri; zapnutie pri naplnenej ju uzavrie)
+  const autoKarta = aktivna && z.ciel > 0 && !!z.stranka && <KartaAutoUzavriet key={`auto-${z.id}`} zapnute={z.autoUzavriet ?? true} styl={kartaK} uloz={async (v) => {
+    const r = await nastavAutoUzavriet(z.stranka, z.id, v);
+    if ("chyba" in r) return r.chyba;
+    if (r.uzavreta) zmen({ stav: "ukoncena", ukoncena: new Date().toISOString(), dovodUkoncenia: "Cieľ je splnený", autoUzavreta: true });
+    return null; }} />;
+  const autoPas = !aktivna && s.autoUzavreta && <section role="status" style={{ ...kartaK, background: "var(--gSoft)", border: "2px solid var(--green)" }}>
+    <span style={{ ...nadpisK, color: "var(--gInk)" }}>Zbierka sa naplnila a uzavrela sama</span>
+    <span style={textK}>Suma dosiahla cieľ, dary sa zastavili a beží lehota na dokladovanie. Darcom poďakujte sami.</span>
+  </section>;
+  const vpravo = <>{autoPas}{predlzenie}{topovat}{dlhaKarty}{feedPodakovanie}{ako}{autoKarta}{zap}{qr}</>;
   const stlpce = (l: ReactNode, p: ReactNode, sl = "minmax(0,1.3fr) minmax(0,1fr)") => mobil
     ? <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>{l}{p}</div>
     : <div style={{ display: "grid", gridTemplateColumns: sl, gap: 16, alignItems: "start" }}><div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>{l}</div><div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>{p}</div></div>;

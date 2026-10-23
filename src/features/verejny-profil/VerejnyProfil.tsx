@@ -17,7 +17,7 @@ import type { StitLevel } from "@/components/stit";
 import { createPortal } from "react-dom";
 import { useLayout } from "@/components/context";
 import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
-import { najdiTestProfil, prazdnaCharita, CHARITA_VZOR, type TestProfil, type TestZbierka, type TestSkutok, type TestOznam, type TestPraca } from "@/lib/testProfily";
+import { najdiTestProfil, prazdnaCharita, CHARITA_VZOR, type TestProfil, type TestZbierka, type TestSkutok, type TestOznam, type TestPraca, type TestSektor } from "@/lib/testProfily";
 import { verejneOznamy, useZmenyOznamov, type Oznam } from "@/lib/oznamy";
 import { pracaZPonuky } from "@/features/rola/PonukyPrace";
 import { centralnaZPamate, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
@@ -42,7 +42,9 @@ import { otvorIskry } from "@/features/iskry/otvor";
 import { iskryVsetky } from "@/lib/iskry";
 import { pribehZbierky, orgPribehu, useZmenyPribehov, nacitajPribehy } from "@/lib/pribehZbierky";
 import { PribehZbierky } from "./PribehZbierky";
-import { SektorDarcuKontext, sucetDarov, useZmenyDarov } from "@/lib/darcovia";
+import { SektorDarcuKontext, sucetDarov, useZmenyDarov, darcoviaPre } from "@/lib/darcovia";
+import { naviazObjekt } from "@/lib/darZbierky";
+import { nacitajSektoryVerejne, sektoryVerejneZPamate, useZmenySektorov } from "@/lib/sektoryCharity";
 import { jeCharitaUctu } from "@/lib/mojeStranky";
 import { nacitajPrud } from "@/lib/iskry";
 import { nacitajSkutkyStranky, skutkyStrankyZPamate, useZmenySkutkovStranky } from "@/lib/skutkyStranky";
@@ -128,14 +130,28 @@ function sUdajmiCharity(p: TestProfil, prof: ProfilStranky | null, tier = 0): Te
   const ini = prof?.bezLoga && prof.inicialy?.trim() ? prof.inicialy.trim() : p.iniciala;
   // centrálna len keď ju charita sama založila a spustila (Zbierky → Založiť centrálnu zbierku)
   const c = centralnaZPamate(p.k), foto = c?.media.find((m) => m.typ === "foto")?.src;
-  const centralna = c?.spustena ? { ...p.centralna, popis: cistyText(c.popis) || undefined, popisHtml: [c.popis, c.popis2].filter((x) => x && cistyText(x)).join("") || undefined, foto: foto ?? p.centralna.foto, galeria: c.media.map((m) => ({ typ: m.typ, src: m.src, popis: m.popis })) } : p.centralna;
+  const centralna0 = c?.spustena ? { ...p.centralna, popis: cistyText(c.popis) || undefined, popisHtml: [c.popis, c.popis2].filter((x) => x && cistyText(x)).join("") || undefined, foto: foto ?? p.centralna.foto, galeria: c.media.map((m) => ({ typ: m.typ, src: m.src, popis: m.popis })) } : p.centralna;
+  // balík 48 · 522: dlaždice „Podporte nás“ = spustená centrálna + spustené sektory zo servera (0169); suma tento mesiac z ledgera
+  const zMesiaca = (refId: string, hlavna: boolean, nazov: string) => {
+    naviazObjekt(refId, { stranka: p.k, hlavna, nazov });
+    const z = new Date(); z.setDate(1); z.setHours(0, 0, 0, 0);
+    const r = darcoviaPre(refId);
+    return { mesiac: r.filter((x) => x.cas >= z.getTime()).reduce((a, x) => a + x.suma, 0), vyzbierane: r.reduce((a, x) => a + x.suma, 0), darcovia: r.length };
+  };
+  const centralna = c?.spustena ? { ...centralna0, ...zMesiaca(centralna0.id, true, centralna0.nazov) } : centralna0;
+  const sektory: TestSektor[] = sektoryVerejneZPamate(p.k).map((s) => {
+    const fotky = s.obsah.media.filter((m) => m.typ === "foto");
+    return { id: s.id, nazov: s.nazov, druh: "sektor", foto: fotky[0]?.src ?? centralna0.foto, galeria: s.obsah.media.map((m) => ({ typ: m.typ, src: m.src, popis: m.popis })),
+      popis: cistyText(s.obsah.popis) || undefined, popisHtml: [s.obsah.popis, s.obsah.popis2].filter((x) => x && cistyText(x)).join("") || undefined,
+      mesta: {} as TestSektor["mesta"], ...zMesiaca(s.id, false, s.nazov) };
+  });
   // OPRAVY 418: skutky a oznamy zo Správy (server; bez neho zo správy na tomto zariadení)
   const sk = (skutkyStrankyZPamate(p.k) ?? skutkyOrg(p.k).filter((x) => !x.stiahnuty)).map((s) => skutokProfilu(s, p, tier, logoAkoFoto(prof)));
   const oz = oznamyStranky(p.k).filter((o) => oznamBezi(o)).map((o) => oznamProfilu(o, p));
   // OPRAVY 432: Zadarmo nemá pravidelnú podporu ani pracovné ponuky (od P1) · OPRAVY 516: centrálnu môže mať (jedna zbierka naraz)
   const praca = tier < 1 ? [] : verejneOznamy(`stranka:${p.k}`, "inzerat").map((o) => pracaProfilu(o, p)); // OPRAVY 408
   // OPRAVY 418: O nás · hlavný text z Upraviť profil = veta v hlavičke profilu (všetky 3 vzhľady)
-  return { ...p, veta: cistyText(prof?.onas ?? "").trim() || p.veta, onas2: cistyText(prof?.onas2 ?? "").trim() ? prof!.onas2 : undefined, zivaCharita: true, zbierky, skutky: sk, oznamy: oz, praca, iniciala: ini, logo: prof?.logo || undefined, titulka: prof?.cover?.src || p.titulka, centralna, bezCentralnej: !c?.spustena, bezPravidelnej: tier < 1 };
+  return { ...p, veta: cistyText(prof?.onas ?? "").trim() || p.veta, onas2: cistyText(prof?.onas2 ?? "").trim() ? prof!.onas2 : undefined, zivaCharita: true, zbierky, skutky: sk, oznamy: oz, praca, iniciala: ini, logo: prof?.logo || undefined, titulka: prof?.cover?.src || p.titulka, centralna, sektory, bezCentralnej: !c?.spustena, bezPravidelnej: tier < 1 };
 }
 
 function VerejnyProfilObsah({ kluc, onBack, profilNahlad, vzhladAtelier }: { kluc: string; onBack: () => void; profilNahlad?: ProfilStranky; vzhladAtelier?: Vzhlad }) {
@@ -177,9 +193,9 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad, vzhladAtelier }: { klu
   // „Celá kronika" v Pirátovi otvorí Kroniku len pre tohto návštevníka (nič sa neukladá).
   const [tiery] = useState(nacitajTiery);
   const typP = profil0?.typ;
-  // OPRAVY 432: charita — program zo servera (program_stranky, 0137); testovací prepínač Program ho na tomto zariadení prebije
+  // OPRAVY 432 + 529: charita — program vždy zo servera (program_stranky, 0137)
   const programCh = useProgramStranky(typP === "charita" ? profil0?.k : null);
-  const tierStranky = TESTOVACIA && ts.program !== null ? ts.program : typP === "charita" ? programCh : typP === "firma" ? tiery.b2b : tiery.tvorca;
+  const tierStranky = typP === "charita" ? programCh : TESTOVACIA && ts.program !== null ? ts.program : typP === "firma" ? tiery.b2b : tiery.tvorca;
   const regV = useRegistra(profil0?.k ?? kluc); // OPRAVY 400: názov charity z registra
   const vzhlad = useVzhlad(profil0?.k ?? kluc, typP !== "farnost" && tierStranky === 0); // farnosť: jeden platený program, výber má vždy
   const [prepis, setPrepis] = useState<Vzhlad | null>(null);
@@ -188,14 +204,14 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad, vzhladAtelier }: { klu
   useZmenyCentralnej();
   useEffect(() => { if (typP === "farnost" && profil0) void nacitajCentralnuZbierku(profil0.k); }, [typP, profil0]);
   // OPRAVY 414: uložený profil a zbierky skutočnej charity
-  useZmenyZbierok(); useZmenyDarov(); useZmenySkutkovStranky(); useZmenySkutkov(); useZmenyOznamovCharity(); useZmenyOznamov(); useZmenyUcasti();
+  useZmenyZbierok(); useZmenyDarov(); useZmenySektorov(); useZmenySkutkovStranky(); useZmenySkutkov(); useZmenyOznamovCharity(); useZmenyOznamov(); useZmenyUcasti();
   const kCh = profil0?.bezCentralnej ? profil0.k : null;
   // OPRAVY 445 (1): profil skutočnej charity — žiadni ukážkoví darcovia ani čísla
   useEffect(() => (kCh ? otvorenaRealnaStranka() : undefined), [kCh]);
   const idOznamov = kCh ? oznamyStranky(kCh).map((o) => o.id).join(",") : "";
   useEffect(() => { if (idOznamov) void nacitajUcasti(idOznamov.split(",")); }, [idOznamov]);
   const [profCh, setProfCh] = useState<ProfilStranky | null>(() => (kCh ? profilZPamate(kCh).ulozeny : null));
-  useEffect(() => { if (!kCh) return; let ziva = true; void nacitajProfil(kCh).then((z) => { if (ziva) setProfCh(z.ulozeny); }); void nacitajZbierkyStranky(kCh); void nacitajCentralnuZbierku(kCh); void nacitajSkutkyStranky(kCh); void nacitajOznamyStranky(kCh); nacitajPrud(); return () => { ziva = false; }; }, [kCh]);
+  useEffect(() => { if (!kCh) return; let ziva = true; void nacitajProfil(kCh).then((z) => { if (ziva) setProfCh(z.ulozeny); }); void nacitajZbierkyStranky(kCh); void nacitajCentralnuZbierku(kCh); void nacitajSektoryVerejne(kCh); void nacitajSkutkyStranky(kCh); void nacitajOznamyStranky(kCh); nacitajPrud(); return () => { ziva = false; }; }, [kCh]);
   // OPRAVY 490: z modulu zbierky „Pozri ›“ pri skutku → detail toho skutku hneď po načítaní skutkov stránky
   useEffect(() => {
     const id = cielSkutku();
