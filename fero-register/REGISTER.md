@@ -417,3 +417,16 @@ Uložené verbatim v zdroje/22-dohody-23-10.md. Sedí s registrom (programy, cie
 - „Pozrieť ako" (balík 50): pás „Pozeráte ako … · Vrátiť ›", zámky nad limit.
 - Komit k cieľu v balíku opravený: cbb2f07 (nie efcd8a2 — to je môj register-komit programov).
 - Otvorené u Soni: Míľnik vzhľad, poradie blokov, tablet v Ateliéri (509, Martin overí iPad), pekná adresa reťaze pred ostrou.
+
+## Rozhodnuté 23. 10. — správa po ukončení súkromnej zbierky (dobrovoľný príspevok DEED+)
+Userovi (vlastníkovi zbierky) príde po ukončení pohrebnej/jubilejnej zbierky JEDNA správa so žiadosťou o dobrovoľný príspevok. **Čas: deň po ukončení zbierky, doobeda cca o 11:00** (pohrebná beží ešte ~7 dní po pohrebe, takže pohreb je už preč — netreba ďalší odstup). Raz, bez pripomínania.
+
+Pohrebná:
+„Zbierka je ukončená. Ďakujeme, že ste ju zverili DEED+ — snažili sme sa, aby vám v ťažkých dňoch aspoň s týmto ubudlo starostí.
+Podporiť nás môžete dobrovoľným príspevkom nižšie, aby takáto pomoc ostala dostupná aj ďalším.
+[Podporiť DEED+]"
+
+Jubilejná:
+„Zbierka je ukončená — dúfame, že urobila radosť.
+Podporiť nás môžete dobrovoľným príspevkom nižšie, aby sme to isté mohli spraviť pre ďalších.
+[Podporiť DEED+]"
