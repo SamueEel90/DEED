@@ -75,6 +75,7 @@ export async function ulozCentralnuZbierku(stranka: string, c: CentralnaZbierka)
   let cista: CentralnaZbierka;
   try { cista = await bezDataUrl(c, "stranky"); } catch { return "Fotku sa nepodarilo nahrať. Skúste znova."; }
   const { error } = await supabase.from("profil_stranky").upsert({ stranka, centralna: cista, centralna_cas: new Date().toISOString() }, { onConflict: "stranka" }).then((x) => x, () => ({ error: { message: "" } }));
+  if (error && /zadarmo_jedna_zbierka/.test(error.message ?? "")) return "V programe Zadarmo beží jedna zbierka naraz. Centrálnu spustíte, keď skončí zbierka pre niekoho, alebo s vyšším programom.";
   return error ? "Nepodarilo sa uložiť na server. Skontrolujte pripojenie." : null;
 }
 

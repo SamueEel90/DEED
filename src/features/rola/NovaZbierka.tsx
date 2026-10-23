@@ -140,7 +140,7 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
       const z = await spustiZbierku(strankaId, zadarmo ? { ...d, typ: "kratka", iban: "", prav: false, ...(farnost ? { ucel: null, farnost: { druh: "farnost" as const, ...(naMiesto ? { miesto: naMiesto.id } : {}), upoz } } : {}) } : d, zadarmo ? hlavnyUcet : d.iban, farnost ? "nabozenstvo" : undefined);
       if (farnost) { farnost.onSpustena(z); return; }
       setHotovo(z);
-    } catch (e) { const m = e instanceof Error ? e.message : ""; setChybaSp(/nie je overený|ucet_neovereny/i.test(m) ? UCET_NEOVERENY : m || "Zbierku sa nepodarilo spustiť. Skúste znova."); } // OPRAVY 416
+    } catch (e) { const m = e instanceof Error ? e.message : ""; setChybaSp(/nie je overený|ucet_neovereny/i.test(m) ? UCET_NEOVERENY : /zadarmo_jedna_zbierka/.test(m) ? "V programe Zadarmo beží jedna zbierka naraz (centrálna alebo pre niekoho). Ďalšiu spustíte s vyšším programom." : m || "Zbierku sa nepodarilo spustiť. Skúste znova."); } // OPRAVY 416
     finally { setSpusta(false); }
   };
 

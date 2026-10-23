@@ -8,7 +8,7 @@ import { zmenene } from "./mojeData";
 
 const chyba = (code: string | undefined, m: string) =>
   code === "PGRST202" || code === "42883" || /could not find the function|does not exist/i.test(m) ? "Ukladanie pravidelnej podpory ešte nie je zapnuté na serveri"
-  : /neprihlaseny/.test(m) ? "Najprv sa prihláste" : /zbierka_neexistuje/.test(m) ? "Zbierka sa nenašla" : /neplatna_suma/.test(m) ? "Neplatná suma"
+  : /neprihlaseny/.test(m) ? "Najprv sa prihláste" : /zbierka_neexistuje/.test(m) ? "Zbierka sa nenašla" : /neplatna_suma/.test(m) ? "Neplatná suma" : /zadarmo_bez_pravidelnej/.test(m) ? "Táto organizácia pravidelnú podporu zatiaľ neprijíma"
   : /fetch|network/i.test(m) ? "Nie je spojenie so serverom" : m || "Pravidelnú podporu sa nepodarilo uložiť";
 
 /** zapne pravidelnú podporu zbierky; vráti chybu (text) alebo null */

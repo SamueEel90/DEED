@@ -132,10 +132,10 @@ function sUdajmiCharity(p: TestProfil, prof: ProfilStranky | null, tier = 0): Te
   // OPRAVY 418: skutky a oznamy zo Správy (server; bez neho zo správy na tomto zariadení)
   const sk = (skutkyStrankyZPamate(p.k) ?? skutkyOrg(p.k).filter((x) => !x.stiahnuty)).map((s) => skutokProfilu(s, p, tier, logoAkoFoto(prof)));
   const oz = oznamyStranky(p.k).filter((o) => oznamBezi(o)).map((o) => oznamProfilu(o, p));
-  // OPRAVY 432: Zadarmo nemá centrálnu zbierku, pravidelnú podporu ani pracovné ponuky (všetko od P1)
+  // OPRAVY 432: Zadarmo nemá pravidelnú podporu ani pracovné ponuky (od P1) · OPRAVY 516: centrálnu môže mať (jedna zbierka naraz)
   const praca = tier < 1 ? [] : verejneOznamy(`stranka:${p.k}`, "inzerat").map((o) => pracaProfilu(o, p)); // OPRAVY 408
   // OPRAVY 418: O nás · hlavný text z Upraviť profil = veta v hlavičke profilu (všetky 3 vzhľady)
-  return { ...p, veta: cistyText(prof?.onas ?? "").trim() || p.veta, onas2: cistyText(prof?.onas2 ?? "").trim() ? prof!.onas2 : undefined, zivaCharita: true, zbierky, skutky: sk, oznamy: oz, praca, iniciala: ini, logo: prof?.logo || undefined, titulka: prof?.cover?.src || p.titulka, centralna, bezCentralnej: tier < 1 || !c?.spustena };
+  return { ...p, veta: cistyText(prof?.onas ?? "").trim() || p.veta, onas2: cistyText(prof?.onas2 ?? "").trim() ? prof!.onas2 : undefined, zivaCharita: true, zbierky, skutky: sk, oznamy: oz, praca, iniciala: ini, logo: prof?.logo || undefined, titulka: prof?.cover?.src || p.titulka, centralna, bezCentralnej: !c?.spustena, bezPravidelnej: tier < 1 };
 }
 
 function VerejnyProfilObsah({ kluc, onBack, profilNahlad, vzhladAtelier }: { kluc: string; onBack: () => void; profilNahlad?: ProfilStranky; vzhladAtelier?: Vzhlad }) {

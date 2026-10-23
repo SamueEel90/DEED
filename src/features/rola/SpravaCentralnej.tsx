@@ -310,7 +310,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const sumyKarta = farnost ? <section style={{ borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "20px 22px", display: "flex", flexDirection: "column", gap: 16 }}>
     <SumyPriDarcoch stranka={strankaId} kluc="hlavna" nadpis="Hlavná zbierka · ukázať sumy pri darcoch" />
   </section> : null;
-  const vpravo = <>{sumyKarta}{nahlad}{ucetKarta}<AkoDarovat sada={d.sada} eurc={d.eurc} sadaE={d.sadaE} onZmena={(p) => zmen(p, "sumy")} pravidelna bezi={spustena} /><UlozenePri u={u} pole="sumy" style={{ paddingRight: 8, marginTop: -6 }} />{sektorKarta}{rocneKarta}{spustena ? <>{bezi}{qr}</> : !ch && nebezi}</>;
+  const vpravo = <>{sumyKarta}{nahlad}{ucetKarta}<AkoDarovat sada={d.sada} eurc={d.eurc} sadaE={d.sadaE} onZmena={(p) => zmen(p, "sumy")} pravidelna={!!farnost || tier >= 1} bezi={spustena} /><UlozenePri u={u} pole="sumy" style={{ paddingRight: 8, marginTop: -6 }} />{sektorKarta}{rocneKarta}{spustena ? <>{bezi}{qr}</> : !ch && nebezi}</>;
   // OPRAVY 515: charita — dole Podržte a uložte · Zrušiť úpravy (namiesto pásu Všetko je uložené)
   const lista = ch && (neulozene || !spustena) && (
     <div style={mobil ? { height: 130 } : { position: "sticky", bottom: 12, zIndex: 5, marginTop: 4 }}>

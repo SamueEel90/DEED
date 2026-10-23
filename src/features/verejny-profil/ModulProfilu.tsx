@@ -157,7 +157,7 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, 
       <PrispietZaFarnost refId={refId} nazov={sektor.nazov} vlastnik={profil.meno} />
       <VlastnaSuma eur deed={false} otvor={otvor} onPodporit={() => setHarok("podporit")} firma={dorovnanie ? `${dorovnanie.firma} ${dorovnanie.pomer === 1 ? "zdvojnásobí" : "dorovná"}` : undefined} />
       {!bezEurc && <DaryVKrypte refId={refId} otvor={otvor} mikro={mikro} sumy={sumyE} />}
-      <PravidelnaRiadok registrovany={registrovany} onClick={() => setHarok("pravidelna")} />
+      {!profil.bezPravidelnej && <PravidelnaRiadok registrovany={registrovany} onClick={() => setHarok("pravidelna")} />}
       {/* Martin 13. 10.: tipy „čo za to“ (5 € = obed …) zrušené (PRAVIDLA-APPKY); ostáva len skutočné číslo, koľko ľudí podporuje mesačne */}
       {sektor.mesacne != null && sektor.mesacne > 0 && <div style={{ margin: "8px 2px 0", fontSize: 13.5, fontWeight: 600, color: "var(--green)" }}>{sektor.mesacne.toLocaleString("sk-SK")} {sektor.mesacne === 1 ? "človek podporuje" : sektor.mesacne >= 2 && sektor.mesacne <= 4 ? "ľudia podporujú" : "ľudí podporuje"} mesačne</div>}
       {/* OPRAVY 429: Obľúbené z platobného modulu preč */}
