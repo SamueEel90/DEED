@@ -322,3 +322,18 @@ Patrí k tomu aj (z rozhodnutí 22.–23. 10.): výmaz podľa kódov test/pilot,
 - Testovacie charity dostali programy SQL-om: Pod korunami = Zadarmo, Pevný bod = P1, Míľnik = P2 (na skúšanie zámkov per program).
 - Svetlo pomoci: od Samuela nič netreba, stačí Martinov push a Vercel nasadí.
 - Čaká na Martina: push commitov na platby-modul pred odoslaním odkazu 65 Samuelovi · oprava dvojitého farára (Soňa povedala zatiaľ nerobiť) · zmaz_testovacie až pred ostrou.
+
+## Kontrola 23. 10. — júlové systémové špecifikácie vs. dnešný stav (Reťaz Fronta/Overflow DEV v2 + QR Katalóg v2, oba 8. 7.)
+
+**DRŽÍME SA — jadro sedí** (júlová špec je zjavný predok dnešného kódu reťaze): jedna aktívna zbierka + fronta + automatické prehodenie QR · % per zbierka, krok 5, min 5 · draft voľný / publikovaná zamknutá navždy · pripojenie bez súhlasu príjemcu, len oznámenie · história nemenná · viac tvorcov na zbierke · pohrebný split = iný kontext (neruší sa). QR: platba len v systéme, non-custody, „QR identifikuje — appka autorizuje" (dnešný 6-miestny kód + obojstranné potvrdenie je presne to) · farské QR viazané na inštitúciu, nie farára · pohrebné/omšové len farský feed · TOTP rotujúce.
+
+**SYSTÉMOVÉ DIERY — doplniť k Paľovým bodom reťaze:**
+1. **Overflow dorovnanie daru (Fronta §4.2):** dar, ktorého podiel presahuje zvyšok do cieľa, sa dorovná PRESNE a zvyšok tečie nasledujúcej zbierke (jeden dar smie zavrieť aj dve) — server-side TRANSAKČNE, race dvoch darov nesmie pretiecť cieľ. V dnešných bodoch 1–5 to NIE JE — musí byť v delení 0157/0159. → veta Paľovi k bodu 1.
+2. **0 % = zákaz generovania QR** (disabled s vysvetlením) — overiť v RetazDobra.tsx.
+3. **Pravidlo 3 výstupov pri KAŽDOM QR** (Skenovať · Kopírovať odkaz · Zdieľať — práca na jednom telefóne) — systémové, do DIZAJN-DOHODNUTE po Martinovom kývnutí.
+4. Anti-fraud 1 sken = 1 device; Identity QR preukaz (30 s, offline 24 h token) — v dnešných dohodách ani kóde nikde; nestratiť (Fáza?).
+5. „Prihlásený profil = dôkaz pravosti" (falošná stránka neukáže tvoj profil; hosť platí na vlastné riziko + edukácia) — silné systémové pravidlo, v dnešných dohodách chýba.
+
+**KONFLIKT NA MARTINOVO ROZHODNUTIE:**
+- Júl: prázdna fronta → systémový fallback (doparovanie kategória+geo, system-assigned, default zapnutý) / community pool — „peniaze nikdy do prázdna". Dnes (22. 10., schválené obrazovky): po fronte **„Potom ty 100 %"** — všetko ostáva tomu, kto reťaz robí. Novšie normálne vyhráva → fallback a community pool PREKONANÉ? Potvrdiť a dať do Pascí.
+- **ForwardBlock** (charita nechce peniaze kontroverzného tvorcu: vráti VŠETKY z jeho reťaze a systém ich už nikdy nespáruje; badge histórie sa nikdy neodstraňuje) — nezávislé od fallbacku a v dnešných dohodách CHÝBA. Preniesť do platných dohôd?
