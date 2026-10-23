@@ -62,7 +62,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   /** OPRAVY 347: záložka QR — otvoriť rovno na nej (návrat z QR nástrojov) · Tlačiť › */ startQr?: boolean; onTlacQr?: (id: string) => void;
 }) {
   useZmenySektorov(); useZmenyDarov();
-  const sektory0 = useSektory();
+  const sektory0 = useSektory(farnost ? "" : strankaId);
   const sektory = farnost ? [] : sektory0;
   const smieSektory = !farnost && tier >= SEKTORY_OD_TIERU;
   const [typ, setTyp] = useState(() => Math.min(vyberCentralnej(), smieSektory ? sektory.length : 0));
@@ -98,7 +98,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const polia = useRef(new Set<string>());
   const dRef = useRef(d);
   useEffect(() => { dRef.current = d; }, [d]);
-  const zapis = (x: CentralnaZbierka): Promise<string | null> => { if (sek) { ulozObsahSektora(sek.id, x); return Promise.resolve(null); } return ulozCentralnuZbierku(strankaId, x); };
+  const zapis = (x: CentralnaZbierka): Promise<string | null> => { if (sek) return ulozObsahSektora(sek.id, x); return ulozCentralnuZbierku(strankaId, x); };
   useEffect(() => {
     if (!zmenene.current || ch) return;
     const t = window.setTimeout(() => { const pl = [...polia.current]; polia.current.clear(); u.sleduj(pl, zapis(d), () => zapis(dRef.current)); setUlozene(true); }, 600);
@@ -363,7 +363,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
       <b style={{ fontSize: 15 }}>Nový sektor</b>
       <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>Vyberte tému. Najviac {SEKTORY_MAX} sektory, od programu Akcia. Dostane farbu podľa poradia a vlastné QR.</span>
       {smieSektory && <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {volne.map((o) => <button key={o.nazov} type="button" aria-disabled={plno} onClick={() => { if (plno) return; const s = pridajSektor(o); if (s) { prepni(sektory.length + 1); toast(`Sektor ${s.nazov} je pridaný`); } }} style={{ height: 44, padding: "0 14px", borderRadius: 22, border: "1px solid var(--cardBd)", background: "var(--field)", cursor: plno ? "default" : "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--ink)", opacity: plno ? 0.5 : 1, boxShadow: "none" }}>{o.nazov}</button>)}
+        {volne.map((o) => <button key={o.nazov} type="button" aria-disabled={plno} onClick={() => { if (plno) return; const s = pridajSektor(strankaId, o, toast); if (s) { prepni(sektory.length + 1); toast(`Sektor ${s.nazov} je pridaný`); } }} style={{ height: 44, padding: "0 14px", borderRadius: 22, border: "1px solid var(--cardBd)", background: "var(--field)", cursor: plno ? "default" : "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--ink)", opacity: plno ? 0.5 : 1, boxShadow: "none" }}>{o.nazov}</button>)}
       </div>}
       <span style={drobneK}>{!smieSektory ? "Sektory máte od programu Akcia." : plno ? `Máte ${sektory.length} z ${SEKTORY_MAX} sektorov. Nový pridáte, keď niektorý zmažete.` : `Máte ${sektory.length} z ${SEKTORY_MAX} sektorov.`}</span>
     </div>);

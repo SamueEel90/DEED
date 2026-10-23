@@ -1,31 +1,31 @@
 // KARTA 48 · centrálna zbierka a sektory charity (Správa → Zbierky).
-// Centrálna = položka 0 (od P1, nezakladá sa). Sektory 1–3 (od P2) len z činností v stanovách.
+// Centrálna = položka 0 (od P1, nezakladá sa). Sektory len z činností v stanovách.
 // Farba podľa poradia: 0 zelená, 1 petrolejová, 2 modrá, 3 terakota, ďalšie svetlejšie (data-hier) — OPRAVY 500: fialová patrí reťazi.
-// Zatiaľ v pamäti relácie (žiadne úložisko prehliadača); čísla sú TESTOVACIE, na serveri ich počíta server.
-import { useSyncExternalStore } from "react";
+// Balík 48 bod −1 · 0169: sektory na serveri (sektor_stranky) ku konkrétnej stránke. Bez DB (vývoj) v pamäti relácie.
+// Dary na sektor idú cez zbierka_dar s id „<stránka>:<sektor.id>“ (darZbierky.idZbierkyDB).
+import { useEffect, useSyncExternalStore } from "react";
 import type { CentralnaZbierka } from "./centralnaZbierka";
-import { ukazkyTeraz, useTestStav } from "./testStav";
-
-const U = (id: string) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=800&q=70`;
+import { supabase } from "./supabase";
+import { bezDataUrl } from "./uploadFoto";
 
 export interface SektorCharity {
   id: string;
   nazov: string;
-  /** činnosť zo stanov, z ktorej sektor vznikol */
+  /** činnosť zo stanov, z ktorej sektor vznikol (0169: stĺpec oblast) */
   stanovy: string;
   foto: string;
   /** odkaz na plagát deedgood.eu/z/{slug} */
   slug: string;
+  /** kedy bol spustený (ISO), null = koncept */
+  spusteny: string | null;
 }
-/** testovacie čísla položky: tento mesiac, ľudí dáva mesačne, od začiatku */
+/** čísla položky: tento mesiac, ľudí dáva mesačne, od začiatku */
 export interface CislaPolozky { mesiac: number; mesacne: number; spolu: number }
 
 export const SEKTORY_MAX = 3;
 export const SEKTORY_OD_TIERU = 1; // OPRAVY 486: sektorové zbierky od P1
-export const CENTRALNA_FOTO = U("photo-1542601906990-b4d3fb778b09");
-export const CENTRALNA_SLUG = "svetlo-pomoci";
 
-/** činnosti zo stanov, z ktorých sa dá pridať sektor (TESTOVACIE; na serveri z registrácie) */
+/** činnosti zo stanov, z ktorých sa dá pridať sektor (TESTOVACIE; na serveri zatiaľ nie sú) */
 export const STANOVY_CINNOSTI: { nazov: string; stanovy: string }[] = [
   { nazov: "Seniori", stanovy: "Sociálne služby pre seniorov" },
   { nazov: "Deti", stanovy: "Výchova a vzdelávanie detí" },
@@ -34,50 +34,105 @@ export const STANOVY_CINNOSTI: { nazov: string; stanovy: string }[] = [
   { nazov: "Vzdelávanie", stanovy: "Vzdelávanie dospelých" },
   { nazov: "Komunita", stanovy: "Komunitná práca v meste" },
 ];
-
-const TEST: (SektorCharity & { cisla: CislaPolozky; text: string })[] = [
-  { id: "sek-seniori", nazov: "Seniori", stanovy: "Sociálne služby pre seniorov", foto: U("photo-1516307365426-bea591f05011"), slug: "svetlo-pomoci-seniori", cisla: { mesiac: 1480, mesacne: 61, spolu: 9840 }, text: "<p>Nákupy, lieky a obedy pre osamelých seniorov zo Sihote a Opatovej. Chodíme za nimi každý týždeň.</p>" },
-  { id: "sek-deti", nazov: "Deti", stanovy: "Výchova a vzdelávanie detí", foto: U("photo-1503454537195-1dcabb73ffb9"), slug: "svetlo-pomoci-deti", cisla: { mesiac: 940, mesacne: 38, spolu: 6210 }, text: "<p>Doučovanie, školské potreby a krúžky pre deti z Tábora a Zámostia.</p>" },
-  { id: "sek-bez-domova", nazov: "Ľudia bez domova", stanovy: "Pomoc ľuďom bez domova", foto: U("photo-1519681393784-d120267933ba"), slug: "svetlo-pomoci-bez-domova", cisla: { mesiac: 1210, mesacne: 54, spolu: 11480 }, text: "<p>Nocľaháreň, polievka a sprchy pre ľudí bez domova v Trenčíne.</p>" },
-];
-export const CENTRALNA_CISLA: CislaPolozky = { mesiac: 3120, mesacne: 143, spolu: 42550 };
 export const NULA: CislaPolozky = { mesiac: 0, mesacne: 0, spolu: 0 };
 
-let sektory: SektorCharity[] = TEST.map(({ cisla: _c, text: _t, ...s }) => s);
-const cisla = new Map<string, CislaPolozky>(TEST.map((s) => [s.id, s.cisla]));
-const obsah = new Map<string, CentralnaZbierka>(TEST.map((s) => [s.id, { popis: s.text, popis2: "", media: [], sada: 1, eurc: true, sadaE: 0, ucet: null }]));
+const prazdnyObsah = (): CentralnaZbierka => ({ popis: "", popis2: "", media: [], sada: 1, eurc: true, sadaE: 0, ucet: null });
+const slugZ = (nazov: string) => `sektor-${nazov.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}`;
+const fotoZ = (c: CentralnaZbierka | null) => { const m = c?.media?.find((x) => x.typ === "foto"); return m?.src ?? ""; };
+
+// pamäť: stránka → sektory (bez ukončených), id sektora → obsah, id sektora → stránka
+const zoznam = new Map<string, SektorCharity[]>();
+const obsah = new Map<string, CentralnaZbierka>();
+const strankaSektora = new Map<string, string>();
+const nacitava = new Set<string>();
 let verzia = 0;
 const pocuvaj = new Set<() => void>();
 const zmena = () => { verzia++; pocuvaj.forEach((f) => f()); };
 export const useZmenySektorov = () => useSyncExternalStore((f) => { pocuvaj.add(f); return () => pocuvaj.delete(f); }, () => verzia);
 
-/** Profil: Prázdny (testovacie) = bez troch ukážkových sektorov, len tie, ktoré správca naozaj pridá */
-const TEST_ID = new Set(TEST.map((s) => s.id));
-const viditelne = (): SektorCharity[] => (ukazkyTeraz() ? sektory : sektory.filter((s) => !TEST_ID.has(s.id)));
-export const nacitajSektory = (): SektorCharity[] => viditelne();
-export function useSektory(): SektorCharity[] { useZmenySektorov(); useTestStav(); return viditelne(); }
-export const cislaSektora = (id: string): CislaPolozky => cisla.get(id) ?? NULA;
-export const obsahSektora = (id: string): CentralnaZbierka | null => obsah.get(id) ?? null;
-export function ulozObsahSektora(id: string, c: CentralnaZbierka) { obsah.set(id, c); zmena(); }
-export function pridajSektor(c: { nazov: string; stanovy: string }): SektorCharity | null {
-  const v = viditelne();
-  if (v.length >= SEKTORY_MAX || v.some((s) => s.nazov === c.nazov)) return null;
-  const slug = `sektor-${c.nazov.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}`;
-  const s: SektorCharity = { id: `sek-${Date.now()}`, nazov: c.nazov, stanovy: c.stanovy, foto: "", slug };
-  sektory = [...sektory, s];
-  obsah.set(s.id, { popis: "", popis2: "", media: [], sada: 1, eurc: true, sadaE: 0, ucet: null });
-  zmena();
-  return s;
+type Riadok = { id: string; stranka: string; oblast: string; nazov: string; obsah: CentralnaZbierka | null; poradie: number; spusteny: string | null };
+function zRiadku(r: Riadok): SektorCharity {
+  const o = { ...prazdnyObsah(), ...(r.obsah ?? {}) };
+  obsah.set(r.id, o); strankaSektora.set(r.id, r.stranka);
+  return { id: r.id, nazov: r.nazov, stanovy: r.oblast, foto: fotoZ(o), slug: slugZ(r.nazov), spusteny: r.spusteny };
 }
-/** zmazanie sektora vracia funkciu na vrátenie (pás Vrátiť) */
-export function zmazSektor(id: string): () => void {
-  const pred = sektory;
-  sektory = sektory.filter((s) => s.id !== id);
+/** sektory stránky zo servera (správca: aj koncepty; neukončené, podľa poradia) */
+export async function nacitajSektory(stranka: string): Promise<void> {
+  if (!supabase || !stranka || nacitava.has(stranka)) return;
+  nacitava.add(stranka);
+  const { data, error } = await supabase.from("sektor_stranky").select("id, stranka, oblast, nazov, obsah, poradie, spusteny")
+    .eq("stranka", stranka).is("ukonceny", null).order("poradie").order("vytvorene").then((x) => x, () => ({ data: null, error: { message: "siet" } }));
+  nacitava.delete(stranka);
+  if (error) return;
+  zoznam.set(stranka, ((data ?? []) as Riadok[]).map(zRiadku));
   zmena();
-  return () => { sektory = pred; zmena(); };
+}
+export function useSektory(stranka: string): SektorCharity[] {
+  useZmenySektorov();
+  useEffect(() => { if (stranka) void nacitajSektory(stranka); }, [stranka]);
+  return zoznam.get(stranka) ?? [];
+}
+/** čísla sektora — z ledgera ich počíta volajúci (darcoviaPre), tu nič vymyslené */
+export const cislaSektora = (_id: string): CislaPolozky => NULA;
+export const obsahSektora = (id: string): CentralnaZbierka | null => obsah.get(id) ?? null;
+
+const chybaTextu = (m: string) => (/sektor_od_p1/.test(m) ? "Sektorové zbierky máte od programu P1."
+  : /sektor_stranky_oblast_uq|duplicate/.test(m) ? "Na túto oblasť už zbierka beží."
+  : "Nepodarilo sa uložiť na server. Skontrolujte pripojenie.");
+
+/** uloží text, fotky a sumy sektora; vráti chybu ako text, inak null */
+export async function ulozObsahSektora(id: string, c: CentralnaZbierka): Promise<string | null> {
+  obsah.set(id, c);
+  const st = strankaSektora.get(id);
+  if (st) zoznam.set(st, (zoznam.get(st) ?? []).map((s) => (s.id === id ? { ...s, foto: fotoZ(c) } : s)));
+  zmena();
+  if (!supabase) return null;
+  let cista: CentralnaZbierka;
+  try { cista = await bezDataUrl(c, "stranky"); } catch { return "Fotku sa nepodarilo nahrať. Skúste znova."; }
+  const { error } = await supabase.from("sektor_stranky").update({ obsah: cista }).eq("id", id).then((x) => x, () => ({ error: { message: "" } }));
+  return error ? chybaTextu(error.message ?? "") : null;
 }
 
-export function premenujSektor(id: string, nazov: string) { sektory = sektory.map((s) => (s.id === id ? { ...s, nazov } : s)); zmena(); }
+/** nový sektor stránky (zatiaľ hneď spustený — tok konceptu a spustenia je bod 515); chyba servera → onChyba a sektor zmizne */
+export function pridajSektor(stranka: string, c: { nazov: string; stanovy: string }, onChyba?: (t: string) => void): SektorCharity | null {
+  const v = zoznam.get(stranka) ?? [];
+  if (v.length >= SEKTORY_MAX || v.some((s) => s.stanovy === c.stanovy)) return null;
+  const id = `sek-${Math.random().toString(36).slice(2, 12)}`;
+  const s: SektorCharity = { id, nazov: c.nazov, stanovy: c.stanovy, foto: "", slug: slugZ(c.nazov), spusteny: new Date().toISOString() };
+  obsah.set(id, prazdnyObsah()); strankaSektora.set(id, stranka);
+  zoznam.set(stranka, [...v, s]); zmena();
+  if (supabase) void supabase.from("sektor_stranky").insert({ id, stranka, oblast: c.stanovy, nazov: c.nazov, obsah: prazdnyObsah(), poradie: v.length + 1, spusteny: s.spusteny })
+    .then(({ error }) => { if (error) { zoznam.set(stranka, (zoznam.get(stranka) ?? []).filter((x) => x.id !== id)); zmena(); onChyba?.(chybaTextu(error.message ?? "")); } },
+      () => { zoznam.set(stranka, (zoznam.get(stranka) ?? []).filter((x) => x.id !== id)); zmena(); onChyba?.(chybaTextu("")); });
+  return s;
+}
+/** zmazanie sektora vracia funkciu na vrátenie (pás Vrátiť) — vrátenie ho na serveri založí znova s tým istým id */
+export function zmazSektor(id: string): () => void {
+  const st = strankaSektora.get(id);
+  if (!st) return () => {};
+  const pred = zoznam.get(st) ?? [];
+  const s = pred.find((x) => x.id === id);
+  const o = obsah.get(id) ?? prazdnyObsah();
+  const poradie = pred.findIndex((x) => x.id === id) + 1;
+  zoznam.set(st, pred.filter((x) => x.id !== id)); zmena();
+  if (supabase) void supabase.from("sektor_stranky").delete().eq("id", id).then(() => {}, () => {});
+  return () => {
+    if (!s) return;
+    zoznam.set(st, [...(zoznam.get(st) ?? []).filter((x) => x.id !== id), s]); zmena();
+    if (supabase) void supabase.from("sektor_stranky").insert({ id, stranka: st, oblast: s.stanovy, nazov: s.nazov, obsah: o, poradie, spusteny: s.spusteny }).then(() => {}, () => {});
+  };
+}
+
+const casovace = new Map<string, number>();
+/** premenovanie — naživo v appke, na server o 600 ms po poslednom písmene */
+export function premenujSektor(id: string, nazov: string) {
+  const st = strankaSektora.get(id);
+  if (!st) return;
+  zoznam.set(st, (zoznam.get(st) ?? []).map((s) => (s.id === id ? { ...s, nazov, slug: slugZ(nazov) } : s))); zmena();
+  if (!supabase || !nazov.trim()) return;
+  window.clearTimeout(casovace.get(id));
+  casovace.set(id, window.setTimeout(() => { void supabase?.from("sektor_stranky").update({ nazov: nazov.trim().slice(0, 30) }).eq("id", id).then(() => {}, () => {}); }, 600));
+}
 
 /** žiadosť o zmenu účtu centrálnej / sektora — ide DEED+ na schválenie (do 2 pracovných dní) */
 export interface ZiadostUcet { dovod: string; iban: string; podana: string }

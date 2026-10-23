@@ -31,7 +31,7 @@ import { aktivnychOznamov, aktivneOznamyText, nacitajOznamyStranky, useZmenyOzna
 import { centralnaZPamate, useZmenyCentralnej, prazdnaCentralna, nacitajCentralnuZbierku } from "@/lib/centralnaZbierka";
 import { useVecneZbierky } from "@/lib/vecnaZbierka";
 import { MaterialneCharita } from "./MaterialneCharita";
-import { useSektory, cislaSektora, nastavVyberCentralnej, chcemNovySektor, CENTRALNA_CISLA, NULA, SEKTORY_OD_TIERU } from "@/lib/sektoryCharity";
+import { useSektory, cislaSektora, nastavVyberCentralnej, chcemNovySektor, NULA, SEKTORY_OD_TIERU } from "@/lib/sektoryCharity";
 import { cistyText } from "@/lib/richtext";
 import { cisloObjektu } from "@/lib/cisloObjektu";
 import { useDorovnania, stavCharity } from "@/lib/dorovnanie";
@@ -395,7 +395,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   useEffect(() => { void nacitajZbierkyStranky(strankaId); void nacitajKonceptZbierky(strankaId); void nacitajCentralnuZbierku(strankaId); }, [strankaId]);
   // OPRAVY 482: „Vytvorte prvú zbierku“ len keď charita nemá žiadnu — ani centrálnu, sektor, bežnú či vecnú
   useZmenyCentralnej();
-  const sektoryVsetky = useSektory();
+  const sektoryVsetky = useSektory(typ === "charita" ? strankaId : "");
   const vecneVsetky = useVecneZbierky(strankaId);
   const centralnaBezi = !!centralnaZPamate(strankaId)?.spustena;
   // limit je mimo centrálnej · OPRAVY 516: v programe Zadarmo sa centrálna počíta (jedna zbierka naraz: centrálna alebo pre niekoho)
@@ -1518,7 +1518,7 @@ function ObrZbierky(s: Spolocne) {
   const dorBezi = stavyDor.filter((x) => x === "bezi").length;
   const ph = s.mobil && !s.tablet;
   const cenOtv = zbal["cen-sektory"] ?? !ph; // bod 145: mobil predvolene zbalené, PC a tablet rozbalené; pamätá sa ako Pripnuté
-  const sektory = useSektory();
+  const sektory = useSektory(menu.typ === "charita" ? strankaId : "");
   useZmenyCentralnej(); useZmenyDarov(); // OPRAVY 445 (2): sumy zbierok z ledgera
   const list: ZbRiadok[] = [...vlastne.map(naRiadok), ...(nova ? [] : ZB_LIST)];
   // OPRAVY 461: štítok „Nové v príbehu · …“ pri zbierke s najnovším zápisom v Priebehu
@@ -1541,7 +1541,7 @@ function ObrZbierky(s: Spolocne) {
     poslednyRiadok = null;
   }, []);
   // OPRAVY 445 (2): centrálna skutočnej stránky — tento mesiac z ledgera (ten istý refId ako detail centrálnej)
-  const cC = nova ? (() => { const z = new Date(); z.setDate(1); z.setHours(0, 0, 0, 0); return { ...NULA, mesiac: darcoviaPre(refCentralnej(strankaId)).filter((r) => r.cas >= z.getTime()).reduce((a, r) => a + r.suma, 0) }; })() : CENTRALNA_CISLA;
+  const cC = nova ? (() => { const z = new Date(); z.setDate(1); z.setHours(0, 0, 0, 0); return { ...NULA, mesiac: darcoviaPre(refCentralnej(strankaId)).filter((r) => r.cas >= z.getTime()).reduce((a, r) => a + r.suma, 0) }; })() : NULA; // balík 48 −1: bez vymyslených čísel
   // ---- OPRAVY 486 · „Akú zbierku pridávate?“ (charita, ako Viera) ----
   const [vysvetli, setVysvetli] = useState<null | "centralna" | "segment" | "materialne">(null);
   const zamok = (id: "centralna" | "segment" | "materialne") => !maPovolenie(id, tier);
