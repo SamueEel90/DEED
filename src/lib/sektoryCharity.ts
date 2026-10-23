@@ -7,6 +7,7 @@ import { useEffect, useSyncExternalStore } from "react";
 import type { CentralnaZbierka } from "./centralnaZbierka";
 import { supabase } from "./supabase";
 import { bezDataUrl } from "./uploadFoto";
+import { SEKCIE_CHARITY, type SekciaCharity } from "./sekcieCharity";
 
 export interface SektorCharity {
   id: string;
@@ -25,15 +26,27 @@ export interface CislaPolozky { mesiac: number; mesacne: number; spolu: number }
 export const SEKTORY_MAX = 3;
 export const SEKTORY_OD_TIERU = 1; // OPRAVY 486: sektorové zbierky od P1
 
-/** činnosti zo stanov, z ktorých sa dá pridať sektor (TESTOVACIE; na serveri zatiaľ nie sú) */
-export const STANOVY_CINNOSTI: { nazov: string; stanovy: string }[] = [
-  { nazov: "Seniori", stanovy: "Sociálne služby pre seniorov" },
-  { nazov: "Deti", stanovy: "Výchova a vzdelávanie detí" },
-  { nazov: "Ľudia bez domova", stanovy: "Pomoc ľuďom bez domova" },
-  { nazov: "Zdravie", stanovy: "Podpora zdravia a prevencia" },
-  { nazov: "Vzdelávanie", stanovy: "Vzdelávanie dospelých" },
-  { nazov: "Komunita", stanovy: "Komunitná práca v meste" },
-];
+// ---- oblasti zo stanov (0170): podskupiny, ktoré charita vybrala v registrácii; bez nich celý číselník ----
+const oblastiPamat = new Map<string, string[]>();
+async function nacitajOblasti(stranka: string) {
+  if (!supabase || !stranka || oblastiPamat.has(stranka)) return;
+  oblastiPamat.set(stranka, []);
+  const s = await supabase.from("stranka").select("ucet_id").eq("id", stranka).maybeSingle().then((x) => x, () => ({ data: null }));
+  const ucet = (s.data as { ucet_id?: string } | null)?.ucet_id;
+  if (!ucet) return;
+  const g = await supabase.from("segmenty").select("pod_segment").eq("org_ucet_id", ucet).then((x) => x, () => ({ data: null }));
+  oblastiPamat.set(stranka, ((g.data ?? []) as { pod_segment: string | null }[]).map((r) => r.pod_segment).filter((p): p is string => !!p));
+  zmena();
+}
+/** ponuka oblastí pre nový sektor po sekciách: vybrané podskupiny charity, inak celý číselník (charita bez nich, napr. registrovaná skôr) */
+export function useOblastiCharity(stranka: string): SekciaCharity[] {
+  useZmenySektorov();
+  useEffect(() => { if (stranka) void nacitajOblasti(stranka); }, [stranka]);
+  const moje = oblastiPamat.get(stranka) ?? [];
+  if (!moje.length) return SEKCIE_CHARITY;
+  const m = moje.map((x) => x.toLowerCase());
+  return SEKCIE_CHARITY.map((s) => ({ nazov: s.nazov, podskupiny: s.podskupiny.filter((p) => m.includes(p.toLowerCase())) })).filter((s) => s.podskupiny.length > 0);
+}
 export const NULA: CislaPolozky = { mesiac: 0, mesacne: 0, spolu: 0 };
 
 const prazdnyObsah = (): CentralnaZbierka => ({ popis: "", popis2: "", media: [], sada: 1, eurc: true, sadaE: 0, ucet: null });
@@ -78,6 +91,7 @@ export const obsahSektora = (id: string): CentralnaZbierka | null => obsah.get(i
 
 const chybaTextu = (m: string) => (/sektor_od_p1/.test(m) ? "Sektorové zbierky máte od programu P1."
   : /sektor_stranky_oblast_uq|duplicate/.test(m) ? "Na túto oblasť už zbierka beží."
+  : /oblast_mimo_stanov/.test(m) ? "Túto oblasť nemáte v stanovách."
   : "Nepodarilo sa uložiť na server. Skontrolujte pripojenie.");
 
 /** uloží text, fotky a sumy sektora; vráti chybu ako text, inak null */

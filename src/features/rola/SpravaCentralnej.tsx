@@ -29,8 +29,9 @@ import { Prepinac } from "@/features/profil/nastUi";
 import {
   useSektory, obsahSektora, ulozObsahSektora, pridajSektor, zmazSektor, premenujSektor, ziadostUctu, poziadajOZmenuUctu,
   zavretaCentralna, zavriCentralnu, otvorCentralnu, vyberCentralnej, nastavVyberCentralnej, useZmenySektorov, vezmiNovySektor, jeNovySektor,
-  NULA, SEKTORY_MAX, SEKTORY_OD_TIERU, STANOVY_CINNOSTI, type SektorCharity,
+  NULA, SEKTORY_MAX, SEKTORY_OD_TIERU, useOblastiCharity, type SektorCharity,
 } from "@/lib/sektoryCharity";
+import { nazovZPodskupiny } from "@/lib/sekcieCharity";
 import { nacitajStav, ulozStav, type StavZbierky } from "@/lib/zbierkaSprava";
 import { nastavCiste, sucetDarov, darcoviaPre, identitaDarcu, relCas, zobrazenaSuma, useZmenyDarov, useSektorDarcu } from "@/lib/darcovia";
 import { beziaceDorovnanieNaCiel, zostatok } from "@/lib/dorovnanie";
@@ -63,6 +64,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
 }) {
   useZmenySektorov(); useZmenyDarov();
   const sektory0 = useSektory(farnost ? "" : strankaId);
+  const ponukaOblasti = useOblastiCharity(farnost ? "" : strankaId);
   const sektory = farnost ? [] : sektory0;
   const smieSektory = !farnost && tier >= SEKTORY_OD_TIERU;
   const [typ, setTyp] = useState(() => Math.min(vyberCentralnej(), smieSektory ? sektory.length : 0));
@@ -219,7 +221,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
     <section style={kartaK}>
       <span style={nadpisK}>Sektor</span>
       <span style={textK}>Téma: <b style={{ color: "var(--ink)" }}>{sek.stanovy}</b>. Názov sektora na profile zmeníte tu.</span>{/* OPRAVY 442 doplnok 3: stanovy appka nepozná, bez „overené pri registrácii“ */}
-      <input value={sek.nazov} maxLength={30} onChange={(e) => premenujSektor(sek.id, e.target.value)} onBlur={(e) => { if (!e.target.value.trim()) premenujSektor(sek.id, STANOVY_CINNOSTI.find((x) => x.stanovy === sek.stanovy)?.nazov ?? "Sektor"); }} aria-label="Názov sektora"
+      <input value={sek.nazov} maxLength={30} onChange={(e) => premenujSektor(sek.id, e.target.value)} onBlur={(e) => { if (!e.target.value.trim()) premenujSektor(sek.id, nazovZPodskupiny(sek.stanovy)); }} aria-label="Názov sektora"
         style={{ height: 48, padding: "0 14px", borderRadius: 12, border: "1.5px solid var(--cardBd)", background: "var(--field)", fontFamily: "inherit", fontSize: 15, fontWeight: 700, color: "var(--ink)", outline: "none", width: "100%", boxSizing: "border-box" }} />
     </section>);
   // OPRAVY 162: farnosť — ten istý QR farnosti z registrácie (po spustení vedie rovno na hlavnú zbierku)
@@ -356,15 +358,19 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
     </section>);
 
   // ---- + Pridať sektor (len z činností v stanovách, od P2, najviac 3) ----
-  const volne = STANOVY_CINNOSTI.filter((x) => !sektory.some((s) => s.stanovy === x.stanovy));
+  // 0170: oblasti zo stanov charity (bez nich celý číselník), po sekciách; bežiace sa neponúkajú
+  const volne = ponukaOblasti.map((s) => ({ nazov: s.nazov, podskupiny: s.podskupiny.filter((p) => !sektory.some((x) => x.stanovy.toLowerCase() === p.toLowerCase())) })).filter((s) => s.podskupiny.length > 0);
   const plno = sektory.length >= SEKTORY_MAX;
   const novyPanel = novySek && (
     <div style={{ borderRadius: 18, background: "var(--panel)", border: "1px solid var(--cardBd)", padding: "14px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
       <b style={{ fontSize: 15 }}>Nový sektor</b>
       <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>Vyberte tému. Najviac {SEKTORY_MAX} sektory, od programu Akcia. Dostane farbu podľa poradia a vlastné QR.</span>
-      {smieSektory && <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {volne.map((o) => <button key={o.nazov} type="button" aria-disabled={plno} onClick={() => { if (plno) return; const s = pridajSektor(strankaId, o, toast); if (s) { prepni(sektory.length + 1); toast(`Sektor ${s.nazov} je pridaný`); } }} style={{ height: 44, padding: "0 14px", borderRadius: 22, border: "1px solid var(--cardBd)", background: "var(--field)", cursor: plno ? "default" : "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--ink)", opacity: plno ? 0.5 : 1, boxShadow: "none" }}>{o.nazov}</button>)}
-      </div>}
+      {smieSektory && volne.map((sk) => <div key={sk.nazov} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" }}>{sk.nazov.toLocaleUpperCase("sk-SK")}</span>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {sk.podskupiny.map((p) => <button key={p} type="button" aria-disabled={plno} onClick={() => { if (plno) return; const s = pridajSektor(strankaId, { nazov: nazovZPodskupiny(p), stanovy: p }, toast); if (s) { prepni(sektory.length + 1); toast(`Sektor ${s.nazov} je pridaný`); } }} style={{ minHeight: 44, padding: "0 14px", borderRadius: 22, border: "1px solid var(--cardBd)", background: "var(--field)", cursor: plno ? "default" : "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--ink)", opacity: plno ? 0.5 : 1, boxShadow: "none", textAlign: "left" }}>{nazovZPodskupiny(p)}</button>)}
+        </div>
+      </div>)}
       <span style={drobneK}>{!smieSektory ? "Sektory máte od programu Akcia." : plno ? `Máte ${sektory.length} z ${SEKTORY_MAX} sektorov. Nový pridáte, keď niektorý zmažete.` : `Máte ${sektory.length} z ${SEKTORY_MAX} sektorov.`}</span>
     </div>);
   const rad: [string, number][] = [["Celá činnosť", 0], ...(smieSektory ? sektory.map((s, i) => [s.nazov, i + 1] as [string, number]) : [])];

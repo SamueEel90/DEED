@@ -1,7 +1,7 @@
 // KARTA 44 · registrácia charity 1b — z osobného účtu (Martin 4. 10.): jeden telefón = jeden osobný účet,
 // organizácia je stránka, ktorú osoba spravuje (Konáš ako). Telefón, heslo ani selfie sa tu už nerobia.
 // Účet → Plán → IČO (register, nemeniteľné) → Štatutár (porovnanie s overeným účtom / pozvánka) → Stanovy (povinné)
-// → Profil (veta, IBAN s overením 0,01 €, sektory) → Možnosti → Náhľad (Bronzový štít) → Hotovo.
+// → Profil (veta, IBAN s overením 0,01 €; podskupiny zo stanov sú v kroku Stanovy) → Možnosti → Náhľad (Bronzový štít) → Hotovo.
 // Programy len Zadarmo · Zbierka · Akcia · Kampaň (vyberá sa v Správe → Program a predplatné).
 import { useRef, useState } from "react";
 import * as db from "@/lib/db";
@@ -10,17 +10,17 @@ import { nastavAktivnuCharitu, noveIdCharity, pridajLokalnuStranku, zapisCasRegi
 import { ulozIbanOrg, ulozTypStranky } from "@/features/rola/stav";
 import { overIban } from "@/features/rola/segmenty";
 import type { RegistrIcoVysledok } from "@/types";
-import { Obrazovka, Nadpis, Svetlo, Bublina, Pole, PoleKodu, Volby, Prepinace, Cipy, KycKarty, PlanKapitol, Register, Odomknute, kapitoly, naServeri, pockaj, vibruj, IK, U } from "./RegB";
+import { Obrazovka, Nadpis, Svetlo, Bublina, Pole, PoleKodu, Volby, Prepinace, SekcieVyber, KycKarty, PlanKapitol, Register, Odomknute, kapitoly, naServeri, pockaj, vibruj, IK, U } from "./RegB";
 import { ulozKrok } from "./OsobaB";
 import { FarnostB } from "./FarnostB";
 import { overKod, pripniKod, kodCely } from "@/lib/pristupoveKody";
 import { ulozRegistra, ulozStatutara, vznikText } from "@/lib/udajeRegistra";
 import { nacitajNastavenia } from "@/lib/nastaveniaStranky";
+import { SEKCIE_CHARITY, sekciaPodskupiny } from "@/lib/sekcieCharity";
 
 export type KrokOrg = "ucet" | "typ" | "plan" | "ico" | "statutar" | "stanovy" | "profil" | "moznosti" | "nahlad" | "hotovo";
 const PORADIE: KrokOrg[] = ["ucet", "typ", "plan", "ico", "statutar", "stanovy", "profil", "moznosti", "nahlad", "hotovo"];
 const KAP: [string, KrokOrg[]][] = [["Organizácia", ["ico"]], ["Overenie", ["statutar", "stanovy"]], ["Profil", ["profil", "moznosti", "nahlad"]]];
-const SEKTORY = ["Sociálne", "Deti", "Zdravie", "Seniori"];
 const datum = (iso: string) => { const d = new Date(iso); return isNaN(+d) ? iso : `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`; };
 const inicialy = (n: string) => n.replace(/\b(o\.\s?z\.|n\.\s?o\.|s\.\s?r\.\s?o\.)/gi, "").trim().split(/\s+/).slice(0, 2).map((s) => s.charAt(0).toUpperCase()).join("");
 
@@ -39,7 +39,9 @@ export function CharitaB({ prihlaseny, onSpat, onPrihlasit, onBezUctu, onHotovo,
   const [jaStatutar, setJaStatutar] = useState(0);
   const [stanovy, setStanovy] = useState<File | null>(null);
   const subor = useRef<HTMLInputElement>(null);
-  const [veta, setVeta] = useState(""), [iban, setIban] = useState(""), [sektory, setSektory] = useState<string[]>(SEKTORY.slice(0, 2));
+  const [veta, setVeta] = useState(""), [iban, setIban] = useState("");
+  // Martin 23. 10.: podskupiny zo stanov (povinné) — overí ich DEED+ raz so stanovami
+  const [oblasti, setOblasti] = useState<string[]>([]);
   const [moz, setMoz] = useState([true, false]);
   // registrácia farnosti (testovacia verzia): vlastná krátka cesta FarnostB
   const [typOrg, setTypOrg] = useState(0), [farnost, setFarnost] = useState(false);
@@ -90,16 +92,20 @@ export function CharitaB({ prihlaseny, onSpat, onPrihlasit, onBezUctu, onHotovo,
       ides("stanovy");
     }
   };
-  const overStanovy = async () => { if (await server(() => db.spustiKyb(org!.id, { stanovyRef: stanovy?.name ?? null }))) { vibruj(8); ides("profil"); } };
+  const overStanovy = async () => {
+    if (await server(async () => {
+      await db.spustiKyb(org!.id, { stanovyRef: stanovy?.name ?? null });
+      await db.ulozSegmenty(org!.id, oblasti.map((p) => ({ sektor: sekciaPodskupiny(p) ?? "", pod_segment: p, vlastny: false })));
+    })) { vibruj(8); ides("profil"); }
+  };
 
   const ibanCisty = overIban(iban);
-  const profilOk = veta.trim().length > 5 && !!ibanCisty && sektory.length > 0;
+  const profilOk = veta.trim().length > 5 && !!ibanCisty;
   const ulozProfil = async () => {
     ulozIbanOrg("charita", ibanCisty!); // správa charity ho ukáže pri centrálnej zbierke (overenie 0,01 € beží tam)
     if (await server(async () => {
       await db.ulozProfilCharity(org!.id, { misia: veta.trim(), web: null, siete: [], uplnost: 60 });
       await db.ulozOrganizaciu(org!.id, { bankovy_ucet: ibanCisty });
-      await db.ulozSegmenty(org!.id, sektory.map((s) => ({ sektor: s, pod_segment: null, vlastny: false })));
     })) ides("moznosti");
   };
   const ulozMoznosti = async () => {
@@ -174,10 +180,12 @@ export function CharitaB({ prihlaseny, onSpat, onPrihlasit, onBezUctu, onHotovo,
         <Bublina>Nové selfie netreba. Overili ste sa pri svojom účte.</Bublina>
       </Obrazovka>);
     case "stanovy": return (
-      <Obrazovka {...zak} cta="Pokračovať" onCta={overStanovy} ctaOff={!stanovy}>
-        <Nadpis kicker="OVERENIE" t="Stanovy" sub="Podľa nich hneď ponúkneme sektory, ktoré smiete otvoriť." />
+      <Obrazovka {...zak} cta="Pokračovať" onCta={overStanovy} ctaOff={!stanovy || oblasti.length === 0}>
+        <Nadpis kicker="OVERENIE" t="Stanovy" sub="Nahrajte stanovy a vyberte, čomu sa podľa nich venujete." />
         <KycKarty karty={[{ t: stanovy ? "Stanovy nahrané" : "Nahrať stanovy", s: stanovy ? stanovy.name : "PDF alebo fotka", ik: IK.subor }]} hotove={[!!stanovy]} onTap={() => subor.current?.click()} />
         <input ref={subor} type="file" accept="application/pdf,image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (!f) return; if (f.size > 20 * 1024 * 1024) { toast("Súbor je väčší ako 20 MB."); return; } setStanovy(f); vibruj(8); }} />
+        <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Vyberte len to, čo máte v stanovách. Overíme to spolu so stanovami. Podľa toho otvoríte sektorové zbierky a podľa toho vás nájdu ľudia so záujmom o tému.</span>
+        <SekcieVyber sekcie={SEKCIE_CHARITY} vybrane={oblasti} onPrepni={(p) => setOblasti((v) => (v.includes(p) ? v.filter((x) => x !== p) : [...v, p]))} />
         <Bublina>Stanovy vidí len DEED+. Darcovia vidia iba to, že sú overené.</Bublina>
       </Obrazovka>);
     case "profil": return (
@@ -187,7 +195,6 @@ export function CharitaB({ prihlaseny, onSpat, onPrihlasit, onBezUctu, onHotovo,
           <Pole label="Jedna veta pre darcov" value={veta} onChange={(v) => setVeta(v.slice(0, 140))} ok={veta.trim().length > 5} placeholder="Varíme, opravujeme, sprevádzame…" autoComplete="off" />
           <Pole label="Účet na dary (IBAN)" value={iban} onChange={(v) => setIban(v.toUpperCase().replace(/[^A-Z0-9 ]/g, "").slice(0, 34))} ok={!!ibanCisty} hint="Pošleme 0,01 € s kódom, ním účet potvrdíte." placeholder="SK12 0900 0000 0051 2345 4521" autoComplete="off" />
         </div>
-        <Cipy cipy={SEKTORY} vybrane={sektory} onPrepni={(t) => setSektory((s) => (s.includes(t) ? s.filter((x) => x !== t) : [...s, t]))} />
       </Obrazovka>);
     case "moznosti": return (
       <Obrazovka {...zak} cta="Pokračovať" onCta={ulozMoznosti} ctaOff={!moz[1]}>

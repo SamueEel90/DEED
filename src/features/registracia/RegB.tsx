@@ -233,6 +233,29 @@ export function Cipy({ cipy, vybrane, onPrepni }: { cipy: string[]; vybrane: str
   );
 }
 
+/** Martin 23. 10.: oblasti zo stanov — hlavné sekcie ako rozbaľovacie okná, v nich podskupiny na zakliknutie */
+export function SekcieVyber({ sekcie, vybrane, onPrepni }: { sekcie: { nazov: string; podskupiny: string[] }[]; vybrane: string[]; onPrepni: (p: string) => void }) {
+  const [otv, setOtv] = useState<string | null>(null);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {sekcie.map((s) => {
+        const n = s.podskupiny.filter((p) => vybrane.includes(p)).length;
+        const o = otv === s.nazov;
+        return (
+          <div key={s.nazov} style={{ borderRadius: 18, background: "var(--card)", border: `1px solid ${n ? "var(--green)" : "var(--cardBd)"}` }}>
+            <button type="button" aria-expanded={o} onClick={() => { vibruj(5); setOtv(o ? null : s.nazov); }}
+              style={{ width: "100%", minHeight: 52, padding: "0 16px", border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, textAlign: "left", color: "var(--ink)", fontFamily: "inherit" }}>
+              <b style={{ flex: 1, fontSize: 15.5 }}>{s.nazov}</b>
+              {n > 0 && <span style={{ flex: "none", fontSize: 13, fontWeight: 800, color: "var(--gInk)" }}>{n} vybraté</span>}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true" style={{ flex: "none", transform: o ? "rotate(180deg)" : "none", transition: "transform .2s ease" }}><path d="M6 9l6 6 6-6" /></svg>
+            </button>
+            {o && <div style={{ padding: "0 12px 14px" }}><Cipy cipy={s.podskupiny} vybrane={vybrane} onPrepni={onPrepni} /></div>}
+          </div>);
+      })}
+    </div>
+  );
+}
+
 /** karty overenia (doklad, selfie, stanovy) — hotovo = fajka */
 export function KycKarty({ karty, hotove, onTap }: { karty: { t: string; s: string; ik: string }[]; hotove?: boolean[]; onTap?: (i: number) => void }) {
   return (
