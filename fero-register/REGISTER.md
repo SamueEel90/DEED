@@ -358,3 +358,17 @@ Nič nekoliduje s dnešným stavom — väčšina sú budúce use-casy na 5 mech
 2. ForwardBlock (vrátenie peňazí kontroverzného tvorcu) — **odložené**: riešiť, až keby také problémy reálne nastali. Nie je v dohodách, ostáva v zdroji 18.
 3. 0 % = QR sa nevygeneruje — Martin preverí s Paľom (malo by platiť).
 4. Pravidlo 3 výstupov pri QR — bez akcie, existujúci stav stačí.
+
+## Kontrola 23. 10. — QR Katalóg v1 (júl) a QR systém v1.1 (máj+jún) vs. v2 a dnešný stav
+**Katalóg v1 = plne prekonaný v2** — rovnaké tabuľky, v2 len pridal 8 pravidiel, sekciu cirkví, frontu a Memory. Dva riadky ukazujú vývoj: „Honorár s reťazou" (v1 % z každého daru zamknuté → v2 fronta) a „Pridanie priateľa" (v1 Telegram štýl → v2 sprísnené: nikdy neotvára profil/skutky). Žiadne nové skutočnosti.
+
+**QR systém v1.1 = technická biblia, stále platná.** Nové/nestratiť:
+- **Balíčková matica rotujúceho QR** (Základný/Business/Enterprise): rotujúci až od Business (prednastavené 15 s, odhlásenie 80 %); priebežný QR 60 %, viac vstupných bodov a vlastný refresh len Enterprise; export dochádzky PDF (Business) / PDF+API (Enterprise). **NEROZHODNUTÉ: mapovanie na dnešné programy (charita Zadarmo/P1–P3, Viera S1–S3)** — staré názvy balíčkov nikde nepreložené.
+- Tri QR pri akcii: vstupný · priebežný (60 %) · odhlasovací — **odhlasovací QR neexistuje pred dosiahnutím % účasti**.
+- Typ akcie sa určí pri vytvorení: workshop = vstup+výstup+% / festival = len vstup, žiadny výstup.
+- Smer skenu: organizátor ZDIEĽA, účastník SKENUJE; server validuje každý sken vo vlastnom okne (10–15 s, nie 5).
+- Anti-fraud MVP: krátke okno + **1 sken = 1 device**; relay sa preventívne nerieši; GPS až pri reálnom výskyte (obrana úmerná hodnote).
+- Platobný QR: statický per user, 3 cesty (profil / QR / link deed.good/@meno), ERC-4337 gasless, len KYC, **denný limit prevodov v admin paneli** (v dnešnom kóde nie je).
+- Identity Card: 30 s QR, offline 24 h token, pulzujúci zelený kruh, **hlasová funkcia** („Každý dobrý skutok má reálnu hodnotu"), vzájomná identifikácia cez akciu #123. Nikde v dnešnom kóde — zásobník.
+- SOS poďakovanie = fáza 2/3.
+Uložené: zdroje/20-qr-katalog-v1.md, zdroje/21-qr-system-v11.md.
