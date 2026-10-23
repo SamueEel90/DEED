@@ -3,7 +3,8 @@
   "rewrites": [
     { "source": "/i/:id", "destination": "/api/iskra?id=:id" },
     { "source": "/odznak/:id", "destination": "/api/odznak?id=:id" },
-    { "source": "/((?!assets/|api/).*)", "destination": "/index.html" }
+    { "source": "/svetlo/:cesta*", "destination": "/svetlo/index.html" },
+    { "source": "/((?!assets/|api/|svetlo/).*)", "destination": "/index.html" }
   ],
   "functions": {
     "api/**/*.ts": { "maxDuration": 60 }

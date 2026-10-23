@@ -18,6 +18,7 @@ import { TitulSoSledovat, Galeria } from "@/features/zbierka/Vrch";
 import type { HelpFeedItem, Subjekt, Oblubeny, QrSplitRow } from "@/types";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import { DomovBoard, DomovEvent } from "@/features/domov/Domov";
+import { TESTOVACIA } from "@/lib/testovacia";
 import { useHelpFeed, useQrSplitCreate, qk, repo } from "@/data";
 import { SplitConfigStep, splitOwnerPct, splitCielePayload, splitValid, splitPreQrModal, QrModal, SplitQrSheet, type SplitCiel } from "@/shared";
 import { qrUrl } from "@/lib/qr";
@@ -208,6 +209,16 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd, onBoard, radius, setRadi
       {/* živý ticker */}
       {/* Martin 21. 10.: ukážkové „práve poslal“ len bez databázy (vývoj), na webe nie */}
       {!supabase && <Ticker key={tick}><b style={{ color: C.text }}>{dar.kto}</b> práve poslal <b style={{ color: C.greenL }}>{dar.co}</b> → {dar.komu}</Ticker>}
+
+      {/* OPRAVY 517 (Martin 23. 10.): len v testovacej verzii — Svetlo pomoci, ako bolo pred OPRAVY 403 (19. 10.), samostatne na /svetlo/ */}
+      {TESTOVACIA && <a href="/svetlo/" target="_blank" rel="noopener" style={{ margin: `4px ${SPACE.md}px ${SPACE.sm}px`, display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 18, background: C.surface2, border: `1.5px solid ${C.line}`, color: C.text, textDecoration: "none" }}>
+        <span aria-hidden="true" style={{ flex: "none", width: 44, height: 44, borderRadius: 12, background: "#4B7A35", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 800 }}>SP</span>
+        <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+          <b style={{ fontSize: 16 }}>Svetlo pomoci · ukážka charity</b>
+          <span style={{ fontSize: 13.5, lineHeight: 1.4, color: C.textSec }}>Appka v stave z 19. 10. s ukážkovými údajmi. Nič sa neukladá na server. Otvorí sa v novom okne.</span>
+        </span>
+        <span aria-hidden="true" style={{ flex: "none", fontSize: 20, fontWeight: 800, color: "#4B7A35" }}>›</span>
+      </a>}
 
       {/* filter typu pomoci + štatistický riadok — na desktope na jednom riadku */}
       <FiltreStat
