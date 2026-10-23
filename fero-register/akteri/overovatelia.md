@@ -22,5 +22,5 @@
 
 ## C · OTVORENÉ
 
-- Event agentúra a hotel — rovnaké podmienky ako pohrebníctvo (3 %/100 €), alebo vlastné? Nerozhodnuté.
+- ~~Event agentúra a hotel~~ ROZHODNUTÉ (Martin 23. 10.): VŠETCI overovatelia-služby rovnako — 3 %, strop 100 €, vypínacia poistka, faktúra. Žiadne vlastné podmienky per typ.
 - Kedy sa Overovatelia zaraďujú do registrácie typov (karta 36 má „inštitúciu" ako nový typ — doplniť?).
