@@ -306,3 +306,19 @@
 **Paľo pripraví tabuľku „čo beží naostro vs. čo je len ukážka"** — zatiaľ ukážky: sektory, faktúry DEED+, platba predplatného farnosti, Z-čísla kým ich nepridelí server, zoznam charít bez servera. Farnosť mock NIE JE (server: profil, hlavná zbierka+dary, omše, oznamy, zvonček, kostoly, ľudia, zverejnenie; ukážka len platba predplatného a väzba platca↔farnosť).
 
 **Hotové 513/514:** Svetlúšik krok 1 Profil (percento, monogram, Uložené ✓ po serveri) + číselník 0164 (modlitebňa BJB/CB/KZ/ACS/CASD/ECM, CČSH, dozorca 7 cirkví). Commity 7e5b70c a 6884df8 ČAKAJÚ NA PUSH (Martin). Odkaz pre Samuela 65 čaká na „daj pre Sama".
+
+## CHECKLIST PRED OSTRÝM ŠTARTOM (Martin + Paľo 23. 10. — nezabudnúť!)
+
+Tesne pred ostrým štartom sa spravia spolu, v tomto poradí:
+
+1. **Vypnúť testovaciu pokladňu** (odvtedy žiadna platba nie je test).
+2. **Spustiť `zmaz_testovacie`** (migrácia 0157, odkaz 61): dvojkrok — prvé spustenie len vypíše počty, výmaz až po Martinovom áno. Vymaže všetky peniaze z testovacej pokladne: testovacie dary, pohyby, platby, vecné dary a upozornenia k nim. TERAZ sa nespúšťa — testovacie dáta nič nerozbíjajú a testeri na nich skúšajú.
+3. **Zapnúť prepínač skúšobnej doby naostro** (trial sa začne počítať od zverejnenia stránok).
+
+Patrí k tomu aj (z rozhodnutí 22.–23. 10.): výmaz podľa kódov test/pilot, číslovanie od nového základu bez recyklácie, pilotné stránky ostávajú.
+
+## Drobnosti z 23. 10. popoludnia
+
+- Testovacie charity dostali programy SQL-om: Pod korunami = Zadarmo, Pevný bod = P1, Míľnik = P2 (na skúšanie zámkov per program).
+- Svetlo pomoci: od Samuela nič netreba, stačí Martinov push a Vercel nasadí.
+- Čaká na Martina: push commitov na platby-modul pred odoslaním odkazu 65 Samuelovi · oprava dvojitého farára (Soňa povedala zatiaľ nerobiť) · zmaz_testovacie až pred ostrou.
