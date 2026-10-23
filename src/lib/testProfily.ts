@@ -215,6 +215,7 @@ export interface TestProfil {
   logo?: string;
   /** OPRAVY 414 (4, 8): skutočná charita — centrálna zbierka nevzniká sama; dlaždice a blok len zo zbierok v databáze */
   bezCentralnej?: boolean;
+  /** OPRAVY 516: program Zadarmo — bez Pravidelnej podpory (centrálna aj zbierka pre niekoho) */ bezPravidelnej?: boolean;
   /** OPRAVY 478: skutočná charita z databázy — Naživo a Od začiatku zo skutočných darov */ zivaCharita?: boolean;
 }
 /** KARTA 50 · farnosť: bez štítu, bez dokladov a „doložené", bez dorovnania firmy */
@@ -636,6 +637,10 @@ const FARNOST: TestProfil = {
 
 // OPRAVY 403: Svetlo pomoci zmazané — CHARITA ostáva len ako šablóna prázdneho profilu novej charity
 export const TEST_PROFILY: TestProfil[] = [FIRMA, TVORCA, FARNOST];
+/** OPRAVY 510: Charita vzorová v Ateliéri (Ukázať: Charita vzorová) — vyplnená ukážka zo šablóny, fotky z voľnej galérie (Unsplash).
+ *  Kľúč „vzor-…“ = jeVzor: nič sa nezapisuje ani nesťahuje zo servera. Na verejnej stránke sa nikde neukazuje. */
+export const CHARITA_VZOR: TestProfil = { ...CHARITA, k: "vzor-charita", meno: "Charita vzorová", iniciala: "CV", menoGen: "Charity vzorovej", menoDat: "Charite vzorovej",
+  stitky: ["Trenčín", "od 2023", "Ukážka"], ico: "", ucet: "", kontakt: "" };
 /** OPRAVY 402: verejný profil novo založenej charity — prázdny (len to, čo naozaj vytvorí), meno z registrácie */
 export function prazdnaCharita(k: string, meno = "Nová charita"): TestProfil {
   const e = vyprazdni(CHARITA);

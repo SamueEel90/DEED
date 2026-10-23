@@ -3,7 +3,7 @@ import type { Notifikacia, NotifKategoria } from "@/types";
 // KARTA 23 · Oznámenia — ukážkový zoznam (kým nie je Supabase). Agregácia je povinná:
 // malé dary vždy v jednom súhrne, nikdy 1 oznam za každý dar.
 export const NOTIFY: Notifikacia[] = [
-  { id: 1, kat: "skutky", den: "Dnes", cas: "teraz", ikona: "ok", ton: "g", titul: "Skutok zverejnený vo feede štvrte", text: "Pitný režim pre susedu · +48 karmy", nove: true },
+  { id: 1, kat: "skutky", den: "Dnes", cas: "teraz", ikona: "ok", ton: "g", titul: "Skutok zverejnený na Domove v štvrti", text: "Pitný režim pre susedu · +48 karmy", nove: true },
   { id: 2, kat: "skutky", den: "Dnes", cas: "12 min", ikona: "otaz", ton: "b", titul: "AI sa pýta na tvoj skutok", text: "Pomoc na brigáde v parku · 2 otázky, bez nich ho nezverejníme", nove: true, akcie: ["odpovedat"],
     skutok: { nazov: "Pomoc na brigáde v parku", popis: "<p>Pomohol som na brigáde v parku, hrabali sme lístie a zbierali odpadky.</p>", otazky: ["Koľko vriec alebo akú plochu ste vyčistili?", "Bol si sám, alebo s ďalšími?"] } },
   { id: 3, kat: "skupina", den: "Dnes", cas: "40 min", ikona: "lud", ton: "g", titul: "Tomáš B. ťa pridal do skutku", text: "Vyčistili sme breh potoka · potvrď, že si bol pri tom", nove: true, akcie: ["bol", "nebol"] },

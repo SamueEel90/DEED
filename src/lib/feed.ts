@@ -46,7 +46,7 @@ export const FEED_CFG: FeedKonfig = {
   podporaStrop: 50, // strop podpory proti manipulácii (B.10)
 
   zivotnostDni: 30, // B.7 — po 30 dňoch skutok zmizne zo ZOBRAZENIA
-  frekvencaMax: 3, // B.6 — max N rovnakého typu+skupiny vo feede (anti-šum)
+  frekvencaMax: 3, // B.6 — max N rovnakého typu+skupiny na Domove (anti-šum)
 };
 
 /** Položka, ktorú feed algoritmus konzumuje (modulové karty sa naň obohacujú). */
@@ -157,7 +157,7 @@ export function frekvencnyStrop<T extends FeedItem>(skutky: T[], cfg: FeedKonfig
   return out;
 }
 
-// ---- B.5 Zoradenie (poradie vo feede) ----
+// ---- B.5 Zoradenie (poradie na Domove) ----
 export function zoradFeed<T extends FeedItem>(skutky: T[], user: FeedUser, cfg: FeedKonfig = FEED_CFG): (T & { _poradie: number; _kriza: boolean })[] {
   const w = cfg.vahy;
   const skoreMax = 11;

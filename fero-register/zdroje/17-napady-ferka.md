@@ -1,0 +1,7 @@
+# DEED — Nápady Fable Ferka (zásobník, v0.1 · 22. júl 2026 · uložené do registra 23. 10.)
+*NIE sú to schválené featúry. Nič sa nekóduje, kým Martin nepovie.*
+
+1. **Benefičný stôl / gala po slovensky** — „kúp si miesto pri stole, výťažok ide na X": benefičná zabíjačka, guláš majstrovstvá, farská kapustnica, večera s hokejistom. Mechanika = plesová (vstupenka so splitom zo vstupného) — treba len novú hlavičku v typoch akcií + marketing. Prevádzkam mŕtve termíny, charitám formát, userom zážitok s dôkazom. CEE nikto nemá vstupenka+split+dôkaz+dobrovoľníci v jednom. Fáza: hneď s plesmi.
+2. **Dobrovoľnícka vrstva akcií** — cudzí user sa zapojí ako POMOCNÍK (obsluha, výzdoba, šatňa). Mechanika existuje (výzva + QR dochádzka + karma), len pripnúť k akcii. Fáza: s Aktivitami.
+3. **Otvorená stolička** — súkromná akcia môže DOBROVOĽNE otvoriť N miest pre komunitu (svadba: 2 miesta, dvojnásobný dar, schvaľuje majiteľ s profilom žiadateľa; default zavreté; prevádzka súhlasí). Overený dopyt (JoinMyWedding…). Takmer nula vývoja (RSVP+schválenie+vyšší dar). Fáza 2+; spúšťač: keď si to prvý jubilant vypýta sám.
+4. **Večera s osobnosťou (zážitkové zbierky)** — zaplať X charite → miesto na večeri s osobnosťou; osobnosť je user so štítom, jej čas = skutok; honorár split. Zlepenec existujúceho: zbierka s cieľom + vstupenka + QR účasť + split; miesto = prevádzka s tierom. Formáty: fixná cena (hneď) · DRAŽBA (právne — Dagmar PRED čímkoľvek). Akvizícia: jeden hokejista = regionálne médiá. Fáza: po tvorcovskej vrstve.

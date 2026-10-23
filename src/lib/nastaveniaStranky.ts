@@ -64,6 +64,19 @@ export function zapisNastavenie(kluc: string, hodnota: unknown): void {
   casovac = setTimeout(dopis, 600);
 }
 
+/** OPRAVY 524: znova prečíta jeden kľúč zo servera (QR na mieste — pracovník mohol pozvánku medzitým prijať).
+ *  Kľúč, ktorý tu čaká na odoslanie, sa neprepíše. */
+export async function obnovKluc(kluc: string): Promise<void> {
+  if (!supabase || !stranka || zmeneneKluce.has(kluc)) return;
+  const id = stranka;
+  const { data: r, error } = await supabase.from("nastavenia_stranky").select("data").eq("stranka", id).maybeSingle().then((x) => x, () => ({ data: null, error: { message: "siet" } }));
+  if (error || stranka !== id || zmeneneKluce.has(kluc) || !r?.data || typeof r.data !== "object") return;
+  const nova = (r.data as Record<string, unknown>)[kluc];
+  if (JSON.stringify(nova) === JSON.stringify(data[kluc])) return;
+  data = { ...data, [kluc]: nova };
+  zmena();
+}
+
 /** OPRAVY 471: zápis, na ktorý sa čaká (ateliér: „uložené ✓“ až po potvrdení servera) — chyba ako text alebo null.
  *  Bez DB (testovacia verzia) len v pamäti relácie. */
 export async function zapisNastavenieIsto(kluc: string, hodnota: unknown): Promise<string | null> {

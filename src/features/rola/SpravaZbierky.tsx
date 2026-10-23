@@ -164,7 +164,7 @@ export function SpravaZbierkySheet({ z, tier, toast, onPaywall, onClose }: {
           <Karta nadpis="Predĺžiť zbierku" popis={CFG.predlzenia.map((p, i) => `${i === 0 ? "Predĺženie" : "potom"} o ${p.dni} dní za ${eur(p.cena)}`).join(", ") + "."}>
             {dalsiePredlzenie ? (
               platba?.druh === "predlzenie" ? (
-                <PlatbaOrganizacie co={`Predĺžiť vo feede o ${dalsiePredlzenie.dni} dní`} cena={dalsiePredlzenie.cena} onZaplatene={(fa) => zaplat(fa)} onZrus={() => setPlatba(null)} />
+                <PlatbaOrganizacie co={`Predĺžiť na Domove o ${dalsiePredlzenie.dni} dní`} cena={dalsiePredlzenie.cena} onZaplatene={(fa) => zaplat(fa)} onZrus={() => setPlatba(null)} />
               ) : (
                 <button onClick={() => setPlatba({ druh: "predlzenie" })} style={{ ...btnDruhy, color: ZELENA, borderColor: tint(ZELENA, .4) }}>
                   +{dalsiePredlzenie.dni} dní za {eur(dalsiePredlzenie.cena)}
@@ -415,13 +415,13 @@ function Dokladovanie({ zbierkaId, s, zmen, vyzbierane, toast, aktivna, onZverej
 // ============================================================
 // KARTA 38 · OPRAVY 123 — Správa zbierky charity (obsahová časť správy, nie hárok; mobil celá obrazovka).
 // Logika zo starého okna ostáva (lib/zbierkaSprava: stav, pásma, fázy, výpočty), nový je vzhľad:
-// Beží (predĺženie vo feede, topovanie, doklady, ukončiť) · Skončila (Podarilo sa, feed, doložiť) · Doklady.
+// Beží (predĺženie na Domove, topovanie, doklady, ukončiť) · Skončila (Podarilo sa, feed, doložiť) · Doklady.
 // Texty z prototypu Sprava charity PC → Zbierky → Spravovať, vykanie, bez emoji.
 // ============================================================
 /** zbierka, ktorú správa otvorila (mock riadok alebo spustená zbierka) */
 export interface ZbierkaNaSpravu {
   id: string; nazov: string; bg: string; ciel: number; vyzbierane: number; darcovia: number;
-  /** centrálna, sektorová alebo dlhodobá — predĺženie vo feede sa neukáže */
+  /** centrálna, sektorová alebo dlhodobá — predĺženie na Domove sa neukáže */
   bezPredlzenia?: boolean;
   lehota?: Lehota; lehotaText?: string;
   /** deň začiatku (ISO) a koľko dní ešte beží (mock) */
@@ -474,7 +474,7 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
   const kde = z.dlha ? kdeJeDlhodoba({ zaciatok: s.zaciatok ?? s.koniec, dary30: darcoviaPre(z.id).filter((d) => Date.now() - d.cas < KONFIG.dlhodoba.prah.dni * DEN_MS).length, vytiahnute: s.vytiahnute, teraz: Math.max(teraz, Date.now()), cfg: KONFIG.dlhodoba }) : null;
   const zmenDoklady = (patch: Partial<StavZbierky>) => {
     const novy = !!patch.doklady && patch.doklady.length > s.doklady.length;
-    if (kde && s.stav === "aktivna" && novy && kde.mozeVytiahnut) { zmen({ ...patch, vytiahnute: new Date().toISOString() }); toast(`Zbierka je na ${KONFIG.dlhodoba.horeHodin} hodín hore vo feede`); }
+    if (kde && s.stav === "aktivna" && novy && kde.mozeVytiahnut) { zmen({ ...patch, vytiahnute: new Date().toISOString() }); toast(`Zbierka je na ${KONFIG.dlhodoba.horeHodin} hodín hore na Domove`); }
     else zmen(patch);
   };
   const vyzbierane = z.vyzbierane + darov.suma;
@@ -581,9 +581,9 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
   const dalsie = CFG.predlzenia[s.predlzenia];
   const maxFeed = CFG.dlzkaDni + CFG.predlzenia.reduce((a, p) => a + p.dni, 0);
   const predlzenie = aktivna && !z.bezPredlzenia && <section style={kartaK}>
-    <span style={nadpisK}>Predĺženie vo feede</span>
-    <span style={textK}>{CFG.dlzkaDni} dní vo feede je v cene, ostáva {dniT(vFeede)}. Na profile zbierka beží aj bez predĺženia. Predlžuje sa vždy o {CFG.predlzenia[0].dni} dní, zaplatíte v ďalšom kroku.</span>
-    {s.predlzenia > 0 && <span style={{ fontSize: 13.5, fontWeight: 800, color: "var(--gInk)" }}>Zaplatené: +{CFG.predlzenia.slice(0, s.predlzenia).reduce((a, p) => a + p.dni, 0)} dní vo feede{dalsie ? "" : ` · viac sa nedá, najviac ${maxFeed} dní`}</span>}
+    <span style={nadpisK}>Predĺženie na Domove</span>
+    <span style={textK}>{CFG.dlzkaDni} dní na Domove je v cene, ostáva {dniT(vFeede)}. Na profile zbierka beží aj bez predĺženia. Predlžuje sa vždy o {CFG.predlzenia[0].dni} dní, zaplatíte v ďalšom kroku.</span>
+    {s.predlzenia > 0 && <span style={{ fontSize: 13.5, fontWeight: 800, color: "var(--gInk)" }}>Zaplatené: +{CFG.predlzenia.slice(0, s.predlzenia).reduce((a, p) => a + p.dni, 0)} dní na Domove{dalsie ? "" : ` · viac sa nedá, najviac ${maxFeed} dní`}</span>}
     {dalsie && <button type="button" onClick={() => setPredSel(true)} aria-pressed={predSel} style={{ minHeight: 64, padding: "0 36px 0 18px", borderRadius: 14, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, color: "var(--ink)", textAlign: "left", ...kartaVolby(predSel) }}>
       <FajkaVolby on={predSel} />
       <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
@@ -592,12 +592,12 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
       </span>
       <b style={{ fontSize: 18, fontVariantNumeric: "tabular-nums" }}>{eur(dalsie.cena)}</b>
     </button>}
-    {dalsie && predSel && <PlatbaOrganizacie co={`Predĺžiť vo feede o ${dalsie.dni} dní`} cena={dalsie.cena} onZaplatene={predlz} onZrus={() => setPredSel(false)} onUdaje={onUdaje} />}
+    {dalsie && predSel && <PlatbaOrganizacie co={`Predĺžiť na Domove o ${dalsie.dni} dní`} cena={dalsie.cena} onZaplatene={predlz} onZrus={() => setPredSel(false)} onUdaje={onUdaje} />}
     {hotovo.P && !predSel && <Zaplatene text={hotovo.P.text} fa={hotovo.P.fa} />}
   </section>;
   const topovat = aktivna && <section style={kartaK}>
     <span style={nadpisK}>Topovať</span>
-    <span style={textK}>Na {CFG.topovanieDni} dní bude zbierka vyššie vo feede. Vyberte, kde. Zaplatíte až v ďalšom kroku.</span>
+    <span style={textK}>Na {CFG.topovanieDni} dní bude zbierka vyššie na Domove. Vyberte, kde. Zaplatíte až v ďalšom kroku.</span>
     <div role="radiogroup" aria-label="Kde topovať" style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 8 }}>
       {CFG.topovanie.map((t) => { const on = topAktivny ? topAktivny.uroven === t.nazov : topSel === t.kluc; const dis = !!topAktivny; return (
         <button key={t.kluc} type="button" role="radio" aria-checked={on} aria-disabled={dis || undefined} onClick={() => { if (!dis) setTopSel(t.kluc); }} style={{ minHeight: 64, padding: 8, borderRadius: 14, cursor: dis ? "default" : "pointer", fontFamily: "inherit", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, color: "var(--ink)", opacity: dis && !on ? 0.5 : 1, ...kartaVolby(on) }}>
@@ -618,9 +618,9 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
   const dniPodakovania = dniDo(koniecPodakovania, teraz);
   const voFeede = !s.stiahnuta && dniPodakovania > 0;
   const feedPodakovanie = !aktivna && <section style={kartaK}>
-    <span style={nadpisK}>{voFeede ? `Vo feede ešte ${dniT(dniPodakovania)} ako poďakovanie` : "Stiahnutá z feedu"}</span>
-    <span style={textK}>{voFeede ? "Zbierka skončila skôr, preto ostane vo feede do konca svojich 30 dní s nápisom Podarilo sa. Darcovia aj zbierka sú vidno. Stiahnuť ju môžete kedykoľvek." : "Zbierka je už len na vašom profile."}</span>
-    {voFeede && <button type="button" onClick={() => zmen({ stiahnuta: new Date().toISOString() })} style={obrysK}>Stiahnuť z feedu</button>}
+    <span style={nadpisK}>{voFeede ? `Na Domove ešte ${dniT(dniPodakovania)} ako poďakovanie` : "Stiahnutá z Domova"}</span>
+    <span style={textK}>{voFeede ? "Zbierka skončila skôr, preto ostane na Domove do konca svojich 30 dní s nápisom Podarilo sa. Darcovia aj zbierka sú vidno. Stiahnuť ju môžete kedykoľvek." : "Zbierka je už len na vašom profile."}</span>
+    {voFeede && <button type="button" onClick={() => zmen({ stiahnuta: new Date().toISOString() })} style={obrysK}>Stiahnuť z Domova</button>}
   </section>;
   const ako = <AkoDarovat sada={ob.sada} eurc={ob.eurc} sadaE={ob.sadaE} onZmena={zmenOb} bezi={aktivna} />;
   const zap = <Zapecatene riadky={[["Cieľ", z.ciel ? eur(z.ciel) : "bez cieľa"], ["Účel", z.ucel ?? "—"], ["Účet", maskUcet(z.ucet ?? hlavnyUcetOrg())], ...(bezDokladov ? [] : [["Lehota na doklady", z.lehotaText ?? (s.lehota === "30" ? "30 dní po skončení" : lehT)] as [string, string]])]}>
@@ -649,7 +649,7 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
       const nSk = new Set(dary.filter((r) => r.cezSkutok).map((r) => r.cezSkutokId ?? r.cezSkutok)).size;
       const rt = dary.filter((r) => !r.cezSkutok && r.cezTvorcu?.startsWith("rt-")).reduce((a, r) => a + r.suma, 0);
       const fi = dary.filter((r) => r.firma).reduce((a, r) => a + r.suma, 0);
-      const l: [string, number, string][] = [["Priamo na zbierke", Math.max(0, vyzbierane - sk - rt - fi), "feed a profil"]];
+      const l: [string, number, string][] = [["Priamo na zbierke", Math.max(0, vyzbierane - sk - rt - fi), "Domov a profil"]];
       if (sk > 0) l.push(["Zo skutkov", sk, nSk === 1 ? "1 skutok" : `${nSk} ${nSk < 5 ? "skutky" : "skutkov"}`]);
       if (rt > 0) l.push(["Cez reťaz dobra", rt, "časť pre zbierku"]);
       if (fi > 0) l.push(["Firmy", fi, "dorovnanie a príspevky"]);
@@ -771,7 +771,7 @@ function UkoncitHarok({ mobil, vyzbierane, darcov, ciel, lehota, onUkonci, onZav
 function KdeJeTeraz({ kde, dary30, onDolozit }: { kde: ReturnType<typeof kdeJeDlhodoba>; dary30: number; onDolozit: () => void }) {
   const K = KONFIG.dlhodoba;
   const dar = (n: number) => `${n} ${n === 1 ? "dar" : n >= 2 && n <= 4 ? "dary" : "darov"}`;
-  const miestoT = { velka: `Vo feede ako veľká karta, prvých ${K.velkaDni} dní.`, hore: `Vo feede hore ako veľká karta, ${K.horeHodin} hodín po doložení.`, mala: "Vo feede ako malá karta.", profil: "Len na vašom profile, vo feede teraz nie je." }[kde.miesto];
+  const miestoT = { velka: `Na Domove ako veľká karta, prvých ${K.velkaDni} dní.`, hore: `Na Domove hore ako veľká karta, ${K.horeHodin} hodín po doložení.`, mala: "Na Domove ako malá karta.", profil: "Len na vašom profile, na Domove teraz nie je." }[kde.miesto];
   const zivaT = kde.ziva ? `Zbierka je živá: ${dar(dary30)} za posledných ${K.prah.dni} dní, treba aspoň ${K.prah.dary}.` : `Zbierka nie je živá: ${dar(dary30)} za posledných ${K.prah.dni} dní, treba aspoň ${K.prah.dary}.`;
   const vytT = kde.dalsieVytiahnutie ? `Priebežne doložiť a dostať sa na ${K.horeHodin} hodín hore môžete znova od ${dnes(kde.dalsieVytiahnutie)}.` : `Priebežne doložiť a dostať sa na ${K.horeHodin} hodín hore môžete teraz.`;
   return (

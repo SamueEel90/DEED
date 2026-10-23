@@ -423,7 +423,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
         fotky: fotky.length ? fotky : orgLogo ? [orgLogo] : [], titul: nz, popis: cistyText(popisHtml), lok: kde, overene: true, skore: 0, typSituacie: "normal", modul: "good", dni: 0, podpora: 0, lat: lok.lat, lng: lok.lng,
       } as GoodPolozka;
       // OPRAVY 443 doplnok: čaká na server — „zverejnený“ len keď sa naozaj zapísal; inak hláška a Skúsiť znova (skutok ostane v zariadení)
-      // OPRAVY 436: príspevok do feedu až po zápise skutku, jeho id sa uloží ku skutku
+      // OPRAVY 436: príspevok na Domov až po zápise skutku, jeho id sa uloží ku skutku
       setPosiela(true);
       void zverejnitSkutokOrg(stranka, novy, it, () => qc.invalidateQueries({ queryKey: qk.good.feed })).then((e) => {
         setPosiela(false); setChybaZ(e);
@@ -438,7 +438,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
     }
     const fotky = media.filter((m) => !m.video).map((m) => m.src);
     if (caka) {
-      // uložené bez hodnotenia — v Mojich skutkoch „Kontroluje AI", do feedu pôjde až po dodatočnom hodnotení
+      // uložené bez hodnotenia — v Mojich skutkoch „Kontroluje AI", na Domov pôjde až po dodatočnom hodnotení
       pridajSkutok({
         id, nazov: nz, popis: `<p>${po2.replace(/[<>&]/g, "")}</p>`, oblast: oblast ?? "Pomoc", miesto: kde, datum: teraz(),
         stav: "ai", karma: null, det: DET_CAKA, fotky, osobny: true,
@@ -454,7 +454,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
     const s: MojSkutok = {
       id, nazov: nz, popis: `<p>${po2.replace(/[<>&]/g, "")}</p>`, oblast: oblast ?? "Pomoc", miesto: kde, datum: teraz(),
       stav: doFeedu ? "ok" : "ja", karma: doFeedu ? karma : Math.min(karma, 5),
-      det: doFeedu ? "Overila AI. Skutok je vo feede tvojej štvrte. Overenia od susedov mu pridávajú dôveru." : "AI: ostáva v tvojom denníku.",
+      det: doFeedu ? "Overila AI. Skutok je na Domove v tvojej štvrti. Overenia od susedov mu pridávajú dôveru." : "AI: ostáva v tvojom denníku.",
       fotky, osobny: !doFeedu, ucastnici: sk ? uc.filter((u) => u.overeny).map((u) => u.meno) : undefined, dar: dar ? darZ : undefined,
       seria: prav ? pvF : undefined, retaz: ohl?.retaz, firma: mojeFirmy.length ? firmaV : undefined,
     };
@@ -709,7 +709,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
         {/* OPRAVY 441: jeden komponent na nahrávanie v celej appke (bez dlaždíc PRED / PO — pred a po napíšete do popisu fotky) */}
         <GaleriaEditor media={mediaG} onMedia={zmenGal} ph={!wide} onVyrez={setVyrezId} nadpis="Fotky a video" dovetok="" popisNapoveda="Napríklad: Pred, Po" max={7} bezVerejnych />
         <div style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 12px", borderRadius: 13, background: "var(--bSoft)", border: "1px solid var(--bBd)", fontSize: 13, lineHeight: 1.5, color: "var(--ink2)" }}>
-          <span style={{ color: "var(--blue)", display: "flex", flex: "none", marginTop: 1 }}><Ik d={IK.poloha} /></span><span>Foť a natáčaj <b style={{ color: "var(--ink)" }}>so zapnutou polohou</b>. AI tak overí, že fotky sú z miesta skutku, a skutok má väčšiu šancu na feed.</span></div>
+          <span style={{ color: "var(--blue)", display: "flex", flex: "none", marginTop: 1 }}><Ik d={IK.poloha} /></span><span>Foť a natáčaj <b style={{ color: "var(--ink)" }}>so zapnutou polohou</b>. AI tak overí, že fotky sú z miesta skutku, a skutok má väčšiu šancu dostať sa na Domov.</span></div>
         {maMedia && <>
           <Zaskrt on={su} onClick={() => setSu(!su)} zarovnaj="flex-start">Mám súhlas ľudí na fotkách a videu so zverejnením.</Zaskrt>
           <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ink3)" }}>Fotky posúdi AI. Silné fotky so súhlasom ľudí zverejníme, dobrý skutok si zaslúži, aby ho videli. Ak by fotka mohla niekoho ponížiť, ostane len ako dôkaz a skutok ukážeme kreslenou verziou.{" "}
@@ -729,7 +729,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
         </div>
         <button type="button" onClick={() => dokRef.current?.click()} style={{ height: 46, borderRadius: 13, border: "1.5px dashed var(--gBd)", background: "transparent", fontSize: 14, fontWeight: 700, color: "var(--green)", cursor: "pointer", fontFamily: "inherit" }}>+ Pridať doklad (PDF, blok, potvrdenie)</button>
         <input ref={dokRef} type="file" accept="application/pdf,image/*" hidden onChange={(e) => { pridajDoklad(e.target.files); e.target.value = ""; }} />
-        <Poznamka farba="gold">{dar && !dokaz ? "Skutok ako dar potrebuje fotku alebo doklad. Bez nich ostane v denníku a odmeny na zbierku neprídu." : dokaz ? "Dobre. Čím viac dôkazov (fotky, doklad), tým skôr ide skutok do feedu." : "Bez fotky alebo dokladu ostane skutok v tvojom denníku. Na feed pridaj fotku alebo doklad."}</Poznamka>
+        <Poznamka farba="gold">{dar && !dokaz ? "Skutok ako dar potrebuje fotku alebo doklad. Bez nich ostane v denníku a odmeny na zbierku neprídu." : dokaz ? "Dobre. Čím viac dôkazov (fotky, doklad), tým skôr ide skutok na Domov." : "Bez fotky alebo dokladu ostane skutok v tvojom denníku. Na feed pridaj fotku alebo doklad."}</Poznamka>
       </div>}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -825,7 +825,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
     const fotkyN = media.filter((m) => !m.video).map((m) => m.src); // OPRAVY 441: všetky fotky, prepínajú sa hneď
     const ini = (pr.autor || "Charita").split(/\s+/).map((x) => x[0]).join("").slice(0, 2).toUpperCase();
     obsah = telo(<>
-      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}><span style={{ fontSize: 21, fontWeight: 800 }}>Náhľad</span><span style={{ fontSize: 14, color: "var(--ink3)" }}>Takto skutok uvidia ľudia na vašom profile a vo feede.</span></div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}><span style={{ fontSize: 21, fontWeight: 800 }}>Náhľad</span><span style={{ fontSize: 14, color: "var(--ink3)" }}>Takto skutok uvidia ľudia na vašom profile a na Domove.</span></div>
       {/* OPRAVY 439 (5): náhľad = karta feedu podľa 426 (fotka alebo logo, SKUTOK, teraz, tvorca so štítom, čipy, nadpis, 2 riadky) */}
       <div style={{ borderRadius: 18, overflow: "hidden", border: "1px solid var(--cardBd)" }}>
         <FeedCard wide typ="skutok" cas="teraz" media={fotkyN.length ? { fotky: fotkyN, h: 235 } : orgLogo ? { fotky: [orgLogo], h: 235 } : {}}
@@ -837,7 +837,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       {/* OPRAVY 439 (9): KAM PÔJDE = jedna veta, nič nesľubuje */}
       <div style={{ padding: "12px 16px", borderRadius: 16, background: "var(--gSoft)", border: "1px solid var(--gBd)" }}>
         <span style={{ display: "block", fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: "var(--ink3)" }}>KAM PÔJDE</span>
-        <span style={{ display: "block", fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)", marginTop: 2 }}>Skutok bude na vašej stránke. Či sa ukáže aj vo feede, posúdi systém, nie je to povinné.</span>
+        <span style={{ display: "block", fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)", marginTop: 2 }}>Skutok bude na vašej stránke. Či sa ukáže aj na Domove, posúdi systém, nie je to povinné.</span>
       </div>
       <div style={{ ...P.karta, borderRadius: 18, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
         <b style={{ fontSize: 16 }}>Pred zverejnením si overte</b>
@@ -910,12 +910,12 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       {caka ? <div role="status" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 16, background: "var(--bSoft)", border: "1px solid var(--bBd)" }}>
         <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: "var(--ink3)" }}>KAM PÔJDE</span>
           <span style={{ display: "block", fontSize: 16, fontWeight: 800, marginTop: 2 }}>Čaká na ohodnotenie</span>
-          <span style={{ display: "block", fontSize: 13, color: "var(--ink2)", marginTop: 2 }}>Hodnotenie je teraz nedostupné. Skutok uložíme a AI ho ohodnotí, keď bude dostupná. Potom pôjde do feedu alebo ostane v denníku.</span></span>
+          <span style={{ display: "block", fontSize: 13, color: "var(--ink2)", marginTop: 2 }}>Hodnotenie je teraz nedostupné. Skutok uložíme a AI ho ohodnotí, keď bude dostupná. Potom pôjde na Domov alebo ostane v denníku.</span></span>
         <span style={{ fontSize: 14, fontWeight: 800, color: "var(--blue)", flex: "none", whiteSpace: "nowrap" }}>karma po ohodnotení</span>
       </div> : <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 16, background: doFeedu || plan ? "var(--gSoft)" : "var(--goldBg)", border: `1px solid ${doFeedu || plan ? "var(--gBd)" : "var(--goldBd)"}` }}>
         <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: "var(--ink3)" }}>KAM PÔJDE</span>
-          <span style={{ display: "block", fontSize: 16, fontWeight: 800, marginTop: 2 }}>{plan ? "Feed tvojej štvrte · pripravuje sa" : doFeedu ? "Feed tvojej štvrte" : "Môj denník"}</span>
-          <span style={{ display: "block", fontSize: 13, color: "var(--ink2)", marginTop: 2 }}>{plan ? "ohlásenie vo feede, dôkazy pridáš po dokončení" : doFeedu ? (dar ? "skutok ako dar má vo feede výraznejšie miesto" : "miesto vo feede závisí od toho, koľko skutkov práve pribúda") : "bez dôkazu ostáva len u teba"}</span></span>
+          <span style={{ display: "block", fontSize: 16, fontWeight: 800, marginTop: 2 }}>{plan ? "Domov v tvojej štvrti · pripravuje sa" : doFeedu ? "Domov v tvojej štvrti" : "Môj denník"}</span>
+          <span style={{ display: "block", fontSize: 13, color: "var(--ink2)", marginTop: 2 }}>{plan ? "ohlásenie na Domove, dôkazy pridáš po dokončení" : doFeedu ? (dar ? "skutok ako dar má na Domove výraznejšie miesto" : "miesto na Domove závisí od toho, koľko skutkov práve pribúda") : "bez dôkazu ostáva len u teba"}</span></span>
         <span style={{ fontSize: 16, fontWeight: 800, color: "var(--gInk)", flex: "none", whiteSpace: "nowrap" }}>{plan ? "karma po dokončení" : `+${doFeedu ? karma : Math.min(karma, 5)} karmy`}</span>
       </div>}
       {citlive && <div style={{ display: "flex", gap: 12, padding: "12px 14px", borderRadius: 16, background: "var(--bSoft)", border: "1px solid var(--bBd)" }}>
@@ -953,7 +953,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
     obsah = telo(<div className="pf-rise" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, padding: "10px 12px", textAlign: "center" }}>
       <Svetlusik size={84} />
       <div style={{ fontSize: 24, fontWeight: 800 }}>{plan ? "Skutok je ohlásený" : caka ? "Skutok je uložený" : `+${doFeedu ? karma : Math.min(karma, 5)} karmy`}</div>
-      <div style={{ fontSize: 15.5, lineHeight: 1.55, color: "var(--ink2)" }}>{plan ? "Skutok je ohlásený. Keď začneš, ťukni Začínam dole v Moje skutky. Po skončení pridáš dôkazy." : caka ? "Čaká na ohodnotenie. AI ho ohodnotí, keď bude dostupná, a karmu dostaneš potom. Nájdeš ho v Moje skutky." : doFeedu ? "Skutok je vo feede tvojej štvrte. Overenia od susedov mu pridávajú dôveru." : "Skutok je v tvojom denníku. Aj malé skutky sa počítajú."}</div>
+      <div style={{ fontSize: 15.5, lineHeight: 1.55, color: "var(--ink2)" }}>{plan ? "Skutok je ohlásený. Keď začneš, ťukni Začínam dole v Moje skutky. Po skončení pridáš dôkazy." : caka ? "Čaká na ohodnotenie. AI ho ohodnotí, keď bude dostupná, a karmu dostaneš potom. Nájdeš ho v Moje skutky." : doFeedu ? "Skutok je na Domove v tvojej štvrti. Overenia od susedov mu pridávajú dôveru." : "Skutok je v tvojom denníku. Aj malé skutky sa počítajú."}</div>
       {dar && darZ.length > 0 ? (
         <div style={{ alignSelf: "stretch", textAlign: "left", borderRadius: 18, background: "var(--goldBg)", border: "1px solid var(--goldBd)", padding: 14, fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>
           <b style={{ color: "var(--ink)" }}>Skutok ako dar.</b> Všetky odmeny od ľudí idú na {darZ[0].nazov}{darZ.length > 1 ? `, po jej naplnení na ďalšie v poradí (${darZ.length - 1})` : ""}. Zapečatené, nedá sa zmeniť.</div>

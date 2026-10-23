@@ -18,6 +18,7 @@ import { TitulSoSledovat, Galeria } from "@/features/zbierka/Vrch";
 import type { HelpFeedItem, Subjekt, Oblubeny, QrSplitRow } from "@/types";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import { DomovBoard, DomovEvent } from "@/features/domov/Domov";
+import { TESTOVACIA } from "@/lib/testovacia";
 import { useHelpFeed, useQrSplitCreate, qk, repo } from "@/data";
 import { SplitConfigStep, splitOwnerPct, splitCielePayload, splitValid, splitPreQrModal, QrModal, SplitQrSheet, type SplitCiel } from "@/shared";
 import { qrUrl } from "@/lib/qr";
@@ -60,7 +61,7 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
   const [view, setView] = useState<"all" | "ziadost" | "ponuka">("all");
   const otvorZ = (z: any) => { setAktDetail(z); setScreen("detail"); };
 
-  // pod-obrazovka = vrstva histórie → browser Back sa vráti na feed (nie von z appky)
+  // pod-obrazovka = vrstva histórie → browser Back sa vráti na Domov (nie von z appky)
   useVrstva(screen !== "feed", () => setScreen("feed"), screen);
 
   // tvorba: (1) OPTIMISTICKY vlož navrch feedu (okamžitý výsledok) a (2) zapíš do DB
@@ -208,6 +209,16 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd, onBoard, radius, setRadi
       {/* živý ticker */}
       {/* Martin 21. 10.: ukážkové „práve poslal“ len bez databázy (vývoj), na webe nie */}
       {!supabase && <Ticker key={tick}><b style={{ color: C.text }}>{dar.kto}</b> práve poslal <b style={{ color: C.greenL }}>{dar.co}</b> → {dar.komu}</Ticker>}
+
+      {/* OPRAVY 517 (Martin 23. 10.): len v testovacej verzii — Svetlo pomoci, ako bolo pred OPRAVY 403 (19. 10.), samostatne na /svetlo/ */}
+      {TESTOVACIA && <a href="/svetlo/" target="_blank" rel="noopener" style={{ margin: `4px ${SPACE.md}px ${SPACE.sm}px`, display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 18, background: C.surface2, border: `1.5px solid ${C.line}`, color: C.text, textDecoration: "none" }}>
+        <span aria-hidden="true" style={{ flex: "none", width: 44, height: 44, borderRadius: 12, background: "#4B7A35", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 800 }}>SP</span>
+        <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+          <b style={{ fontSize: 16 }}>Svetlo pomoci · ukážka charity</b>
+          <span style={{ fontSize: 13.5, lineHeight: 1.4, color: C.textSec }}>Appka v stave z 19. 10. s ukážkovými údajmi. Nič sa neukladá na server. Otvorí sa v novom okne.</span>
+        </span>
+        <span aria-hidden="true" style={{ flex: "none", fontSize: 20, fontWeight: 800, color: "#4B7A35" }}>›</span>
+      </a>}
 
       {/* filter typu pomoci + štatistický riadok — na desktope na jednom riadku */}
       <FiltreStat
@@ -493,7 +504,7 @@ function OfferFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (it
       skore: 9, typSituacie: "normal", modul: "help", dni: 0,
       lat: USER_LOK.lat, lng: USER_LOK.lng,
     };
-    onZverejni(novaPonuka, { emoji: "🤝", titul: "Ponuka zverejnená!", text: "Tvoja ponuka je teraz vo feede medzi „Ponúkajú pomoc“. Ľudia z okolia sa ti môžu ozvať." }, rozdel ? ciele : undefined);
+    onZverejni(novaPonuka, { emoji: "🤝", titul: "Ponuka zverejnená!", text: "Tvoja ponuka je teraz v zozname „Ponúkajú pomoc“. Ľudia z okolia sa ti môžu ozvať." }, rozdel ? ciele : undefined);
   };
 
   return (
@@ -605,7 +616,7 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
       skore: 9, typSituacie: "normal", modul: "help", dni: 0,
       lat: USER_LOK.lat, lng: USER_LOK.lng,
     };
-    onZverejni(novyDopyt, { emoji: "🙋", titul: "Dopyt zverejnený!", text: "Tvoja prosba je vo feede medzi „Hľadajú pomoc“. Keď sa niekto ozve, dohodnete sa cez chat." });
+    onZverejni(novyDopyt, { emoji: "🙋", titul: "Dopyt zverejnený!", text: "Tvoja prosba je v zozname „Hľadajú pomoc“. Keď sa niekto ozve, dohodnete sa cez chat." });
   };
 
   // finančná pomoc → žiadosť s cieľovou sumou (progres 0 %)
@@ -626,7 +637,7 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
       skore: 10, typSituacie: "normal", modul: "help", dni: 0,
       lat: USER_LOK.lat, lng: USER_LOK.lng,
     };
-    onZverejni(novaZiadost, { emoji: "🙏", titul: "Žiadosť vytvorená!", text: <>Tvoja žiadosť na <b>{sumaNum} €</b> je vo feede. Po posúdení (do 48 h) sa spustí naživo a ľudia môžu prispievať.</> }, rozdel ? ciele : undefined);
+    onZverejni(novaZiadost, { emoji: "🙏", titul: "Žiadosť vytvorená!", text: <>Tvoja žiadosť na <b>{sumaNum} €</b> je v zozname. Po posúdení (do 48 h) sa spustí naživo a ľudia môžu prispievať.</> }, rozdel ? ciele : undefined);
   };
 
   // VÝBER VETVY
@@ -858,14 +869,14 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
         {krok === 4 && (
           <>
             <Otazka>Overenie — doklady ALEBO komunita</Otazka>
-            <div style={infoBox}>AI rozloží tvoj príbeh na tvrdenia a požiada doklad ku každému. <b>Citlivé doklady idú len do overenia — nikdy do feedu.</b> Do nižšieho pásma stačia namiesto dokladov <b>{OVERENIA_POTREBNE} nezávislé overenia komunity</b>.</div>
+            <div style={infoBox}>AI rozloží tvoj príbeh na tvrdenia a požiada doklad ku každému. <b>Citlivé doklady idú len do overenia — nikdy do zoznamu.</b> Do nižšieho pásma stačia namiesto dokladov <b>{OVERENIA_POTREBNE} nezávislé overenia komunity</b>.</div>
             <div style={{ display: "flex", flexDirection: "column", gap: SPACE.xs, marginTop: SPACE.sm }}>
               <DokladRow text="Lekárska správa" />
               <DokladRow text="Doklad o príjme / nájme" />
             </div>
             {/* stav „čaká na overenie" — BEZ počítadla (podvodník nevie, koľko chýba) */}
             <div style={{ ...infoBox, marginTop: SPACE.sm, background: tint(C.blueL, .08), borderColor: tint(C.blueL, .3), color: C.blueL, fontSize: 12.5 }}>
-              Žiadosť ide do feedu v stave <b>„čaká na overenie"</b> — bez počítadla. {OVERENIA_POTREBNE} nezávislé overenia do 48 h a žiadna potvrdená námietka → výplata odomknutá.
+              Žiadosť ide do zoznamu v stave <b>„čaká na overenie"</b> — bez počítadla. {OVERENIA_POTREBNE} nezávislé overenia do 48 h a žiadna potvrdená námietka → výplata odomknutá.
             </div>
             {/* escrow — dary počas overenia (3 stavy, mock) */}
             <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.sm, flexWrap: "wrap" }}>

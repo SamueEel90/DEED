@@ -36,7 +36,7 @@ export async function zapisSkutokStranky(stranka: string, s: MojSkutok): Promise
   return null;
 }
 
-// OPRAVY 436 · skutok charity vo feede Domov (prispevok, zapísaný pri zverejnení) — úprava a zmazanie aj na serveri
+// OPRAVY 436 · skutok charity na Domove (prispevok, zapísaný pri zverejnení) — úprava a zmazanie aj na serveri
 export async function upravSkutokVoFeede(prispevokId: string | undefined, z: { titul: string; popis: string }): Promise<void> {
   if (!supabase || !prispevokId) return;
   await supabase.from("prispevok").update({ titul: z.titul, popis: z.popis }).eq("id", prispevokId);

@@ -219,7 +219,7 @@ export function PribehText({ text, riadky = 6, fs = 14.5, farba = "var(--ink2)",
 // KARTA 45 · podania charity (Kronika · Výklad · Pirát) · KARTA 50: výber v Správe → Upraviť profil → Vzhľad stránky
 // ============================================================
 export type Podanie = Vzhlad; // KARTA 50: vzhľad vyberá správca (lib/vzhladStranky), nie prepínač na profile
-export const PODANIA: [Podanie, string][] = [["kronika", "Kronika"], ["vyklad", "Výklad"], ["pirat", "Pirát"]];
+export const PODANIA: [Podanie, string][] = [["kronika", "Kronika"], ["vyklad", "Výklad"], ["pirat", "Moderné"]] /* 510: Pirát sa volá Moderné, kód ostáva */;
 /** testovacie voľby na mobile a tablete: sivý pás úplne dole stránky (pod posledným obsahom, nad dolnou lištou appky).
  *  Len v testovacej verzii — volajúci ho ukáže iba pri TESTOVACIA. */
 export function TestovaciPas({ nazov, children, style }: { nazov: string; children: ReactNode; style?: CSSProperties }) {

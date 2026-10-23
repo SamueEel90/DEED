@@ -17,7 +17,7 @@ import type { CardSizeKonfig, TypSituacie } from "@/types";
 // Drž ich na jednom mieste; neskôr pôjdu do serverovej konfigurácie
 // (skrytá logika = anti-fraud).
 export const FEED_CONFIG: CardSizeKonfig = {
-  prahFeed: 1.0, // pod tým do feedu nejde (len karma)
+  prahFeed: 1.0, // pod tým na Domov nejde (len karma)
   prah2: 3.0, // 1 → 2 riadky
   prah3: 6.0, // 2 → 3 riadky
 };
@@ -31,11 +31,11 @@ export interface KartaVstup {
 }
 
 // ---- VEĽKOSŤ KARTY ----
-// výstup: 0 = do feedu nejde · 1/2/3 = počet riadkov · 4 = krízový režim
+// výstup: 0 = na Domov nejde · 1/2/3 = počet riadkov · 4 = krízový režim
 export function velkostKarty(skutok: KartaVstup, config: CardSizeKonfig = FEED_CONFIG): 0 | 1 | 2 | 3 | 4 {
   if (skutok.typSituacie === "kriza") return 4; // krízový režim prebíja skóre
   const s = skutok.skore ?? 0;
-  if (s < config.prahFeed) return 0; // 0 = nezobrazí sa vo feede
+  if (s < config.prahFeed) return 0; // 0 = nezobrazí sa na Domove
   if (s < config.prah2) return 1;
   if (s < config.prah3) return 2;
   return 3;

@@ -260,10 +260,10 @@ export function UserOznamForm({ typ, farnost, autor, poplatok = 0, onPublish }: 
       </>)}
 
       {/* TTL (§8) */}
-      {lab("PLATNOSŤ VO FEEDE (DNÍ)")}
+      {lab("PLATNOSŤ V ZOZNAME (DNÍ)")}
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm }}>
         <div style={{ width: 90 }}><Input value={platnost} onChange={setPlatnost} type="number" placeholder={String(m.ttl)} /></div>
-        <div style={{ fontSize: 11, color: N.txt3, lineHeight: 1.4 }}>{typ === "modlitba" ? "Modlitby bežia dlhšie — default 9 dní." : "Default 7 dní."} Po expirácii oznam zmizne z feedu.</div>
+        <div style={{ fontSize: 11, color: N.txt3, lineHeight: 1.4 }}>{typ === "modlitba" ? "Modlitby bežia dlhšie — default 9 dní." : "Default 7 dní."} Po expirácii oznam zmizne zo zoznamu.</div>
       </div>
 
       {/* akcie pre usera (§7) */}
@@ -302,7 +302,7 @@ export function UserOznamForm({ typ, farnost, autor, poplatok = 0, onPublish }: 
           Povinné: {typ === "jubilejny" ? "meno jubilanta · dôvod" : typ === "spomienkovy" ? "meno zosnulého · príležitosť" : typ === "podakovanie" ? "za čo" : "úmysel"}{mode === "image" ? " · vlastný obrázok" : ""}.
         </div>
       )}
-      <div style={{ fontSize: 10, color: N.txt3, textAlign: "center", padding: `${SPACE.sm}px 0` }}>Žiadne komentáre — železné pravidlo platformy. Feed tvorí primárne farár; self-add ho odbremeňuje.</div>
+      <div style={{ fontSize: 10, color: N.txt3, textAlign: "center", padding: `${SPACE.sm}px 0` }}>Žiadne komentáre — železné pravidlo platformy. Oznamy tvorí primárne farár; self-add ho odbremeňuje.</div>
     </div>
   );
 }

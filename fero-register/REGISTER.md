@@ -274,3 +274,87 @@
 - 510: Ateliér stránky aj v charite, 1:1 z farnosti (balíky 32–34), Vzorová charita s fotkami.
 - 509: Martin zajtra porovná „Pozrieť na: Tablet" so skutočnou stránkou na iPade.
 - Ateliér na snímke už rieši otvorený bod zo zdroja 14 sekcia 11: „Uložené ✓ · nikto to nevidí" + štart na Vzorovej — po Paľovom „hotové" bod uzavrieť.
+
+## Balík 47 (511–512 + Svetlúšik sprievodca) — prijaté 23. 10.
+
+- 511 Zverejniť stránku: Paľov návrh + Ferove dodatky zapracované (trial od zverejnenia, v teste vypnutý prepínačom; ateliérové tlačidlo „Zverejniť vzhľad" cez balík 46). Stráži server, migrácia pre Sama; QR plagát až po zverejnení; stavy 1–5 podľa prototypu. Uzatvára otvorený bod zo zdroja 14 sekcia 11.
+- 512: slovo „feed" preč zo všetkých textov pre ľudí — vynucuje starú dohodu „nikdy feed v UI".
+- Svetlúšik sprievodca: Martinove zásady (nič nerobí za farára, žiadne predvyplnené texty, karta v Prehľade), zatiaľ NAPEVNO katolícky — zástupky a číselník neskôr; charita bez Svetlúšika. Poradie po 1–3 bodoch.
+- ODPOVEĎ na otázku z balíka („existuje číselník cirkví?"): ÁNO — DB tabuľka `cirkev` (migrácia 0078): titul, titul_2p, jednotka_2p, oslovenie, dozorca (+ poďakovanie), appka číta cez slovaCirkvi/useSlovaFarnosti so zálohou. CHÝBAJÚ polia {bohosluzba} a {miesto} (omša/bohoslužba, kostol/chrám/synagóga) — až sa pôjde na zástupky, doplniť novou migráciou, nie novou tabuľkou.
+- ROZHODNUTÉ (Martin 23. 10.): štítok na karte po zverejnení je „VEREJNÁ", nie „OSTRÁ VERZIA" (plietla sa s ostrým štartom appky). Martin dáva prerobiť Soni aj v prototype.
+- Pripomienka v balíku: Samo má spustiť migrácie 0156–0160.
+
+## Samov súhrn 23. 10. — migrácie na živej DB hotové
+
+- Kontroly 63 aj 64 prešli na živej DEED2: 7/7 funkcií (je_testovaci, kod_over, kod_uplatni, statutari_stranky, vyplata_oznam, zmaz_centralne_481, zmaz_testovacie) a 3/3 triggery (pohyb_retaz, stranka_rezim_novej, vyplata_oznam). Celá reťaz migrácií 0001–0160 prešla aj lokálne. → Diagnóza „DB pozadu" je týmto vyriešená; tvorbu centrálnej treba znovu overiť v appke.
+- OTVORENÉ — farár farnosti (bod 7 balíka 44): stránka farnosti má farára = starý anonymný účet 83ce2553 (posledné prihlásenie 28. 9.), vlastník ee384287 bez prihlásenia. Martin (koder1@deedgood.eu) je štatutár s právami farára → oprava v appke: Ľudia → Farár → Upraviť → „Nový farár som ja". NEOVERENÉ, či to appka štatutárovi dovolí.
+- ČAKÁ NA MARTINA: (1) 4 anonymné dary Bena spolu 85 € NIE SÚ označené ako testovacie — rozhodnúť, či sú skutočné (výmaz ich inak nechá); (2) súhlas na spustenie zmaz_testovacie (dvojkrokový výmaz).
+
+## Vyriešenie „nefunkčnej charity" (23. 10. popoludní — Martin × Paľo, Fero v obraze)
+
+**Skutočné príčiny (nahrádzajú moju kartu o `spustena` — nekomitovaná, zahodená):**
+
+1. **Centrálna charity:** ukladala sa správne, ale nebeží, kým sa nespustí podržaním — tlačidlo „Spustiť centrálnu zbierku" bolo zastrčené dole v pravom stĺpci, nenájditeľné. Na verejnom profile sa bez spustenia neukáže (podmienka `spustena` teda PLATÍ aj pre charitu — hlavička KARTY 39 „charita nepoužíva" je prekonaná).
+2. **Sektorové zbierky: NIKDY neboli na serveri** — žijú len v pamäti prehliadača (po obnovení zmiznú, iný počítač ich nevidí, spoločné pre všetky charity). Vo Svetle pomoci „bežali", lebo tam boli tri napevno. → nová migrácia pre Sama, sektory per charita na server (samostatný balík).
+3. **Svetlo pomoci bol čistý mock bez servera** — nedalo sa „nechať", funkčné z neho je už v novej charite; mock je stále v kóde, otvoriteľný v testovacej verzii.
+
+**Rozhodnutia Martina (23. 10.):**
+
+- Centrálna charity: karta „Spustiť centrálnu zbierku" HORE, prvá na obrazovke, kým nebeží (ako hlavná vo farnosti); po spustení zmizne.
+- Centrálna charity BEZ samoukladania: úprava sa potvrdzuje „Uložiť podržaním" / „Zrušiť úpravy" — slovo „uložiť", NIE „zapečatiť" (centrálna sa nezapečatáva); žiadny pás dole.
+
+**Paľo pripraví tabuľku „čo beží naostro vs. čo je len ukážka"** — zatiaľ ukážky: sektory, faktúry DEED+, platba predplatného farnosti, Z-čísla kým ich nepridelí server, zoznam charít bez servera. Farnosť mock NIE JE (server: profil, hlavná zbierka+dary, omše, oznamy, zvonček, kostoly, ľudia, zverejnenie; ukážka len platba predplatného a väzba platca↔farnosť).
+
+**Hotové 513/514:** Svetlúšik krok 1 Profil (percento, monogram, Uložené ✓ po serveri) + číselník 0164 (modlitebňa BJB/CB/KZ/ACS/CASD/ECM, CČSH, dozorca 7 cirkví). Commity 7e5b70c a 6884df8 ČAKAJÚ NA PUSH (Martin). Odkaz pre Samuela 65 čaká na „daj pre Sama".
+
+## CHECKLIST PRED OSTRÝM ŠTARTOM (Martin + Paľo 23. 10. — nezabudnúť!)
+
+Tesne pred ostrým štartom sa spravia spolu, v tomto poradí:
+
+1. **Vypnúť testovaciu pokladňu** (odvtedy žiadna platba nie je test).
+2. **Spustiť `zmaz_testovacie`** (migrácia 0157, odkaz 61): dvojkrok — prvé spustenie len vypíše počty, výmaz až po Martinovom áno. Vymaže všetky peniaze z testovacej pokladne: testovacie dary, pohyby, platby, vecné dary a upozornenia k nim. TERAZ sa nespúšťa — testovacie dáta nič nerozbíjajú a testeri na nich skúšajú.
+3. **Zapnúť prepínač skúšobnej doby naostro** (trial sa začne počítať od zverejnenia stránok).
+
+Patrí k tomu aj (z rozhodnutí 22.–23. 10.): výmaz podľa kódov test/pilot, číslovanie od nového základu bez recyklácie, pilotné stránky ostávajú.
+
+## Drobnosti z 23. 10. popoludnia
+
+- Testovacie charity dostali programy SQL-om: Pod korunami = Zadarmo, Pevný bod = P1, Míľnik = P2 (na skúšanie zámkov per program).
+- Svetlo pomoci: od Samuela nič netreba, stačí Martinov push a Vercel nasadí.
+- Čaká na Martina: push commitov na platby-modul pred odoslaním odkazu 65 Samuelovi · oprava dvojitého farára (Soňa povedala zatiaľ nerobiť) · zmaz_testovacie až pred ostrou.
+
+## Kontrola 23. 10. — júlové systémové špecifikácie vs. dnešný stav (Reťaz Fronta/Overflow DEV v2 + QR Katalóg v2, oba 8. 7.)
+
+**DRŽÍME SA — jadro sedí** (júlová špec je zjavný predok dnešného kódu reťaze): jedna aktívna zbierka + fronta + automatické prehodenie QR · % per zbierka, krok 5, min 5 · draft voľný / publikovaná zamknutá navždy · pripojenie bez súhlasu príjemcu, len oznámenie · história nemenná · viac tvorcov na zbierke · pohrebný split = iný kontext (neruší sa). QR: platba len v systéme, non-custody, „QR identifikuje — appka autorizuje" (dnešný 6-miestny kód + obojstranné potvrdenie je presne to) · farské QR viazané na inštitúciu, nie farára · pohrebné/omšové len farský feed · TOTP rotujúce.
+
+**SYSTÉMOVÉ DIERY — doplniť k Paľovým bodom reťaze:**
+1. **Overflow dorovnanie daru (Fronta §4.2):** dar, ktorého podiel presahuje zvyšok do cieľa, sa dorovná PRESNE a zvyšok tečie nasledujúcej zbierke (jeden dar smie zavrieť aj dve) — server-side TRANSAKČNE, race dvoch darov nesmie pretiecť cieľ. V dnešných bodoch 1–5 to NIE JE — musí byť v delení 0157/0159. → veta Paľovi k bodu 1.
+2. **0 % = zákaz generovania QR** (disabled s vysvetlením) — overiť v RetazDobra.tsx.
+3. **Pravidlo 3 výstupov pri KAŽDOM QR** (Skenovať · Kopírovať odkaz · Zdieľať — práca na jednom telefóne) — systémové, do DIZAJN-DOHODNUTE po Martinovom kývnutí.
+4. Anti-fraud 1 sken = 1 device; Identity QR preukaz (30 s, offline 24 h token) — v dnešných dohodách ani kóde nikde; nestratiť (Fáza?).
+5. „Prihlásený profil = dôkaz pravosti" (falošná stránka neukáže tvoj profil; hosť platí na vlastné riziko + edukácia) — silné systémové pravidlo, v dnešných dohodách chýba.
+
+**KONFLIKT NA MARTINOVO ROZHODNUTIE:**
+- Júl: prázdna fronta → systémový fallback (doparovanie kategória+geo, system-assigned, default zapnutý) / community pool — „peniaze nikdy do prázdna". Dnes (22. 10., schválené obrazovky): po fronte **„Potom ty 100 %"** — všetko ostáva tomu, kto reťaz robí. Novšie normálne vyhráva → fallback a community pool PREKONANÉ? Potvrdiť a dať do Pascí.
+- **ForwardBlock** (charita nechce peniaze kontroverzného tvorcu: vráti VŠETKY z jeho reťaze a systém ich už nikdy nespáruje; badge histórie sa nikdy neodstraňuje) — nezávislé od fallbacku a v dnešných dohodách CHÝBA. Preniesť do platných dohôd?
+
+### Doplnok ku kontrole 23. 10. — zvyšok QR Katalógu (tabuľky sekcií 1–8)
+Nič nekoliduje s dnešným stavom — väčšina sú budúce use-casy na 5 mechanických skupinách („nové use-casy = nová konfigurácia, nie nový kód"). Potvrdené zhody: pohrebný split (osobný QR pozostalého + sken farárom + potvrdenie v appke + okno ~týždeň, iba farský feed) = presne dnešný tok · zbierka per omša auto z rozvrhu (zavrie o polnoci) · „QR nahrádza terminál = akvizičný hook". Nestratiť (do realizovateľné/zásobník): spomienková zbierka Memory (Kondolenzspende, mimo karmy, PRO/ENTERPRISE) · Identity QR preukaz + offline store-and-forward token (eko bez signálu) · odznak so shift-bindingom (zdravotníci) · odomknutie obsahu za prah daru · historický kostol vstup za milodar. Oba dokumenty uložené: zdroje/18-retaz-fronta-overflow-DEV.md, zdroje/19-qr-katalog-v2.md.
+
+## Rozhodnuté 23. 10. — cieľ zbierky a prekročenie (Martin + Paľo)
+- **Cieľ NIE JE strop, je spúšťač uzavretia.** Dar sa pripíše CELÝ zbierke, na ktorú smeroval, aj keď suma preskočí cieľ (2000 → 2100 OK). Server dar nikdy nedelí ani nepresmerováva.
+- **Prepínač v nastaveniach zbierky s cieľom: „Po naplnení cieľa zbierku automaticky uzavrieť" — default ZAPNUTÝ.** Vypnutý = beží, kým správca neukončí ručne.
+- Automatické uzavretie = to isté ako ručné „Ukončiť · Cieľ je splnený": zavrie dary („Zbierka je naplnená"), spustí lehotu dokladovania. Poďakovanie píše správca sám, server pošle len oznam o naplnení.
+- Centrálna, sektorové a zbierky bez cieľa sa neuzatvárajú (bez prepínača).
+- Reťaz tvorcu (retaz_posun) sa posúva pri sume ≥ cieľ VŽDY, nezávisle od prepínača.
+- Ostrá brána: platba vzniknutá pred uzavretím sa pripíše celá.
+- Paľo pripraví ako jednu zmenu — novú migráciu pre Sama.
+
+### Pasca (do prekonaných)
+- Júlový overflow model (Fronta/Overflow DEV §4.2: dar sa dorovná presne na cieľ a zvyšok tečie ďalšej zbierke; jeden dar zavrie dve) = **PREKONANÝ 23. 10.** — darca určil komu, dar sa nedelí.
+
+## Uzavretie kontroly júlových špec — Martin 23. 10.
+1. Júlový systémový fallback / community pool pri prázdnej fronte = **PREKONANÝ** — platí „Potom ty 100 %" (Pasca).
+2. ForwardBlock (vrátenie peňazí kontroverzného tvorcu) — **odložené**: riešiť, až keby také problémy reálne nastali. Nie je v dohodách, ostáva v zdroji 18.
+3. 0 % = QR sa nevygeneruje — Martin preverí s Paľom (malo by platiť).
+4. Pravidlo 3 výstupov pri QR — bez akcie, existujúci stav stačí.

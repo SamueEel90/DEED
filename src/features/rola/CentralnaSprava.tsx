@@ -1,6 +1,6 @@
 // ============================================================
 // KARTA 39 · bod 3 — Centrálna zbierka organizácie (Správa charity → Zbierky → Centrálna zbierka, od P1).
-// Na celú činnosť · stále hore na stránke · nikdy vo verejnom feede · nie je zapečatená.
+// Na celú činnosť · stále hore na stránke · nikdy na Domove · nie je zapečatená.
 // Textové polia + galéria = spoločné diely (obsahZbierky). Účet = hlavný z registrácie, zmena len
 // s novým overením (overovacia platba). Dokladovanie nepovinné (Doklady ako pri zbierke, bez povinného minima).
 // Vzhľad podľa prototypu Sprava charity PC → P1 → Zbierky → Centrálna zbierka.
@@ -94,7 +94,7 @@ export function CentralnaZbierkaSprava({ strankaId, nazov, inicialy, hlavnyUcet,
   const vpravo = (<>
     <section style={karta}>
       <span style={nadpisS}>Kde sa ukáže</span>
-      <span style={textS}><b style={{ color: "var(--ink)" }}>Stále hore na vašej stránke.</b> Do verejného feedu nejde nikdy. Ľudia ju nájdu, keď prídu na váš profil, napríklad zo skutku alebo zo zbierky.</span>
+      <span style={textS}><b style={{ color: "var(--ink)" }}>Stále hore na vašej stránke.</b> Na Domov nejde nikdy. Ľudia ju nájdu, keď prídu na váš profil, napríklad zo skutku alebo zo zbierky.</span>
     </section>
     <section style={karta}>
       <span style={nadpisS}>Účet</span>
@@ -136,7 +136,7 @@ export function CentralnaZbierkaSprava({ strankaId, nazov, inicialy, hlavnyUcet,
     <div style={{ display: "flex", alignItems: ph ? "stretch" : "center", flexDirection: ph ? "column" : "row", gap: 12 }}>
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
         <span style={{ fontSize: ph ? 22 : 24, fontWeight: 800, color: "var(--ink)" }}>Centrálna zbierka organizácie</span>
-        <span style={{ fontSize: 14, color: "var(--ink3)" }}>na celú vašu činnosť · stále hore na vašej stránke · nikdy vo verejnom feede</span>
+        <span style={{ fontSize: 14, color: "var(--ink3)" }}>na celú vašu činnosť · stále hore na vašej stránke · nikdy na Domove</span>
       </span>
       {!ph && ulozBtn}
     </div>

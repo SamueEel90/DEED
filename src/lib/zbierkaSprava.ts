@@ -13,7 +13,7 @@ import { jeVzor } from "@/lib/vzorStranky";
 export const SPRAVA_ZBIERKY_CFG = {
   /** štandardná dĺžka zbierky (kalendárne dni) */
   dlzkaDni: 30,
-  /** KARTA 38 · bod 3: predĺženie vo feede (30 dní je v cene) — rebrík 15 · 15 · 15 dní, najviac 75 dní vo feede.
+  /** KARTA 38 · bod 3: predĺženie na Domove (30 dní je v cene) — rebrík 15 · 15 · 15 dní, najviac 75 dní na Domove.
    *  Neplatí pre centrálnu, sektorové a dlhodobé zbierky. */
   predlzenia: [
     { dni: 15, cena: 5 },
@@ -30,7 +30,7 @@ export const SPRAVA_ZBIERKY_CFG = {
   topovanieDni: 7,
   /** lehota na dokladovanie po ukončení (voľba charity pri zakladaní) */
   lehoty: { "30": 30, priebezne: 30, "60": 60, stvrtrocne: 90 } as Record<Lehota, number>,
-  /** KARTA 38 · bod 4: zbierka skončená pred 30. dňom ostane vo feede do konca svojich 30 dní ako poďakovanie */
+  /** KARTA 38 · bod 4: zbierka skončená pred 30. dňom ostane na Domove do konca svojich 30 dní ako poďakovanie */
   podakovanieDni: 30,
   /** po lehote: výzva — dolož do X dní, inak tabuľa hanby (alebo zdôvodnenie) */
   vyzvaDni: 3,
@@ -100,7 +100,7 @@ export interface StavZbierky {
   doklady: PolozkaDokladu[];
   spravy: SpravaDarcom[];
   zverejnene?: string;       // ISO — dokladovanie zverejnené a darcovia upovedomení
-  /** KARTA 38: začiatok zbierky (deň 1 z 30) a stiahnutie z feedu po skončení */
+  /** KARTA 38: začiatok zbierky (deň 1 z 30) a stiahnutie z Domova po skončení */
   zaciatok?: string;
   stiahnuta?: string;
   /** KARTA 38: výsledok poslaný darcom automaticky pri ukončení (1. z 2 správ) */
@@ -218,7 +218,7 @@ export function upozornenie90(s: StavZbierky, zaciatok: string, teraz: number): 
   if (obdobie < 1) return false;
   return !(s.upozornenie90Zavrete && Date.parse(s.upozornenie90Zavrete) >= posledne + obdobie * UPOZORNENIE_DNI * DEN);
 }
-/** KARTA 39 · bod 1: kde je dlhodobá zbierka vo feede (logika radenia je na serveri — toto je to isté pravidlo pre správu) */
+/** KARTA 39 · bod 1: kde je dlhodobá zbierka na Domove (logika radenia je na serveri — toto je to isté pravidlo pre správu) */
 export type MiestoDlhodobej = "velka" | "hore" | "mala" | "profil";
 export function kdeJeDlhodoba(o: { zaciatok: string; dary30: number; vytiahnute?: string; teraz: number;
   cfg: { velkaDni: number; prah: { dary: number; dni: number }; horeHodin: number; vytiahnutieKazdychDni: number } }) {

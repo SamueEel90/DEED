@@ -2,7 +2,7 @@
 // REGISTER ORGANIZÁCIÍ — produkčne vyzerajúce profily subjektov.
 // Každá organizácia v appke (feed, adresár, rebríčky) má cover,
 // logo, „o nás", štatistiky a kampane s fotkami. Kampane sú tie
-// isté zbierky, čo žijú vo feede — klik na kampaň otvára reálny
+// isté zbierky, čo žijú na Domove — klik na kampaň otvára reálny
 // detail so skutočným darovaním (žiadne slepé toasty).
 // `najdiOrg` má deterministický fallback: aj nekurátorovaná
 // organizácia dostane cover + logo z tematického poolu.

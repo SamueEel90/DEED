@@ -6,6 +6,7 @@
 // Zverejnenie vždy podržaním (ten istý diel ako platba). Oznam ide sledujúcim po 5 min, verejný a výzva hneď.
 // ============================================================
 import { Galeria } from "@/features/zbierka/Vrch";
+import { useNeverejna } from "@/lib/zverejnenieStranky";
 import { CasPole, sNulou } from "@/components/CasPole";
 import { Volby, kartaVolby, FajkaVolby } from "@/components/Volby";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
@@ -33,7 +34,7 @@ const fmtD = (v?: string) => { if (!v) return ""; const [y, m, d] = v.split("-")
 const DRUHY: [DruhOznamu, string, string][] = [
   ["oznam", "Oznam", "Na vašom profile a príde tým, čo vás sledujú. Napríklad informácia pre dobrovoľníkov."],
   ["verejny", "Oznam vo verejnom záujme", "Na nástenke mesta. Podujatie pre komunitu, šport, kultúra, organizujeme niečo verejné. Až 2 mesiace vopred."],
-  ["vyzva", "Výzva na súrnu pomoc", "Vo feede Domov vo vašom meste, najviac 10 dní. Povodeň, požiar, hľadá sa krv. Aj v programe Zadarmo."],
+  ["vyzva", "Výzva na súrnu pomoc", "Na Domove vo vašom meste, najviac 10 dní. Povodeň, požiar, hľadá sa krv. Aj v programe Zadarmo."],
 ];
 /** OPRAVY 434: Bez konca · 7 · 14 · 30 dní (ako Krátky oznam vo Viere) */
 const PLATNOST: [string, number][] = [["Bez konca", 0], ["7 dní", 7], ["14 dní", 14], ["30 dní", 30]];
@@ -45,7 +46,7 @@ const POZVANIA: [Pozvanie, string, string][] = [
 ];
 const stitok = (o: { druh: DruhOznamu | null; kategoria?: string; zrusene?: string }): [string, string, string, string] =>
   o.zrusene ? ["ZRUŠENÉ", C.rSoft, C.rBd, C.red]
-  : o.druh === "vyzva" ? ["VÝZVA", "var(--dr-vyzva)", "var(--dr-vyzva-p)", "#fff"] // OPRAVY 431: jantárová ako vo feede
+  : o.druh === "vyzva" ? ["VÝZVA", "var(--dr-vyzva)", "var(--dr-vyzva-p)", "#fff"] // OPRAVY 431: jantárová ako na Domove
   : o.druh === "verejny" ? [(o.kategoria ?? "Verejný").toUpperCase(), C.goldBg, C.goldBd, C.gold]
   : ["OZNAM", "var(--gSoft)", "var(--gBd)", "var(--gInk)"];
 const kedyText = (o: { druh: DruhOznamu | null; datum?: string; cas?: string; miesto?: string }) =>
@@ -98,7 +99,7 @@ export function OznamKartaNova({ o, autor, mesto, inicialy, logo, onProfil, onUc
     <section className="sc-tokeny" style={{ borderRadius: 22, background: "var(--card)", border: `1.5px solid ${stBd}`, overflow: "hidden", minWidth: 0, color: "var(--ink)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px" }}>
         <span style={{ width: 38, height: 38, flex: "none", borderRadius: "50%", background: logo ? `url('${logo}') center/cover no-repeat #fff` : "var(--gSoft)", border: "1px solid var(--gBd)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12.5, fontWeight: 800, color: "var(--gInk)" }}>{logo ? "" : inicialy}</span>
-        <span style={{ flex: 1, minWidth: 0 }}><b style={{ display: "block", fontSize: 14.5, color: "var(--ink)" }}>{autor}</b><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{o.druh === "oznam" ? "oznam · len pre sledujúcich" : o.druh === "vyzva" ? `Feed Domov${mesto ? ` · ${mesto}` : ""}` : `${mesto} · nástenka mesta`}{o.upravene && !o.zrusene ? " · upravené" : ""}</span></span>
+        <span style={{ flex: 1, minWidth: 0 }}><b style={{ display: "block", fontSize: 14.5, color: "var(--ink)" }}>{autor}</b><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{o.druh === "oznam" ? "oznam · len pre sledujúcich" : o.druh === "vyzva" ? `Domov${mesto ? ` · ${mesto}` : ""}` : `${mesto} · nástenka mesta`}{o.upravene && !o.zrusene ? " · upravené" : ""}</span></span>
         <span style={{ flex: "none", whiteSpace: "nowrap", padding: "4px 10px", borderRadius: 9, background: stBg, border: `1px solid ${stBd}`, fontSize: 12, fontWeight: 800, color: stC }}>{stT}</span>
       </div>
       {/* „Za oznam zodpovedá" — ten istý riadok ako pri zbierke, aj nad plagátom */}
@@ -151,6 +152,7 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
 }) {
   useZmenyOznamovCharity();
   useEffect(() => { void nacitajOznamyStranky(strankaId); }, [strankaId]);
+  const neverejna = useNeverejna(strankaId); // OPRAVY 511
   const ph = mobil && !tablet;
   const zadarmo = tier < 1;
   const zamknuty = (d: DruhOznamu) => tier < OZNAMY_CFG.odTieru[d];
@@ -238,8 +240,8 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
     const n = await zverejniOznam({ ...zData(), nadLimit: nadLimit || undefined });
     // OPRAVY 434: po zverejnení späť na zoznam, nový oznam prvý + zelená hláška
     setF(prazdny(zadarmo)); setPohlad("sprava");
-    setHlaska(n.druh === "oznam" ? `Zverejnené ✓ Oznámenie sledujúcim pošleme o ${OZNAMY_CFG.oneskorenieMin} minút, dovtedy ho môžete upraviť alebo zrušiť.`
-      : n.druh === "vyzva" ? `Zverejnené ✓ Výzva je vo feede Domov${mesto ? ` · ${mesto}` : ""}.` : "Zverejnené ✓ Akcia je na nástenke mesta.");
+    setHlaska(neverejna ? "Uložené ✓ Ukáže sa, keď zverejníte stránku." : n.druh === "oznam" ? `Zverejnené ✓ Oznámenie sledujúcim pošleme o ${OZNAMY_CFG.oneskorenieMin} minút, dovtedy ho môžete upraviť alebo zrušiť.`
+      : n.druh === "vyzva" ? `Zverejnené ✓ Výzva je na Domove${mesto ? ` · ${mesto}` : ""}.` : "Zverejnené ✓ Akcia je na nástenke mesta.");
     if (nadLimit) toast(`Verejný oznam nad limit · ${OZNAMY_CFG.cenaNadLimit} €`);
   };
   const upravit = (o: OznamCharity) => {
@@ -276,12 +278,12 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
   const nadpisPh = druh === "vyzva" ? "Napríklad: Hľadáme darcov krvi skupiny 0 negatívna" : druh === "verejny" ? "Napríklad: Beh pre svetlo · rodinný beh v parku" : "Napríklad: Zajtra výdaj od 14:00";
   const kam: [string, string] = druh === "oznam" ? ["Na váš profil a sledujúcim", "Príde tým, čo vás sledujú. Na nástenku mesta ani do okolia nejde."]
     : druh === "verejny" ? [`Na nástenku mesta ${mesto}`, `Uvidia ho ľudia v meste ${mesto} do ${fmtD(f.datum) || "dňa akcie"}. Aj na vašom profile.`]
-    : druh === "vyzva" ? [`Do feedu Domov${mesto ? ` · ${mesto}` : ""}`, `Na vašom profile a vo feede Domov${mesto ? ` v meste ${mesto}` : " vo vašom meste"} do ${fmtD(f.datum) || "dátumu, ktorý zadáte"} (najviac 10 dní). Príde aj tým, čo vás sledujú.`] : ["—", "Najprv vyberte druh oznamu."];
+    : druh === "vyzva" ? [`Na Domov${mesto ? ` · ${mesto}` : ""}`, `Na vašom profile a na Domove${mesto ? ` v meste ${mesto}` : " vo vašom meste"} do ${fmtD(f.datum) || "dátumu, ktorý zadáte"} (najviac 10 dní). Príde aj tým, čo vás sledujú.`] : ["—", "Najprv vyberte druh oznamu."];
   const poznDrz = uprava ? (uprava.prihlaseni.length || uprava.zucastniSa ? "Pri zmene dátumu alebo miesta pošleme prihláseným správu." : "")
     : druh === "oznam" ? `Oznámenie sledujúcim pošleme ${OZNAMY_CFG.oneskorenieMin} minút po zverejnení. Dovtedy ho môžete upraviť alebo zrušiť.`
-    : druh === "vyzva" ? `Po zverejnení ju hneď uvidia ľudia vo feede Domov${mesto ? ` v meste ${mesto}` : ""}. Pred zverejnením si ju poriadne skontrolujte.`
+    : druh === "vyzva" ? `Po zverejnení ju hneď uvidia ľudia na Domove${mesto ? ` v meste ${mesto}` : ""}. Pred zverejnením si ju poriadne skontrolujte.`
     : "Po zverejnení ho hneď uvidí každý na nástenke mesta. Pred zverejnením si ho poriadne skontrolujte.";
-  const lblDrz = uprava ? "Podržte a uložte" : nadLimit ? `Podržte a zverejnite · ${OZNAMY_CFG.cenaNadLimit} €` : druh === "vyzva" ? "Podržte a zverejnite výzvu" : "Podržte a zverejnite";
+  const lblDrz = uprava ? "Podržte a uložte" : neverejna ? "Podržte a uložte do prípravy" /* OPRAVY 511 */ : nadLimit ? `Podržte a zverejnite · ${OZNAMY_CFG.cenaNadLimit} €` : druh === "vyzva" ? "Podržte a zverejnite výzvu" : "Podržte a zverejnite";
   const tuk = potvrditTuknutim();
 
   const lavy = (<>
@@ -350,7 +352,7 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
         <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "14px 16px", borderRadius: 14, background: C.rSoft, border: `1px solid ${C.rBd}` }}>
           {/* OPRAVY 419 (1): ružové pozadie je vždy svetlé → tmavé písmo aj v tmavom režime */}
           <b style={{ fontSize: 15, color: "#2A1A14" }}>Výzva na súrnu pomoc</b>
-          <span style={{ fontSize: 14, lineHeight: 1.5, color: "#4A332A" }}>Len keď ide o náhlu situáciu: povodeň, požiar, hľadá sa krv, nezvestný človek, núdza po nehode. Vo feede Domov bude do dátumu, ktorý zadáte nižšie, najviac 10 dní.</span>
+          <span style={{ fontSize: 14, lineHeight: 1.5, color: "#4A332A" }}>Len keď ide o náhlu situáciu: povodeň, požiar, hľadá sa krv, nezvestný človek, núdza po nehode. Na Domove bude do dátumu, ktorý zadáte nižšie, najviac 10 dní.</span>
           <span style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.5, color: C.red }}>Kto výzvu zneužije, napríklad na reklamu alebo bežnú zbierku, stratí možnosť posielať výzvy.</span>
         </div>
         <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={lbl}>Pomoc treba do</span>
@@ -411,7 +413,7 @@ function Spravovat({ strankaId, mesto, ph, dva, onUpravit, toast, len, tier = 1,
   const verejnych = beziaceVerejne(strankaId).length;
   const zadarmo = tier < 1;
   const meta = (o: OznamCharity) => o.druh === "verejny" ? `Nástenka mesta · koná sa ${fmtD(o.datum)}${o.cas ? ` o ${o.cas}` : ""}${o.miesto ? ` · ${o.miesto}` : ""}${o.nadLimit ? ` · nad limit ${OZNAMY_CFG.cenaNadLimit} €` : ""}`
-    : o.druh === "vyzva" ? `Feed Domov${mesto ? ` · ${mesto}` : ""} · do ${fmtD(o.datum).replace(/ \d{4}$/, "")}`
+    : o.druh === "vyzva" ? `Domov${mesto ? ` · ${mesto}` : ""} · do ${fmtD(o.datum).replace(/ \d{4}$/, "")}`
     : `Profil · ${vLehote(o) ? `sledujúcim pôjde o ${Math.max(1, Math.ceil((Date.parse(o.zverejnene) + OZNAMY_CFG.oneskorenieMin * 60000 - Date.now()) / 60000))} min` : "poslané sledujúcim"}${o.koniec ? ` · do ${fmtD(o.koniec).replace(/ \d{4}$/, "")}` : ""}`;
   // BEŽÍ: výzvy prvé, potom podľa konca (bez konca na koniec) · SKONČENÉ: najnovšie hore
   const beziace = zoznam.filter((o) => bezi(o)).sort((a, b) => (a.druh === "vyzva" ? 0 : 1) - (b.druh === "vyzva" ? 0 : 1) || (kedyKoniec(a) ?? "9999").localeCompare(kedyKoniec(b) ?? "9999"));
@@ -428,7 +430,7 @@ function Spravovat({ strankaId, mesto, ph, dva, onUpravit, toast, len, tier = 1,
     const menaO = mena[o.id] ?? o.prihlaseni;
     const foto = o.media.find((m) => m.typ === "foto");
     const zrusT = o.druh === "vyzva" ? "Podržte a zrušte výzvu" : o.druh === "verejny" ? "Podržte a zrušte akciu" : "Podržte a zrušte oznam";
-    const zrusS = o.druh === "vyzva" ? `Zmizne z feedu Domov aj z profilu.${pocet ? " Prihláseným pošleme správu." : ""}`
+    const zrusS = o.druh === "vyzva" ? `Zmizne z Domova aj z profilu.${pocet ? " Prihláseným pošleme správu." : ""}`
       : o.druh === "verejny" ? `Pri ozname sa ukáže „Zrušené“.${pocet ? " Prihláseným pošleme správu." : ""}`
       : vLehote(o) ? "Sledujúcim ešte nič neprišlo, oznam zmizne celý." : "Zmizne z vášho profilu.";
     const stop = (e: { stopPropagation: () => void }) => e.stopPropagation();

@@ -1,5 +1,5 @@
 // KARTA 55 · E — Správa zbierky → záložka Príbeh.
-// 1 krátky text do feedu (počítadlo riadkov, najviac 3) · 2 celý príbeh (6 000 znakov) · 3 fotky a video s popisom (GaleriaEditor)
+// 1 krátky text na Domov (počítadlo riadkov, najviac 3) · 2 celý príbeh (6 000 znakov) · 3 fotky a video s popisom (GaleriaEditor)
 // 4 citát (veta, meno, vzťah, súhlas povinný, ak je citát) · 5 priebeh (+ Pridať zápis, darcovia dostanú upozornenie)
 // 6 Príbeh týždňa (zapnutie vypne iný). Ukladá sa samo ako koncept; na stránke až po „Zverejniť príbeh".
 // Mobil: 6 riadkov s číslom (zelené = vyplnené), ťuk otvorí krok.
@@ -24,7 +24,7 @@ import type { ZbierkaNaSpravu } from "./SpravaZbierky";
 
 const pole: CSSProperties = { width: "100%", minHeight: 48, padding: "0 14px", borderRadius: 12, border: "1px solid #CFC9BC", background: "var(--field, var(--card))", color: "var(--ink)", fontFamily: "inherit", fontSize: 15, boxSizing: "border-box" };
 // OPRAVY 455: poradie krokov · „Ako to zatiaľ ide“ (živé zhrnutie) · Priebeh hneď pod ním · „Ďalšie fotky k príbehu“
-const KROKY = ["Krátky text do feedu", "Ako to zatiaľ ide", "Priebeh", "Ďalšie fotky k príbehu", "Citát"] as const; // OPRAVY 461: Príbeh týždňa ide automaticky
+const KROKY = ["Krátky text na Domov", "Ako to zatiaľ ide", "Priebeh", "Ďalšie fotky k príbehu", "Citát"] as const; // OPRAVY 461: Príbeh týždňa ide automaticky
 const dnes = () => new Date().toISOString().slice(0, 10);
 const datumKratko = (iso: string) => { const d = new Date(iso); return `${d.getDate()}. ${d.getMonth() + 1}.`; };
 const datumSk = (iso: string) => { const d = new Date(iso); return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`; };
@@ -83,7 +83,7 @@ function PribehEditorObsah({ z, mobil }: { z: ZbierkaNaSpravu; mobil: boolean; t
   const citatBezSuhlasu = !!p.citat.text.trim() && !p.citat.suhlas;
   const dlhyKratky = riadky > PRIBEH_RIADKOV;
   const mozeZverejnit = !!p.kratky.trim() && !!cistyText(p.text).trim() && !citatBezSuhlasu && !dlhyKratky && (zmenene || stav.koncept || !stav.zverejneny);
-  const dovodNezverejnit = !p.kratky.trim() ? "Doplňte krátky text do feedu." : !cistyText(p.text).trim() ? "Doplňte, ako to zatiaľ ide." : citatBezSuhlasu ? "Citát potrebuje súhlas človeka." : dlhyKratky ? "Krátky text je dlhší ako 3 riadky." : null;
+  const dovodNezverejnit = !p.kratky.trim() ? "Doplňte krátky text na Domov." : !cistyText(p.text).trim() ? "Doplňte, ako to zatiaľ ide." : citatBezSuhlasu ? "Citát potrebuje súhlas človeka." : dlhyKratky ? "Krátky text je dlhší ako 3 riadky." : null;
   // (7) Zverejniť podržaním — posiela upozornenie darcom; výsledok na mieste tlačidla
   const zverejni = async () => {
     if (posiela) return;
@@ -124,10 +124,10 @@ function PribehEditorObsah({ z, mobil }: { z: ZbierkaNaSpravu; mobil: boolean; t
 
   const telo = (i: number): ReactNode => {
     if (i === 0) return <>
-      <span style={textK}>Ukáže sa vo feede pod fotkou a hore v príbehu tučne. Najviac 3 riadky. Nový riadok ostane aj na stránke.</span>
+      <span style={textK}>Ukáže sa na Domove pod fotkou a hore v príbehu tučne. Najviac 3 riadky. Nový riadok ostane aj na stránke.</span>
       <RichTextInput vzhlad="sprava" value={p.kratky} onChange={(h) => uprav({ kratky: cistyText(h) })} nastroje={[]} minH={90} chybaRam={dlhyKratky}
-        ariaLabel="Krátky text do feedu" tvrdyLimit={320} onRiadky={setRiadky} />
-      <span style={{ fontSize: 13, fontWeight: 800, color: dlhyKratky ? "#A34A2A" : "var(--green)" }}>{riadky} z {PRIBEH_RIADKOV} riadkov{dlhyKratky ? " · skráťte ho, vo feede sa neukáže celý" : ""}</span>
+        ariaLabel="Krátky text na Domov" tvrdyLimit={320} onRiadky={setRiadky} />
+      <span style={{ fontSize: 13, fontWeight: 800, color: dlhyKratky ? "#A34A2A" : "var(--green)" }}>{riadky} z {PRIBEH_RIADKOV} riadkov{dlhyKratky ? " · skráťte ho, na Domove sa neukáže celý" : ""}</span>
     </>;
     if (i === 1) return <>
       <span style={textK}>Krátko, čo sa odvtedy deje. Prepíšte vždy, keď sa niečo zmení. Jednotlivé udalosti s dátumom pridáte nižšie v{" "}

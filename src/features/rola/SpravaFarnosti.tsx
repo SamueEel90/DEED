@@ -13,6 +13,12 @@ import { UsporiadatStranku } from "./UsporiadatStranku";
 import { FarbaLinii } from "./FarbaLinii";
 import { VzhladStranky } from "./VzhladStranky";
 import { Atelier } from "./Atelier";
+import { ListaNeverejna, KartyZverejnenia, OknoZverejnit } from "./ZverejnenieStranky";
+import { PrveKrokySvetlusik, type KrokSprievodcu } from "./PrveKrokySvetlusik";
+import { SvetlusikKarta } from "@/components/SvetlusikInfo";
+import { cistyText } from "@/lib/richtext";
+import { citajNastavenie, maNastavenie } from "@/lib/nastaveniaStranky";
+import { useNeverejna } from "@/lib/zverejnenieStranky";
 import { KostolyMiesta } from "./KostolyMiesta";
 import { useMiesta } from "@/lib/miestaFarnosti";
 import { ZdrojFotiekKontext, zdrojFarnosti } from "@/components/VyberZGalerie";
@@ -63,7 +69,7 @@ import { ObrOznamenia, ObrUdaje, ObrZariadenia, ObrSuhlasy, ObrFaq, ObrPodpora }
 import { nacitajNastavenia } from "@/lib/nastaveniaStranky";
 import { useUrovenStranky } from "@/lib/mojeStranky";
 import { najdiTestProfil } from "@/lib/testProfily";
-import { cistyNazov, nacitajProfil, profilZPamate, uplnostProfilu, type ProfilStranky } from "@/lib/profilStranky";
+import { cistyNazov, monogramZNazvu, nacitajProfil, profilZPamate, uplnostProfilu, type ProfilStranky } from "@/lib/profilStranky";
 import { nacitajPiny, pinyZPamate, ulozPiny } from "@/lib/spravaPiny";
 import { useHromadnyVyber, TlacidloVyberu, ListaVyberu, PolickoVyberu, PasVyberu } from "@/components/HromadnyVyber";
 import { Volby } from "@/components/Volby";
@@ -185,6 +191,8 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   // OPRAVY 186: obrazovka Nastavení (ako pri charite) — n:<id>
   const [nId, setNId] = useState("");
   const [atelier, setAtelier] = useState(false); // OPRAVY 467: Ateliér stránky (celá obrazovka)
+  const [oknoZv, setOknoZv] = useState(false); // OPRAVY 511: Zverejniť stránku?
+  const neverejna = useNeverejna(strankaId);
   useEffect(() => { void nacitajNastavenia(strankaId); }, [strankaId]);
   const go = (k: Sub) => { if (pomocnik && (k === "nast" || k === "penazenka" || k === "n")) return; setDet(null); setQrZ(null); setNavratQr(false); setZbStart(undefined); setSub(k); setPridat(false); setPinOtv(false); setOznamyHore(0); };
 
@@ -199,7 +207,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const kartaProfilu = (m: boolean) => {
     const ls = m ? 56 : 44, fs = m ? 17 : 14.5;
     const hlava = (sub2: React.ReactNode) => <>
-      <LogoKarty profil={profilAkt} inicialy="" size={ls} />
+      <LogoKarty profil={profilAkt} inicialy={monogramZNazvu(meno)} size={ls} />
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}><b style={{ fontSize: fs, lineHeight: 1.25, color: "var(--ink)", overflowWrap: "anywhere" }}>{meno}</b>{sub2}</span>
     </>;
     if (uplnost.pct >= 100) return (
@@ -311,6 +319,20 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     { t: "Zadať omše", s: "časy omší a týždenný rozvrh", hot: maOmse, tap: () => go("omse") },
   ];
   const hotKroky = kroky.filter((k) => k.hot).length, prveKroky = hotKroky < kroky.length;
+  // Balík 47 · Svetlúšik · Prvé kroky: výrazy z číselníka cirkví, krok Dozorca len pri cirkvi s dozorcom
+  const SLs = useSlovaFarnosti(strankaId);
+  const ludiaF = (maNastavenie("ludia") ? citajNastavenie("ludia") : []) as { r?: string }[];
+  const krokySp: KrokSprievodcu[] = [
+    { k: "profil", t: "Profil", hot: !!prof.ulozeny?.cover?.src && !!cistyText(prof.ulozeny?.onas ?? "").trim(), tap: () => go("profil") },
+    { k: "ucet", t: `Účet ${SLs.jednotka2p}`, hot: ucetF.overeny, tap: () => { setNId("ucty"); go("n"); } },
+    { k: "hlavna", t: "Hlavná zbierka", hot: bezi, tap: () => go("zbierky") },
+    { k: "omse", t: SLs.bohosluzby.charAt(0).toUpperCase() + SLs.bohosluzby.slice(1), hot: maOmse, tap: () => go("omse") },
+    ...(SLs.dozorca ? [{ k: "dozorca", t: "Pozvať dozorcu", hot: ludiaF.some((x) => x.r === "Dozorca"), tap: () => go("ludia") }] : []),
+  ];
+  // OPRAVY 525 (balík 49): oslovenie z profilu duchovného (Ľudia farnosti) má prednosť; kým profil nie je uložený, predvoľba z číselníka; prázdne = bez oslovenia
+  const oslovenieDuch = maNastavenie("duch") ? String((citajNastavenie("duch") as { osl?: string } | null)?.osl ?? "").trim() || null : SLs.oslovenie;
+  const prveKrokySv = <PrveKrokySvetlusik oslovenie={oslovenieDuch} vasa={SLs.vasa} kroky={krokySp} mobil={mobil}
+    hotovo={{ oznam: () => go("oznamy"), qr: () => go("hlavna"), vzhlad: () => go("nast") }} />;
   // KARTA 56D §3: Treba vybaviť — len to, čo naozaj čaká (profil a hlavná zbierka; počas Prvých krokov sú v krokoch)
   const ulohy: { t: string; s: string; tap: () => void }[] = [
     ...(!prveKroky && uplnost.pct < 100 ? [{ t: "Dokončiť profil", s: uplnost.chyba, tap: () => go("profil") }] : []),
@@ -426,10 +448,10 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     <button key="hlavna" type="button" onClick={() => go("hlavna")} style={{ flex: "none", borderRadius: 22, border: "2px solid var(--green)", background: "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", gap: mobil ? 12 : 18, padding: mobil ? "12px 14px" : "18px 22px", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none", width: "100%" }}>
       {nahladFoto(fotoH)}
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
-        <span style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>{chipF("HLAVNÁ ZBIERKA", "var(--green)")}{chipF("AKTÍVNA", "#4B7A35")}</span>
+        <span style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>{chipF("HLAVNÁ ZBIERKA", "var(--green)")}{neverejna ? chipF("SPUSTÍ SA PO ZVEREJNENÍ STRÁNKY", "#8A6A1C") : chipF("AKTÍVNA", "#4B7A35")}</span>
         <b style={{ fontSize: mobil ? 17 : 20, lineHeight: 1.2 }}>{nazovHlavnej(hlavna)}</b>
         <span style={{ fontSize: 14, color: "var(--ink3)" }}>{hlavnySuhrn.darcov ? nDarov(hlavnySuhrn.darcov) : "zatiaľ žiadne dary"} · stála, aj mesačne</span>
-        {!hlavnySuhrn.darcov && <span style={{ fontSize: 14, color: "var(--ink)" }}><b>Ďalší krok:</b> stiahnite QR plagát a dajte ho do kostola ›</span>}
+        {!hlavnySuhrn.darcov && !neverejna && <span style={{ fontSize: 14, color: "var(--ink)" }}><b>Ďalší krok:</b> stiahnite QR plagát a dajte ho do kostola ›</span>}
       </span>
       <span style={{ flex: "none", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
         <b style={{ fontSize: mobil ? 18 : 24, fontVariantNumeric: "tabular-nums" }}>{eur(hlavnySuhrn.suma)}</b>
@@ -820,7 +842,11 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     onMojeZbierky={() => go("zbierky")} farnost={{ ucet: hlavnyUcet, onSpustena: (z) => { go("zbierky"); setNoveOk(`Zbierka „${z.nazov}“ beží. Nájdete ju nižšie v Ďalších zbierkach.`); } }} />;
   const hlavnaSprava = <SpravaCentralnej key={navratQr ? "qr" : "z"} strankaId={strankaId} nazov={meno} hlavnyUcet={hlavnyUcet} tier={4} mobil={mobil} toast={toast} startQr={navratQr} onTlacQr={tlacQr(() => setSub("hlavna"))}
     onZbierky={() => setSub("zbierky")} farnost={{ ostatneBezia, onZmazana: () => { const n = [{ nazov: nazovHlavnej(hlavna), koniec: new Date().toISOString(), suma: hlavnySuhrn.suma }, ...archivH]; setArchivH(n); ulozStav("hlavnaArchiv", strankaId, n); setZmazana(true); go("zbierky"); }, onHotovo: () => go("prehlad"), onZmenitUcet: otvorUcty }} />;
-  const obsah: Record<Sub, ReactNode> = { prehlad, zbierky, omse, oznamy, veriaci, ludia, filialky, penazenka, nastroje, profil, nahlad, hlavna: hlavnaSprava, zbierka: zbierkaEl, nova: novaEl, nast: nastavenia, n: nObr,
+  // Balík 47 · krok 1 Profil: Svetlúšik povie, kam ťuknúť (nič nevypĺňa za farára)
+  const profilSoSvetlusikom = krokySp[0].hot || pomocnik ? profil : <>
+    <SvetlusikKarta style={{ fontSize: 16 }}><span style={{ fontSize: 15.5, lineHeight: 1.55 }}>Stránka je zatiaľ prázdna. Ťuknite na <b>Zmeniť fotku</b> a pridajte titulnú fotku, potom na <b>Prispôsobiť rámu</b>. Nižšie napíšte pár viet <b>O nás</b> a ťuknite <b>Uložiť profil</b>.</span></SvetlusikKarta>
+    {profil}</>;
+  const obsah: Record<Sub, ReactNode> = { prehlad, zbierky, omse, oznamy, veriaci, ludia, filialky, penazenka, nastroje, profil: profilSoSvetlusikom, nahlad, hlavna: hlavnaSprava, zbierka: zbierkaEl, nova: novaEl, nast: nastavenia, n: nObr,
     zvoncek: <SpravaZvoncek key={navratQr ? "qr" : "z"} strankaId={strankaId} mobil={mobil} toast={toast} onSpat={() => go("zbierky")} meno={meno} startQr={navratQr} onTlacQr={tlacQr(() => setSub("zvoncek"))} /> };
 
   // ---------------- Pridať ----------------
@@ -838,6 +864,11 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}><b style={{ fontSize: mobil ? 14.5 : 15, color: "var(--ink)" }}>{t}</b><span style={{ fontSize: mobil ? 12 : 12.5, color: "var(--ink3)" }}>{s}</span></span>
     </button>));
   const vrstvy = <>
+    {oknoZv && <OknoZverejnit strankaId={strankaId} farnost onZavri={() => setOknoZv(false)} polozky={[
+      { t: "Názov", ok: !!cistyNazov(prof.ulozeny?.meno ?? nazov ?? "").trim(), onDoplnit: () => go("profil") },
+      { t: "Titulná fotka", ok: !!prof.ulozeny?.cover?.src, onDoplnit: () => go("profil") },
+      { t: "Omše", ok: maOmse, onDoplnit: () => go("omse") },
+    ]} />}
     {pridat && createPortal(<div className="sprava-charity" data-stit="silver" style={{ minHeight: 0, background: "transparent" }}>
       <div onClick={() => setPridat(false)} style={{ position: "fixed", inset: 0, zIndex: 140, background: "rgba(20,17,11,.45)" }} />
       <div role="dialog" aria-modal="true" aria-label="Pridať do farnosti" style={mobil
@@ -896,6 +927,9 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
               {!BEZ_PRIDAT.includes(sub) && <button type="button" onClick={pridatTl} style={{ ...tlZ, height: 44, padding: "0 18px", borderRadius: 13, fontSize: 15 }}>{PRIDAT_T[sub] ?? "+ Pridať"}</button>}
             </header>
             {test}
+            {!pomocnik && <ListaNeverejna strankaId={strankaId} mobil={false} onZverejnit={() => setOknoZv(true)} />}
+            {sub === "prehlad" && !pomocnik && <KartyZverejnenia strankaId={strankaId} farnost onQrPlagat={() => go("hlavna")} />}
+            {sub === "prehlad" && !pomocnik && prveKrokySv}
             <div key={sub} style={{ display: "flex", flexDirection: "column", gap: 14, animation: "spravaFade .2s ease both" }}>{obsah[sub]}</div>
           </main>
         </div>
@@ -924,6 +958,9 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
         </button> : sub !== "prehlad" && <span aria-hidden="true" style={{ flex: "none", width: 46 }} />}
       </header>
       <div key={sub} style={{ padding: "12px 14px 180px", display: "flex", flexDirection: "column", gap: 12, animation: "spravaFade .2s ease both", width: "100%", maxWidth: tablet ? 880 : undefined, margin: tablet ? "0 auto" : undefined, boxSizing: "border-box" }}>
+        {!pomocnik && <ListaNeverejna strankaId={strankaId} mobil onZverejnit={() => setOknoZv(true)} />}
+        {sub === "prehlad" && !pomocnik && <KartyZverejnenia strankaId={strankaId} farnost onQrPlagat={() => go("hlavna")} />}
+        {sub === "prehlad" && !pomocnik && prveKrokySv}
         {obsah[sub]}
         {test}
       </div>

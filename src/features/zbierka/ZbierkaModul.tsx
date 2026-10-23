@@ -310,7 +310,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
         <div className="zb-pravy">{pc ? <>{prave.map(vykresli)}</> : <ZmensenyModul>{polozky.filter((p) => p.kluc !== "darcovia").map(vykresli)}</ZmensenyModul>}</div>
       </div>}
       {/* bod 149 · dole vždy „Zbaliť a späť" (vráti na tú istú kartu a posun); OPRAVY 209: na mobile pod ním Darcovia */}
-      {/* OPRAVY 440 (1): z feedu bez „Zbaliť a späť“ (hore je ‹ Späť aj ×); na stránke organizácie ostáva */}
+      {/* OPRAVY 440 (1): z Domova bez „Zbaliť a späť“ (hore je ‹ Späť aj ×); na stránke organizácie ostáva */}
       {miesto !== "podporitDeed" && !bocny && zoStrankyOrg && <div style={{ padding: "14px 16px 0", maxWidth: pc ? 420 : undefined, marginLeft: pc ? "auto" : undefined }}><ZbalitASpat onClick={onBack} /></div>}
       {!pc && !bocny && <div style={{ paddingTop: 14 }}>{polozky.filter((p) => p.kluc === "darcovia").map(vykresli)}</div>}
     </div>

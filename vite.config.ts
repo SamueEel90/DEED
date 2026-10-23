@@ -45,8 +45,10 @@ export default defineConfig({
       workbox: {
         // hlavný balík prerástol 2 MiB (preklady) — bez tohto build na Verceli padne
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        // OPRAVY 517: ukážka Svetla pomoci (public/svetlo) sa do appky neprednačítava
+        globIgnores: ['**/node_modules/**/*', 'sw.js', 'workbox-*.js', 'svetlo/**'],
         // SPA fallback nechaj len na navigácie (deep-linky /m /c /r … dostanú shell)
-        navigateFallbackDenylist: [/^\/assets\//, /^\/video\//, /^\/img\//, /^\/api\//, /^\/i\//, /^\/editor\//], // /i/{id} = web stránka Iskry (api/iskra.ts) · /editor/ = Editor oznámení (KARTA 57 A.3)
+        navigateFallbackDenylist: [/^\/assets\//, /^\/video\//, /^\/img\//, /^\/api\//, /^\/i\//, /^\/editor\//, /^\/svetlo\//], // /svetlo/ = ukážka Svetla pomoci (OPRAVY 517) · /i/{id} = web stránka Iskry (api/iskra.ts) · /editor/ = Editor oznámení (KARTA 57 A.3)
         // TESTOVANIE (s autoUpdate): nový SW prevezme appku hneď, staré cache sa zmažú
         skipWaiting: true,
         clientsClaim: true,

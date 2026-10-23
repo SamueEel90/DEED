@@ -11,7 +11,7 @@ export type Vzhlad = "kronika" | "vyklad" | "pirat";
 export const VZHLADY: { k: Vzhlad; t: string; s: string; bg: string }[] = [
   { k: "kronika", t: "Kronika", s: "roky a príbehy", bg: "linear-gradient(160deg,#2F5E3A,#14110B)" },
   { k: "vyklad", t: "Výklad", s: "veľká titulka", bg: "linear-gradient(160deg,#876712,#14110B)" },
-  { k: "pirat", t: "Pirát", s: "celé obrazovky", bg: "linear-gradient(160deg,#3D6B8E,#14110B)" },
+  { k: "pirat", t: "Moderné" /* 510: kód ostáva pirat */, s: "celé obrazovky", bg: "linear-gradient(160deg,#3D6B8E,#14110B)" },
 ];
 /** KARTA 56D §4: farnosť — Kronika · Nástenka · Moderné (Moderné nahrádza Pirát), tie isté tri podania */
 export const VZHLADY_FARNOST: typeof VZHLADY = [
@@ -51,6 +51,16 @@ export async function ulozVzhlad(stranka: string, v: Vzhlad): Promise<void> {
   zapisane.set(stranka, Date.now());
   pamat.set(stranka, v); zmena();
   if (supabase) await supabase.from("profil_stranky").upsert({ stranka, vzhlad: v }, { onConflict: "stranka" });
+}
+/** OPRAVY 510 · Ateliér charity: zverejnenie vzhľadu, na ktoré sa čaká — chyba ako text alebo null */
+export async function ulozVzhladIsto(stranka: string, v: Vzhlad): Promise<string | null> {
+  if (supabase) {
+    const { error } = await supabase.from("profil_stranky").upsert({ stranka, vzhlad: v }, { onConflict: "stranka" }).then((x) => x, () => ({ error: { message: "siet" } }));
+    if (error) return "Vzhľad sa nezverejnil. Skontrolujte pripojenie a skúste znova.";
+  }
+  zapisane.set(stranka, Date.now());
+  pamat.set(stranka, v); zmena();
+  return null;
 }
 /** OPRAVY 403 doplnok · Klasik (tvorca): bez vybraného vzhľadu = pôvodná stránka tvorcu (StrankaTvorcu). Uloží sa hneď (vzhlad = null). */
 export async function ulozKlasik(stranka: string): Promise<void> {

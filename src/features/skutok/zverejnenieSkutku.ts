@@ -2,7 +2,7 @@
 // OPRAVY 443 doplnok · skutok za charitu pri výpadku servera.
 // Zverejnenie čaká na server; keď zlyhá, skutok ostane v zariadení ako „nezverejnený“ (nič sa nestratí).
 // Appka ho skúsi nahrať znova: tlačidlom „Skúsiť znova“, pri otvorení Správy → Skutky a keď sa vráti sieť.
-// Položka feedu Domov vznikne až po úspešnom zápise skutku (feedCaka), aby vo feede nebol skutok, ktorý stránka nemá.
+// Položka feedu Domov vznikne až po úspešnom zápise skutku (feedCaka), aby na Domove nebol skutok, ktorý stránka nemá.
 // ============================================================
 import { repo } from "@/data";
 import type { GoodPolozka } from "@/types";
@@ -11,7 +11,7 @@ import { skutkyOrg, upravSkutokOrg, zverejnitZnova, nezverejneneOrg, strankySCak
 
 const ucet = () => (getSession() as { ucet_id?: string } | null)?.ucet_id ?? null;
 
-/** po úspešnom zápise skutku: príspevok do feedu Domov (ak čaká) a jeho id ku skutku (OPRAVY 436) */
+/** po úspešnom zápise skutku: príspevok na Domov Domov (ak čaká) a jeho id ku skutku (OPRAVY 436) */
 async function doFeedu(stranka: string, id: string, poFeede?: () => void): Promise<void> {
   const s = skutkyOrg(stranka).find((x) => x.id === id);
   const it = s?.feedCaka as GoodPolozka | undefined;

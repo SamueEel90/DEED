@@ -149,7 +149,7 @@ export function KartaZbierkyForm({ profil, zmen, logo, toast, deti, bar }: {
   );
 }
 
-/** náhľad karty tak, ako ju uvidí darca vo feede */
+/** náhľad karty tak, ako ju uvidí darca na Domove */
 export function NahladKarty({ profil, logo, vyzbierane, dolozene, ludia, sipka, dobrovolne }: {
   profil: ProfilZbierky; logo?: string; vyzbierane: number; dolozene: number; ludia?: number;
   /** centrálna zbierka — dokladovanie dobrovoľné (bonus k dôvere, nie povinnosť) */

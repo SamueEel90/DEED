@@ -16,13 +16,13 @@ export const KARMA_ZA_BOD = 10;
 export const MAX_FOTIEK_AI = 3; // backend berie max 3 obrázky
 export const KAT: Partial<Record<Oblast, GoodPolozka["kat"]>> = { Príroda: "Priroda", Zdravie: "Zdravie", Učenie: "Ucenie", Pomoc: "Pomoc" };
 
-export const DET_CAKA = "Čaká na ohodnotenie. AI ho ohodnotí, keď bude dostupná, potom pôjde do feedu alebo ostane v denníku.";
-const DET_FEED = "Overila AI. Skutok je vo feede tvojej štvrte. Overenia od susedov mu pridávajú dôveru.";
+export const DET_CAKA = "Čaká na ohodnotenie. AI ho ohodnotí, keď bude dostupná, potom pôjde na Domov alebo ostane v denníku.";
+const DET_FEED = "Overila AI. Skutok je na Domove v tvojej štvrti. Overenia od susedov mu pridávajú dôveru.";
 const DET_DENNIK = "AI: ostáva v tvojom denníku.";
 
 export const karmaZoSkore = (skore?: number | null) => (skore != null ? Math.max(1, Math.round(skore * KARMA_ZA_BOD)) : 3);
 
-/** Výsledok AI → zmena skutku a (pri páse ≥ 1 s dôkazom) položka do feedu. */
+/** Výsledok AI → zmena skutku a (pri páse ≥ 1 s dôkazom) položka na Domov. */
 export function vysledokPreSkutok(s: MojSkutok, v: ScoreOdpoved): { zmena: Partial<MojSkutok>; doFeedu: boolean } {
   const c = s.caka!;
   if (v.verdikt === "zamietnut") {

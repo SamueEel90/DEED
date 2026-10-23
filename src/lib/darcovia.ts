@@ -122,7 +122,7 @@ const CERSTVE_DARY_MS = 20_000;
 /** zbierky rodiny, ktorých sumu server nepošle (0075b · KARTA 57 A.7): refId → počet darov */
 const skrytaSuma = new Map<string, number>();
 /** id zbierky v ledgeri, ak má appka databázu a dar patrí zbierke stránky */
-// OPRAVY 442 doplnok: skutok vo feede Domov („good-<uuid príspevku>“) — dary z ledgera (0142), nie z tohto zariadenia
+// OPRAVY 442 doplnok: skutok na Domove („good-<uuid príspevku>“) — dary z ledgera (0142), nie z tohto zariadenia
 const PRISPEVOK_REF = /^good-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
 function ledgerId(refId: string): string | null {
   if (!supabase) return null;

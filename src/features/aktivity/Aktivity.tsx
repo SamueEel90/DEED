@@ -81,7 +81,7 @@ export default function ModulAktivity({ wide }: { wide?: boolean }) {
   const [hladaj, setHladaj] = useState(false);
   const [add, setAdd] = useState<{ kind: string; d: string } | null>(null); // null = menu | { kind, d }
 
-  // pod-obrazovka = vrstva histórie → browser Back sa vráti na feed (nie von z appky)
+  // pod-obrazovka = vrstva histórie → browser Back sa vráti na Domov (nie von z appky)
   useVrstva(screen !== "home", () => setScreen("home"), screen);
 
   // perzistentný stav (localStorage)
@@ -180,7 +180,7 @@ export default function ModulAktivity({ wide }: { wide?: boolean }) {
   function createPost(spec: NovyPostSpec) {
     const post = vytvorPost(spec);
     setPosts((p) => [post, ...p]);
-    // zápis do DB: po úspechu lokálnu kópiu nahradí riadok z feedu (vidia ho všetci); bez DB (mock) ostáva lokálne
+    // zápis do DB: po úspechu lokálnu kópiu nahradí riadok z Domova (vidia ho všetci); bez DB (mock) ostáva lokálne
     repo.aktivity.vytvor({ ...post, author: ja.celeMeno, ini: ja.iniciala } as unknown as AktivitaItem, ja.ucetId)
       .then((novyId) => {
         if (!novyId) return;
@@ -259,7 +259,7 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
   const menuStyle = (d: string, on: boolean): React.CSSProperties => ({ flex: "1 1 0", minWidth: 72, display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs, height: 40, borderRadius: RADIUS.sm, fontSize: 12.5, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", background: on ? tint(DOM[d].c, .15) : A.surface, border: `1px solid ${on ? tint(DOM[d].c, .5) : A.line2}`, color: on ? DOM[d].c : A.txt2 });
 
   // HLAVNÉ MENU STRÁNKY — kategórie (Zdravie/Learn/Šport/Eko/Art).
-  // Vždy je aktívna práve jedna kategória; jej obsah sa zobrazí vo feede.
+  // Vždy je aktívna práve jedna kategória; jej obsah sa zobrazí na Domove.
   const filterBar = (
     <div style={{ padding: `0 ${SPACE.md}px ${SPACE.xs}px` }}>
       <div style={{ display: "flex", gap: SPACE.xs, overflowX: "auto" }}>
@@ -461,7 +461,7 @@ function Detail({ it, liked, like, support, votes, vote, toast, celebrate, home,
   return <DeedDetail it={it} liked={liked} like={like} support={support} votes={votes} vote={vote} toast={toast} home={home} openPerson={openPerson} />;
 }
 
-/** detail skutku — ten istý vo feede Aktivít aj na verejných profiloch (kronika, roky).
+/** detail skutku — ten istý na Domove Aktivít aj na verejných profiloch (kronika, roky).
  *  5. 10.: bezPodpory = staré roky (bez drobnej podpory a darov, ostane Zdieľať a Páči sa mi);
  *  it.split = komu išla podpora („Podpora išla: …"), bez splitu sa riadok neukáže; it.pomahali = kto pomáhal (profil charity). */
 export function DeedDetail({ it, support, votes, vote, toast, home, openPerson, bezPodpory = false, charita = false, onPomocnik }: any) {
@@ -702,8 +702,8 @@ function AddForm({ kind, d, a, pill, setAdd, toast, celebrate, home, createPost 
 
     createPost({ kind, d, text, talent: false, free: isSkol && free, fotky });
     const ttl = isSkol ? "Workshop vytvorený!" : "Žiadosť zverejnená!";
-    const body = kind === "help" ? "Tvoja žiadosť je navrchu feedu. Keď sa niekto ozve, otvorí sa chat."
-      : "Workshop sa práve zobrazil vo feede aj na Nástenke.";
+    const body = kind === "help" ? "Tvoja žiadosť je navrchu zoznamu. Keď sa niekto ozve, otvorí sa chat."
+      : "Workshop sa práve zobrazil v zozname aj na Nástenke.";
     celebrate(ttl, body);
     setTimeout(home, 1500);
   }

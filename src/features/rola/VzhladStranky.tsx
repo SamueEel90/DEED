@@ -5,6 +5,7 @@ import { vzhladyPre, ulozVzhlad, useVzhlad, ulozKlasik, useVybranyVzhlad } from 
 import { toast } from "@/components/toast";
 import { ROZLOZENIA, nastavRozlozenie, useRozlozenie } from "@/lib/rozlozenieFarnosti";
 import { useKonceptAtelieru, nazovVzhladu } from "@/lib/atelier";
+import { useKonceptCharity, nazovVzhladuCharity } from "@/lib/atelierCharity";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import type { Rozlozenie } from "@/lib/rozlozenieFarnosti";
 
@@ -71,14 +72,21 @@ function RozlozenieFarnosti({ strankaId, onPozriet, onAtelier }: { strankaId: st
       {onPozriet && <button type="button" onClick={onPozriet} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--gInk)" }}>Pozrieť verejný profil ›</button>}
     </section>
     {/* OPRAVY 467 (2): Ateliér stránky — skúšobný režim, nikto nevidí, kým nepodržíte Zverejniť */}
-    {onAtelier && <section aria-label="Ateliér stránky" style={{ flex: "none", borderRadius: 18, background: "#2A2214", border: "2px solid #C9A24A", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10, color: "#F3EBDD" }}>
+    {onAtelier && <KartaAtelieru onAtelier={onAtelier} veta="Tu si v pokoji vyskúšate iný vzhľad aj poradie blokov na svojej stránke. Nikto to nevidí, kým nepodržíte Zverejniť vzhľad."
+      rozpracovane={koncept ? nazovVzhladu(koncept.rozlozenie) : null} />}
+  </>);
+}
+
+/** OPRAVY 467 / 510: karta Ateliér stránky · SKÚŠOBNÝ REŽIM (farnosť aj charita) */
+function KartaAtelieru({ onAtelier, veta, rozpracovane }: { onAtelier: () => void; veta: string; rozpracovane: string | null }) {
+  return (
+    <section aria-label="Ateliér stránky" style={{ flex: "none", borderRadius: 18, background: "#2A2214", border: "2px solid #C9A24A", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10, color: "#F3EBDD" }}>
       <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><b style={{ fontSize: 17 }}>Ateliér stránky</b>
         <span style={{ padding: "3px 8px", borderRadius: 8, border: "1px solid #C9A24A", color: "#E6C878", fontSize: 11.5, fontWeight: 800, letterSpacing: ".04em" }}>SKÚŠOBNÝ REŽIM</span></span>
-      <span style={{ fontSize: 14, lineHeight: 1.5, color: "#D9D2C4" }}>Tu si v pokoji vyskúšate iný vzhľad aj poradie blokov na svojej stránke. Nikto to nevidí, kým nepodržíte Zverejniť.</span>
-      {koncept && <span style={{ fontSize: 13.5, fontWeight: 700, color: "#E6C878" }}>Rozpracované: {nazovVzhladu(koncept.rozlozenie)} · uložené, nikto to nevidí</span>}
-      <button type="button" onClick={onAtelier} style={{ alignSelf: "flex-start", minHeight: 52, padding: "0 22px", borderRadius: 14, border: "none", background: "#C9A24A", color: "#2A2214", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" }}>{koncept ? "Pokračovať v rozpracovanom ›" : "Otvoriť ateliér ›"}</button>
-    </section>}
-  </>);
+      <span style={{ fontSize: 14, lineHeight: 1.5, color: "#D9D2C4" }}>{veta}</span>
+      {rozpracovane && <span style={{ fontSize: 13.5, fontWeight: 700, color: "#E6C878" }}>Rozpracované: {rozpracovane} · uložené, nikto to nevidí</span>}
+      <button type="button" onClick={onAtelier} style={{ alignSelf: "flex-start", minHeight: 52, padding: "0 22px", borderRadius: 14, border: "none", background: "#C9A24A", color: "#2A2214", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" }}>{rozpracovane ? "Pokračovať v rozpracovanom ›" : "Otvoriť ateliér ›"}</button>
+    </section>);
 }
 
 export function VzhladStranky({ strankaId, zadarmo, kto = "darcovia", onPozriet, sektor, onAtelier }: {
@@ -87,9 +95,10 @@ export function VzhladStranky({ strankaId, zadarmo, kto = "darcovia", onPozriet,
   /** KARTA 56D §4: farnosť — názvy Kronika · Nástenka · Moderné, profil sa pozrie tlačidlom Náhľad */ sektor?: string;
 }) {
   if (sektor === "farnost") return <RozlozenieFarnosti strankaId={strankaId} onPozriet={onPozriet} onAtelier={onAtelier} />;
-  return <VzhladProfilu strankaId={strankaId} zadarmo={zadarmo} kto={kto} onPozriet={onPozriet} sektor={sektor} />;
+  return <VzhladProfilu strankaId={strankaId} zadarmo={zadarmo} kto={kto} onPozriet={onPozriet} sektor={sektor} onAtelier={onAtelier} />;
 }
-function VzhladProfilu({ strankaId, zadarmo, kto, onPozriet, sektor }: { strankaId: string; zadarmo: boolean; kto: string; onPozriet?: () => void; sektor?: string }) {
+function VzhladProfilu({ strankaId, zadarmo, kto, onPozriet, sektor, onAtelier }: { strankaId: string; zadarmo: boolean; kto: string; onPozriet?: () => void; sektor?: string; onAtelier?: () => void }) {
+  const konceptCh = useKonceptCharity();
   const vz0 = useVzhlad(strankaId, zadarmo);
   // OPRAVY 403 doplnok: tvorca má navyše Klasik (pôvodná stránka tvorcu) = bez vybraného vzhľadu
   const klasik = sektor === "tvorca";
@@ -100,7 +109,7 @@ function VzhladProfilu({ strankaId, zadarmo, kto, onPozriet, sektor }: { stranka
     const p = k ? ulozVzhlad(strankaId, k) : ulozKlasik(strankaId);
     void p.catch(() => toast("Vzhľad sa neuložil · skúste znova"));
   };
-  return (
+  return (<>
     <section aria-label="Vzhľad stránky" style={{ flex: "none", borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
       <span style={{ fontSize: 15, fontWeight: 800 }}>Vzhľad stránky</span>
       <span style={{ fontSize: 13, color: "var(--ink3)", marginTop: -6 }}>{zadarmo ? `Ako vidia ${kto} váš verejný profil. V programe Zadarmo je jeden vzhľad, ďalšie sú v platenom programe.` : onPozriet ? `Ako vidia ${kto} váš verejný profil. Zmena sa uloží hneď.` : `Ako vidia ${kto} váš verejný profil. Pozriete ho tlačidlom Náhľad.`}</span>
@@ -122,5 +131,9 @@ function VzhladProfilu({ strankaId, zadarmo, kto, onPozriet, sektor }: { stranka
         })}
       </div>
       {onPozriet && <button type="button" onClick={onPozriet} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--green)" }}>Pozrieť verejný profil ›</button>}
-    </section>);
+    </section>
+    {/* OPRAVY 510: charita — Ateliér stránky (Kronika · Výklad · Moderné) */}
+    {onAtelier && <KartaAtelieru onAtelier={onAtelier} veta="Tu si v pokoji vyskúšate iný vzhľad na svojej stránke. Nikto to nevidí, kým nepodržíte Zverejniť vzhľad."
+      rozpracovane={konceptCh ? nazovVzhladuCharity(konceptCh.vzhlad) : null} />}
+  </>);
 }

@@ -7,7 +7,9 @@ import { createPortal } from "react-dom";
 import { useSession } from "@/lib/session";
 import { useAktivacia } from "@/components/context";
 import { nacitajStrankyUctu } from "@/lib/mojeStranky";
-import { cakajucaPozvanka, zabudniPozvanku, nacitajPozvanku, odpovedzPozvanke, UDALOST_POZVANKA, type Pozvanka } from "@/lib/pozvankaSpravy";
+import { cakajucaPozvanka, zabudniPozvanku, nacitajPozvanku, odpovedzPozvanke, UDALOST_POZVANKA, type Pozvanka, type CielPozvanky } from "@/lib/pozvankaSpravy";
+import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
+import { smieText, type Pravo } from "@/lib/pravaPracovnika";
 
 const tl = (zelene: boolean) => ({ minHeight: 52, borderRadius: 14, border: zelene ? "none" : "1px solid var(--cardBd)", background: zelene ? "var(--green)" : "var(--btn)", color: zelene ? "#fff" : "var(--ink)", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" });
 
@@ -15,7 +17,7 @@ export function PozvankaHost() {
   const s = useSession();
   const aktivacia = useAktivacia();
   const prihlaseny = !!s && !("demo" in s && s.demo) && !("typ" in s && s.typ === "pasivny");
-  const [ciel, setCiel] = useState<{ stranka: string; id: string } | null>(cakajucaPozvanka);
+  const [ciel, setCiel] = useState<CielPozvanky | null>(cakajucaPozvanka);
   const [p, setP] = useState<Pozvanka | null>(null);
   const [chyba, setChyba] = useState<string | null>(null);
   const [pracuje, setPracuje] = useState(false);
@@ -24,7 +26,7 @@ export function PozvankaHost() {
   useEffect(() => {
     if (!ciel || !prihlaseny) return;
     let ziva = true;
-    void nacitajPozvanku(ciel.stranka, ciel.id).then((r) => { if (!ziva) return; if ("ok" in r) setP(r.ok); else setChyba(r.chyba); });
+    void nacitajPozvanku(ciel.stranka, ciel.id, ciel.t).then((r) => { if (!ziva) return; if ("ok" in r) setP(r.ok); else setChyba(r.chyba); });
     return () => { ziva = false; };
   }, [ciel, prihlaseny]);
   if (!ciel) return null;
@@ -38,6 +40,10 @@ export function PozvankaHost() {
     if (prijat) void nacitajStrankyUctu();
   };
   const rola = p ? `${p.p ? `${p.p} · ` : ""}${p.r}` : "";
+  // OPRAVY 524: QR na mieste — „{organizácia} vás pridáva do Správy“, kto pridáva, čo bude smieť, Podržte a prijmite
+  const naMieste = !!ciel.t || !!p?.od;
+  const charita = p?.typ === "charita" || Array.isArray(p?.prava);
+  const smie = p && Array.isArray(p.prava) ? smieText(p.prava as Pravo[]) : "";
   const coSmie = p?.r === "Pomocník" ? "Celú Správu stránky okrem Nastavení (účet farnosti, predplatné a ľudia)." : "Celú Správu stránky vrátane Nastavení a ľudí.";
   return createPortal(
     <div className="deed-platba" role="dialog" aria-modal="true" aria-label="Pozvánka do Správy" style={{ position: "fixed", inset: 0, zIndex: 1200, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
@@ -51,7 +57,7 @@ export function PozvankaHost() {
           <button type="button" onClick={() => aktivacia("aktivny")} style={tl(false)}>Vytvoriť účet</button>
         </> : hotovo ? <>
           <b role="status" style={{ fontSize: 20, lineHeight: 1.3 }}>{hotovo === "prijal" ? "Prijaté ✓" : "Odmietnuté"}</b>
-          <span style={{ fontSize: 15, lineHeight: 1.5, color: "var(--ink2)" }}>{hotovo === "prijal" ? "Správu stránky nájdete v Profil → Moje stránky." : "Farár uvidí, že ste pozvánku odmietli."}</span>
+          <span style={{ fontSize: 15, lineHeight: 1.5, color: "var(--ink2)" }}>{hotovo === "prijal" ? "Správu stránky nájdete v Profil → Moje stránky." : charita ? "Kto vás pridával, uvidí, že ste pozvánku odmietli." : "Farár uvidí, že ste pozvánku odmietli."}</span>
           <button type="button" onClick={zavri} style={tl(true)}>Zavrieť</button>
         </> : !p ? <>
           <span role={chyba ? "alert" : "status"} style={{ fontSize: 15.5, lineHeight: 1.5, color: chyba ? "#A34A2A" : "var(--ink2)", fontWeight: chyba ? 700 : 400 }}>{chyba ?? "Načítavam pozvánku…"}</span>
@@ -60,6 +66,17 @@ export function PozvankaHost() {
           <b style={{ fontSize: 19, lineHeight: 1.3 }}>{p.nazov}</b>
           <span role="status" style={{ fontSize: 15.5, lineHeight: 1.5 }}>{p.stav === "prijal" ? "Túto pozvánku ste už prijali ✓" : p.stav === "odmietol" ? "Túto pozvánku ste odmietli." : "Pozvánka vypršala. Požiadajte farára o novú."}</span>
           <button type="button" onClick={zavri} style={tl(true)}>Zavrieť</button>
+        </> : naMieste ? <>
+          <b style={{ fontSize: 20, lineHeight: 1.3, textAlign: "center", padding: "8px 0 4px" }}>{p.nazov} vás pridáva do Správy</b>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, padding: 14, borderRadius: 14, background: "var(--card)", border: "1px solid var(--cardBd)" }}>
+            {p.od?.meno && <><span style={{ fontSize: 13, color: "var(--ink3)" }}>Pridáva vás</span><b style={{ fontSize: 16 }}>{p.od.meno}{p.od.f ? ` · ${p.od.f}` : ""}</b></>}
+            <span style={{ fontSize: 13, color: "var(--ink3)", paddingTop: p.od?.meno ? 6 : 0 }}>Budete smieť</span>
+            <b style={{ fontSize: 16, lineHeight: 1.4 }}>{charita ? `${p.p ? `${p.p} · ` : ""}${smie ? smie.charAt(0).toUpperCase() + smie.slice(1) : rola}` : `${rola} · ${coSmie}`}</b>
+          </div>
+          {chyba && <span role="alert" style={{ fontSize: 14.5, fontWeight: 700, color: "#A34A2A" }}>{chyba}</span>}
+          {pracuje ? <span role="status" style={{ ...tl(true), display: "flex", alignItems: "center", justifyContent: "center", opacity: .6 }}>Ukladám…</span>
+            : <DrzTlacidlo ms={1200} onHotovo={() => void odpovedz(true)} plnenie="rgba(255,255,255,.28)" styl={{ ...tl(true), width: "100%" }}>Podržte a prijmite</DrzTlacidlo>}
+          <button type="button" disabled={pracuje} onClick={() => void odpovedz(false)} style={{ minHeight: 48, border: "none", background: "transparent", color: "var(--ink2)", fontFamily: "inherit", fontSize: 15.5, fontWeight: 700, cursor: "pointer" }}>Odmietnuť</button>
         </> : <>
           <b style={{ fontSize: 20, lineHeight: 1.3 }}>{p.nazov} vás pozýva do Správy</b>
           <span style={{ alignSelf: "flex-start", padding: "4px 10px", borderRadius: 9, background: "var(--gSoft)", color: "var(--gInk)", fontSize: 14, fontWeight: 800 }}>{rola}</span>

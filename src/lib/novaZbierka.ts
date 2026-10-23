@@ -51,7 +51,7 @@ export interface NovaZbierkaData {
   rozdelenie?: PodielZbierky[];
   /** OPRAVY 338 · migrácia 0104: id osobného overenia príjemcu (sken QR + kód) — server podľa neho pustí registrovaný účet */
   overenie_prijemcu?: string;
-  /** OPRAVY 430: Komu to pomáha — oblasť a najviac 2 podpoložky z ZAUJMY_KATALOG (čipy na karte, výber vo feede) */
+  /** OPRAVY 430: Komu to pomáha — oblasť a najviac 2 podpoložky z ZAUJMY_KATALOG (čipy na karte, výber na Domove) */
   komu?: { oblast: string; pod: string[] };
 }
 export type PodielZbierky =
@@ -111,7 +111,7 @@ export function lehotaZbierky(d: NovaZbierkaData, dlha = d.typ === "dlha"): { te
   return zakl;
 }
 /** karta 37 · bod 7 — texty dlhodobej zbierky */
-export const DLHA_FEED_TEXT = "Prvých 30 dní bude zbierka vo feede veľká. Potom tam ostane, kým chodia dary. Keď dary prestanú, ľudia ju nájdu na vašom profile. Pomôže priebežné doloženie, skutok, pri ktorom pôjdu peniaze na túto zbierku, alebo topovanie.";
+export const DLHA_FEED_TEXT = "Prvých 30 dní bude zbierka na Domove veľká. Potom tam ostane, kým chodia dary. Keď dary prestanú, ľudia ju nájdu na vašom profile. Pomôže priebežné doloženie, skutok, pri ktorom pôjdu peniaze na túto zbierku, alebo topovanie.";
 export const DLHA_PRIEBEZNE_TEXT = "Priebežne môžete dokladovať, kedy chcete. Zbierka sa tým dostane na 24 hodín hore, najviac raz za mesiac.";
 
 // ---- spustená zbierka ----

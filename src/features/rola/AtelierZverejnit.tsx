@@ -14,27 +14,38 @@ const ZLATA = "#C9A24A";
 type Stav = "vyber" | "plan" | "hotovo";
 const dni = (iso: string) => { const n = Math.max(1, Math.ceil((Date.parse(iso) - Date.now()) / 864e5)); return `${n} ${n === 1 ? "deň" : n < 5 ? "dni" : "dní"}`; };
 
-export function AtelierZverejnit({ strankaId, koncept, naostro, uspNaostro, onSpat, onHotovo }: { strankaId: string; koncept: KonceptAtelieru | null;
-  naostro: Rozlozenie; uspNaostro: Usporiadanie; /** späť na Moja stránka */ onSpat: () => void; /** Hotovo · späť do Nastavení */ onHotovo: () => void }) {
-  const [stav, setStav] = useState<Stav>(koncept?.naplanovane ? "plan" : koncept ? "vyber" : "hotovo");
+/** OPRAVY 510: to isté okno pre Ateliér charity — čo sa zverejní a ako (bez poradia blokov) */
+export type ZverejnitAdapter = { ma: boolean; zmeny: string[]; naostroNazov: string; naplanovane?: string; hned: () => Promise<string | null>;
+  naplanuj: (iso: string | null) => void; spat: { nazov: string; do: string } | null; vrat: () => Promise<string | null> };
+
+export function AtelierZverejnit({ strankaId, koncept, naostro, uspNaostro, onSpat, onHotovo, adapter }: { strankaId: string; koncept: KonceptAtelieru | null;
+  naostro: Rozlozenie; uspNaostro: Usporiadanie; /** späť na Moja stránka */ onSpat: () => void; /** Hotovo · späť do Nastavení */ onHotovo: () => void; adapter?: ZverejnitAdapter }) {
+  const spatF = useSpatAtelieru();
+  const A: ZverejnitAdapter = adapter ?? {
+    ma: !!koncept, zmeny: koncept ? zmenyKonceptu(koncept, naostro, uspNaostro) : [], naostroNazov: nazovVzhladu(naostro), naplanovane: koncept?.naplanovane,
+    hned: () => (koncept ? zverejniHned(strankaId, koncept, naostro, uspNaostro) : Promise.resolve(null)),
+    naplanuj: (iso) => { if (koncept) naplanujKoncept(koncept, iso); },
+    spat: spatF ? { nazov: nazovVzhladu(spatF.rozlozenie), do: spatF.do } : null, vrat: () => (spatF ? vratSpat(strankaId, spatF) : Promise.resolve(null)),
+  };
+  const [stav, setStav] = useState<Stav>(A.naplanovane ? "plan" : A.ma ? "vyber" : "hotovo");
   const [kedy, setKedy] = useState<"noc" | "hned">("noc");
   const [n, setN] = useState<number | null>(null);
   const [hint, setHint] = useState(false);
   const [chyba, setChyba] = useState("");
   const [bezi, setBezi] = useState(false);
-  const [zmeny] = useState(() => (koncept ? zmenyKonceptu(koncept, naostro, uspNaostro) : []));
-  const spat = useSpatAtelieru();
+  const [zmeny] = useState(() => A.zmeny);
+  const spat = A.spat;
   useEffect(() => { let z = true; void sledujuciStranky(strankaId).then((x) => { if (z) setN(x); }); return () => { z = false; }; }, [strankaId]);
 
   const hned = async () => {
-    if (!koncept || bezi) return;
+    if (!A.ma || bezi) return;
     setBezi(true); setChyba("");
-    const e = await zverejniHned(strankaId, koncept, naostro, uspNaostro);
+    const e = await A.hned();
     setBezi(false);
     if (e) setChyba(e); else setStav("hotovo");
   };
-  const potvrd = () => { setHint(false); if (kedy === "hned") void hned(); else if (koncept) { naplanujKoncept(koncept, najblizsie2().toISOString()); setStav("plan"); } };
-  const vrat = async () => { if (!spat || bezi) return; setBezi(true); setChyba(""); const e = await vratSpat(strankaId, spat); setBezi(false); if (e) setChyba(e); else onHotovo(); };
+  const potvrd = () => { setHint(false); if (kedy === "hned") void hned(); else if (A.ma) { A.naplanuj(najblizsie2().toISOString()); setStav("plan"); } };
+  const vrat = async () => { if (!spat || bezi) return; setBezi(true); setChyba(""); const e = await A.vrat(); setBezi(false); if (e) setChyba(e); else onHotovo(); };
 
   const volba = (on: boolean): CSSProperties => ({ flex: 1, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2, minHeight: 64, padding: "10px 14px", borderRadius: 14,
     border: on ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: on ? "var(--gSoft)" : "var(--card)", color: "var(--ink)", fontFamily: "inherit", textAlign: "left", cursor: "pointer" });
@@ -44,9 +55,9 @@ export function AtelierZverejnit({ strankaId, koncept, naostro, uspNaostro, onSp
 
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 20, background: "rgba(20,17,11,.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-      <div role="dialog" aria-modal="true" aria-label="Zverejniť zmeny" style={{ width: "min(560px, 100%)", maxHeight: "100%", overflowY: "auto", boxSizing: "border-box", borderRadius: 24, background: "var(--bg)", border: "1px solid var(--cardBd)", padding: 24, display: "flex", flexDirection: "column", gap: 16, boxShadow: "0 20px 60px rgba(0,0,0,.35)" }}>
-        {stav === "vyber" && koncept && <>
-          <b style={{ fontSize: 24 }}>Zverejniť zmeny?</b>
+      <div role="dialog" aria-modal="true" aria-label="Zverejniť vzhľad" style={{ width: "min(560px, 100%)", maxHeight: "100%", overflowY: "auto", boxSizing: "border-box", borderRadius: 24, background: "var(--bg)", border: "1px solid var(--cardBd)", padding: 24, display: "flex", flexDirection: "column", gap: 16, boxShadow: "0 20px 60px rgba(0,0,0,.35)" }}>
+        {stav === "vyber" && A.ma && <>
+          <b style={{ fontSize: 24 }}>Zverejniť vzhľad?</b>
           <ul style={{ margin: 0, padding: "12px 16px 12px 34px", borderRadius: 14, background: "var(--card)", border: "1px solid var(--cardBd)", display: "flex", flexDirection: "column", gap: 6, fontSize: 15.5, lineHeight: 1.45 }}>
             {zmeny.map((z) => <li key={z}>{z}</li>)}
           </ul>
@@ -65,12 +76,12 @@ export function AtelierZverejnit({ strankaId, koncept, naostro, uspNaostro, onSp
         </>}
 
         {stav === "plan" && <>
-          <div role="status" style={vysledok(true)}>Zmení sa {kedy2(koncept?.naplanovane ?? najblizsie2().toISOString())} ✓</div>
-          <span style={{ fontSize: 15, lineHeight: 1.5, color: "var(--ink2)" }}>Dovtedy ľudia vidia vašu doterajšiu stránku ({nazovVzhladu(naostro)}). V ateliéri môžete ďalej skúšať, o 2:00 sa zverejní posledná verzia.</span>
+          <div role="status" style={vysledok(true)}>Zmení sa {kedy2(A.naplanovane ?? najblizsie2().toISOString())} ✓</div>
+          <span style={{ fontSize: 15, lineHeight: 1.5, color: "var(--ink2)" }}>Dovtedy ľudia vidia vašu doterajšiu stránku ({A.naostroNazov}). V ateliéri môžete ďalej skúšať, o 2:00 sa zverejní posledná verzia.</span>
           {chyba && <span role="alert" style={{ fontSize: 14.5, fontWeight: 800, color: "#B3261E" }}>{chyba}</span>}
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button type="button" disabled={bezi} onClick={() => void hned()} style={{ ...tlac, background: "#4B7A35", border: "none", color: "#fff" }}>{bezi ? "Zverejňuje sa…" : "Zmeniť hneď"}</button>
-            <button type="button" onClick={() => { if (koncept) naplanujKoncept(koncept, null); onSpat(); }} style={tlac}>Zrušiť zmenu</button>
+            <button type="button" onClick={() => { A.naplanuj(null); onSpat(); }} style={tlac}>Zrušiť zmenu</button>
           </div>
           <button type="button" onClick={onHotovo} style={{ ...tlac, alignSelf: "flex-start" }}>Hotovo · späť do Nastavení</button>
         </>}
@@ -78,7 +89,7 @@ export function AtelierZverejnit({ strankaId, koncept, naostro, uspNaostro, onSp
         {stav === "hotovo" && <>
           <div role="status" style={vysledok(false)}>Zverejnené ✓</div>
           {chyba && <span role="alert" style={{ fontSize: 14.5, fontWeight: 800, color: "#B3261E" }}>{chyba}</span>}
-          {spat && <button type="button" disabled={bezi} onClick={() => void vrat()} style={{ ...tlac, alignSelf: "flex-start" }}>Vrátiť späť na {nazovVzhladu(spat.rozlozenie)} · ešte {dni(spat.do)}</button>}
+          {spat && <button type="button" disabled={bezi} onClick={() => void vrat()} style={{ ...tlac, alignSelf: "flex-start" }}>Vrátiť späť na {spat.nazov} · ešte {dni(spat.do)}</button>}
           <button type="button" onClick={onHotovo} style={{ ...tlac, alignSelf: "flex-start", background: "#4B7A35", border: "none", color: "#fff" }}>Hotovo · späť do Nastavení</button>
         </>}
       </div>

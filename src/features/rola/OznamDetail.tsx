@@ -1,9 +1,9 @@
 // ============================================================
-// OPRAVY 431 · Detail oznamu / výzvy charity — ťuk na kartu vo feede Domov aj na profile charity.
+// OPRAVY 431 · Detail oznamu / výzvy charity — ťuk na kartu na Domove aj na profile charity.
 // Hlavička: ‹ Späť · na stred dátum zverejnenia (výzva nemá protihodnotu → bez čísla, 428).
 // Telo: štítok, nadpis, do kedy / kde, celý text, všetky fotky s popisom, Pozvať ľudí (Zúčastním sa /
 // Prihlásiť sa → „Prihlásený ✓“ + počet), kto zodpovedá + Pozri profil.
-// VyzvaKarta = karta výzvy vo feede Domov (FeedCard podľa 426, jantárový pás a štítok VÝZVA).
+// VyzvaKarta = karta výzvy na Domove (FeedCard podľa 426, jantárový pás a štítok VÝZVA).
 // ============================================================
 import { Galeria } from "@/features/zbierka/Vrch";
 import { useEffect, useState, type CSSProperties } from "react";
@@ -83,7 +83,7 @@ export function OznamDetail({ o, org, onBack, onProfil, toast }: { o: OznamChari
     </div>);
 }
 
-/** karta výzvy vo feede Domov (426: tvorca pod fotkou, čas vpravo hore, riadok údajov „6 ľudí už pomáha · do 21. 10.“) */
+/** karta výzvy na Domove (426: tvorca pod fotkou, čas vpravo hore, riadok údajov „6 ľudí už pomáha · do 21. 10.“) */
 export function VyzvaKarta({ o, org, wide, onClick, onProfil }: { o: OznamCharity; org: OrgOznamu; wide?: boolean; onClick: () => void; onProfil?: () => void }) {
   useZmenyUcasti();
   const { pocet } = ucast(o.id);

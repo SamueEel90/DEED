@@ -2,7 +2,7 @@
 // DEED · Charita — Supabase repozitár
 // OPRAVY 403: len to, čo naozaj niekto vytvoril. Žiadne kurátorské (seed) riadky.
 //   feed    = bežiace zverejnené zbierky skutočných charít (v_zbierky_na_pripnutie + zbierka_verejna, stránka typu
-//             charita, nie testovacia) + skutky, ktoré do feedu Charity pridal prihlásený autor (prispevok_feed,
+//             charita, nie testovacia) + skutky, ktoré na Domov Charity pridal prihlásený autor (prispevok_feed,
 //             autor_ucet_id not null). Zoradené od najnovšieho.
 //   adresar = zaregistrované charity (stranka typ charita, nie testovacia) so sídlom z registra.
 // ============================================================
@@ -109,7 +109,7 @@ export const charitaSupabase = {
   },
 };
 
-/** OPRAVY 442: tvorca (logo, iniciály, mesto, štít) pre stránky — skutky charity vo feede Domov */
+/** OPRAVY 442: tvorca (logo, iniciály, mesto, štít) pre stránky — skutky charity na Domove */
 export async function tvorcoviaStranok(ids: string[]): Promise<Map<string, { meno?: string; logo?: string; ini: string; mesto?: string; stit: ReturnType<typeof stitZ> }>> {
   const m = new Map<string, { meno?: string; logo?: string; ini: string; mesto?: string; stit: ReturnType<typeof stitZ> }>();
   const l = [...new Set(ids)].filter(Boolean);

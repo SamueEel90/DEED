@@ -168,7 +168,7 @@ export const SEED_ITEMS: AktItem[] = [
     title: "Základy investovania pre mladých — bez balastu",
     desc: "Ako začať s malými sumami, čo je index a prečo nie je sporenie pod vankúšom plán. Online cez QR." },
 
-  // ---- GEO-ROZPTYL (mesto / okres / kraj) — na testovanie okruhu vo feede ----
+  // ---- GEO-ROZPTYL (mesto / okres / kraj) — na testovanie okruhu na Domove ----
   // mesto (~6–13 km): vyšší skóre, aby prešli prahom mesta
   { id: 27, dom: "zdravie", type: "skutok", size: "med", media: "foto", verified: true, emoji: "💧", skore: 5.5,
     author: "Kúpele Trenčianske Teplice", ini: "K", pfp: "#E98AAD", karma: "Silver", loc: "Trenčianske Teplice", time: "7 h", num: 140160, likes: 38, fotky: PH.joga,

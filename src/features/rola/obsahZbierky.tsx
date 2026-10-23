@@ -222,7 +222,7 @@ export function GaleriaEditor({ media, onMedia, ph, onVyrez, nadpis = "Galéria 
         {chybaMed && <span role="alert" style={{ fontSize: 13.5, fontWeight: 700, color: "#A34A2A" }}>{chybaMed}</span>}
         {!ph && !bezHlavnej && <div style={{ display: "flex", gap: 12, padding: "14px 16px", borderRadius: 14, background: "var(--field)", fontSize: 13.5, lineHeight: 1.55, color: "var(--ink2)" }}>
           <span style={{ width: 24, height: 24, flex: "none", borderRadius: "50%", background: "var(--gSoft)", color: "var(--gInk)", fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>i</span>
-          <span><b style={{ color: "var(--ink)" }}>Prvé je hlavné.</b> To ľudia uvidia ako prvé vo feede aj na vašom profile. Viac fotiek naraz pretiahnete z počítača rovno sem, alebo ich v okne vyberiete s podržaným Ctrl (na Macu Cmd). Poradie zmeníte potiahnutím alebo šípkami. Tlačidlom Výrez nastavíte, ktorá časť fotky bude vidno.{dovetok}</span>
+          <span><b style={{ color: "var(--ink)" }}>Prvé je hlavné.</b> To ľudia uvidia ako prvé na Domove aj na vašom profile. Viac fotiek naraz pretiahnete z počítača rovno sem, alebo ich v okne vyberiete s podržaným Ctrl (na Macu Cmd). Poradie zmeníte potiahnutím alebo šípkami. Tlačidlom Výrez nastavíte, ktorá časť fotky bude vidno.{dovetok}</span>
         </div>}
         {children}
       </section>);

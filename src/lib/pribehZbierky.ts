@@ -10,7 +10,7 @@ import type { MediumZbierky } from "./novaZbierka";
 
 export interface ZapisPriebehu { id: string; datum: string; nadpis: string; text: string; /** OPRAVY 455 (3): nepovinné fotky zápisu */ media?: MediumZbierky[] }
 export interface Pribeh {
-  /** 1 · krátky text do feedu (max 3 riadky), hore v príbehu tučne */
+  /** 1 · krátky text na Domov (max 3 riadky), hore v príbehu tučne */
   kratky: string;
   /** 2 · celý príbeh (HTML, najviac 6 000 znakov) */
   text: string;
@@ -39,7 +39,7 @@ export const useZmenyPribehov = () => useSyncExternalStore((f) => { posl.add(f);
 
 // OPRAVY 403: ukážkový príbeh Svetla pomoci (Strecha pre Horváthovcov) zmazaný — príbehy len zo Správy / databázy
 
-/** zverejnený príbeh (verejná stránka, odkaz z feedu) */
+/** zverejnený príbeh (verejná stránka, odkaz z Domova) */
 export function pribehZbierky(id: string): Pribeh | null { return pamat.get(kluc(id))?.zverejneny ?? null; }
 /** koncept alebo zverejnený (Správa) */
 export function pribehNaUpravu(id: string): { pribeh: Pribeh; koncept: boolean; zverejneny: boolean } {
@@ -122,7 +122,7 @@ export async function zmenPriebeh(id: string, org: string, priebeh: ZapisPriebeh
   pamat.set(k, { koncept: koncept ?? z?.koncept ?? null, zverejneny: zverejneny ?? z?.zverejneny ?? null, org }); zmena();
   return { naStranke: !!zverejneny };
 }
-/** OPRAVY 475 (b): odkaz z feedu „Celý príbeh na stránke …“ otvorí detail zbierky s už rozbaleným príbehom */
+/** OPRAVY 475 (b): odkaz z Domova „Celý príbeh na stránke …“ otvorí detail zbierky s už rozbaleným príbehom */
 let otvorenyPribeh: string | null = null;
 export const chcemOtvorenyPribeh = (id: string) => { otvorenyPribeh = kluc(id); };
 export const vezmiOtvorenyPribeh = (id: string): boolean => { if (otvorenyPribeh !== kluc(id)) return false; otvorenyPribeh = null; return true; };

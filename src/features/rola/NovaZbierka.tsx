@@ -9,6 +9,7 @@
 // účet zamknutý „Na účet hlavnej zbierky"; náhľad „Na stránke farnosti" bez cudzích zbierok.
 // ============================================================
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
+import { useNeverejna } from "@/lib/zverejnenieStranky";
 import { sucetDarov } from "@/lib/darcovia";
 import { OrezFotky } from "@/components/orezfotky";
 import { ZbierkaModul, type ZbierkaData } from "@/features/zbierka/ZbierkaModul";
@@ -58,6 +59,7 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   const KROKY = farnost ? [1, 2, 3, 4, 6] : [1, 2, 3, 4, 5, 6];
   const eurcRezim = eurcText(); // "nie" | "pre všetky zbierky" | "podľa zbierky"
   const hlavnyUcet = farnost?.ucet || nacitajIbanOrg(pozicia); // OPRAVY 403: bez vymysleného náhradného účtu
+  const neverejna = useNeverejna(strankaId); // OPRAVY 511
   const [d, setD] = useState<NovaZbierkaData>(() => (oprava ? naOpravu(oprava) : konceptZbierkyZPamate(strankaId) ?? prazdnaZbierka()));
   const zmenene = useRef(false);
   const [nacitane, setNacitane] = useState(false);
@@ -138,7 +140,7 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
       const z = await spustiZbierku(strankaId, zadarmo ? { ...d, typ: "kratka", iban: "", prav: false, ...(farnost ? { ucel: null, farnost: { druh: "farnost" as const, ...(naMiesto ? { miesto: naMiesto.id } : {}), upoz } } : {}) } : d, zadarmo ? hlavnyUcet : d.iban, farnost ? "nabozenstvo" : undefined);
       if (farnost) { farnost.onSpustena(z); return; }
       setHotovo(z);
-    } catch (e) { const m = e instanceof Error ? e.message : ""; setChybaSp(/nie je overený|ucet_neovereny/i.test(m) ? UCET_NEOVERENY : m || "Zbierku sa nepodarilo spustiť. Skúste znova."); } // OPRAVY 416
+    } catch (e) { const m = e instanceof Error ? e.message : ""; setChybaSp(/nie je overený|ucet_neovereny/i.test(m) ? UCET_NEOVERENY : /zadarmo_jedna_zbierka/.test(m) ? "V programe Zadarmo beží jedna zbierka naraz (centrálna alebo pre niekoho). Ďalšiu spustíte s vyšším programom." : m || "Zbierku sa nepodarilo spustiť. Skúste znova."); } // OPRAVY 416
     finally { setSpusta(false); }
   };
 
@@ -186,11 +188,14 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   if (hotovo) return (
     <section ref={hore as never} style={{ ...panel, alignItems: "center", textAlign: "center", padding: ph ? "36px 20px" : "56px 32px", gap: 14 }}>
       <span style={{ width: 72, height: 72, borderRadius: "50%", background: "var(--gSoft)", border: "1.5px solid var(--gBd)", color: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d={I.fajka} s={34} w={2.6} /></span>
-      <span style={{ fontSize: 26, fontWeight: 800 }}>Zbierka beží</span>
-      <span style={{ maxWidth: 560, fontSize: 15.5, lineHeight: 1.55, color: "var(--ink2)" }}>„{hotovo.nazov}“ je zapečatená a vidia ju darcovia{ph ? "." : " na vašom profile aj vo feede. Fotky a video môžete pridávať aj teraz."}</span>
-      {onQr && <span style={{ maxWidth: 560, fontSize: 15, lineHeight: 1.5, color: "var(--ink)" }}><b>Ďalší krok:</b> stiahnite QR plagát, vytlačte ho a dajte ho tam, kde vás ľudia vidia.</span>}
+      <span style={{ fontSize: 26, fontWeight: 800 }}>{neverejna ? "Zbierka je pripravená" : "Zbierka beží"}</span>
+      <span style={{ maxWidth: 560, fontSize: 15.5, lineHeight: 1.55, color: "var(--ink2)" }}>„{hotovo.nazov}“ je zapečatená a vidia ju darcovia{ph ? "." : " na vašom profile aj na Domove. Fotky a video môžete pridávať aj teraz."}</span>
+      {/* OPRAVY 511: počas prípravy stránky sa zbierka nespúšťa a QR plagát nie je */}
+      {neverejna && <span style={{ maxWidth: 560, fontSize: 15, lineHeight: 1.5, color: "var(--ink)" }}><b>Spustí sa po zverejnení stránky.</b> Dovtedy ju nikto nevidí a dary sa neprijímajú. QR plagát bude k dispozícii po zverejnení.</span>}
+      {onQr && !neverejna && <span style={{ maxWidth: 560, fontSize: 15, lineHeight: 1.5, color: "var(--ink)" }}><b>Ďalší krok:</b> stiahnite QR plagát, vytlačte ho a dajte ho tam, kde vás ľudia vidia.</span>}
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", marginTop: 6 }}>
-        {onQr && <button type="button" onClick={() => onQr(hotovo.id)} style={{ height: 50, padding: "0 22px", border: "none", borderRadius: 14, background: "var(--green)", color: "#fff", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>Stiahnuť QR plagát</button>}
+        {onQr && neverejna && <button type="button" disabled aria-disabled="true" style={{ height: 50, padding: "0 22px", border: "1.5px dashed var(--cardBd)", borderRadius: 14, background: "transparent", color: "var(--ink3)", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "default" }}>Stiahnuť QR plagát · po zverejnení</button>}
+        {onQr && !neverejna && <button type="button" onClick={() => onQr(hotovo.id)} style={{ height: 50, padding: "0 22px", border: "none", borderRadius: 14, background: "var(--green)", color: "#fff", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>Stiahnuť QR plagát</button>}
         <button type="button" onClick={() => setPozriet(true)} style={{ height: 50, padding: "0 22px", border: onQr ? "1.5px solid var(--cardBd)" : "none", borderRadius: 14, background: onQr ? "transparent" : "var(--green)", color: onQr ? "var(--ink)" : "#fff", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>Pozrieť zbierku</button>
         <button type="button" onClick={onMojeZbierky} style={{ height: 50, padding: "0 22px", borderRadius: 14, border: "1.5px solid var(--cardBd)", background: "transparent", color: "var(--ink)", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>Moje zbierky</button>
       </div>

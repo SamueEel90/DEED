@@ -36,9 +36,9 @@ export const inicialy = (meno: string) => meno.replace(/[^\p{L}\s]/gu, " ").spli
 
 /** zbierka, ako ju vidí tvorca pri výbere a v rade */
 export interface ZbierkaVRetazi { id: string; nazov: string; org: string; ciel: number | null; vyzbierane: number; aktivna: boolean; /** organizátor so štítom */ strana: Strana;
-  /** OPRAVY 295: titulná fotka (aj pri zbierke z feedu) */ foto?: string }
+  /** OPRAVY 295: titulná fotka (aj pri zbierke z Domova) */ foto?: string }
 
-/** zbierka mimo katalógu (napr. karta z feedu) — appka ju ohlási, keď z nej otvára reťaz */
+/** zbierka mimo katalógu (napr. karta z Domova) — appka ju ohlási, keď z nej otvára reťaz */
 export type Znama = { nazov: string; org: string; ciel: number | null; zaklad: number; strana?: Strana; foto?: string };
 const ZNAME = new Map<string, Znama>();
 export const ohlasZbierku = (id: string, z: Znama) => { ZNAME.set(id, z); };

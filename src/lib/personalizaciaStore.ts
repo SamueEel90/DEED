@@ -27,7 +27,7 @@ function save(key: string, val: unknown) {
   try { localStorage.setItem(key, JSON.stringify(val)); } catch { /* napr. private mode */ }
 }
 
-// ---- KATALÓG ZÁUJMOV — jediná „vocabulary" (label + emoji + kľúče do feedu + pod-položky) ----
+// ---- KATALÓG ZÁUJMOV — jediná „vocabulary" (label + emoji + kľúče na Domov + pod-položky) ----
 // `oblast`     = kanonický kľúč ukladaný do Zaujem.oblast.
 // `kluce`      = hodnoty, ktoré nesú položky feedu (Good `kat` + Aktivity `dom`) → afinita.
 // `podpolozky` = detailný číselník z registrácie (`cis_zaujmy`, §6.2) → profil dropdown.

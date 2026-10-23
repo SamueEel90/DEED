@@ -35,9 +35,9 @@ export const KONFIG = {
   lehotaDokladovaniaDni: 30,
   /** počet delegovaných správcov B2B podľa tieru (§3.1) */
   spravcoviaB2B: { 0: 1, 1: 1, 2: 1, 3: 2, 4: 5 } as Record<Tier, number>,
-  /** KARTA 39 · bod 1: dlhodobá zbierka vo feede. Prah „živá" sa bude počítať podľa aktívnych v oblasti — stupne doladíme s dátami. */
+  /** KARTA 39 · bod 1: dlhodobá zbierka na Domove. Prah „živá" sa bude počítať podľa aktívnych v oblasti — stupne doladíme s dátami. */
   dlhodoba: {
-    /** prvých X dní veľká karta vo feede */
+    /** prvých X dní veľká karta na Domove */
     velkaDni: 30,
     /** živá = aspoň `dary` darov za posledných `dni` dní (začiatok; neskôr podľa aktívnych v oblasti) */
     prah: { dary: 3, dni: 30 },
@@ -210,7 +210,7 @@ export type PolozkaSpravy =
   // OPRAVY 450: Ľudia → Štatutár a pracovníci (kto spravuje stránku), vo všetkých programoch
   | "spravcovia";
 export const POVOLENIA_CHARITY: Record<PolozkaSpravy, { od: Program }> = {
-  zbierky: { od: "zadarmo" }, centralna: { od: "P1" }, dorovnanie: { od: "P1" }, segment: { od: "P1" }, materialne: { od: "P1" }, // OPRAVY 486: materiálna (ako vecná vo Viere) od P1; s dôkazmi od P3 neskôr
+  zbierky: { od: "zadarmo" }, centralna: { od: "zadarmo" } /* OPRAVY 516: Zadarmo — jedna zbierka naraz, centrálna alebo pre niekoho */, dorovnanie: { od: "P1" }, segment: { od: "P1" }, materialne: { od: "P1" }, // OPRAVY 486: materiálna (ako vecná vo Viere) od P1; s dôkazmi od P3 neskôr
   skutky: { od: "zadarmo" }, video: { od: "zadarmo" }, oznamy: { od: "P1" }, nastenka: { od: "P1" }, upoutavky: { od: "P2" },
   darcovia: { od: "zadarmo" }, sledujuci: { od: "zadarmo" }, dobrovolnici: { od: "P2" }, podujatia: { od: "P2" }, sponzoring: { od: "P1" }, inzeraty: { od: "P1" },
   qr: { od: "zadarmo" }, sektorqr: { od: "P2" }, embed: { od: "P1" }, prednost: { od: "P3" }, statistiky: { od: "zadarmo" }, vypis: { od: "zadarmo" }, export: { od: "P3" },

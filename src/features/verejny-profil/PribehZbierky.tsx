@@ -1,4 +1,4 @@
-// KARTA 55 · E — stránka Príbeh zbierky (rovnaká pri Kronike, Výklade aj Pirátovi a z odkazu vo feede), podľa „Pribeh zbierky.dc.html".
+// KARTA 55 · E — stránka Príbeh zbierky (rovnaká pri Kronike, Výklade aj Pirátovi a z odkazu na Domove), podľa „Pribeh zbierky.dc.html".
 // Titulka 520 px so štítkami (druh, stav, PRÍBEH TÝŽDŇA zlatý), názov 68 px, miesto · kategória · Z-číslo →
 // krátky text tučne 22 px → celý príbeh 18 px → citát 34 px → galéria s popismi → Priebeh (zlatá bodka = posledný zápis).
 // PC vpravo sticky 440 px: suma, pruh, dorovnanie, modul. Mobil: suma pod názvom, modul dole zmenšený, „Späť ⌃" na konci.
@@ -24,7 +24,7 @@ function usePc() {
 const tlTm: CSSProperties = { height: 44, padding: "0 14px 0 10px", borderRadius: 14, border: "none", background: "rgba(10,8,5,.6)", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 800, fontFamily: "inherit", boxShadow: "none" };
 const datumZ = (iso: string) => { const d = new Date(iso); return `${d.getDate()}. ${d.getMonth() + 1}.`; };
 
-export function PribehZbierky({ profil, z, p, spatText = "Späť do feedu", onBack, onOrg }: {
+export function PribehZbierky({ profil, z, p, spatText = "Späť na Domov", onBack, onOrg }: {
   profil: TestProfil; z: TestZbierka; p: Pribeh; spatText?: string; onBack: () => void; onOrg?: () => void;
 }) {
   const pc = usePc();

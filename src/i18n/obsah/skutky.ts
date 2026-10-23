@@ -26,8 +26,8 @@ export const skutky: Record<string, string> = {
   "osobný rozvoj": "personal growth",
   // ---- skutky: vysvetlenia / poznámky AI ----
   "S tebou 8 ľudí · 12 overujem · 0 namietam. Vďaka komunite sa skutok ukazuje v celom meste a s väčšou fotkou.": "8 people with you · 12 verify · 0 dispute. Thanks to the community, the deed shows across the whole city with a bigger photo.",
-  "20 kartónov vody na 5. poschodie bez výťahu a fotka plnej špajze. Dôkaz stačil do feedu štvrte.": "20 cases of water up to the 5th floor with no lift, and a photo of the full pantry. The proof was enough for the neighbourhood feed.",
-  "3 overujem · 0 namietam. Keď ho overí viac ľudí, dostane sa do feedu mesta.": "3 verify · 0 dispute. Once more people verify it, it gets into the city feed.",
+  "20 kartónov vody na 5. poschodie bez výťahu a fotka plnej špajze. Dôkaz stačil na Domov v štvrti.": "20 cases of water up to the 5th floor with no lift, and a photo of the full pantry. The proof was enough for the neighbourhood feed.",
+  "3 overujem · 0 namietam. Keď ho overí viac ľudí, dostane sa na Domov v meste.": "3 verify · 0 dispute. Once more people verify it, it gets into the city feed.",
   "AI potrebuje fotku výsledku. Doplň ju a kontrola pokračuje.": "AI needs a photo of the result. Add it and the check continues.",
   "Namietka: „V Komárne v ten deň nikde nehorelo.“ Namietku posúdi AI a náš tím. Kým platí, skutok nestúpa vyššie.": "Dispute: “There was no fire anywhere in Komárno that day.” AI and our team will review the dispute. While it stands, the deed doesn't go any higher.",
   "Ostáva v tvojom denníku, nikto iný ho nevidí.": "It stays in your diary, nobody else can see it.",
