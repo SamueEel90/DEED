@@ -377,3 +377,9 @@ Uložené: zdroje/20-qr-katalog-v1.md, zdroje/21-qr-system-v11.md.
 - Ručné „Ukončiť" pri charite sa zjednotí s farnosťou: zastaví dary aj na serveri (dnes len v appke). Schválené.
 - Bežiace zbierky nad cieľom sa po migrácii uzavrú pri najbližšom dare — Samo nič ručne neprepína. Schválené.
 - **Overené: minimum 5 % pri reťazi JE v kóde** (slider reťaze tvorcu) — bod 3 z kontroly júlových špec uzavretý.
+
+## Slovníkové pravidlo 23. 10. — tri mechanizmy percent, NIKDY nemiešať (Paľo overil v kóde)
+1. **Reťaz dobra tvorcu** (modul, fronta zbierok — tvorca delí SVOJ príjem): min 5 %, krok 5, max 100. Stráži appka (RetazDobra.tsx, retaz.ts zaokrúhľuje) aj server (retaz_zapecat, 0094).
+2. **Podiel overovateľa pri súkromnej zbierke** (pohrebná, jubilejná — nejde do feedu): NIE JE reťaz, je to podiel overujúcej služby. Max 3 % + strop 100 €, ŽIADNE minimum (môže byť 0). Server vyšší odmietne.
+3. **Split QR** (delenie výnosu jednej zbierky, napr. pohreb rodina 97/kostol 3): mimo Viery min 5 %, vo Viere povolená aj 0.
+Minimum 5 % patrí LEN reťazi tvorcu. Kód sedí s dohodami, nič sa nemení. Text odišiel Paľovi.
