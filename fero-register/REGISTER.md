@@ -386,7 +386,7 @@ Minimum 5 % patrí LEN reťazi tvorcu. Kód sedí s dohodami, nič sa nemení. T
 
 ## Rozhodnuté 23. 10. večer — programy charity a testovanie (Martin + Paľo, balík 48)
 - **Bod 518 potvrdený podľa balíka:** sektorové aj centrálna od P1; P1 = centrálna + 3 zbierky; P2 = centrálna + 10; P3 vyššie/na mieru. Stará verzia „sektory od P2, P1 = 5 zbierok" neplatí.
-- **ZMENA pri Zadarmo: 1 zbierka, akákoľvek** (je jedno aká). Bez centrálnej a sektorových.
+- **ZMENA pri Zadarmo: 1 zbierka, akákoľvek** (je jedno aká). Bez centrálnej a sektorových a BEZ pravidelnej podpory (recurring dary až od P1).
 - Martinove 3 testovacie charity: pevný program na serveri (Zadarmo / P1 / P2), P3 založí Samo na povel — reálne porovnanie vedľa seba.
 - Tester-charita (šéfka charity, čaká prvá): režim pozvanej charity = P3 zadarmo ako fara, ale **6 mesiacov od zverejnenia** (pozvané bežne 2 mes.), predĺženie keď bude málo. V tom istom režime aj Martinova ďalšia P3.
 - **Downgrade prepínač**: charita s vyšším programom si v appke (len na svojom zariadení) zníži program a vidí, čo by stratila. Voľby len skutočný program a nadol; server drží skutočný program a všetky dáta, nič sa nestráca. Charita so Zadarmo prepínač nemá.
