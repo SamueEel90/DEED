@@ -85,7 +85,7 @@
 - Usporiadať stránku (UsporiadatStranku) — v registri viselo ako „nezadané", v kóde existuje → spárovať s dohodou, či robí to, čo malo.
 
 **Na preverenie/rozhodnutie (vzniklo, dohodu nepoznám):**
-- PozvankaOdkazom — dohoda znela „pozvánka QR s časovou platnosťou, bez SMS"; pozvánka ODKAZOM je navyše — schvaľuješ?
+- ~~PozvankaOdkazom~~ SPÁROVANÉ: je to OPRAVY 502 / balík 44 (pozvánka QR + odkaz, 48 h, server 0125) — schválené, nie je navyše.
 - PrihovorKarta / PrihovorNaStranke — príhovor na stránke; v dohodách som nenašiel.
 - NahladNastenky, OnasKratky, Podstranka — drobné, spárovať pri najbližšej kontrole kódu.
 
