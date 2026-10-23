@@ -9,7 +9,8 @@ import { useRef, useState } from "react";
 import { cistyText } from "@/lib/richtext";
 import type { MediumZbierky } from "@/lib/novaZbierka";
 import { prazdnaCentralna } from "@/lib/centralnaZbierka";
-import { useSektory, useOblastiCharity, spustiSektor, SEKTORY_MAX } from "@/lib/sektoryCharity";
+import { profilZPamate } from "@/lib/profilStranky";
+import { useSektory, useOblastiCharity, spustiSektor } from "@/lib/sektoryCharity";
 import { nazovZPodskupiny } from "@/lib/sekcieCharity";
 import { otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
 import { TextovePolia, GaleriaEditor } from "./obsahZbierky";
@@ -19,14 +20,18 @@ import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 
 interface Koncept { oblast: string | null; nazov: string; nazovVlastny: boolean; popis: string; popis2: string; media: MediumZbierky[]; iban: string }
-const prazdny = (): Koncept => ({ oblast: null, nazov: "", nazovVlastny: false, popis: "", popis2: "", media: [], iban: "" });
+const prazdny = (cover?: string): Koncept => ({ oblast: null, nazov: "", nazovVlastny: false, popis: "", popis2: "", iban: "",
+  // balík 48 · 517: titulná fotka profilu ako prvá v galérii („z profilu“) — dá sa zmazať, vymeniť, presunúť
+  media: cover ? [{ id: Date.now(), typ: "foto", src: cover, popis: "z profilu" }] : [] });
 const koncepty = new Map<string, Koncept>();
 type Pole = "nazov" | "text" | "foto" | "ucet";
 
 const FAJKA = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>;
 
-export function NovaSektorova({ strankaId, mobil, toast, onZbierky }: { strankaId: string; mobil: boolean; toast: (m: string) => void; onZbierky: () => void }) {
-  const [k, setK0] = useState<Koncept>(() => koncepty.get(strankaId) ?? prazdny());
+export function NovaSektorova({ strankaId, mobil, toast, onZbierky, plno = false, limitText }: { strankaId: string; mobil: boolean; toast: (m: string) => void; onZbierky: () => void;
+  /** balík 48 · 518: limit programu je súčet všetkých zbierok — plno = spustiť sa nedá */ plno?: boolean; limitText?: string }) {
+  const cover = profilZPamate(strankaId).ulozeny?.cover?.src;
+  const [k, setK0] = useState<Koncept>(() => koncepty.get(strankaId) ?? prazdny(cover));
   const setK = (f: (x: Koncept) => Koncept) => setK0((x) => { const n = f(x); koncepty.set(strankaId, n); return n; });
   const ponuka = useOblastiCharity(strankaId);
   const sektory = useSektory(strankaId);
@@ -47,7 +52,6 @@ export function NovaSektorova({ strankaId, mobil, toast, onZbierky }: { strankaI
     ["Transparentný účet", !!iban, "ucet"],
   ];
   const mozeSpustit = !!k.oblast && kontrola.every(([, ok]) => ok);
-  const plno = sektory.length >= SEKTORY_MAX;
 
   const spusti = async () => {
     if (!k.oblast || !mozeSpustit || ukl) return;
@@ -58,7 +62,7 @@ export function NovaSektorova({ strankaId, mobil, toast, onZbierky }: { strankaI
     koncepty.delete(strankaId);
     setSpusteny(k.oblast);
   };
-  const zrus = () => { koncepty.delete(strankaId); setK0(prazdny()); toast("Rozpracovaná sektorová zbierka je zrušená."); onZbierky(); };
+  const zrus = () => { koncepty.delete(strankaId); setK0(prazdny(cover)); toast("Rozpracovaná sektorová zbierka je zrušená."); onZbierky(); };
 
   const hlava = (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -91,7 +95,7 @@ export function NovaSektorova({ strankaId, mobil, toast, onZbierky }: { strankaI
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 760 }}>
       {hlava}
-      {plno && <section style={kartaK}><span style={textK}>Máte {sektory.length} z {SEKTORY_MAX} sektorových zbierok. Novú pridáte, keď niektorú ukončíte.</span></section>}
+      {plno && <section style={kartaK}><span style={textK}>{limitText} Novú zbierku spustíte, keď niektorú ukončíte.</span></section>}
       <section style={kartaK}>
         <span style={nadpisK}>1. Oblasť</span>
         <span style={textK}>Vyberáte z oblastí, ktoré máte v stanovách.</span>
@@ -135,7 +139,7 @@ export function NovaSektorova({ strankaId, mobil, toast, onZbierky }: { strankaI
           </div>))}
         <ChybaPriTlacidle text={chyba} uklada={ukl} onZnova={() => void spusti()} nadpis="Zbierka sa nespustila" />
         {mozeSpustit && !plno ? <span style={{ maxWidth: mobil ? "none" : 360 }}><PodrzTlacidlo label={ukl ? "Spúšťa sa…" : "Podržte a spustite"} trvanie={1500} onConfirm={() => void spusti()} /></span>
-          : <span style={textK}>{plno ? "Novú sektorovú zbierku spustíte, keď niektorú ukončíte." : "Keď doplníte, čo chýba, objaví sa tu tlačidlo."}</span>}
+          : <span style={textK}>{plno ? "Novú zbierku spustíte, keď niektorú ukončíte." : "Keď doplníte, čo chýba, objaví sa tu tlačidlo."}</span>}
         <button type="button" onClick={zrus} style={obrysK}>Zrušiť</button>
       </section>}
     </div>);

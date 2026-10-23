@@ -31,6 +31,8 @@ export const FLAGS = {
 export const KONFIG = {
   /** limit súbežných zbierok charity podľa tieru (T1/T2 = placeholder) */
   limitZbierok: { 0: 1, 1: 5, 2: 10, 3: 9999, 4: 9999 } as Record<Tier, number>, // cenník charity: 1 · 5 · 10 · bez limitu (OPRAVY 87, mimo centrálnej)
+  /** balík 48 · 518 (Martin 23. 10.): charita — súčet všetkých zbierok naraz (centrálna + sektorové + bežné); server 0172 */
+  limitZbierokCharity: { 0: 1, 1: 4, 2: 11, 3: 9999, 4: 9999 } as Record<Tier, number>,
   /** lehota dokladovania po ukončení zbierky (placeholder X dní, §1.4) */
   lehotaDokladovaniaDni: 30,
   /** počet delegovaných správcov B2B podľa tieru (§3.1) */

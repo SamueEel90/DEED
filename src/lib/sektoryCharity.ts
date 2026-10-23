@@ -8,6 +8,7 @@ import type { CentralnaZbierka } from "./centralnaZbierka";
 import { supabase } from "./supabase";
 import { bezDataUrl } from "./uploadFoto";
 import { SEKCIE_CHARITY, type SekciaCharity } from "./sekcieCharity";
+import { nacitajStav, ulozStav } from "@/features/viera/stav";
 
 export interface SektorCharity {
   id: string;
@@ -23,7 +24,6 @@ export interface SektorCharity {
 /** čísla položky: tento mesiac, ľudí dáva mesačne, od začiatku */
 export interface CislaPolozky { mesiac: number; mesacne: number; spolu: number }
 
-export const SEKTORY_MAX = 3;
 export const SEKTORY_OD_TIERU = 1; // OPRAVY 486: sektorové zbierky od P1
 
 // ---- oblasti zo stanov (0170): podskupiny, ktoré charita vybrala v registrácii; bez nich celý číselník ----
@@ -100,14 +100,12 @@ export async function nacitajSektoryVerejne(stranka: string): Promise<void> {
   zmena();
 }
 export const sektoryVerejneZPamate = (stranka: string): SektorVerejny[] => verejne.get(stranka) ?? [];
-/** čísla sektora — z ledgera ich počíta volajúci (darcoviaPre), tu nič vymyslené */
-
-export const cislaSektora = (_id: string): CislaPolozky => NULA;
 export const obsahSektora = (id: string): CentralnaZbierka | null => obsah.get(id) ?? null;
 
 const chybaTextu = (m: string) => (/sektor_od_p1/.test(m) ? "Sektorové zbierky máte od programu P1."
   : /sektor_stranky_oblast_uq|duplicate/.test(m) ? "Na túto oblasť už zbierka beží."
   : /oblast_mimo_stanov/.test(m) ? "Túto oblasť nemáte v stanovách."
+  : /limit_zbierok/.test(m) ? "Máte plný počet zbierok vo vašom programe. Novú spustíte, keď niektorú ukončíte."
   : "Nepodarilo sa uložiť na server. Skontrolujte pripojenie.");
 
 /** uloží text, fotky a sumy sektora; vráti chybu ako text, inak null */
@@ -176,13 +174,43 @@ const ziadosti = new Map<string, ZiadostUcet>();
 export const ziadostUctu = (kluc: string) => ziadosti.get(kluc) ?? null;
 export function poziadajOZmenuUctu(kluc: string, z: Omit<ZiadostUcet, "podana">) { ziadosti.set(kluc, { ...z, podana: new Date().toISOString() }); zmena(); }
 
-/** zavretá centrálna (Ukončenie) — 15 minút sa dá vrátiť, potom správa pravidelným darcom (server) */
-let centralnaZavreta: { kedy: string; vratitDo: string; dovod: string } | null = null;
-export const zavretaCentralna = () => centralnaZavreta;
-export function zavriCentralnu(dovod: string) { centralnaZavreta = { kedy: new Date().toISOString(), vratitDo: new Date(Date.now() + 15 * 60000).toISOString(), dovod }; zmena(); }
-export function otvorCentralnu() { centralnaZavreta = null; zmena(); }
-
 /** ktorú položku otvoriť v Správe centrálnej a sektorov (0 = centrálna, 1… = sektor podľa poradia) */
 let vyber = 0;
 export const vyberCentralnej = () => vyber;
 export const nastavVyberCentralnej = (i: number) => { vyber = i; };
+
+// ---- balík 48 · 519 · 523: ukončenie centrálnej a sektora ako vo farnosti ----
+// Bez darov „Podržte a zmažte“ (naozaj preč), s darmi „Podržte a ukončite“ (dary sa zastavia, riadok do Archívu).
+// Po oboch späť do Zbierok s hláškou „… · Vrátiť späť“ 15 minút.
+export const VRATIT_MS = 15 * 60000;
+export interface Vratenie { stranka: string; t: string; vrat: () => void; do: number }
+let vratenie: Vratenie | null = null;
+export const nastavVratenie = (v: Vratenie | null) => { vratenie = v; zmena(); };
+export function useVratenie(stranka: string): Vratenie | null {
+  useZmenySektorov();
+  return vratenie && vratenie.stranka === stranka && vratenie.do > Date.now() ? vratenie : null;
+}
+/** Archív centrálnej a sektorov charity (zbalené riadky: názov, dátum a čas ukončenia, vyzbierané) — naboz_stav „centralnaArchiv“ */
+export interface ArchivPolozka { id: string; druh: "centralna" | "sektor"; nazov: string; koniec: string; suma: number }
+export const archivCharity = (stranka: string): ArchivPolozka[] => nacitajStav<ArchivPolozka[]>("centralnaArchiv", stranka, []);
+export function pridajDoArchivu(stranka: string, p: ArchivPolozka) { ulozStav("centralnaArchiv", stranka, [p, ...archivCharity(stranka).filter((x) => x.id !== p.id)]); zmena(); }
+export function zoberZArchivu(stranka: string, id: string) { ulozStav("centralnaArchiv", stranka, archivCharity(stranka).filter((x) => x.id !== id)); zmena(); }
+
+/** sektor s darmi: ukončiť (server zastaví dary, 0169) — vráti funkciu na vrátenie do 15 minút (0171) */
+export function ukonciSektor(id: string, suma: number): () => void {
+  const st = strankaSektora.get(id);
+  if (!st) return () => {};
+  const pred = zoznam.get(st) ?? [];
+  const s = pred.find((x) => x.id === id);
+  const koniec = new Date().toISOString();
+  zoznam.set(st, pred.filter((x) => x.id !== id));
+  if (s) pridajDoArchivu(st, { id, druh: "sektor", nazov: s.nazov, koniec, suma });
+  zmena();
+  if (supabase) void supabase.from("sektor_stranky").update({ ukonceny: koniec }).eq("id", id).then(() => {}, () => {});
+  return () => {
+    if (!s) return;
+    zoberZArchivu(st, id);
+    zoznam.set(st, [...(zoznam.get(st) ?? []).filter((x) => x.id !== id), s]); zmena();
+    if (supabase) void supabase.from("sektor_stranky").update({ ukonceny: null }).eq("id", id).then(() => {}, () => {});
+  };
+}
