@@ -33,6 +33,7 @@ import { useVecneZbierky } from "@/lib/vecnaZbierka";
 import { MaterialneCharita } from "./MaterialneCharita";
 import { useSektory, nastavVyberCentralnej, NULA, SEKTORY_OD_TIERU, useVratenie, nastavVratenie, archivCharity } from "@/lib/sektoryCharity";
 import { NovaSektorova } from "./NovaSektorova";
+import { usePozrietAko, nastavPozrietAko } from "@/lib/pozrietAko";
 import { cistyText } from "@/lib/richtext";
 import { cisloObjektu } from "@/lib/cisloObjektu";
 import { useDorovnania, stavCharity } from "@/lib/dorovnanie";
@@ -61,7 +62,7 @@ import { useRegistra } from "@/lib/udajeRegistra";
 import { mestoZoSidla } from "@/data/charita.supabase";
 import { nastavAktivnuCharitu, casRegistracieLokalne } from "@/lib/aktivnaCharita";
 import { supabase } from "@/lib/supabase";
-import { useProgramStranky } from "@/lib/programStranky";
+import { useProgramStranky, usePozvana } from "@/lib/programStranky";
 import { useMojePrava, smie, NEMATE_POVOLENE, type Pravo } from "@/lib/pravaPracovnika";
 import { LudiaCharity, pocetLudiCharity } from "./LudiaCharity";
 import { AtelierCharity } from "./AtelierCharity";
@@ -79,7 +80,7 @@ import { ObrOznamenia, ObrEur, ObrEurc, ObrUcty, ObrSpravcovia, ObrUdaje, ObrPro
 import { TlacidloNastavenia, LogoKarty } from "./spravaCasti";
 import { sumaEur } from "@/lib/suma";
 import {
-  FLAGS, KONFIG, nacitajTiery, ulozTiery, slovo, maPovolenie, vidnoPolozku, smieSkutokZaCharitu, type RolaStranky, odProgramu, PROGRAM_NAZOV, PIN_MAX,
+  FLAGS, KONFIG, nastavVidnoAspon, nacitajTiery, ulozTiery, slovo, maPovolenie, vidnoPolozku, smieSkutokZaCharitu, type RolaStranky, odProgramu, PROGRAM_NAZOV, PIN_MAX,
   nacitajStitCharity, ulozStitCharity, nacitajCharituNovu,
   type PolozkaSpravy, type StitCharity, type Tier, type Pozicia,
   type TypStranky, TYP_NAZOV, TYPY_STRANOK, TYP_SKRYTY, NASTROJE_TYPU, typPovoli, STIT_SADA_TYPU, type StitSada,
@@ -355,7 +356,11 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   const [tiery, setTiery] = useState(nacitajTiery);
   // OPRAVY 529 (Martin 23. 10.): charita má program zo servera (program_stranky) — testovací prepínač Program pri charite nie je
   const programServer = useProgramStranky(typ === "charita" && supabase ? strankaId : null) as Tier;
-  const tier = typ === "charita" && supabase ? programServer : tiery[poz];
+  const skutocny = (typ === "charita" && supabase ? programServer : tiery[poz]) as Tier;
+  // balík 50 · 1: „Pozrieť ako“ — charita si na tomto zariadení zníži program (len nadol), server sa nemení
+  const pozriet = usePozrietAko(strankaId, typ === "charita" ? skutocny : 99);
+  const tier = (typ === "charita" ? pozriet.tier : skutocny) as Tier;
+  nastavVidnoAspon(pozriet.znizene ? skutocny : -1); // zámky „od P…“ pre všetko, čo skutočný program má
   const menu = menuTypu(typ, tier);
   const setTier = (t: Tier) => { const n = { ...nacitajTiery(), [poz]: t }; setTiery(n); ulozTiery(n); };
   const [stit, setStit] = useState<StitCharity>(nacitajStitCharity);
@@ -363,7 +368,9 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   // Pozvaná (prvých 50, P3 zadarmo 2 mesiace) = registrácia cez pozvánku uložená pri stránke (verejné nastavenia „pozvana“), nie prepínač.
   const nova = typ === "charita" || nacitajCharituNovu();
   useVerejneNastavenia(strankaId);
-  const pozvana = verejneZPamate(strankaId)?.["pozvana"] === true;
+  // balík 50 · 3: pozvaná charita podľa servera (0173: P3 zadarmo N mesiacov od zverejnenia); bez servera ako doteraz
+  const pozvanaSrv = usePozvana(typ === "charita" && supabase ? strankaId : null);
+  const pozvana = supabase && typ === "charita" ? !!pozvanaSrv : verejneZPamate(strankaId)?.["pozvana"] === true;
   const [piny, setPiny] = useState<PolozkaSpravy[]>(() => pinyZPamate(strankaId));
   useEffect(() => { let ziva = true; void nacitajPiny(strankaId).then((p) => { if (ziva) setPiny(p); }); return () => { ziva = false; }; }, [strankaId]);
   const [zoom, setZoom] = useState(false);
@@ -493,7 +500,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
     obsah = id === "notif" ? <ObrOznamenia mobil={m} /> : id === "eur" ? <ObrEur mobil={m} /> : id === "krypto" ? <ObrEurc mobil={m} /> : id === "ucty" ? <ObrUcty mobil={m} otvor={o} />
       : id === "spravcovia" ? (typ === "charita" ? <LudiaCharity mobil={m} strankaId={strankaId} meno={nazov} /> : <ObrSpravcovia mobil={m} />) : id === "udaje" ? <ObrUdaje mobil={m} />
       : id === "faktury" ? <ObrFaktury mobil={m} tier={tier} otvor={o} />
-      : id === "program" ? <ObrProgram mobil={m} typ={typ} tier={tier} otvor={o} onTier={setTier} />
+      : id === "program" ? <ObrProgram mobil={m} typ={typ} tier={typ === "charita" ? skutocny : tier} otvor={o} onTier={setTier} />
       : id === "zariadenia" ? <ObrZariadenia mobil={m} /> : id === "suhlasy" ? <ObrSuhlasy mobil={m} otvor={o} /> : id === "stiahnut" ? <ObrStiahnut mobil={m} />
       : id === "faq" ? <ObrFaq otvor={o} /> : id === "podpora" ? <ObrPodpora mobil={m} otvor={o} /> : id === "zrusit" ? <ObrZrusit mobil={m} otvor={o} tier={tier} nova={nova} /> : <Pripravujeme />;
   }
@@ -572,11 +579,17 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
         <TestVolba pas={!desktop} nazov="Typ" volby={TYPY_STRANOK.filter((t) => !TYP_SKRYTY[t]).map((t) => [t, TYP_NAZOV[t]] as [TypStranky, string])} hodnota={typ} onVolba={setTyp} />
         <TestVolba pas={!desktop} nazov="Rola" volby={[["hlavny", "Hlavný správca"], ["spravca", "Správca"], ["pomocnik", "Pomocník"], ["organizator", "Organizátor"]] as [RolaStranky, string][]} hodnota={rola} onVolba={(r) => zmenTestStav({ rola: r })} />
       </>}>
+      {typ === "charita" && skutocny > 0 && <TestVolba pas={!desktop} nazov="Pozrieť ako" volby={(Array.from({ length: skutocny + 1 }, (_, i) => skutocny - i) as Tier[]).map((t) => [t, PROGRAM_NAZOV[t]] as [Tier, string])} hodnota={tier} onVolba={(t) => nastavPozrietAko(strankaId, t === skutocny ? null : t)} />}
       <DevSprava pas={!desktop} tier={tier} stit={stit} charita={typ === "charita"}
         onTier={setTier}
         onStit={(s) => { setStit(s); ulozStitCharity(s); }} />
     </PrepinacPodania>
   );
+  // balík 50 · 1: stály pás hore, kým je program znížený
+  const pasPozriet = pozriet.znizene && <div role="status" style={{ borderRadius: 16, background: "#1D211B", color: "#fff", padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+    <span style={{ flex: "1 1 220px", fontSize: 14.5, lineHeight: 1.4 }}>Pozeráte ako <b>{PROGRAM_NAZOV[tier]}</b> · váš program je <b>{PROGRAM_NAZOV[skutocny]}</b></span>
+    <button type="button" onClick={() => nastavPozrietAko(strankaId, null)} style={{ flex: "none", minHeight: 44, padding: "0 16px", border: "none", borderRadius: 12, background: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "#1D211B" }}>Vrátiť ›</button>
+  </div>;
   const zoomEl = <>{zoom && <StitZoom stit={stit} sada={sada} onClose={() => setZoom(false)} />}
     {limitOkno && createPortal(<div className="sprava-charity" data-stit={stit} onClick={() => setLimitOkno(false)} style={{ position: "fixed", inset: 0, zIndex: 160, background: "rgba(29,33,27,.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
       <div onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Limit zbierok" style={{ width: 480, maxWidth: "100%", boxSizing: "border-box", padding: "24px 26px", borderRadius: 22, background: "var(--bg)", border: "1px solid var(--cardBd)", boxShadow: "0 30px 70px rgba(0,0,0,.3)", display: "flex", flexDirection: "column", gap: 14 }}>
@@ -633,6 +646,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
       <div style={{ flex: 1, minWidth: 0 }}>
       <main style={{ maxWidth: 1600, margin: "0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>
         {hlavicka}
+        {pasPozriet}
         {dev}
         {stitokRezimu}
         <ListaNeverejna strankaId={strankaId} mobil={false} onZverejnit={() => setOknoZv(true)} />
@@ -649,6 +663,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
     <div ref={korenRef} className="sprava-charity" data-stit={stit} style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
       {hlavicka}
       <div key={String(sub)} style={{ padding: "14px 14px 28px", display: "flex", flexDirection: "column", gap: 14, animation: "spravaFade .2s ease both", width: "100%", maxWidth: tablet ? 880 : undefined, margin: tablet ? "0 auto" : undefined, boxSizing: "border-box" }}>
+        {pasPozriet}
         {stitokRezimu}
         <ListaNeverejna strankaId={strankaId} mobil onZverejnit={() => setOknoZv(true)} />
         {sub === null && <KartyZverejnenia strankaId={strankaId} farnost={false} onQrPlagat={() => otvor("qr")} />}
@@ -1009,7 +1024,9 @@ function StitZoom({ stit, sada, onClose }: { stit: StitCharity; sada: StitSada; 
 }
 
 function Prehlad({ strankaId, tier, piny, prepniPin, otvorPolozku, otvor, nova, stit, sada, menu, mobil, tablet, zbal, prepniZbal, onZoom, uvod, krok1, pozvana, vlastne, hornaCast }: Spolocne & { onZoom: () => void; hornaCast?: React.ReactNode }) {
-  const p3Do = usePozvanaDo(strankaId); // OPRAVY 398: dátum registrácie + 2 mesiace (nie napevno)
+  const p3Do = usePozvanaDo(strankaId); // OPRAVY 398: dátum registrácie + 2 mesiace (nie napevno) — bez servera
+  const pozvSrv = usePozvana(supabase ? strankaId : null); // balík 50 · 3
+  const pozvText = pozvSrv ? `Program P3 máte zadarmo ${pozvSrv.mesiacov} ${pozvSrv.mesiacov === 1 ? "mesiac" : pozvSrv.mesiacov < 5 ? "mesiace" : "mesiacov"} od zverejnenia stránky${pozvSrv.do ? `, do ${new Date(pozvSrv.do).getDate()}. ${new Date(pozvSrv.do).getMonth() + 1}. ${new Date(pozvSrv.do).getFullYear()}` : ""}.` : `Ste medzi prvými 50. Program P3 máte zadarmo 2 mesiace od registrácie, do ${p3Do}.`;
   const PHZ: PhZbierka[] = [...vlastne.filter(bezi).map(naPh), ...(nova ? [] : PH_ZBIERKY)]; // OPRAVY 114: spustené zbierky navrchu
   const VSE = menu.vse; // KARTA 36: na pripnutie len položky, ktoré typ má
   const ph = mobil && !tablet; // telefón (OPRAVY 96: tablet má časti ako PC)
@@ -1109,8 +1126,8 @@ function Prehlad({ strankaId, tier, piny, prepniPin, otvorPolozku, otvor, nova, 
       </div>
       <section style={{ flex: "none", borderRadius: 20, background: pozvana ? "var(--gSoft)" : "var(--card)", border: pozvana ? "1.5px solid var(--gBd)" : "1px solid var(--cardBd)", padding: "16px 20px", display: "flex", flexDirection: ph ? "column" : "row", alignItems: ph ? "flex-start" : "center", gap: ph ? 8 : 16 }}>
         <span style={{ flex: 1, minWidth: 0 }}>
-          <b style={{ display: "block", fontSize: 16, color: pozvana ? "var(--gInk)" : "var(--ink)" }}>{pozvana ? `Ste medzi prvými 50. Program P3 máte zadarmo 2 mesiace od registrácie, do ${p3Do}.` : "Máte program Zadarmo."}</b>
-          <span style={{ display: "block", marginTop: 4, fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>{pozvana ? "Potom si vyberiete program. Ak žiadny nevyberiete, zbierky pre ľudí dobehnú do konca. Centrálna a sektorové zbierky sa z profilu stiahnu." : "Jedna zbierka naraz, QR a prehľad darcov. Čo pridajú vyššie programy, vidíte v menu so štítkom."}</span>
+          <b style={{ display: "block", fontSize: 16, color: pozvana ? "var(--gInk)" : "var(--ink)" }}>{pozvana ? pozvText : `Máte program ${PROGRAM_NAZOV[tier]}.`}</b>
+          <span style={{ display: "block", marginTop: 4, fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>{pozvana ? "Potom si vyberiete program. Ak žiadny nevyberiete, zbierky pre ľudí dobehnú do konca. Centrálna a sektorové zbierky sa z profilu stiahnu." : tier === 0 ? "Jedna zbierka naraz, QR a prehľad darcov. Čo pridajú vyššie programy, vidíte v menu so štítkom." : "Čo pridajú vyššie programy, vidíte v menu so štítkom."}</span>
         </span>
         <button onClick={() => otvor("n:program")} style={{ flex: "none", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: pozvana ? "var(--gInk)" : "var(--green)", whiteSpace: "nowrap" }}>{pozvana ? "Čo je v P3 ›" : "Porovnať programy ›"}</button>
       </section>

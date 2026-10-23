@@ -224,7 +224,10 @@ export const POVOLENIA_CHARITY: Record<PolozkaSpravy, { od: Program }> = {
 /** má charita s týmto tierom položku? (program) */
 export const maPovolenie = (id: PolozkaSpravy, tier: Tier): boolean => tier >= PROGRAM_TIER[POVOLENIA_CHARITY[id].od];
 /** OPRAVY 118: ukazuje sa len svoj program + 2 vyššie (Zadarmo nevidí P3 ani P4) — všade: menu, dlaždice, skupiny, pripnuté */
-export const vidno = (od: Program, tier: Tier): boolean => PROGRAM_TIER[od] <= tier + 2;
+// balík 50 · 1: pri „Pozrieť ako“ (znížený program na zariadení) ostáva viditeľné so zámkom všetko zo skutočného programu
+let vidnoAspon = -1;
+export const nastavVidnoAspon = (t: number) => { vidnoAspon = t; };
+export const vidno = (od: Program, tier: Tier): boolean => PROGRAM_TIER[od] <= Math.max(tier + 2, vidnoAspon);
 export const vidnoPolozku = (id: PolozkaSpravy, tier: Tier): boolean => vidno(POVOLENIA_CHARITY[id].od, tier);
 
 // ============================================================

@@ -25,3 +25,21 @@ export function useProgramStranky(k: string | null | undefined): number {
   useEffect(() => { if (k && !pamat.has(k)) void nacitaj(k); }, [k]);
   return k ? pamat.get(k) ?? 0 : 0;
 }
+
+// ---- balík 50 · 3 · 0173: pozvaná charita — P3 zadarmo N mesiacov od zverejnenia stránky ----
+export interface Pozvana { mesiacov: number; do: string | null }
+const pozvane = new Map<string, Pozvana | null>();
+const nacitavaP = new Set<string>();
+async function nacitajPozvanu(k: string) {
+  if (!supabase || nacitavaP.has(k)) return;
+  nacitavaP.add(k);
+  const { data, error } = await supabase.rpc("pozvana_stranky", { p_stranka: k });
+  nacitavaP.delete(k);
+  if (!error) { pozvane.set(k, (data as Pozvana | null) ?? null); zmena(); }
+}
+/** null = nie je pozvaná (alebo bez servera); inak počet mesiacov a dátum konca (null, kým stránka nie je zverejnená) */
+export function usePozvana(k: string | null | undefined): Pozvana | null {
+  useSyncExternalStore((f) => { posluchaci.add(f); return () => posluchaci.delete(f); }, () => verzia);
+  useEffect(() => { if (k && !pozvane.has(k)) void nacitajPozvanu(k); }, [k]);
+  return k ? pozvane.get(k) ?? null : null;
+}

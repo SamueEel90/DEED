@@ -52,6 +52,7 @@ import { skutkyOrg, useZmenySkutkov, type MojSkutok } from "@/lib/mojeSkutky";
 import { ucast, nacitajUcasti, pocetText, useZmenyUcasti } from "@/lib/oznamUcast";
 import { OznamDetail } from "@/features/rola/OznamDetail";
 import { useProgramStranky } from "@/lib/programStranky";
+import { usePozrietAko } from "@/lib/pozrietAko";
 import { nacitajOznamyStranky, oznamyStranky, bezi as oznamBezi, useZmenyOznamovCharity, type OznamCharity } from "@/lib/oznamyNove";
 import { nacitajZbierkyStranky, zbierkyStrankyZPamate, useZmenyZbierok, cielCislo, doplneniaHtml, type SpustenaZbierka } from "@/lib/novaZbierka";
 import { PomozCharita } from "./PomozCharita";
@@ -194,7 +195,9 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad, vzhladAtelier }: { klu
   const [tiery] = useState(nacitajTiery);
   const typP = profil0?.typ;
   // OPRAVY 432 + 529: charita — program vždy zo servera (program_stranky, 0137)
-  const programCh = useProgramStranky(typP === "charita" ? profil0?.k : null);
+  const programCh0 = useProgramStranky(typP === "charita" ? profil0?.k : null);
+  // balík 50 · 1: „Pozrieť ako“ správcu na tomto zariadení (nižší program) platí aj pre náhľad profilu
+  const programCh = usePozrietAko(profil0?.k ?? "", typP === "charita" ? programCh0 : 99).tier;
   const tierStranky = typP === "charita" ? programCh : TESTOVACIA && ts.program !== null ? ts.program : typP === "firma" ? tiery.b2b : tiery.tvorca;
   const regV = useRegistra(profil0?.k ?? kluc); // OPRAVY 400: názov charity z registra
   const vzhlad = useVzhlad(profil0?.k ?? kluc, typP !== "farnost" && tierStranky === 0); // farnosť: jeden platený program, výber má vždy
