@@ -27,9 +27,9 @@ import { useSlovaFarnosti } from "@/lib/mojeFarnosti";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { Prepinac } from "@/features/profil/nastUi";
 import {
-  useSektory, obsahSektora, ulozObsahSektora, pridajSektor, zmazSektor, premenujSektor, ziadostUctu, poziadajOZmenuUctu,
-  zavretaCentralna, zavriCentralnu, otvorCentralnu, vyberCentralnej, nastavVyberCentralnej, useZmenySektorov, vezmiNovySektor, jeNovySektor,
-  NULA, SEKTORY_MAX, SEKTORY_OD_TIERU, useOblastiCharity, type SektorCharity,
+  useSektory, obsahSektora, ulozObsahSektora, zmazSektor, premenujSektor, ziadostUctu, poziadajOZmenuUctu,
+  zavretaCentralna, zavriCentralnu, otvorCentralnu, vyberCentralnej, nastavVyberCentralnej, useZmenySektorov,
+  NULA, SEKTORY_OD_TIERU, type SektorCharity,
 } from "@/lib/sektoryCharity";
 import { nazovZPodskupiny } from "@/lib/sekcieCharity";
 import { nacitajStav, ulozStav, type StavZbierky } from "@/lib/zbierkaSprava";
@@ -64,7 +64,6 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
 }) {
   useZmenySektorov(); useZmenyDarov();
   const sektory0 = useSektory(farnost ? "" : strankaId);
-  const ponukaOblasti = useOblastiCharity(farnost ? "" : strankaId);
   const sektory = farnost ? [] : sektory0;
   const smieSektory = !farnost && tier >= SEKTORY_OD_TIERU;
   const [typ, setTyp] = useState(() => Math.min(vyberCentralnej(), smieSektory ? sektory.length : 0));
@@ -79,9 +78,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   // OPRAVY 347: plagát hlavnej = jeden plagát pre všetky QR (QR farnosti)
   const qrFar = usePolozkyQr(strankaId, nazov).find((x) => x.id === "farnost");
   const [plOkno, setPlOkno] = useState(false);
-  const [novySek, setNovySek] = useState(() => jeNovySektor() && smieSektory); // OPRAVY 486
-  useEffect(() => { vezmiNovySektor(); }, []);
-  const prepni = (i: number) => { setTyp(i); nastavVyberCentralnej(i); setNovySek(false); };
+  const prepni = (i: number) => { setTyp(i); nastavVyberCentralnej(i); };
 
   // ---- obsah položky (text, galéria, sumy) — ukladá sa samo ----
   const nacitaj = (): CentralnaZbierka => (sek ? obsahSektora(sek.id) : centralnaZPamate(strankaId)) ?? (farnost ? prazdnaHlavna() : { ...prazdnaCentralna(), popis: "" }); // OPRAVY 414: charita — nič predvyplnené
@@ -196,7 +193,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
     <TextovePolia popis={d.popis} popis2={d.popis2} onPopis={(x) => zmen({ popis: x }, "text")} onPopis2={(x) => zmen({ popis2: x }, "text")} ph={mobil} popisHlavneho="Toto ľudia uvidia pri zbierke hneď. Najviac 12 riadkov."
       placeholder={farnost ? "Napíšte, na čo ľudia prispievajú." : undefined} />
     <UlozenePri u={u} pole="text" /></section>;
-  const galeria = <div data-pole="foto" style={{ display: "flex", flexDirection: "column", gap: 6 }}><GaleriaEditor media={d.media} onMedia={(m) => zmen({ media: m }, "fotky")} ph={mobil} nadpis="Fotky a video" popisNapoveda="Popis (nepovinné)" dovetok="" /><UlozenePri u={u} pole="fotky" style={{ paddingRight: 8 }} /></div>;
+  const galeria = <div data-pole="foto" style={{ display: "flex", flexDirection: "column", gap: 6 }}><GaleriaEditor media={d.media} onMedia={(m) => zmen({ media: m }, "fotky")} ph={mobil} nadpis="Fotky a video" popisNapoveda="Popis (nepovinné)" dovetok="" kdeHlavne="na vašom profile" /><UlozenePri u={u} pole="fotky" style={{ paddingRight: 8 }} /></div>;
   // OPRAVY 160/5: náhľad = tá istá karta ako na profile (KartaModulu), mení sa hneď pri písaní a pridaní fotky
   const nahlad = farnost ? (
     <section style={kartaK}>
@@ -357,22 +354,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
         : <button type="button" onClick={() => setHarok(true)} style={{ ...obrysK, border: "1.5px solid #E0B9AE", color: "#A34A2A" }}>{sek ? "Zmazať sektor…" : "Zavrieť zbierku…"}</button>}
     </section>);
 
-  // ---- + Pridať sektor (len z činností v stanovách, od P2, najviac 3) ----
-  // 0170: oblasti zo stanov charity (bez nich celý číselník), po sekciách; bežiace sa neponúkajú
-  const volne = ponukaOblasti.map((s) => ({ nazov: s.nazov, podskupiny: s.podskupiny.filter((p) => !sektory.some((x) => x.stanovy.toLowerCase() === p.toLowerCase())) })).filter((s) => s.podskupiny.length > 0);
-  const plno = sektory.length >= SEKTORY_MAX;
-  const novyPanel = novySek && (
-    <div style={{ borderRadius: 18, background: "var(--panel)", border: "1px solid var(--cardBd)", padding: "14px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
-      <b style={{ fontSize: 15 }}>Nový sektor</b>
-      <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>Vyberte tému. Najviac {SEKTORY_MAX} sektory, od programu Akcia. Dostane farbu podľa poradia a vlastné QR.</span>
-      {smieSektory && volne.map((sk) => <div key={sk.nazov} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" }}>{sk.nazov.toLocaleUpperCase("sk-SK")}</span>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {sk.podskupiny.map((p) => <button key={p} type="button" aria-disabled={plno} onClick={() => { if (plno) return; const s = pridajSektor(strankaId, { nazov: nazovZPodskupiny(p), stanovy: p }, toast); if (s) { prepni(sektory.length + 1); toast(`Sektor ${s.nazov} je pridaný`); } }} style={{ minHeight: 44, padding: "0 14px", borderRadius: 22, border: "1px solid var(--cardBd)", background: "var(--field)", cursor: plno ? "default" : "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--ink)", opacity: plno ? 0.5 : 1, boxShadow: "none", textAlign: "left" }}>{nazovZPodskupiny(p)}</button>)}
-        </div>
-      </div>)}
-      <span style={drobneK}>{!smieSektory ? "Sektory máte od programu Akcia." : plno ? `Máte ${sektory.length} z ${SEKTORY_MAX} sektorov. Nový pridáte, keď niektorý zmažete.` : `Máte ${sektory.length} z ${SEKTORY_MAX} sektorov.`}</span>
-    </div>);
+  // balík 48 · 514: „+ Pridať sektor“ je preč — sektor sa zakladá cez Nová zbierka → Sektorová (NovaSektorova)
   const rad: [string, number][] = [["Celá činnosť", 0], ...(smieSektory ? sektory.map((s, i) => [s.nazov, i + 1] as [string, number]) : [])];
 
   return (<>
@@ -387,13 +369,11 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
         style={{ height: 48, padding: "0 14px", borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--field)", fontFamily: "inherit", fontSize: 16, fontWeight: 700, color: "var(--ink)", outline: "none", width: "100%", boxSizing: "border-box" }} />
       <UlozenePri u={u} pole="nazov" style={{ marginTop: -6 }} />
     </>}
-    {!farnost && <div role="tablist" aria-label="Centrálna a sektory" style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2 }}>
+    {!farnost && rad.length > 1 && <div role="tablist" aria-label="Centrálna a sektory" style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2 }}>
       {rad.map(([t, v]) => { const on = typ === v; return (
         <button key={v} type="button" role="tab" aria-selected={on} onClick={() => prepni(v)} style={{ flex: "none", height: 44, padding: "0 14px", borderRadius: 22, border: on ? "2px solid var(--ink)" : "1px solid var(--cardBd)", background: on ? "var(--card)" : "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)", whiteSpace: "nowrap", boxShadow: "none" }}>
           <span style={{ width: 10, height: 10, borderRadius: "50%", background: `var(--h${v})` }} />{t}</button>); })}
-      <button type="button" aria-expanded={novySek} onClick={() => setNovySek((x) => !x)} style={{ flex: "none", height: 44, padding: "0 14px", borderRadius: 22, border: "1.5px dashed var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--green)", whiteSpace: "nowrap", boxShadow: "none" }}>+ Pridať sektor</button>
     </div>}
-    {novyPanel}
     {!farnost && <div data-hier={h} style={{ borderRadius: 22, overflow: "hidden", background: "var(--card)", border: "2px solid var(--hc)", display: "flex", flexWrap: "wrap" }}>
       <span style={{ flex: "none", width: mobil ? "100%" : 220, minHeight: mobil ? 120 : 140, background: bgFoto, position: "relative", overflow: "hidden" }}>{fotoImg}<span style={{ position: "absolute", left: 0, right: 0, top: 0, height: 6, background: "var(--hc)" }} /></span>
       <div style={{ flex: 1, minWidth: 240, padding: "16px 20px", display: "flex", flexDirection: "column", gap: 6 }}>

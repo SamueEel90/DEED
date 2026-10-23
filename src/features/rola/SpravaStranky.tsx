@@ -31,7 +31,8 @@ import { aktivnychOznamov, aktivneOznamyText, nacitajOznamyStranky, useZmenyOzna
 import { centralnaZPamate, useZmenyCentralnej, prazdnaCentralna, nacitajCentralnuZbierku } from "@/lib/centralnaZbierka";
 import { useVecneZbierky } from "@/lib/vecnaZbierka";
 import { MaterialneCharita } from "./MaterialneCharita";
-import { useSektory, cislaSektora, nastavVyberCentralnej, chcemNovySektor, NULA, SEKTORY_OD_TIERU } from "@/lib/sektoryCharity";
+import { useSektory, cislaSektora, nastavVyberCentralnej, NULA, SEKTORY_OD_TIERU } from "@/lib/sektoryCharity";
+import { NovaSektorova } from "./NovaSektorova";
 import { cistyText } from "@/lib/richtext";
 import { cisloObjektu } from "@/lib/cisloObjektu";
 import { useDorovnania, stavCharity } from "@/lib/dorovnanie";
@@ -511,6 +512,8 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   else if ((sub === "kalendar" || sub === "x:Kalendár") && typ === "charita") obsah = <KalendarCharity strankaId={strankaId} mobil={!desktop}
     onAkcia={(id) => otvor("oznamy", undefined, id)} onBrigady={() => otvor("dobrovolnici")} onPonuky={() => otvor("inzeraty")}
     onZbierka={(z) => { setSpravZb(naSpravu(naRiadok(z))); otvor("x:Správa zbierky"); }} />;
+  // balík 48 · 515/520: nová sektorová zbierka — vlastná obrazovka (koncept → kontrola → Podržte a spustite)
+  else if (sub === "x:Nová sektorová zbierka" && typ === "charita" && tier >= SEKTORY_OD_TIERU) obsah = <NovaSektorova strankaId={strankaId} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} />;
   else if (sub.startsWith("x:")) obsah = <Pripravujeme />;
   // KARTA 40: Oznamy — v Zadarmo výzva na súrnu pomoc a dva zamknuté druhy (nie „Pripravujeme" ani zámok celej položky)
   else if (sub === "oznamy" && typPovoli("oznamy", typ)) obsah = <OznamySprava strankaId={strankaId} tier={tier} nazov={nazov} inicialy={inicialy} mesto={typ === "charita" ? mestoCh : SUBJEKTY[poz]?.lok ?? "Trenčín"} logo={profil?.logo ?? null} mobil={!desktop} tablet={tablet} toast={toast} onProfil={() => otvor("x:Verejný profil")} start={oznamStart} upravitId={oznamUprav} />;
@@ -1573,7 +1576,7 @@ function ObrZbierky(s: Spolocne) {
     {!cenBezi && vidnoPolozku("centralna", tier) && volba(IK_CENTRALNA, "Centrálna zbierka", "na celú činnosť · len na vašej stránke, nie na Domove",
       () => { if (zamok("centralna")) { setVysvetli("centralna"); return; } s.zavriVyberZb?.(); otvorCen(0); }, { id: "centralna" })}
     {vidnoPolozku("segment", tier) && volba(IK_SEKTOR, "Sektorová zbierka", !zamok("segment") && !cenBezi ? "najprv založte centrálnu zbierku" : "jedna téma zo stanov · vlastný transparentný účet",
-      () => { if (zamok("segment")) { setVysvetli("segment"); return; } if (!cenBezi) { s.zavriVyberZb?.(); otvorCen(0); return; } s.zavriVyberZb?.(); chcemNovySektor(); otvorCen(0); }, { id: "segment", siva: !cenBezi })}
+      () => { if (zamok("segment")) { setVysvetli("segment"); return; } if (!cenBezi) { s.zavriVyberZb?.(); otvorCen(0); return; } s.zavriVyberZb?.(); otvor("x:Nová sektorová zbierka"); }, { id: "segment", siva: !cenBezi })}
     {volba(IK_BEZNA, "Bežná zbierka", "pre niekoho, s cieľom · ide na Domov", () => s.novaBezna?.())}
     {vidnoPolozku("materialne", tier) && volba("M12 3l8 4.5v9L12 21l-8-4.5v-9zM12 12l8-4.5M12 12v9M12 12L4 7.5", "Materiálna zbierka", "veci namiesto peňazí",
       () => { if (zamok("materialne")) { setVysvetli("materialne"); return; } s.novaMaterialna?.(); }, { id: "materialne" })}

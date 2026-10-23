@@ -123,18 +123,24 @@ export async function ulozObsahSektora(id: string, c: CentralnaZbierka): Promise
   return error ? chybaTextu(error.message ?? "") : null;
 }
 
-/** nový sektor stránky (zatiaľ hneď spustený — tok konceptu a spustenia je bod 515); chyba servera → onChyba a sektor zmizne */
-export function pridajSektor(stranka: string, c: { nazov: string; stanovy: string }, onChyba?: (t: string) => void): SektorCharity | null {
+/** balík 48 · 515/520: spustenie novej sektorovej zbierky z konceptu (Podržte a spustite) — vráti sektor alebo chybu ako text */
+export async function spustiSektor(stranka: string, k: { oblast: string; nazov: string; obsah: CentralnaZbierka; iban: string }): Promise<{ s: SektorCharity } | { chyba: string }> {
   const v = zoznam.get(stranka) ?? [];
-  if (v.length >= SEKTORY_MAX || v.some((s) => s.stanovy === c.stanovy)) return null;
+  if (v.some((s) => s.stanovy.toLowerCase() === k.oblast.toLowerCase())) return { chyba: "Na túto oblasť už zbierka beží." };
   const id = `sek-${Math.random().toString(36).slice(2, 12)}`;
-  const s: SektorCharity = { id, nazov: c.nazov, stanovy: c.stanovy, foto: "", slug: slugZ(c.nazov), spusteny: new Date().toISOString() };
-  obsah.set(id, prazdnyObsah()); strankaSektora.set(id, stranka);
+  const spusteny = new Date().toISOString();
+  if (supabase) {
+    let cista: CentralnaZbierka;
+    try { cista = await bezDataUrl(k.obsah, "stranky"); } catch { return { chyba: "Fotku sa nepodarilo nahrať. Skúste znova." }; }
+    const { error } = await supabase.from("sektor_stranky").insert({ id, stranka, oblast: k.oblast, nazov: k.nazov.trim().slice(0, 30), obsah: cista, iban: k.iban, poradie: v.length + 1, spusteny })
+      .then((x) => x, () => ({ error: { message: "" } }));
+    if (error) return { chyba: chybaTextu(error.message ?? "") };
+    k = { ...k, obsah: cista };
+  }
+  obsah.set(id, k.obsah); strankaSektora.set(id, stranka);
+  const s: SektorCharity = { id, nazov: k.nazov.trim().slice(0, 30), stanovy: k.oblast, foto: fotoZ(k.obsah), slug: slugZ(k.nazov), spusteny };
   zoznam.set(stranka, [...v, s]); zmena();
-  if (supabase) void supabase.from("sektor_stranky").insert({ id, stranka, oblast: c.stanovy, nazov: c.nazov, obsah: prazdnyObsah(), poradie: v.length + 1, spusteny: s.spusteny })
-    .then(({ error }) => { if (error) { zoznam.set(stranka, (zoznam.get(stranka) ?? []).filter((x) => x.id !== id)); zmena(); onChyba?.(chybaTextu(error.message ?? "")); } },
-      () => { zoznam.set(stranka, (zoznam.get(stranka) ?? []).filter((x) => x.id !== id)); zmena(); onChyba?.(chybaTextu("")); });
-  return s;
+  return { s };
 }
 /** zmazanie sektora vracia funkciu na vrátenie (pás Vrátiť) — vrátenie ho na serveri založí znova s tým istým id */
 export function zmazSektor(id: string): () => void {
@@ -180,8 +186,3 @@ export function otvorCentralnu() { centralnaZavreta = null; zmena(); }
 let vyber = 0;
 export const vyberCentralnej = () => vyber;
 export const nastavVyberCentralnej = (i: number) => { vyber = i; };
-/** OPRAVY 486: „Akú zbierku pridávate?“ → Sektorová zbierka otvorí Správu centrálnej rovno s „+ Pridať sektor“ */
-let novySektor = false;
-export const chcemNovySektor = () => { novySektor = true; };
-export const jeNovySektor = () => novySektor;
-export const vezmiNovySektor = () => { novySektor = false; };
