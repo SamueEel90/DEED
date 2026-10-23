@@ -177,9 +177,9 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad, vzhladAtelier }: { klu
   // „Celá kronika" v Pirátovi otvorí Kroniku len pre tohto návštevníka (nič sa neukladá).
   const [tiery] = useState(nacitajTiery);
   const typP = profil0?.typ;
-  // OPRAVY 432: charita — program zo servera (program_stranky, 0137); testovací prepínač Program ho na tomto zariadení prebije
+  // OPRAVY 432 + 529: charita — program vždy zo servera (program_stranky, 0137)
   const programCh = useProgramStranky(typP === "charita" ? profil0?.k : null);
-  const tierStranky = TESTOVACIA && ts.program !== null ? ts.program : typP === "charita" ? programCh : typP === "firma" ? tiery.b2b : tiery.tvorca;
+  const tierStranky = typP === "charita" ? programCh : TESTOVACIA && ts.program !== null ? ts.program : typP === "firma" ? tiery.b2b : tiery.tvorca;
   const regV = useRegistra(profil0?.k ?? kluc); // OPRAVY 400: názov charity z registra
   const vzhlad = useVzhlad(profil0?.k ?? kluc, typP !== "farnost" && tierStranky === 0); // farnosť: jeden platený program, výber má vždy
   const [prepis, setPrepis] = useState<Vzhlad | null>(null);

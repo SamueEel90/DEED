@@ -60,6 +60,7 @@ import { useRegistra } from "@/lib/udajeRegistra";
 import { mestoZoSidla } from "@/data/charita.supabase";
 import { nastavAktivnuCharitu, casRegistracieLokalne } from "@/lib/aktivnaCharita";
 import { supabase } from "@/lib/supabase";
+import { useProgramStranky } from "@/lib/programStranky";
 import { useMojePrava, smie, NEMATE_POVOLENE, type Pravo } from "@/lib/pravaPracovnika";
 import { LudiaCharity, pocetLudiCharity } from "./LudiaCharity";
 import { AtelierCharity } from "./AtelierCharity";
@@ -351,7 +352,9 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   useVerejneNastavenia(STRANKA_POZICIE[poz]); // rýchle sumy, krypto, viditeľnosť súm z DB (0070b)
   const sada = STIT_SADA_TYPU[typ];
   const [tiery, setTiery] = useState(nacitajTiery);
-  const tier = tiery[poz];
+  // OPRAVY 529 (Martin 23. 10.): charita má program zo servera (program_stranky) — testovací prepínač Program pri charite nie je
+  const programServer = useProgramStranky(typ === "charita" && supabase ? strankaId : null) as Tier;
+  const tier = typ === "charita" && supabase ? programServer : tiery[poz];
   const menu = menuTypu(typ, tier);
   const setTier = (t: Tier) => { const n = { ...nacitajTiery(), [poz]: t }; setTiery(n); ulozTiery(n); };
   const [stit, setStit] = useState<StitCharity>(nacitajStitCharity);
@@ -377,7 +380,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
 
   // OPRAVY 121 · bod 9: rola prihláseného v tejto stránke (zatiaľ vždy hlavný správca — rolu doplní server zo správcov stránky)
   const ts = useTestStav(); // OPRAVY 147: rola sa dá prepnúť v testovacom páse
-  const rola: RolaStranky = TESTOVACIA ? ts.rola : "hlavny";
+  const rola: RolaStranky = TESTOVACIA && typ !== "charita" ? ts.rola : "hlavny"; // OPRAVY 529: pri charite bez testovacej roly
   // OPRAVY 122 (2): centrálna zbierka charity — zatiaľ z ukážkových bežiacich zbierok (nová charita ju nemá); doplní server
   // OPRAVY 397: testovacia charita sa vždy tvorí od nuly — Správa bez ukážok (prepínač Profil: Vyplnený · Prázdny zmizol)
   // OPRAVY 403: charita nikdy neukazuje vymyslené dáta (ukážky ostávajú len testovacím stránkam Pekáreň a tvorca)
@@ -560,7 +563,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   const dev = TESTOVACIA && FLAGS.dev_tier_switcher && (
     // OPRAVY 397: bez Vzhľad (je v Nastaveniach), Pozrieť profil (Verejný profil v menu) a Profil: Vyplnený · Prázdny (charita je vždy od nuly)
     <PrepinacPodania pas={!desktop} sektor={typ} style={desktop ? { padding: "2px 2px 4px" } : { marginTop: 14 }} bezProfilu
-      dalsie={<>
+      dalsie={typ === "charita" ? undefined : <>
         <TestVolba pas={!desktop} nazov="Typ" volby={TYPY_STRANOK.filter((t) => !TYP_SKRYTY[t]).map((t) => [t, TYP_NAZOV[t]] as [TypStranky, string])} hodnota={typ} onVolba={setTyp} />
         <TestVolba pas={!desktop} nazov="Rola" volby={[["hlavny", "Hlavný správca"], ["spravca", "Správca"], ["pomocnik", "Pomocník"], ["organizator", "Organizátor"]] as [RolaStranky, string][]} hodnota={rola} onVolba={(r) => zmenTestStav({ rola: r })} />
       </>}>
@@ -1788,7 +1791,8 @@ function usePozvanaDo(strankaId: string): string {
 function DevSprava({ pas, tier, stit, onTier, onStit, charita }: { charita: boolean; pas: boolean; tier: Tier; stit: StitCharity; onTier: (t: Tier) => void; onStit: (s: StitCharity) => void }) {
   return (<>
     {/* OPRAVY 153: Typ a Rola sú pod „Ďalšie testovacie ›" */}
-    <TestVolba pas={pas} nazov="Program" volby={((charita ? [0, 1, 2, 3] : [0, 1, 2, 3, 4]) as Tier[]).map((t) => [t, PROGRAM_NAZOV[t]] as [Tier, string])} hodnota={tier} onVolba={onTier} />
+    {/* OPRAVY 529: pri charite len Štít (vzhľad), program je zo servera */}
+    {!charita && <TestVolba pas={pas} nazov="Program" volby={([0, 1, 2, 3, 4] as Tier[]).map((t) => [t, PROGRAM_NAZOV[t]] as [Tier, string])} hodnota={tier} onVolba={onTier} />}
     <StitVolba pas={pas} stit={stit} onStit={onStit} />
     {/* OPRAVY 433: prepínač Stav (Nová · pozvaná / Nová · zadarmo) zmazaný — úvod riadia skutočné dáta */}
   </>);
