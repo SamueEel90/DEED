@@ -13,8 +13,8 @@ const ZELENA = "#4B7A35";
 const plne: CSSProperties = { minHeight: 52, padding: "0 22px", borderRadius: 14, border: "none", background: ZELENA, color: "#fff", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" };
 const obrys: CSSProperties = { minHeight: 52, padding: "0 18px", borderRadius: 14, border: "1.5px solid var(--cardBd)", background: "transparent", color: "var(--ink)", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" };
 const POCET = ["", "Jeden krok", "Dva kroky", "Tri kroky", "Štyri kroky", "Päť krokov"];
-/** oslovenie z číselníka v 5. páde (otec → otče); cirkev bez titulov = duchovný správca */
-const piatyPad = (o: string | null) => (!o ? "duchovný správca" : o === "otec" ? "otče" : o);
+/** oslovenie v 5. páde (otec → otče); bez oslovenia (prázdne pole aj číselník) = len „Vitajte.“ (OPRAVY 525) */
+const pozdrav = (o: string | null) => (!o?.trim() ? "Vitajte." : `Vitajte, ${o.trim() === "otec" ? "otče" : o.trim()}.`);
 
 function Svetlo() {
   return (
@@ -46,7 +46,7 @@ export function PrveKrokySvetlusik({ oslovenie, vasa, kroky, mobil, hotovo }: { 
     <section aria-label="Prvé kroky" style={karta}>
       <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>PRVÉ KROKY · SVETLÚŠIK</span>
       <span style={{ display: "flex", alignItems: "center", gap: 12 }}><Svetlo />
-        <b style={{ fontSize: 19, lineHeight: 1.35 }}>Vitajte, {piatyPad(oslovenie)}. {vasa} má stránku, poďme ju naplniť. {POCET[kroky.length] ?? `${kroky.length} krokov`}, asi 10 minút.</b></span>
+        <b style={{ fontSize: 19, lineHeight: 1.35 }}>{pozdrav(oslovenie)} {vasa} má stránku, poďme ju naplniť. {POCET[kroky.length] ?? `${kroky.length} krokov`}, asi 10 minút.</b></span>
       <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexWrap: "wrap", gap: 8 }}>
         {kroky.map((k, i) => (
           <li key={k.k}><button type="button" onClick={k.tap} aria-label={`${i + 1}. ${k.t}${k.hot ? " · hotové" : ""}`}

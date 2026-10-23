@@ -209,7 +209,7 @@ export async function nastavCirkevFarnosti(stranka: string, kod: string): Promis
 }
 
 // ---- KARTA 61 §0 · slová podľa cirkvi (číselník public.cirkev, 0078). V kóde jedna rola „duchovný“, mení sa len slovo. ----
-export interface SlovaCirkvi { titul: string; titul2p: string; jednotka2p: string; oslovenie: string | null; dozorca: boolean; /** OPRAVY 289: poďakovanie v riadku zvončekovej v Hlavnej zbierke (0091) */ podakovanie: string }
+export interface SlovaCirkvi { titul: string; titul2p: string; jednotka2p: string; oslovenie: string | null; /** OPRAVY 525 (0166): ženský tvar, len kde cirkev ženy ordinuje */ oslovenieZena: string | null; dozorca: boolean; /** OPRAVY 289: poďakovanie v riadku zvončekovej v Hlavnej zbierke (0091) */ podakovanie: string }
 /** balík 47 (0163): výrazy pre Svetlúšika · Prvé kroky — farnosť / Vaša farnosť / svätá omša / kostol (podľa cirkvi, nie napevno) */
 export interface SlovaSprievodcu { jednotka: string; vasa: string; bohosluzba: string; bohosluzby: string; miesto: string; miestoA: string }
 const SP = (jednotka: string, vasa: string, bohosluzba: string, bohosluzby: string, miesto: string, miestoA = miesto): SlovaSprievodcu => ({ jednotka, vasa, bohosluzba, bohosluzby, miesto, miestoA });
@@ -222,34 +222,35 @@ const SPRIEVODCA_ZALOHA: Record<string, SlovaSprievodcu> = {
   ECAV: SP("cirkevný zbor", "Váš cirkevný zbor", "bohoslužba", "bohoslužby", "kostol"), RKCr: SP("cirkevný zbor", "Váš cirkevný zbor", "bohoslužba", "bohoslužby", "kostol"),
   ECM: ZBOR, BJB: ZBOR, CB: ZBOR, ACS: ZBOR, KZ: ZBOR, CASD: ZBOR,
   ÚZŽNO: SP("náboženská obec", "Vaša náboženská obec", "bohoslužba", "bohoslužby", "synagóga", "synagógu"),
-  SKC: SP("spoločenstvo", "Vaše spoločenstvo", "svätá omša", "sväté omše", "kostol"),
+  SKC: SP("spoločenstvo", "Vaše spoločenstvo", "svätá omša", "sväté omše", "miesto stretnutí"), // 0166
   CČSH: SP("náboženská obec", "Vaša náboženská obec", "bohoslužba", "bohoslužby", "kostol"),
 };
 const SPRIEVODCA_INE = SP("spoločenstvo", "Vaše spoločenstvo", "bohoslužba", "bohoslužby", "miesto stretnutí");
 let sprievodcaDb: Record<string, SlovaSprievodcu> | null = null;
 export const slovaSprievodcu = (kod: string): SlovaSprievodcu => sprievodcaDb?.[kod] ?? SPRIEVODCA_ZALOHA[kod] ?? SPRIEVODCA_INE;
-type RiadokCirkvi = { kod: string; titul: string; titul_2p: string; jednotka_2p: string; oslovenie: string | null; dozorca: boolean; podakovanie?: string | null };
+type RiadokCirkvi = { kod: string; titul: string; titul_2p: string; jednotka_2p: string; oslovenie: string | null; oslovenie_zena?: string | null; dozorca: boolean; podakovanie?: string | null };
 /** OPRAVY 289: zbory a obce „Ďakujeme“, ostatné „Pán Boh zaplať“ (záloha ako 0091) */
 const podakovanieJednotky = (jednotka2p: string) => (/(zboru|obce)$/.test(jednotka2p) ? "Ďakujeme" : "Pán Boh zaplať");
-const S = (titul: string, titul2p: string, jednotka2p: string, oslovenie: string | null, dozorca = false, podakovanie?: string | null): SlovaCirkvi => ({ titul, titul2p, jednotka2p, oslovenie, dozorca, podakovanie: podakovanie?.trim() || podakovanieJednotky(jednotka2p) });
+const S = (titul: string, titul2p: string, jednotka2p: string, oslovenie: string | null, dozorca = false, podakovanie?: string | null, oslovenieZena: string | null = null): SlovaCirkvi => ({ titul, titul2p, jednotka2p, oslovenie, oslovenieZena, dozorca, podakovanie: podakovanie?.trim() || podakovanieJednotky(jednotka2p) });
 /** záloha, kým nepríde číselník z DB (rovnaké hodnoty ako 0078) */
 const SLOVA_ZALOHA: Record<string, SlovaCirkvi> = {
   RKC: S("Farár", "farára", "farnosti", "pán farár"), GKC: S("Farár", "farára", "farnosti", "otec"), PC: S("Otec duchovný", "otca duchovného", "cirkevnej obce", "otec"),
-  ECAV: S("Farár", "farára", "cirkevného zboru", "brat farár", true), RKCr: S("Farár", "farára", "cirkevného zboru", "brat farár", true),
-  ECM: S("Kazateľ", "kazateľa", "zboru", "brat kazateľ", true), BJB: S("Kazateľ", "kazateľa", "zboru", "brat kazateľ", true), CB: S("Kazateľ", "kazateľa", "zboru", "brat kazateľ", true),
-  ACS: S("Kazateľ", "kazateľa", "zboru", "brat kazateľ", true), KZ: S("Kazateľ", "kazateľa", "zboru", "brat", true), CASD: S("Kazateľ", "kazateľa", "zboru", "brat kazateľ"),
+  ECAV: S("Farár", "farára", "cirkevného zboru", "brat farár", true, null, "sestra farárka"), RKCr: S("Farár", "farára", "cirkevného zboru", "brat farár", true, null, "sestra farárka"),
+  ECM: S("Kazateľ", "kazateľa", "zboru", "brat kazateľ", true, null, "sestra kazateľka"), BJB: S("Kazateľ", "kazateľa", "zboru", "brat kazateľ", true), CB: S("Kazateľ", "kazateľa", "zboru", "brat kazateľ", true),
+  ACS: S("Pastor", "pastora", "zboru", "brat pastor", true), KZ: S("Starší zboru", "staršieho zboru", "zboru", "brat", true), // 0166 CASD: S("Kazateľ", "kazateľa", "zboru", "brat kazateľ"),
   ÚZŽNO: S("Rabín", "rabína", "náboženskej obce", "pán rabín"),
-  CČSH: S("Farár", "farára", "náboženskej obce", "pán farár", false, "Pán Boh zaplať"),
+  CČSH: S("Farár", "farára", "náboženskej obce", "pán farár", false, "Pán Boh zaplať", "pani farárka"),
 };
 const SLOVA_INE = S("Duchovný správca", "duchovného správcu", "spoločenstva", null);
 let ciselnik: Record<string, SlovaCirkvi> | null = null;
 let ciselnikNacitany = false;
 async function nacitajCiselnik() {
   if (!supabase) return;
-  let { data, error } = await supabase.from("cirkev").select("kod, titul, titul_2p, jednotka_2p, oslovenie, dozorca, podakovanie");
+  let { data, error } = await supabase.from("cirkev").select("kod, titul, titul_2p, jednotka_2p, oslovenie, oslovenie_zena, dozorca, podakovanie");
+  if (error) ({ data, error } = await supabase.from("cirkev").select("kod, titul, titul_2p, jednotka_2p, oslovenie, dozorca, podakovanie")); // DB ešte bez 0164
   if (error) ({ data, error } = await supabase.from("cirkev").select("kod, titul, titul_2p, jednotka_2p, oslovenie, dozorca")); // DB ešte bez 0091
   if (error || !data) return;
-  ciselnik = Object.fromEntries((data as RiadokCirkvi[]).map((r) => [r.kod, S(r.titul, r.titul_2p, r.jednotka_2p, r.oslovenie, r.dozorca, r.podakovanie)]));
+  ciselnik = Object.fromEntries((data as RiadokCirkvi[]).map((r) => [r.kod, S(r.titul, r.titul_2p, r.jednotka_2p, r.oslovenie, r.dozorca, r.podakovanie, r.oslovenie_zena ?? null)]));
   // balík 47: výrazy sprievodcu (0163); bez nich ostáva záloha
   const sp = await supabase.from("cirkev").select("kod, jednotka, vasa, bohosluzba, bohosluzby, miesto, miesto_a").then((x) => x, () => ({ data: null, error: { message: "" } }));
   if (!sp.error && sp.data) sprievodcaDb = Object.fromEntries((sp.data as { kod: string; jednotka: string | null; vasa: string | null; bohosluzba: string | null; bohosluzby: string | null; miesto: string | null; miesto_a: string | null }[])

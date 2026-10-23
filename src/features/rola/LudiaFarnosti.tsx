@@ -186,7 +186,13 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children, 
         </div>
         <label style={lab}>Kde pôsobí<input value={D.kde} onChange={(e) => setD({ kde: e.target.value.slice(0, 90) })} style={pole} /></label>
         <label style={lab}><span>Ako vás oslovujú <span style={{ fontWeight: 600, color: "var(--ink3)" }}>· nepovinné</span></span>
-          <input value={D.osl} onChange={(e) => setD({ osl: e.target.value.slice(0, 40) })} placeholder={`napr. ${SL.oslovenie ?? `pán ${tl}`}`} style={pole} /></label>
+          <input value={D.osl} onChange={(e) => setD({ osl: e.target.value.slice(0, 40) })} placeholder={SL.oslovenie ? `napr. ${SL.oslovenie}` : ""} style={pole} /></label>
+        {/* OPRAVY 525: návrhy z číselníka (aj ženský tvar, kde ho cirkev má); prázdne pole = bez oslovenia */}
+        {[SL.oslovenie, SL.oslovenieZena].some(Boolean) && <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: -4 }}>
+          {[SL.oslovenie, SL.oslovenieZena].filter((x): x is string => !!x).map((t) => (
+            <button key={t} type="button" aria-pressed={D.osl === t} onClick={() => setD({ osl: D.osl === t ? "" : t })} style={{ minHeight: 40, padding: "0 14px", borderRadius: 20, border: D.osl === t ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: D.osl === t ? "var(--gSoft)" : "var(--field)", color: "var(--ink)", fontFamily: "inherit", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>{t}</button>))}
+          <span style={{ alignSelf: "center", fontSize: 13, color: "var(--ink3)" }}>{SL.oslovenie ? `Prázdne pole = „${SL.oslovenie}“.` : "Prázdne pole = texty bez oslovenia."}</span>
+        </div>}
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink2)" }}>Spravuje aj filiálky</span>
           {D.fil.length > 0 && <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{D.fil.map((t, i) => (
