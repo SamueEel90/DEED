@@ -63,7 +63,7 @@
 | Čo | Stav | Vážnosť |
 |---|---|---|
 | **Sekcie v registrácii: v kóde natvrdo 4** („Sociálne, Deti, Zdravie, Seniori" — CharitaB) vs. číselník zo 14. 9. | zabudnuté | **vysoká — číselník sekcií ako config (ako cirkvi)** |
-| Beneficient „súhlasí" checkbox + ručenie | nikde | vysoká |
+| Beneficient „súhlasí" checkbox + ručenie | Martin 23. 10.: existuje LEN pri dorovnávaní od firmy; pri tvorbe bežnej zbierky chýba | vysoká |
 | Dokladovací engine (lehoty podľa účelu, pásma, 3 000 € trigger, 3 strikes, správa darcom) | len texty, logika nie | vysoká — jadro odlíšenia |
 | Dobrovoľnícke hodnotenie 6★ + prepínač záujmu | nie je | stredná |
 | Badge dôvery embed | položka „embed od P1" existuje — overiť obsah | stredná |
