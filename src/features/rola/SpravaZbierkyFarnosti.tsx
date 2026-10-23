@@ -8,7 +8,8 @@
 // ============================================================
 import { QrZalozka } from "./QrNastroje";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { SADY, SADY_EURC, upravZbierku, ukonciZbierku, cielCislo, type SpustenaZbierka } from "@/lib/novaZbierka";
+import { SADY, SADY_EURC, upravZbierku, ukonciZbierku, cielCislo, autoUzavrietZbierky, nastavAutoUzavriet, type SpustenaZbierka } from "@/lib/novaZbierka";
+import { KartaAutoUzavriet } from "./AutoUzavriet";
 import { darcoviaPre, identitaDarcu, relCas, useZmenyDarov } from "@/lib/darcovia";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { kartaK, nadpisK, textK, useZmenaSum, useUkladanie, UlozenePri, PasUlozene } from "./spravaCasti";
@@ -197,6 +198,9 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat, menoSt
         {zm.karta}
         <UlozenePri u={u} pole="sumy" />
       </section>
+      {/* OPRAVY 526: zbierka s cieľom — po naplnení automaticky uzavrieť (server 0168) */}
+      {aktivna && ciel > 0 && <KartaAutoUzavriet key={`auto-${z.id}`} zapnute={autoUzavrietZbierky(z)} styl={kartaK}
+        uloz={async (v) => { const r = await nastavAutoUzavriet(stranka, z.id, v); return "chyba" in r ? r.chyba : null; }} />}
       <PasUlozene u={u} onSpat={onSpat} mobil={mobil} />
     </>}
 

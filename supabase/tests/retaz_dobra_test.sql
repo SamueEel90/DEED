@@ -20,6 +20,8 @@ insert into public.zbierka (id, nazov, modul, typ, stav, stranka, ucet_id, zapec
  ('t93-z3','Lieky','charity','zbierka','aktivna','t93-a','7e57c100-0000-0000-0000-0000000093a1', now(), 500),
  ('t93-z2','Zima','charity','zbierka','aktivna','t93-b','7e57c100-0000-0000-0000-0000000093b1', now(), 1000),
  ('t93-zt','Vlastná','help','zbierka','aktivna',null,'7e57c100-0000-0000-0000-0000000093c1', now(), 100);
+-- 0168: tento test overuje mechaniku reťaze; automatické uzavretie po naplnení cieľa tu vypnuté (testuje ho zbierka_auto_uzavriet_test)
+update public.zbierka set auto_uzavriet = false where id like 't93-%';
 \pset tuples_only on
 create temp table t(c text, ok boolean);
 grant all on t to public;
