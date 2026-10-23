@@ -329,8 +329,8 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     { k: "omse", t: SLs.bohosluzby.charAt(0).toUpperCase() + SLs.bohosluzby.slice(1), hot: maOmse, tap: () => go("omse") },
     ...(SLs.dozorca ? [{ k: "dozorca", t: "Pozvať dozorcu", hot: ludiaF.some((x) => x.r === "Dozorca"), tap: () => go("ludia") }] : []),
   ];
-  // OPRAVY 525: vlastné oslovenie z profilu duchovného (Ľudia farnosti) má prednosť, potom číselník, inak bez oslovenia
-  const oslovenieDuch = String(((maNastavenie("duch") ? citajNastavenie("duch") : null) as { osl?: string } | null)?.osl ?? "").trim() || SLs.oslovenie;
+  // OPRAVY 525 (balík 49): oslovenie z profilu duchovného (Ľudia farnosti) má prednosť; kým profil nie je uložený, predvoľba z číselníka; prázdne = bez oslovenia
+  const oslovenieDuch = maNastavenie("duch") ? String((citajNastavenie("duch") as { osl?: string } | null)?.osl ?? "").trim() || null : SLs.oslovenie;
   const prveKrokySv = <PrveKrokySvetlusik oslovenie={oslovenieDuch} vasa={SLs.vasa} kroky={krokySp} mobil={mobil}
     hotovo={{ oznam: () => go("oznamy"), qr: () => go("hlavna"), vzhlad: () => go("nast") }} />;
   // KARTA 56D §3: Treba vybaviť — len to, čo naozaj čaká (profil a hlavná zbierka; počas Prvých krokov sú v krokoch)

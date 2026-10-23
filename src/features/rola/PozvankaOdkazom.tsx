@@ -4,8 +4,10 @@
 // (nová pozvánka s tou istou rolou a právami, starý odkaz prestane platiť — mení sa id).
 // Pozvánka e-mailom nevyprší (server ju drží, kým ju človek neprijme alebo neodmietne), preto pri nej čas nie je.
 // ============================================================
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { QrNaUkazanie } from "@/components/qrNaUkazanie";
+import { citajNastavenie, maNastavenie, zapisNastavenie, obnovKluc, useZmenyNastaveni } from "@/lib/nastaveniaStranky";
+import { odkazNaMieste, oknoNaMieste, tokenNaMieste, noveTajne } from "@/lib/pozvankaSpravy";
 import { zdielaj, kopiruj } from "@/lib/zdielanie";
 
 export const POZVANKA_MS = 48 * 3600e3;
@@ -27,6 +29,7 @@ export function stavPozvanky(caka: unknown, dos?: number, teraz = Date.now()): {
     return { t: h >= 1 ? `čaká · platí ešte ${h} h` : "čaká · platí ešte necelú hodinu", zly: false, vyprsala: false };
   }
   if (caka === true) return { t: "Pozvaný · čaká", zly: false, vyprsala: false };
+  if (caka === "miesto") return { t: "QR na mieste · neprijal", zly: true, vyprsala: false }; // OPRAVY 524: správca odišiel skôr, než prijal
   return null;
 }
 
@@ -72,4 +75,72 @@ export function AkoPrebieha({ nadpis, kroky }: { nadpis: string; kroky: [string,
       </div>)}
     </div>
   </>);
+}
+
+// ============================================================
+// OPRAVY 524 (balík 49) · „Je pri vás“ — QR na mieste, mení sa každých 15 s (server 0167).
+// Pracovník ho naskenuje v DEED+, uvidí „{organizácia} vás pridáva do Správy“ a podrží Prijať. Tu sa hneď ukáže „{meno} je v Správe ✓“.
+// Na e-mail nechodí nič. QR relácia platí 10 minút, potom „Ukázať nový QR“. Kým neprijme, nemá žiadne práva.
+// Riadok v „ludia“ vzniká pri otvorení a zmizne, keď správca odíde a pracovník neprijal.
+// ============================================================
+export type ZakladNaMieste = { r: string; p?: string; prava?: string[] };
+type RiadokNaMieste = { id: number; k?: string; m?: string; caka?: unknown };
+const NA_MIESTE_MS = 10 * 60e3;
+
+export function NaMiesteQr({ strankaId, zaklad, od, uspechPod, mobil, onId }: { strankaId: string; zaklad: ZakladNaMieste; od: { meno: string; f: string };
+  /** druhý riadok pri „{meno} je v Správe ✓“ */ uspechPod: string; mobil: boolean; onId?: (id: number) => void }) {
+  useZmenyNastaveni();
+  const [id] = useState(() => Date.now());
+  const [tajne, setTajne] = useState(noveTajne);
+  const [dos, setDos] = useState(() => Date.now() + NA_MIESTE_MS);
+  const [tik, setTik] = useState(() => Date.now());
+  const [tok, setTok] = useState<{ okno: number; t: string } | null>(null);
+  const ludia = () => (maNastavenie("ludia") ? citajNastavenie("ludia") : []) as RiadokNaMieste[];
+  const zakladRef = useRef(zaklad); zakladRef.current = zaklad;
+  const odRef = useRef(od); odRef.current = od;
+  // riadok pozvánky: pri otvorení a pri novom QR (nové tajomstvo zruší aj viazanie na skôr naskenovaný účet)
+  useEffect(() => {
+    const z = zakladRef.current, l = ludia();
+    const zaz = { id, n: "", k: "", r: z.r, ...(z.p ? { p: z.p } : {}), ...(z.prava ? { prava: z.prava } : {}), caka: "miesto", tajne, dos, od: odRef.current };
+    zapisNastavenie("ludia", l.some((x) => x.id === id) ? l.map((x) => (x.id === id ? zaz : x)) : [...l, zaz]);
+  }, [tajne, dos]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { onId?.(id); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // odchod bez prijatia → riadok preč
+  useEffect(() => () => { const l = ludia(), e = l.find((x) => x.id === id); if (e && e.caka !== false) zapisNastavenie("ludia", l.filter((x) => x.id !== id)); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const e = ludia().find((x) => x.id === id);
+  const prijal = !!e && e.caka === false, odmietol = e?.caka === "odmietol", naskenoval = e?.caka === "miesto" && (e.k ?? "").includes("@");
+  const vyprsal = !prijal && !odmietol && tik > dos;
+  // hodiny (odpočet 15 s) a token aktuálneho okna
+  useEffect(() => { if (prijal || odmietol) return; const i = window.setInterval(() => setTik(Date.now()), 1000); return () => window.clearInterval(i); }, [prijal, odmietol]);
+  const okno = oknoNaMieste(tik);
+  useEffect(() => { let ziva = true; if (prijal || odmietol || vyprsal) return; void tokenNaMieste(tajne, okno).then((t) => { if (ziva) setTok({ okno, t }); }).catch(() => undefined); return () => { ziva = false; }; }, [tajne, okno, prijal, odmietol, vyprsal]);
+  // pracovník mohol medzitým naskenovať alebo prijať — zoznam znova zo servera
+  useEffect(() => { if (prijal || odmietol || vyprsal) return; const i = window.setInterval(() => { void obnovKluc("ludia"); }, 2500); return () => window.clearInterval(i); }, [prijal, odmietol, vyprsal]);
+  const zost = 15 - Math.floor((tik / 1000) % 15);
+  const novy = () => { setTajne(noveTajne()); setDos(Date.now() + NA_MIESTE_MS); setTok(null); };
+  if (prijal) return (
+    <div role="status" style={{ display: "flex", flexDirection: "column", gap: 4, padding: 16, borderRadius: 14, background: "var(--gSoft)", border: `2px solid ${ZELENA}` }}>
+      <b style={{ fontSize: 17, color: "var(--gInk)" }}>{e?.m || "Pracovník"} je v Správe ✓</b>
+      <span style={{ fontSize: 14.5, lineHeight: 1.45, color: "var(--ink2)" }}>{uspechPod}</span>
+    </div>);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", gap: 18, alignItems: "center", flexWrap: mobil ? "wrap" : "nowrap", padding: 16, borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)" }}>
+        <span style={{ width: 180, height: 180, flex: "none", borderRadius: 14, background: "#fff", padding: 6, boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center", opacity: vyprsal || odmietol ? .25 : 1 }}>
+          {tok && tok.okno === okno && !vyprsal && !odmietol ? <QrNaUkazanie qr={{ data: odkazNaMieste(strankaId, id, tok.t) }} size={168} popis="QR na pridanie do Správy · mení sa každých 15 s" rotacia={{ sek: zost, perioda: 15 }} />
+            : <span style={{ fontSize: 13, color: "#6B655A" }}>{vyprsal || odmietol ? "" : "Pripravujem QR…"}</span>}
+        </span>
+        <span style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+          {odmietol ? <><b style={{ fontSize: 17 }}>{e?.m || "Pracovník"} pozvánku odmietol</b>
+            <button type="button" onClick={novy} style={{ ...plne, alignSelf: "flex-start" }}>Ukázať nový QR</button></>
+          : vyprsal ? <><b style={{ fontSize: 17 }}>QR vypršal</b><span style={{ fontSize: 15, lineHeight: 1.5, color: "var(--ink2)" }}>Platil 10 minút. Ukážte nový.</span>
+            <button type="button" onClick={novy} style={{ ...plne, alignSelf: "flex-start" }}>Ukázať nový QR</button></>
+          : naskenoval ? <><b style={{ fontSize: 17 }}>{e?.m || "Pracovník"} naskenoval QR</b><span style={{ fontSize: 15, lineHeight: 1.5, color: "var(--ink2)" }}>Čaká sa, kým na mobile podrží Prijať.</span></>
+          : <><b style={{ fontSize: 17 }}>Nech naskenuje tento QR</b>
+            <span style={{ fontSize: 15, lineHeight: 1.5, color: "var(--ink2)" }}>Mobilom, v ktorom je prihlásený v DEED+. Potvrdí podržaním a hneď je v Správe.</span>
+            <span aria-live="off" style={{ fontSize: 14, fontWeight: 800, color: "var(--gold, #8A6A1C)", fontVariantNumeric: "tabular-nums" }}>Platí ešte 0:{String(zost).padStart(2, "0")} · obnoví sa sám</span></>}
+        </span>
+      </div>
+      <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink3)" }}>QR sa mení každých 15 s, aby ho nikto neodfotil a nepoužil neskôr. Na e-mail nechodí nič.</span>
+    </div>);
 }

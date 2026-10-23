@@ -15,10 +15,11 @@ import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
 import { KartaNastavenia, IK_PRIDAT_CLOVEKA } from "@/features/rola/KartaNastavenia";
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { odkazPozvanky } from "@/lib/pozvankaSpravy";
-import { novaPozvanka, stavPozvanky, useMinuta, KartaPozvanky, AkoPrebieha } from "./PozvankaOdkazom";
+import { novaPozvanka, stavPozvanky, useMinuta, KartaPozvanky, AkoPrebieha, NaMiesteQr } from "./PozvankaOdkazom";
+import { usePouzivatel } from "@/lib/pouzivatel";
 
-type Caka = boolean | "odkaz" | "odmietol";
-type Clovek = { id: number; n?: string; k: string; r: string; caka?: Caka; p?: string; prava?: Pravo[]; /** pozvánka cez odkaz: platí do (ms) a text · kedy prijal (ms) */ dos?: number; do?: string; prijal?: number };
+type Caka = boolean | "odkaz" | "odmietol" | "miesto";
+type Clovek = { id: number; n?: string; /** OPRAVY 524: meno z profilu, keď prijal cez QR na mieste */ m?: string; k: string; r: string; caka?: Caka; p?: string; prava?: Pravo[]; /** pozvánka cez odkaz: platí do (ms) a text · kedy prijal (ms) */ dos?: number; do?: string; prijal?: number };
 
 const ZELENA = "#4B7A35", CERV = "#A34A2A";
 const karta: CSSProperties = { borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)" };
@@ -94,18 +95,22 @@ export function LudiaCharity({ mobil, strankaId, meno: menoCharity }: { mobil: b
   const [cesta, setCesta] = useState(0);
   const [poz, setPoz] = useState<{ id: number; do: string } | null>(null);
   const [znova, setZnova] = useState<number | null>(null);
+  // OPRAVY 524: „Áno, má účet“ → Je pri vás (QR na mieste, predvolené) · Nie je pri vás (e-mail)
+  const [kde, setKde] = useState(0);
+  const [miestoId, setMiestoId] = useState<number | null>(null);
+  const ja = usePouzivatel();
   const tm = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(tm.current), []);
   const hlas = (id: string, t: string) => { window.clearTimeout(tm.current); setHl({ id, t }); tm.current = window.setTimeout(() => setHl(null), 3500); };
 
   const jeVy = (x: Clovek) => !!mojMail && (x.k ?? "").trim().toLowerCase() === mojMail;
-  const otvorNovy = () => { setForm("nove"); setMail(""); setPopis(""); setPred(null); setPrava([]); setHl(null); setCesta(0); setPoz(null); };
+  const otvorNovy = () => { setForm("nove"); setMail(""); setPopis(""); setPred(null); setPrava([]); setHl(null); setCesta(0); setPoz(null); setKde(0); setMiestoId(null); };
   const otvorUpr = (x: Clovek) => { const p = x.prava ?? []; setForm(x.id); setPopis(x.p ?? ""); setPred(predvolbaZ(p)); setPrava([...p]); setHl(null); };
   const upr = typeof form === "number" ? prac.find((y) => y.id === form) : undefined;
   const jeNovy = form === "nove";
 
   // pozvánka cez odkaz: práva a popis idú s ňou; keď ich štatutár ešte zmení, zmenia sa aj v pozvánke
-  const nastavPrava = (p: Pravo[]) => { setPrava(p); if (poz) ulozL(L.map((y) => (y.id === poz.id ? { ...y, prava: p } : y))); };
+  const nastavPrava = (p: Pravo[]) => { setPrava(p); const ids = [poz?.id, miestoId].filter((x): x is number => x != null); if (ids.length) ulozL(L.map((y) => (ids.includes(y.id) ? { ...y, prava: p } : y))); };
   const vytvor = () => { if (!pred) return; const { id, dos, doT } = novaPozvanka();
     ulozL([...L, { id, n: "", k: `pozvánka cez odkaz · platí do ${doT}`, r: PRACOVNIK, caka: "odkaz", do: doT, dos, p: popis.trim() || undefined, prava }]); setPoz({ id, do: doT }); };
   const spravaZ = (id: number, doT: string) => `${menoCharity || "Charita"} vás pozýva do správy stránky ako pracovníka. Ťuknite na odkaz, prihláste sa a ťuknite Prijať: ${odkazPozvanky(strankaId, id).replace("https://", "")} · platí do ${doT}.`;
@@ -158,20 +163,28 @@ export function LudiaCharity({ mobil, strankaId, meno: menoCharity }: { mobil: b
           {pred && <NahladPrav prava={prava} />}
           {jeNovy && pred && <>
             <label style={lab}><span>Ako ho voláte <span style={{ fontWeight: 600, color: "var(--ink3)" }}>· nepovinné, len popis</span></span>
-              <input value={popis} onChange={(e) => { const v = e.target.value.slice(0, 40); setPopis(v); if (poz) ulozL(L.map((y) => (y.id === poz.id ? { ...y, p: v.trim() || undefined } : y))); }} placeholder="napr. referentka, účtovníčka" style={pole} /></label>
+              <input value={popis} onChange={(e) => { const v = e.target.value.slice(0, 40); setPopis(v); const ids = [poz?.id, miestoId].filter((x): x is number => x != null); if (ids.length) ulozL(L.map((y) => (ids.includes(y.id) ? { ...y, p: v.trim() || undefined } : y))); }} placeholder="napr. referentka, účtovníčka" style={pole} /></label>
             <span style={{ fontSize: 16, fontWeight: 800, paddingTop: 4 }}>2. Má účet v <DeedZnacka />?</span>
             <div role="radiogroup" aria-label="Má účet v DEED+" style={{ display: "flex", gap: 4, padding: 4, borderRadius: 12, background: "var(--btn)" }}>
               {["Áno, má účet", "Nemá účet"].map((t, i) => <button key={t} type="button" role="radio" aria-checked={cesta === i} onClick={() => setCesta(i)} style={seg(cesta === i)}>{t}</button>)}
             </div>
             {cesta === 0 ? <>
-              <label style={lab}>E-mail, s ktorým sa prihlasuje do DEED+<input value={mail} onChange={(e) => setMail(e.target.value.slice(0, 80))} type="email" placeholder="meno@priklad.sk" style={pole} /></label>
+              <div role="radiogroup" aria-label="Kde je" style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>
+                {([["Je pri vás", "naskenuje QR mobilom"], ["Nie je pri vás", "pošlete cez jeho e-mail v DEED+"]] as const).map(([t, s], i) => { const on = kde === i; return (
+                  <button key={t} type="button" role="radio" aria-checked={on} onClick={() => setKde(i)} style={{ minHeight: 64, padding: "10px 14px", borderRadius: 14, border: on ? `2px solid ${ZELENA}` : "1.5px solid var(--cardBd)", background: on ? "var(--gSoft)" : "var(--field)", display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "center", gap: 3, textAlign: "left", cursor: "pointer", fontFamily: "inherit", color: "var(--ink)" }}>
+                    <b style={{ fontSize: 15.5, color: on ? "var(--gInk)" : "var(--ink)" }}>{t}</b><span style={{ fontSize: 13, color: "var(--ink2)" }}>{s}</span></button>); })}
+              </div>
+              {kde === 0 ? <NaMiesteQr strankaId={strankaId} zaklad={{ r: PRACOVNIK, p: popis.trim() || undefined, prava }} mobil={mobil} onId={setMiestoId}
+                od={{ meno: ja.celeMeno?.trim() || "Správca stránky", f: jaStatutar ? "štatutár" : "pracovník" }}
+                uspechPod={`Pracovník · ${smieText(prava)}. Nájdete ho v zozname Štatutár a pracovníci.`} />
+              : <label style={lab}>E-mail, s ktorým sa prihlasuje do DEED+<input value={mail} onChange={(e) => setMail(e.target.value.slice(0, 80))} type="email" placeholder="meno@priklad.sk" style={pole} /></label>}
             </> : !poz ? <>
               <button type="button" onClick={vytvor} style={{ minHeight: 56, borderRadius: 14, border: "none", background: ZELENA, color: "#fff", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer", boxShadow: "none" }}>Vytvoriť pozvánku</button>
               <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>Appka vytvorí QR a odkaz pre jedného človeka s tým, čo ste mu zapli. Platí 48 hodín.</span>
             </> : <KartaPozvanky odkaz={odkazPozvanky(strankaId, poz.id)} rola="Pracovník" doT={poz.do} sprava={spravaZ(poz.id, poz.do)}
               onZrus={() => { ulozL(L.filter((y) => y.id !== poz.id)); setPoz(null); hlas("form", "Pozvánka zrušená ✓"); }} />}
           </>}
-          {(!jeNovy || cesta === 0) && <button type="button" onClick={potvrd} aria-disabled={!ok}
+          {(!jeNovy || (cesta === 0 && kde === 1)) && <button type="button" onClick={potvrd} aria-disabled={!ok}
             style={{ minHeight: 56, borderRadius: 14, border: "none", background: ok ? ZELENA : "var(--btn)", color: ok ? "#fff" : "var(--ink2)", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: ok ? "pointer" : "default", boxShadow: "none" }}>{potvrdT}</button>}
           {hl?.id === "form" && <span role={hl.t.includes("✓") ? "status" : "alert"} style={hl.t.includes("✓") ? hlaskaSt : { fontSize: 14, fontWeight: 700, color: CERV }}>{hl.t}</span>}
           {upr && stavPozvanky(upr.caka, upr.dos, teraz0)?.vyprsala && <button type="button" onClick={() => poslatZnova(upr)} style={{ minHeight: 48, borderRadius: 12, border: "none", background: ZELENA, color: "#fff", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer", boxShadow: "none" }}>Poslať znova</button>}
@@ -179,7 +192,10 @@ export function LudiaCharity({ mobil, strankaId, meno: menoCharity }: { mobil: b
           {upr && <DrzTlacidlo ms={1200} onHotovo={odober} styl={{ minHeight: 48, borderRadius: 12, border: `1.5px solid ${CERV}`, background: "transparent", color: CERV, fontSize: 15, fontWeight: 800 }}>
             {upr.caka && upr.caka !== "odmietol" ? "Podržte · zrušiť pozvánku" : "Podržte · odobrať"}</DrzTlacidlo>}
         </div>
-        {jeNovy && pred && <AkoPrebieha nadpis={cesta === 0 ? "AKO TO PREBIEHA · MÁ ÚČET" : "AKO TO PREBIEHA · NEMÁ ÚČET"} kroky={cesta === 0 ? [
+        {jeNovy && pred && <AkoPrebieha nadpis={cesta === 0 ? "AKO TO PREBIEHA · MÁ ÚČET" : "AKO TO PREBIEHA · NEMÁ ÚČET"} kroky={cesta === 0 && kde === 0 ? [
+          ["Ukážete mu QR", "Je pri vás. QR na obrazovke sa mení každých 15 s."],
+          ["Naskenuje ho v DEED+", `Na mobile uvidí: „${menoCharity || "Charita"} vás pridáva do Správy“, kto ho pridáva a čo bude smieť. Podrží Prijať.`],
+          ["Hotovo", "Hneď tu uvidíte, že je v Správe. Vidí len to, čo ste mu zapli."]] : cesta === 0 ? [
           ["Napíšete jeho e-mail", "Ten, s ktorým sa prihlasuje do DEED+. Ťuknete Pozvať."],
           ["Príde mu oznámenie", `V appke uvidí: „${menoCharity || "Charita"} vás pozýva do Správy · Pracovník“ a ťukne Prijať.`],
           ["Hotovo", "Pri ňom uvidíte Prijal ✓. Správu nájde v Profil → Moje stránky, ale len to, čo ste mu zapli. Kým neprijme, nevidí nič."]]
@@ -194,7 +210,7 @@ export function LudiaCharity({ mobil, strankaId, meno: menoCharity }: { mobil: b
   type Riadok = { id: string; n: string; ini: string; sub: string; stitok?: string; zly?: boolean; ty?: boolean; x?: Clovek; vyprsala?: boolean; prijal?: boolean };
   const riadky: Riadok[] = [
     ...(jaStatutar ? [{ id: "ja", n: "Vy", ini: "V", sub: "Štatutár · smie všetko", ty: true }] : []),
-    ...prac.map((x): Riadok => { const st = x.caka ? stavPozvanky(x.caka, x.dos, teraz0) : null, menoX = x.caka === "odkaz" ? "Pozvaný cez odkaz" : x.n || x.k;
+    ...prac.map((x): Riadok => { const st = x.caka ? stavPozvanky(x.caka, x.dos, teraz0) : null, menoX = x.caka === "odkaz" ? "Pozvaný cez odkaz" : x.caka === "miesto" && !x.m ? "Pridávaný cez QR na mieste" : x.m || x.n || x.k;
       return { id: String(x.id), n: menoX + (jeVy(x) ? " · vy" : ""), ini: x.caka === "odkaz" ? "?" : (x.n || x.k || "?").trim().charAt(0).toUpperCase() || "?",
         sub: (x.p ? `${x.p} · ` : "") + smieText(x.prava ?? []), x, stitok: st?.t, zly: st?.zly, vyprsala: st?.vyprsala, prijal: !x.caka && !!x.prijal }; }),
   ];

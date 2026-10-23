@@ -18,15 +18,15 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import { citajNastavenie, maNastavenie, zapisNastavenie, useZmenyNastaveni } from "@/lib/nastaveniaStranky";
 import { useSlovaFarnosti } from "@/lib/mojeFarnosti";
 import { usePouzivatel } from "@/lib/pouzivatel";
-import { novaPozvanka, stavPozvanky, useMinuta, KartaPozvanky, AkoPrebieha } from "./PozvankaOdkazom";
+import { novaPozvanka, stavPozvanky, useMinuta, KartaPozvanky, AkoPrebieha, NaMiesteQr } from "./PozvankaOdkazom";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
 import { nacitajProfil, zapisDuchovneho } from "@/lib/profilStranky";
 import { obnovFarara } from "@/lib/farnostPrispela";
 import { useHromadnyVyber, TlacidloVyberu, ListaVyberu, PolickoVyberu, PasVyberu } from "@/components/HromadnyVyber";
 
 type Duch = { tp: string; meno: string; tz: string; kde: string; osl: string; fil: string[]; foto: string; som: 0 | 1; /** 0082: účet farára (server podľa neho zapíše farára) */ ucet?: string };
-type Caka = false | true | "odkaz" | "potvrdit" | "odmietol";
-type Clovek = { id: number; n: string; k: string; r: string; caka: Caka; do?: string; jaT?: string; vlastny?: boolean; foto?: string; /** OPRAVY 393: popis (kaplán, sestra Mária …) */ p?: string; /** OPRAVY 392: QR pozvánka platí do (ms) · kedy prijal (ms) */ dos?: number; prijal?: number };
+type Caka = false | true | "odkaz" | "potvrdit" | "odmietol" | "miesto";
+type Clovek = { id: number; n: string; /** OPRAVY 524: meno z profilu po prijatí cez QR na mieste */ m?: string; k: string; r: string; caka: Caka; do?: string; jaT?: string; vlastny?: boolean; foto?: string; /** OPRAVY 393: popis (kaplán, sestra Mária …) */ p?: string; /** OPRAVY 392: QR pozvánka platí do (ms) · kedy prijal (ms) */ dos?: number; prijal?: number };
 const D0: Duch = { tp: "", meno: "", tz: "", kde: "", osl: "", fil: [], foto: "", som: 0 };
 
 const ZELENA = "#4B7A35", CERV = "#A34A2A";
@@ -55,7 +55,8 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children, 
   const popisZ = (x: Clovek) => x.p || (urov(x.r) !== x.r ? x.r : "");
   const rI = (n: string) => Math.max(0, ROLY.findIndex((x) => x[0] === urov(n)));
 
-  const D0u = { ...D0, ...((maNastavenie("duch") ? citajNastavenie("duch") : {}) as Partial<Duch>) };
+  // OPRAVY 525 (balík 49): oslovenie z číselníka je predvoľba v poli; prázdne pole = veta bez oslovenia
+  const D0u = { ...D0, osl: maNastavenie("duch") ? "" : SL.oslovenie ?? "", ...((maNastavenie("duch") ? citajNastavenie("duch") : {}) as Partial<Duch>) };
   const L = (maNastavenie("ludia") ? citajNastavenie("ludia") : []) as Clovek[];
   const ulozL = (a: Clovek[]) => zapisNastavenie("ludia", a);
 
@@ -65,6 +66,9 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children, 
   const [prid, setPrid] = useState(false);
   const [nr, setNr] = useState<number | null>(null);
   const [cesta, setCesta] = useState(0);
+  // OPRAVY 524: „Áno, má účet“ → Je pri vás (QR na mieste, predvolené) · Nie je pri vás (e-mail)
+  const [kde, setKde] = useState(0);
+  const [miestoId, setMiestoId] = useState<number | null>(null);
   const [mail, setMail] = useState("");
   const [popis, setPopis] = useState("");
   const [poz, setPoz] = useState<{ id: number; r: string; do: string } | null>(null);
@@ -119,7 +123,10 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children, 
   // OPRAVY 502: vypršaná pozvánka → nová s tou istou rolou (nové id = starý odkaz už neplatí)
   const poslatZnova = (x: Clovek) => { const { id, dos, doT } = novaPozvanka();
     ulozL(L.map((y) => (y.id === x.id ? { ...y, id, k: `pozvánka cez odkaz · platí do ${doT}`, caka: "odkaz" as Caka, do: doT, dos } : y))); setZnova(id); hlas(String(id), "Nová pozvánka ✓ Platí 48 hodín. Pošlite mu ju."); };
-  const ako: [string, string][] = cesta === 0 ? [
+  const ako: [string, string][] = cesta === 0 && kde === 0 ? [
+    ["Ukážete mu QR", "Je pri vás. QR na obrazovke sa mení každých 15 s."],
+    ["Naskenuje ho v DEED+", `Na mobile uvidí: „${menoFarnosti || "Farnosť"} vás pridáva do Správy“, kto ho pridáva a čo bude smieť. Podrží Prijať.`],
+    ["Hotovo", `Hneď tu uvidíte, že je v Správe. Smie len to, čo ${rola.toLowerCase() || "jeho rola"}.`]] : cesta === 0 ? [
     ["Napíšete jeho e-mail", "Ten, s ktorým sa prihlasuje do DEED+. Ťuknete Pozvať."],
     ["Príde mu oznámenie", `V appke uvidí: „${menoFarnosti || "Farnosť"} vás pozýva ako ${rola}“ a ťukne Prijať.`],
     ["Hotovo", `Pri ňom uvidíte Prijal ✓. Správu nájde v Profil → Moje stránky, ale len to, čo smie ${rola.toLowerCase()}. Kým neprijme, nevidí nič.`]]
@@ -144,14 +151,24 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children, 
       </div>
       {rola && <>
         <label style={lab}><span>Ako ho voláte <span style={{ fontWeight: 600, color: "var(--ink3)" }}>· nepovinné, len popis</span></span>
-          <input value={popis} onChange={(e) => setPopis(e.target.value.slice(0, 40))} placeholder="napr. kaplán, sestra Mária, dobrovoľník" style={pole} /></label>
+          <input value={popis} onChange={(e) => { const v = e.target.value.slice(0, 40); setPopis(v); if (miestoId != null) ulozL(L.map((y) => (y.id === miestoId ? { ...y, p: v.trim() || undefined } : y))); }} placeholder="napr. kaplán, sestra Mária, dobrovoľník" style={pole} /></label>
         <b style={{ fontSize: 15.5 }}>2. Má účet v <DeedZnacka />?</b>
         <div role="radiogroup" aria-label="Má účet v DEED+" style={{ display: "flex", gap: 4, padding: 4, borderRadius: 12, background: "var(--btn)" }}>
           {["Áno, má účet", "Nemá účet"].map((t, i) => <button key={t} type="button" role="radio" aria-checked={cesta === i} onClick={() => setCesta(i)} style={seg(cesta === i)}>{t}</button>)}
         </div>
         {cesta === 0 ? <>
+          <div role="radiogroup" aria-label="Kde je" style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>
+            {([["Je pri vás", "naskenuje QR mobilom"], ["Nie je pri vás", "pošlete cez jeho e-mail v DEED+"]] as const).map(([t, s], i) => { const on = kde === i; return (
+              <button key={t} type="button" role="radio" aria-checked={on} onClick={() => setKde(i)} style={{ minHeight: 64, padding: "10px 14px", borderRadius: 14, border: on ? `2px solid ${ZELENA}` : "1.5px solid var(--cardBd)", background: on ? "var(--gSoft)" : "var(--field)", display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "center", gap: 3, textAlign: "left", cursor: "pointer", fontFamily: "inherit", color: "var(--ink)" }}>
+                <b style={{ fontSize: 15.5, color: on ? "var(--gInk)" : "var(--ink)" }}>{t}</b><span style={{ fontSize: 13, color: "var(--ink2)" }}>{s}</span></button>); })}
+          </div>
+          {kde === 0 ? <NaMiesteQr key={rola} strankaId={strankaId} zaklad={{ r: rola, p: popis.trim() || undefined }} mobil={mobil} onId={setMiestoId}
+            od={{ meno: jaMeno === "Vy" ? "Správca stránky" : jaMeno, f: somF ? T.toLowerCase() : "správca stránky" }}
+            uspechPod={`${rola}${popis.trim() ? ` · ${popis.trim()}` : ""}. Nájdete ho v zozname Ľudia farnosti.`} />
+          : <>
           <label style={lab}>E-mail, s ktorým sa prihlasuje do DEED+<input type="email" value={mail} onChange={(e) => setMail(e.target.value.slice(0, 80))} placeholder="meno@priklad.sk" style={pole} /></label>
           <button type="button" aria-disabled={!okMail} onClick={pozvat} style={plne(okMail)}>{okMail ? `Pozvať · ${rola}` : "Najprv napíšte jeho e-mail"}</button>
+          </>}
         </> : !poz ? <>
           <button type="button" onClick={vytvor} style={plne(true)}>Vytvoriť pozvánku</button>
           <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>Appka vytvorí QR a odkaz pre jedného človeka s rolou, ktorú ste vybrali. Platí 48 hodín.</span>
@@ -191,7 +208,7 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children, 
         {[SL.oslovenie, SL.oslovenieZena].some(Boolean) && <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: -4 }}>
           {[SL.oslovenie, SL.oslovenieZena].filter((x): x is string => !!x).map((t) => (
             <button key={t} type="button" aria-pressed={D.osl === t} onClick={() => setD({ osl: D.osl === t ? "" : t })} style={{ minHeight: 40, padding: "0 14px", borderRadius: 20, border: D.osl === t ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: D.osl === t ? "var(--gSoft)" : "var(--field)", color: "var(--ink)", fontFamily: "inherit", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>{t}</button>))}
-          <span style={{ alignSelf: "center", fontSize: 13, color: "var(--ink3)" }}>{SL.oslovenie ? `Prázdne pole = „${SL.oslovenie}“.` : "Prázdne pole = texty bez oslovenia."}</span>
+          <span style={{ alignSelf: "center", fontSize: 13, color: "var(--ink3)" }}>Prázdne pole = texty bez oslovenia.</span>
         </div>}
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink2)" }}>Spravuje aj filiálky</span>
@@ -230,7 +247,7 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children, 
               {/* OPRAVY 208: tá istá osoba = tá istá fotka z profilu */}
               <span aria-hidden="true" style={{ width: 42, height: 42, flex: "none", borderRadius: "50%", background: x.foto ? `url("${x.foto}") center/cover no-repeat` : x.caka ? "var(--btn)" : "var(--gSoft)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "var(--ink2)" }}>{x.foto ? "" : inic(x.n || "?")}</span>
               <span style={{ flex: 1, minWidth: 140, display: "flex", flexDirection: "column", gap: 2 }}>
-                <b style={{ fontSize: 15 }}>{x.n || x.k || "Pozvaný"}</b>
+                <b style={{ fontSize: 15 }}>{x.m || x.n || (x.caka === "miesto" ? "Pridávaný cez QR na mieste" : x.k) || "Pozvaný"}</b>
                 {stav ? <span style={{ alignSelf: "flex-start", padding: "2px 8px", borderRadius: 8, background: stav.zly ? "var(--rBg, #F6E3DC)" : "var(--goldBg)", color: stav.zly ? "#A34A2A" : undefined, fontSize: 12, fontWeight: 800 }}>{stav.t}</span>
                   : x.prijal ? <span style={{ alignSelf: "flex-start", padding: "2px 8px", borderRadius: 8, background: "var(--gSoft)", color: "var(--gInk)", fontSize: 12, fontWeight: 800 }}>Prijal ✓</span> : null}
                 <span style={{ fontSize: 13, color: "var(--ink3)" }}>{vlastny ? x.jaT : `${popisZ(x) ? `${popisZ(x)} · ` : ""}${rr[0]} · ${rr[1]}`}</span>
@@ -263,7 +280,7 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children, 
         return ost < 1 ? `Odobratí: ${z.length} ✓ · ${T} musí ostať aspoň jeden` : `Odobratí: ${z.length} ✓`; }} />
     {!farar && <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink3)" }}>{`Ľudí do správy pridáva a mení ${tl}.`}</span>}
     {farar && <KartaNastavenia nadpis="Pridať človeka do správy" stav="Nemusíte. Stránku zvládnete spravovať aj sám." tlacidlo="Pridať" ikona={IK_PRIDAT_CLOVEKA} mobil={mobil}
-      onClick={() => { setPrid(true); setDOtv(false); }} />}
+      onClick={() => { setPrid(true); setDOtv(false); setKde(0); setMiestoId(null); }} />}
     {farar && <span style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)" }}>{SL.dozorca ? `${T} alebo dozorca musí ostať aspoň jeden.` : `${T} musí ostať aspoň jeden.`} Pri preložení dajte rolu nástupcovi, potom sa môžete odobrať. Odobrať treba podržať.</span>}
     {children}
   </>);
