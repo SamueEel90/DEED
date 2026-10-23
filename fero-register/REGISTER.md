@@ -283,3 +283,9 @@
 - ODPOVEĎ na otázku z balíka („existuje číselník cirkví?"): ÁNO — DB tabuľka `cirkev` (migrácia 0078): titul, titul_2p, jednotka_2p, oslovenie, dozorca (+ poďakovanie), appka číta cez slovaCirkvi/useSlovaFarnosti so zálohou. CHÝBAJÚ polia {bohosluzba} a {miesto} (omša/bohoslužba, kostol/chrám/synagóga) — až sa pôjde na zástupky, doplniť novou migráciou, nie novou tabuľkou.
 - ROZHODNUTÉ (Martin 23. 10.): štítok na karte po zverejnení je „VEREJNÁ", nie „OSTRÁ VERZIA" (plietla sa s ostrým štartom appky). Martin dáva prerobiť Soni aj v prototype.
 - Pripomienka v balíku: Samo má spustiť migrácie 0156–0160.
+
+## Samov súhrn 23. 10. — migrácie na živej DB hotové
+
+- Kontroly 63 aj 64 prešli na živej DEED2: 7/7 funkcií (je_testovaci, kod_over, kod_uplatni, statutari_stranky, vyplata_oznam, zmaz_centralne_481, zmaz_testovacie) a 3/3 triggery (pohyb_retaz, stranka_rezim_novej, vyplata_oznam). Celá reťaz migrácií 0001–0160 prešla aj lokálne. → Diagnóza „DB pozadu" je týmto vyriešená; tvorbu centrálnej treba znovu overiť v appke.
+- OTVORENÉ — farár farnosti (bod 7 balíka 44): stránka farnosti má farára = starý anonymný účet 83ce2553 (posledné prihlásenie 28. 9.), vlastník ee384287 bez prihlásenia. Martin (koder1@deedgood.eu) je štatutár s právami farára → oprava v appke: Ľudia → Farár → Upraviť → „Nový farár som ja". NEOVERENÉ, či to appka štatutárovi dovolí.
+- ČAKÁ NA MARTINA: (1) 4 anonymné dary Bena spolu 85 € NIE SÚ označené ako testovacie — rozhodnúť, či sú skutočné (výmaz ich inak nechá); (2) súhlas na spustenie zmaz_testovacie (dvojkrokový výmaz).
