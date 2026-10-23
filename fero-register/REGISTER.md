@@ -289,3 +289,20 @@
 - Kontroly 63 aj 64 prešli na živej DEED2: 7/7 funkcií (je_testovaci, kod_over, kod_uplatni, statutari_stranky, vyplata_oznam, zmaz_centralne_481, zmaz_testovacie) a 3/3 triggery (pohyb_retaz, stranka_rezim_novej, vyplata_oznam). Celá reťaz migrácií 0001–0160 prešla aj lokálne. → Diagnóza „DB pozadu" je týmto vyriešená; tvorbu centrálnej treba znovu overiť v appke.
 - OTVORENÉ — farár farnosti (bod 7 balíka 44): stránka farnosti má farára = starý anonymný účet 83ce2553 (posledné prihlásenie 28. 9.), vlastník ee384287 bez prihlásenia. Martin (koder1@deedgood.eu) je štatutár s právami farára → oprava v appke: Ľudia → Farár → Upraviť → „Nový farár som ja". NEOVERENÉ, či to appka štatutárovi dovolí.
 - ČAKÁ NA MARTINA: (1) 4 anonymné dary Bena spolu 85 € NIE SÚ označené ako testovacie — rozhodnúť, či sú skutočné (výmaz ich inak nechá); (2) súhlas na spustenie zmaz_testovacie (dvojkrokový výmaz).
+
+## Vyriešenie „nefunkčnej charity" (23. 10. popoludní — Martin × Paľo, Fero v obraze)
+
+**Skutočné príčiny (nahrádzajú moju kartu o `spustena` — nekomitovaná, zahodená):**
+
+1. **Centrálna charity:** ukladala sa správne, ale nebeží, kým sa nespustí podržaním — tlačidlo „Spustiť centrálnu zbierku" bolo zastrčené dole v pravom stĺpci, nenájditeľné. Na verejnom profile sa bez spustenia neukáže (podmienka `spustena` teda PLATÍ aj pre charitu — hlavička KARTY 39 „charita nepoužíva" je prekonaná).
+2. **Sektorové zbierky: NIKDY neboli na serveri** — žijú len v pamäti prehliadača (po obnovení zmiznú, iný počítač ich nevidí, spoločné pre všetky charity). Vo Svetle pomoci „bežali", lebo tam boli tri napevno. → nová migrácia pre Sama, sektory per charita na server (samostatný balík).
+3. **Svetlo pomoci bol čistý mock bez servera** — nedalo sa „nechať", funkčné z neho je už v novej charite; mock je stále v kóde, otvoriteľný v testovacej verzii.
+
+**Rozhodnutia Martina (23. 10.):**
+
+- Centrálna charity: karta „Spustiť centrálnu zbierku" HORE, prvá na obrazovke, kým nebeží (ako hlavná vo farnosti); po spustení zmizne.
+- Centrálna charity BEZ samoukladania: úprava sa potvrdzuje „Uložiť podržaním" / „Zrušiť úpravy" — slovo „uložiť", NIE „zapečatiť" (centrálna sa nezapečatáva); žiadny pás dole.
+
+**Paľo pripraví tabuľku „čo beží naostro vs. čo je len ukážka"** — zatiaľ ukážky: sektory, faktúry DEED+, platba predplatného farnosti, Z-čísla kým ich nepridelí server, zoznam charít bez servera. Farnosť mock NIE JE (server: profil, hlavná zbierka+dary, omše, oznamy, zvonček, kostoly, ľudia, zverejnenie; ukážka len platba predplatného a väzba platca↔farnosť).
+
+**Hotové 513/514:** Svetlúšik krok 1 Profil (percento, monogram, Uložené ✓ po serveri) + číselník 0164 (modlitebňa BJB/CB/KZ/ACS/CASD/ECM, CČSH, dozorca 7 cirkví). Commity 7e5b70c a 6884df8 ČAKAJÚ NA PUSH (Martin). Odkaz pre Samuela 65 čaká na „daj pre Sama".
