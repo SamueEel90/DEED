@@ -108,6 +108,14 @@ export default function ModulDomov({ wide, otvorModul, otvorId, onOtvorene }: { 
   const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: SIRKA.stlpec, maxDesktop: SIRKA.citanie });
 
   const akt = POLOZKY.find((x) => x.id === aktId);
+  // OPRAVY 512: skutok charity sa nikdy neotvára vo všeobecnom detaile (jeho modul bol len ukážkový, dar nešiel na zbierku).
+  // Aj z QR /s/…, Top či odkazu ide na stránku charity s modulom zbierky, na ktorú skutok zbiera.
+  const jeSkutokCharity = !!akt && !!akt.stranka && akt.typ === "skutok";
+  useEffect(() => {
+    if (screen !== "detail" || !akt || !akt.stranka || akt.typ !== "skutok") return;
+    otvorVerejnyProfil(akt.stranka, { doSkutku: String(akt.id), spatNaFeed: true }); setScreen("home");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen, akt?.id]);
 
   return (
     <div style={{ minHeight: "100%" }}>
@@ -136,7 +144,7 @@ export default function ModulDomov({ wide, otvorModul, otvorId, onOtvorene }: { 
       {screen === "event" && obal(
         <DomovEvent id={aktEvent} onBack={() => setScreen("board")} toast={toast} oslavuj={oslavuj} />
       )}
-      {screen === "detail" && akt && obal(
+      {screen === "detail" && akt && !jeSkutokCharity && obal(
         <SwipeBack onBack={() => setScreen("home")}>
           <DomovDetail it={akt} toast={toast} oslavuj={oslavuj}
             onBack={() => setScreen("home")}
