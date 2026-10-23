@@ -40,6 +40,8 @@ import { TextovePolia, GaleriaEditor } from "./obsahZbierky";
 import { DokladyCharity } from "./SpravaZbierky";
 import { kartaK, nadpisK, textK, drobneK, obrysK, zelenyK, ZAMOK, SpatZbierky, UkladaSa, DorovnaniePas, useUkladanie, UlozenePri, PasUlozene, Taby, CislaKarta, AkoDarovat, QrKarta, Statistiky } from "./spravaCasti";
 import { sumaEur } from "@/lib/suma";
+import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
+import { ChybaPriTlacidle } from "@/components/ChybaPriTlacidle";
 
 const eur = (n: number) => `${sumaEur(n)}`;
 const inic = (t: string) => t.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
@@ -84,8 +86,13 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const [d, setD] = useState<CentralnaZbierka>(nacitaj);
   const [ulozene, setUlozene] = useState(false);
   const zmenene = useRef(false);
-  useEffect(() => { zmenene.current = false; setD(nacitaj()); setUlozene(false); }, [kluc]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { if (sek) return; let ziva = true; void nacitajCentralnuZbierku(strankaId).then((c) => { if (ziva && c && !zmenene.current) setD(c); }); return () => { ziva = false; }; }, [strankaId, kluc]); // eslint-disable-line react-hooks/exhaustive-deps
+  // OPRAVY 515 (Martin 23. 10.): charita — žiadne samo ukladanie. Zmeny sú rozpracované, kým ich správca nepotvrdí
+  // „Podržte a uložte“ (prvé uloženie centrálnu spustí) alebo nezruší „Zrušiť úpravy“. Farnosť sa ukladá sama ako doteraz.
+  const ch = !farnost;
+  const [ulozeneJson, setUlozeneJson] = useState(() => JSON.stringify(d));
+  const neulozene = ch && JSON.stringify(d) !== ulozeneJson;
+  useEffect(() => { zmenene.current = false; const x = nacitaj(); setD(x); setUlozeneJson(JSON.stringify(x)); setUlozene(false); }, [kluc]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (sek) return; let ziva = true; void nacitajCentralnuZbierku(strankaId).then((c) => { if (ziva && c && !zmenene.current) { setD(c); setUlozeneJson(JSON.stringify(c)); } }); return () => { ziva = false; }; }, [strankaId, kluc]); // eslint-disable-line react-hooks/exhaustive-deps
   // OPRAVY 313: pri poli „Uložené ✓“ / „Neuložilo sa · Skúsiť znova“, dole pás Všetko je uložené
   const u = useUkladanie();
   const polia = useRef(new Set<string>());
@@ -93,7 +100,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   useEffect(() => { dRef.current = d; }, [d]);
   const zapis = (x: CentralnaZbierka): Promise<string | null> => { if (sek) { ulozObsahSektora(sek.id, x); return Promise.resolve(null); } return ulozCentralnuZbierku(strankaId, x); };
   useEffect(() => {
-    if (!zmenene.current) return;
+    if (!zmenene.current || ch) return;
     const t = window.setTimeout(() => { const pl = [...polia.current]; polia.current.clear(); u.sleduj(pl, zapis(d), () => zapis(dRef.current)); setUlozene(true); }, 600);
     return () => window.clearTimeout(t);
   }, [d]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -225,6 +232,19 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   // KARTA 56D §5: kontrola pred spustením — ťuk na chýbajúce posunie na pole
   const kontrola: [string, string, boolean][] = [...(farnost ? [["nazov", "Názov", !!d.nazov?.trim()] as [string, string, boolean]] : []), ["text", "Text pre darcov", !!cistyText(d.popis)], ["foto", "Titulná fotka", d.media.some((m) => m.typ === "foto")]];
   const mozeSpustit = kontrola.every((k) => k[2]);
+  // OPRAVY 515: charita — uloženie podržaním (prvé uloženie centrálnu spustí), Zrušiť úpravy vráti posledné uložené
+  const [ukl, setUkl] = useState(false);
+  const [chybaUl, setChybaUl] = useState<string | null>(null);
+  const ulozCh = async () => {
+    if (ukl || (!spustena && !mozeSpustit)) return;
+    const n = spustena ? d : { ...d, spustena: new Date().toISOString() };
+    setChybaUl(null); setUkl(true);
+    const e = await zapis(n);
+    setUkl(false);
+    if (e) { setChybaUl(e); return; }
+    zmenene.current = false; setD(n); setUlozeneJson(JSON.stringify(n)); setUlozene(true);
+  };
+  const zrusUpravy = () => { zmenene.current = false; setD(JSON.parse(ulozeneJson) as CentralnaZbierka); setChybaUl(null); };
   const idiNa = (pole: string) => {
     const el = document.querySelector<HTMLElement>(`[data-pole="${pole}"]`);
     if (!el) return;
@@ -249,7 +269,8 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
             <span style={{ flex: "none", fontSize: 14, fontWeight: 800, color: hot ? "var(--gInk)" : "#A34A2A" }}>{hot ? "hotové" : "chýba · doplniť ›"}</span>
           </button>))}
       </div>
-      {mozeSpustit ? <>
+      {ch ? <span style={{ fontSize: 15, lineHeight: 1.5, color: "var(--ink2)" }}>{mozeSpustit ? <>Všetko je vyplnené. Dole podržte <b>Uložiť</b> a zbierka sa spustí.</> : "Doplňte, čo chýba. Ťuknite na riadok vyššie."}</span>
+      : mozeSpustit ? <>
         <button type="button" onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); spZacni(); }} onPointerUp={spPusti} onPointerCancel={spPusti} onContextMenu={(e) => e.preventDefault()}
           onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !e.repeat) { e.preventDefault(); spZacni(); } }} onKeyUp={(e) => { if (e.key === "Enter" || e.key === " ") spPusti(); }}
           style={{ position: "relative", height: 60, border: "none", borderRadius: 16, background: "#3F6E2A", overflow: "hidden", cursor: "pointer", touchAction: "none", userSelect: "none", fontFamily: "inherit" } as CSSProperties}>
@@ -284,12 +305,24 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
       </button>
       <UlozenePri u={u} pole="rocne" />
     </section>);
-  const vlavo = <>{spustena && tentoMesiac}{textKarta}{galeria}</>;
+  const vlavo = <>{ch && !spustena && nebezi}{spustena && tentoMesiac}{textKarta}{galeria}</>;
   // Martin 13. 10.: farnosť — sumy pri darcoch hlavnej zbierky zapína farár (OPRAVY 266: zvončeková je v Správe zvončekovej)
   const sumyKarta = farnost ? <section style={{ borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "20px 22px", display: "flex", flexDirection: "column", gap: 16 }}>
     <SumyPriDarcoch stranka={strankaId} kluc="hlavna" nadpis="Hlavná zbierka · ukázať sumy pri darcoch" />
   </section> : null;
-  const vpravo = <>{sumyKarta}{nahlad}{ucetKarta}<AkoDarovat sada={d.sada} eurc={d.eurc} sadaE={d.sadaE} onZmena={(p) => zmen(p, "sumy")} pravidelna bezi={spustena} /><UlozenePri u={u} pole="sumy" style={{ paddingRight: 8, marginTop: -6 }} />{sektorKarta}{rocneKarta}{spustena ? <>{bezi}{qr}</> : nebezi}</>;
+  const vpravo = <>{sumyKarta}{nahlad}{ucetKarta}<AkoDarovat sada={d.sada} eurc={d.eurc} sadaE={d.sadaE} onZmena={(p) => zmen(p, "sumy")} pravidelna bezi={spustena} /><UlozenePri u={u} pole="sumy" style={{ paddingRight: 8, marginTop: -6 }} />{sektorKarta}{rocneKarta}{spustena ? <>{bezi}{qr}</> : !ch && nebezi}</>;
+  // OPRAVY 515: charita — dole Podržte a uložte · Zrušiť úpravy (namiesto pásu Všetko je uložené)
+  const lista = ch && (neulozene || !spustena) && (
+    <div style={mobil ? { height: 130 } : { position: "sticky", bottom: 12, zIndex: 5, marginTop: 4 }}>
+      <div style={{ ...(mobil ? { position: "fixed", left: 16, right: 16, bottom: "calc(100px + env(safe-area-inset-bottom, 0px))", zIndex: 60 } : {}), borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", boxShadow: "0 6px 18px rgba(30,40,20,.18)", padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+        <ChybaPriTlacidle text={chybaUl} uklada={ukl} onZnova={() => void ulozCh()} nadpis="Zbierka sa neuložila" />
+        <span style={{ fontSize: 14, color: "var(--ink2)" }}>{!spustena ? (mozeSpustit ? "Uložením sa zbierka spustí a ukáže na profile." : "Najprv doplňte, čo chýba hore.") : "Máte neuložené zmeny."}</span>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          <span style={{ flex: mobil ? "1 1 100%" : "0 1 320px" }}><PodrzTlacidlo label={ukl ? "Ukladá sa…" : "Podržte a uložte"} trvanie={1500} disabled={!spustena && !mozeSpustit} onConfirm={() => void ulozCh()} /></span>
+          {neulozene && <button type="button" onClick={zrusUpravy} style={{ minHeight: 48, padding: "0 18px", borderRadius: 14, border: "1.5px solid var(--cardBd)", background: "transparent", color: "var(--ink2)", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, flex: mobil ? "1 1 100%" : "none" }}>Zrušiť úpravy</button>}
+        </div>
+      </div>
+    </div>);
   const stlpce = (l: ReactNode, p: ReactNode) => mobil
     ? <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>{l}{p}</div>
     : <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.3fr) minmax(0,1fr)", gap: 16, alignItems: "start" }}><div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>{l}</div><div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>{p}</div></div>;
@@ -340,7 +373,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
     <div data-hier={h} style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
       <SpatZbierky onClick={onZbierky} />
       <span style={{ flex: 1 }} />
-      <UkladaSa dovetok={ulozene ? "uložené pred chvíľou" : undefined} />
+      {farnost ? <UkladaSa dovetok={ulozene ? "uložené pred chvíľou" : undefined} /> : neulozene ? <span role="status" style={{ fontSize: 13, fontWeight: 700, color: "#A34A2A" }}>Neuložené zmeny</span> : null}
     </div>
     {farnost && <>
       <b style={{ fontSize: 28, lineHeight: 1.15, letterSpacing: "-.02em", paddingTop: 2 }}>Hlavná zbierka</b>
@@ -370,7 +403,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
       <button type="button" onClick={pasZav.vrat} style={{ height: 46, padding: "0 18px", border: "none", borderRadius: 14, background: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "#1D211B" }}>Vrátiť späť</button>
     </div>}
     {tab === 0 && stlpce(vlavo, vpravo)}
-    {tab === 0 && <PasUlozene u={u} onSpat={onZbierky} mobil={mobil} />}
+    {tab === 0 && (ch ? lista : <PasUlozene u={u} onSpat={onZbierky} mobil={mobil} />)}
     {tab === 1 && <DokladyCharity zbierkaId={idZbierky} s={stav} zmen={zmenStav} vyzbierane={spolu} teraz={Date.now()} mobil={mobil} toast={toast} nepovinne />}
     {tab === 2 && <Statistiky d={{ obdobie: "tento mesiac", od: "", dni: dniReal, cez: [["Priamo na profile", mesiac, ""]], split: [], darcovia: farnost ? [[String(darcovReal), "darcov"], [String(c.mesacne), "dáva mesačne"]] : [[String(darcovReal), "darcov"]] /* OPRAVY 442 doplnok 3: charita bez „0 dáva mesačne“, dni zo skutočných darov */, dary: realne }} tier={tier} mobil={mobil} toast={toast} />}
     {tab === 3 && ukoncenie}
