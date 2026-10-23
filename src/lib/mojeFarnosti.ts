@@ -213,8 +213,9 @@ export interface SlovaCirkvi { titul: string; titul2p: string; jednotka2p: strin
 /** balík 47 (0163): výrazy pre Svetlúšika · Prvé kroky — farnosť / Vaša farnosť / svätá omša / kostol (podľa cirkvi, nie napevno) */
 export interface SlovaSprievodcu { jednotka: string; vasa: string; bohosluzba: string; bohosluzby: string; miesto: string; miestoA: string }
 const SP = (jednotka: string, vasa: string, bohosluzba: string, bohosluzby: string, miesto: string, miestoA = miesto): SlovaSprievodcu => ({ jednotka, vasa, bohosluzba, bohosluzby, miesto, miestoA });
-const ZBOR = SP("zbor", "Váš zbor", "bohoslužba", "bohoslužby", "kostol");
-/** záloha, kým nebeží 0163 (rovnaké hodnoty) */
+/** 0164 (Soňa 23. 10.): zbory bez kostola — modlitebňa */
+const ZBOR = SP("zbor", "Váš zbor", "bohoslužba", "bohoslužby", "modlitebňa", "modlitebňu");
+/** záloha, kým nebeží 0163 + 0164 (rovnaké hodnoty) */
 const SPRIEVODCA_ZALOHA: Record<string, SlovaSprievodcu> = {
   RKC: SP("farnosť", "Vaša farnosť", "svätá omša", "sväté omše", "kostol"), GKC: SP("farnosť", "Vaša farnosť", "svätá liturgia", "sväté liturgie", "chrám"),
   PC: SP("cirkevná obec", "Vaša cirkevná obec", "svätá liturgia", "sväté liturgie", "chrám"),
@@ -222,6 +223,7 @@ const SPRIEVODCA_ZALOHA: Record<string, SlovaSprievodcu> = {
   ECM: ZBOR, BJB: ZBOR, CB: ZBOR, ACS: ZBOR, KZ: ZBOR, CASD: ZBOR,
   ÚZŽNO: SP("náboženská obec", "Vaša náboženská obec", "bohoslužba", "bohoslužby", "synagóga", "synagógu"),
   SKC: SP("spoločenstvo", "Vaše spoločenstvo", "svätá omša", "sväté omše", "kostol"),
+  CČSH: SP("náboženská obec", "Vaša náboženská obec", "bohoslužba", "bohoslužby", "kostol"),
 };
 const SPRIEVODCA_INE = SP("spoločenstvo", "Vaše spoločenstvo", "bohoslužba", "bohoslužby", "miesto stretnutí");
 let sprievodcaDb: Record<string, SlovaSprievodcu> | null = null;
@@ -237,6 +239,7 @@ const SLOVA_ZALOHA: Record<string, SlovaCirkvi> = {
   ECM: S("Kazateľ", "kazateľa", "zboru", "brat kazateľ", true), BJB: S("Kazateľ", "kazateľa", "zboru", "brat kazateľ", true), CB: S("Kazateľ", "kazateľa", "zboru", "brat kazateľ", true),
   ACS: S("Kazateľ", "kazateľa", "zboru", "brat kazateľ", true), KZ: S("Kazateľ", "kazateľa", "zboru", "brat", true), CASD: S("Kazateľ", "kazateľa", "zboru", "brat kazateľ"),
   ÚZŽNO: S("Rabín", "rabína", "náboženskej obce", "pán rabín"),
+  CČSH: S("Farár", "farára", "náboženskej obce", "pán farár", false, "Pán Boh zaplať"),
 };
 const SLOVA_INE = S("Duchovný správca", "duchovného správcu", "spoločenstva", null);
 let ciselnik: Record<string, SlovaCirkvi> | null = null;
