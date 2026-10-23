@@ -383,3 +383,12 @@ Uložené: zdroje/20-qr-katalog-v1.md, zdroje/21-qr-system-v11.md.
 2. **Podiel overovateľa pri súkromnej zbierke** (pohrebná, jubilejná — nejde do feedu): NIE JE reťaz, je to podiel overujúcej služby. Max 3 % + strop 100 €, ŽIADNE minimum (môže byť 0). Server vyšší odmietne.
 3. **Split QR** (delenie výnosu jednej zbierky, napr. pohreb rodina 97/kostol 3): mimo Viery min 5 %, vo Viere povolená aj 0.
 Minimum 5 % patrí LEN reťazi tvorcu. Kód sedí s dohodami, nič sa nemení. Text odišiel Paľovi.
+
+## Rozhodnuté 23. 10. večer — programy charity a testovanie (Martin + Paľo, balík 48)
+- **Bod 518 potvrdený podľa balíka:** sektorové aj centrálna od P1; P1 = centrálna + 3 zbierky; P2 = centrálna + 10; P3 vyššie/na mieru. Stará verzia „sektory od P2, P1 = 5 zbierok" neplatí.
+- **ZMENA pri Zadarmo: 1 zbierka, akákoľvek** (je jedno aká). Bez centrálnej a sektorových.
+- Martinove 3 testovacie charity: pevný program na serveri (Zadarmo / P1 / P2), P3 založí Samo na povel — reálne porovnanie vedľa seba.
+- Tester-charita (šéfka charity, čaká prvá): režim pozvanej charity = P3 zadarmo ako fara, ale **6 mesiacov od zverejnenia** (pozvané bežne 2 mes.), predĺženie keď bude málo. V tom istom režime aj Martinova ďalšia P3.
+- **Downgrade prepínač**: charita s vyšším programom si v appke (len na svojom zariadení) zníži program a vidí, čo by stratila. Voľby len skutočný program a nadol; server drží skutočný program a všetky dáta, nič sa nestráca. Charita so Zadarmo prepínač nemá.
+- Tlačidlá „Prejsť na P1…" na obrazovke Program a predplatné sa VYPÍNAJÚ (menili len prehliadač + falošná hláška). Program na server zapisuje zatiaľ len Samo cez SQL; skutočný nákup príde s ostrou.
+- Poradie balíka 48: prvý bod −1 = migrácia sektorov na server.
