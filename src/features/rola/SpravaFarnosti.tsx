@@ -69,7 +69,7 @@ import { ObrOznamenia, ObrUdaje, ObrZariadenia, ObrSuhlasy, ObrFaq, ObrPodpora }
 import { nacitajNastavenia } from "@/lib/nastaveniaStranky";
 import { useUrovenStranky } from "@/lib/mojeStranky";
 import { najdiTestProfil } from "@/lib/testProfily";
-import { cistyNazov, nacitajProfil, profilZPamate, uplnostProfilu, type ProfilStranky } from "@/lib/profilStranky";
+import { cistyNazov, monogramZNazvu, nacitajProfil, profilZPamate, uplnostProfilu, type ProfilStranky } from "@/lib/profilStranky";
 import { nacitajPiny, pinyZPamate, ulozPiny } from "@/lib/spravaPiny";
 import { useHromadnyVyber, TlacidloVyberu, ListaVyberu, PolickoVyberu, PasVyberu } from "@/components/HromadnyVyber";
 import { Volby } from "@/components/Volby";
@@ -207,7 +207,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const kartaProfilu = (m: boolean) => {
     const ls = m ? 56 : 44, fs = m ? 17 : 14.5;
     const hlava = (sub2: React.ReactNode) => <>
-      <LogoKarty profil={profilAkt} inicialy="" size={ls} />
+      <LogoKarty profil={profilAkt} inicialy={monogramZNazvu(meno)} size={ls} />
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}><b style={{ fontSize: fs, lineHeight: 1.25, color: "var(--ink)", overflowWrap: "anywhere" }}>{meno}</b>{sub2}</span>
     </>;
     if (uplnost.pct >= 100) return (

@@ -14,7 +14,7 @@ import { Titulka, RAMY, pomerFotky } from "./titulka";
 import { OrezFotky } from "@/components/orezfotky";
 import { toast } from "@/components/toast";
 import { spracujLogo, spracujFotku, rozmeryFotky, LOGO_CFG, COVER_CFG, type LogoRezim, type LogoPozadie } from "@/lib/obrazok";
-import { cistyNazov, nacitajProfil, profilZPamate, ulozKoncept, zverejniProfil, type ProfilStranky, type VyrezFotky, type RamFotky } from "@/lib/profilStranky";
+import { cistyNazov, nacitajProfil, profilZPamate, ulozKoncept, uplnostProfilu, monogramZNazvu, zverejniProfil, type ProfilStranky, type VyrezFotky, type RamFotky } from "@/lib/profilStranky";
 import { NastenkaFarnosti } from "@/features/verejny-profil/NastenkaFarnosti";
 import { VerejnyProfilVSprave } from "@/features/verejny-profil/VerejnyProfil";
 import { RiadkyRegistra } from "./RiadkyRegistra";
@@ -31,7 +31,9 @@ import { TlacidloGalerie, useZdrojFotiek, fotkaNaSubor } from "@/components/Vybe
 // IČO a sídlo z Údajov organizácie (ten istý zdroj, OPRAVY 108)
 // ---------- konštanty z karty 33 ----------
 const ONAS_RIADKY = 12;
-const ONAS_ZNAKY = 1500;
+const ONAS_ZNAKY_CH = 1500;
+/** Svetlúšik krok 1: O nás farnosti najviac 1000 znakov */
+const ONAS_ZNAKY_F = 1000;
 const NASTROJE = ["bold", "italic", "nadpis", "vacsie", "mensie", "insertUnorderedList", "insertOrderedList", "odkaz", "diktovat", "tx", "spat"];
 /** profil pred prvým uložením = úplne prázdny (Martin 1. 10. 2026), zo registrácie len zamknuté sídlo */
 export function zakladnyProfil(p: Pozicia, stranka?: string): ProfilStranky {
@@ -102,6 +104,10 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
   const z0 = profilZPamate(strankaId);
   const [p, setP] = useState<ProfilStranky>(() => z0.koncept ?? z0.ulozeny ?? zakladnyProfil(pozicia));
   const [konceptCas, setKonceptCas] = useState<string | null>(z0.konceptCas);
+  // Svetlúšik krok 1: stav ukladania konceptu — „Uložené ✓“ až po potvrdení servera
+  const [ukl, setUkl] = useState<"" | "uklada" | "chyba">("");
+  const [skusZnova, setSkusZnova] = useState(0);
+  const ONAS_ZNAKY = farnost ? ONAS_ZNAKY_F : ONAS_ZNAKY_CH;
   const [nacitane, setNacitane] = useState(false);
   const zmenene = useRef(false);
   // načítanie z účtu (koncept má prednosť pred uloženým)
@@ -118,9 +124,12 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
   // KONCEPT — automaticky 600 ms po poslednej zmene
   useEffect(() => {
     if (!zmenene.current || !nacitane) return;
-    const t = window.setTimeout(() => { void ulozKoncept(strankaId, p).then(setKonceptCas); }, 600);
-    return () => window.clearTimeout(t);
-  }, [p, strankaId, nacitane]);
+    let ziva = true;
+    setUkl("uklada");
+    const t = window.setTimeout(() => { ulozKoncept(strankaId, p).then((c) => { if (ziva) { setKonceptCas(c); setUkl(""); } }, () => { if (ziva) setUkl("chyba"); }); }, 600);
+    return () => { ziva = false; window.clearTimeout(t); };
+  }, [p, strankaId, nacitane, skusZnova]);
+  const pctProfilu = uplnostProfilu(p).pct;
 
   const [pohlad, setPohlad] = useState<"uprava" | "nahlad" | "ulozene">("uprava");
   const menoF = cistyNazov(p.meno ?? nazov) || "Vaša farnosť";
@@ -237,9 +246,15 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
       <span style={{ flex: 1, minWidth: 0 }}>
         <span style={{ display: "block", fontSize: 22, fontWeight: 800 }}>Upraviť profil</span>
         <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, color: "var(--ink3)" }}>
-          <span aria-hidden="true" style={{ flex: "none", width: 8, height: 8, borderRadius: "50%", background: konceptCas ? "var(--green)" : "var(--ink4)" }} />
-          <span>{konceptCas ? `Koncept uložený ${cas(konceptCas)} · na profile sa ukáže až po Uložiť profil` : "Zmeny sa ukladajú ako koncept · na profile sa ukážu až po Uložiť profil"}</span>
+          <span aria-hidden="true" style={{ flex: "none", width: 8, height: 8, borderRadius: "50%", background: ukl === "chyba" ? "var(--cRed)" : konceptCas && !ukl ? "var(--green)" : "var(--ink4)" }} />
+          {ukl === "chyba"
+            ? <span role="alert" style={{ color: "var(--cRed)" }}>Neuložilo sa. Skontrolujte pripojenie. <button type="button" onClick={() => setSkusZnova((x) => x + 1)} style={{ minHeight: 32, padding: 0, border: "none", background: "transparent", color: "var(--gInk)", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, cursor: "pointer" }}>Skúsiť znova ›</button></span>
+            : <span aria-live="polite">{ukl === "uklada" ? "Ukladá sa…" : konceptCas ? (farnost ? `Uložené ✓ ${cas(konceptCas)} · na profile sa ukáže až po Uložiť profil` : `Koncept uložený ${cas(konceptCas)} · na profile sa ukáže až po Uložiť profil`) : "Zmeny sa ukladajú samy · na profile sa ukážu až po Uložiť profil"}</span>}
         </span>
+        {farnost && <span style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8, maxWidth: 360 }}>
+          <b style={{ flex: "none", fontSize: 14, color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>Profil {pctProfilu} %</b>
+          <span role="progressbar" aria-label="Profil" aria-valuenow={pctProfilu} aria-valuemin={0} aria-valuemax={100} style={{ flex: 1, height: 6, borderRadius: 3, background: "rgba(120,128,136,.25)", overflow: "hidden" }}><span style={{ display: "block", height: "100%", borderRadius: 3, background: "var(--green)", transformOrigin: "0 50%", transform: `scaleX(${pctProfilu / 100})`, transition: "transform .3s" }} /></span>
+        </span>}
       </span>
       {!(mobil && !tablet) && <span style={{ flex: "none", display: "flex", gap: 12 }}>
         <button type="button" onClick={onZrusit} style={tl("obrys")}>Zrušiť</button>
@@ -376,7 +391,7 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
   const inic = (p.inicialy ?? "").toUpperCase();
   const ramInic = RAMY.find((r) => r.k === (p.ramLoga ?? "bez"));
   const znakInic = (px: number) => (
-    <span style={{ width: px, height: px, borderRadius: radius, boxSizing: "border-box", border: "2px solid transparent", background: `linear-gradient(#fff,#fff) padding-box, ${p.ramLoga && p.ramLoga !== "bez" ? ramInic?.g : "var(--cardBd)"} border-box`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.round(px * 0.34), fontWeight: 800, color: "#14110B" }}>{inic}</span>);
+    <span style={{ width: px, height: px, borderRadius: radius, boxSizing: "border-box", border: "2px solid transparent", background: `linear-gradient(#fff,#fff) padding-box, ${p.ramLoga && p.ramLoga !== "bez" ? ramInic?.g : "var(--cardBd)"} border-box`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.round(px * 0.34), fontWeight: 800, color: inic ? "#14110B" : "#9A9384" }}>{inic || monogramZNazvu(menoF)}</span>);
   const logoVolba = farnost && (<>
     <span style={{ ...poznamka, marginTop: -4 }}>Máte logo farnosti? Ak nie, vytvoríme znak z iniciál.</span>
     <div role="radiogroup" aria-label="Logo" style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>
@@ -421,7 +436,7 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
             {([[68, "Profil"], [40, "Feed"], [28, "Adresár"]] as [number, string][]).map(([px, t]) => (
               <span key={t} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                 <span style={{ width: px, height: px, borderRadius: radius, overflow: "hidden", background: p.logo ? logoPozadie : "#fff", border: "1px solid var(--cardBd)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.round(px * 0.36), fontWeight: 800, color: "var(--gInk)" }}>
-                  {p.logo ? <img src={p.logo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : inicialy}
+                  {p.logo ? <img src={p.logo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : inicialy || monogramZNazvu(menoF)}
                 </span>
                 <span style={{ fontSize: 11.5, color: "var(--ink3)" }}>{t}</span>
               </span>))}

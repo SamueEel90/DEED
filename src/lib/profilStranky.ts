@@ -63,7 +63,11 @@ export async function nacitajProfil(stranka: string): Promise<ProfilZaznam> {
 export async function ulozKoncept(stranka: string, p: ProfilStranky): Promise<string> {
   const cas = new Date().toISOString();
   pamat.set(stranka, { ...profilZPamate(stranka), koncept: p, konceptCas: cas });
-  if (supabase) await supabase.from("profil_stranky").upsert({ stranka, koncept: await bezDataUrl(p, "stranky"), koncept_cas: cas }, { onConflict: "stranka" });
+  // Svetlúšik krok 1: „Uložené ✓“ až po potvrdení servera — pri chybe hodí
+  if (supabase) {
+    const { error } = await supabase.from("profil_stranky").upsert({ stranka, koncept: await bezDataUrl(p, "stranky"), koncept_cas: cas }, { onConflict: "stranka" }).then((x) => x, () => ({ error: { message: "siet" } }));
+    if (error) throw new Error(error.message);
+  }
   return cas;
 }
 
@@ -99,6 +103,10 @@ const text = (h?: string | null) => String(h ?? "").replace(/<[^>]*>/g, "").repl
 export function maKontakt(k?: Kontakt | null): boolean {
   if (!k) return false;
   return !!(k.adresaVerejna.trim() || k.web.trim() || k.telefony.some((t) => t.cislo.trim()) || k.emaily.some((e) => e.adresa.trim()) || Object.values(k.siete).some((v) => (v ?? "").trim()));
+}
+/** Svetlúšik krok 1: monogram z názvu, kým nie je logo (nikdy prázdny biely štvorček) */
+export function monogramZNazvu(meno: string): string {
+  return meno.split(/\s+/).filter((w) => w.length > 1 && !/^(farnosť|rímskokatolícka|gréckokatolícka|cirkevný|cirkev|zbor|náboženská|obec|sv\.)$/i.test(w)).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "F";
 }
 export function uplnostProfilu(p: ProfilStranky | null, kontaktZRegistracie?: Kontakt): { pct: number; chyba: string } {
   const pol: [string, boolean][] = [
