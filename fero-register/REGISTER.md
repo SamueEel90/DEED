@@ -392,3 +392,13 @@ Minimum 5 % patrí LEN reťazi tvorcu. Kód sedí s dohodami, nič sa nemení. T
 - **Downgrade prepínač**: charita s vyšším programom si v appke (len na svojom zariadení) zníži program a vidí, čo by stratila. Voľby len skutočný program a nadol; server drží skutočný program a všetky dáta, nič sa nestráca. Charita so Zadarmo prepínač nemá.
 - Tlačidlá „Prejsť na P1…" na obrazovke Program a predplatné sa VYPÍNAJÚ (menili len prehliadač + falošná hláška). Program na server zapisuje zatiaľ len Samo cez SQL; skutočný nákup príde s ostrou.
 - Poradie balíka 48: prvý bod −1 = migrácia sektorov na server.
+
+## Rozhodnuté 23. 10. — číselník sekcií charity (Martin + Paľo)
+- Nový číselník sekcií (dokument 14. 9. + doplnky) ide na server NAMIESTO starého cis_segmenty z 0002; appka berie len nový. Paľo sekcie už má.
+- **Výber oblastí v registrácii (krok Stanovy): rolovacie okná podľa hlavnej sekcie (Zvieratá, Seniori a rodina…), v nich podskupiny na zakliknutie.** Charita kliká podskupiny podľa STANOV — upozornenie hore: „Vyberte len to, čo máte v stanovách. Overíme to pri kontrole stanov."
+- Zakliknuté podskupiny sa ukladajú na server — dôležité aj pre budúci matching user ↔ charita (triedenie podľa záujmu).
+- Nová sektorová zbierka ponúka LEN zakliknuté podskupiny charity (útulok nevidí seniorov).
+- Neskoršia zmena podskupín v Správe → ide na overenie („Pošlite zmenu stanov na overenie ›").
+- **Advokácia a právna pomoc: rieši sa pri sekcii registrácia** (tam patrí). Ak sa pridá, tak s DÔRAZNÝM varovaním na politiku a kokotiny — porušenie = ban 10 rokov.
+- OTVORENÉ (čaká na Martina): či sa zakliknuté podskupiny dajú použiť na sektorovú zbierku hneď po registrácii, alebo až po schválení stanov. Ferov návrh: hneď + štítok „čaká na overenie stanov", výplata aj tak až po overení; pri zamietnutí sa zbierka pozastaví.
+- Spolky (časť C) sa teraz nerobia.
