@@ -51,7 +51,7 @@ export function KartyZverejnenia({ strankaId, farnost, onQrPlagat }: { strankaId
       <span style={{ display: "flex", alignItems: "center", gap: 12 }}><Svetlo /><b style={{ fontSize: 20, lineHeight: 1.3 }}>Vitajte v DEED+ na vašej správcovskej stránke.</b></span>
       <b style={{ fontSize: 16.5, color: "var(--gold)" }}>Vaša stránka je zatiaľ neverejná.</b>
       <span style={{ fontSize: 15.5, lineHeight: 1.55, color: "var(--ink2)" }}>Môžete si ju v pokoji pripraviť: profil, zbierky, oznamy, udalosti. Všetko sa ukladá, ale nikto to nevidí.</span>
-      <span role="note" style={{ padding: "12px 14px", borderRadius: 14, background: "#F6E3DC", border: `1.5px solid ${CERV}`, color: "#6E2716", fontSize: 15.5, fontWeight: 700, lineHeight: 1.5 }}>Kým je stránka neverejná, nedá sa prijímať žiadny dar. Zbierky sa aktivujú až po zverejnení stránky.</span>
+      <span role="note" style={{ padding: "12px 14px", borderRadius: 14, background: "var(--rBg, #F6E3DC)", border: `1.5px solid ${CERV}`, color: "var(--cRed, #6E2716)", fontSize: 15.5, fontWeight: 700, lineHeight: 1.5 }}>Kým je stránka neverejná, nedá sa prijímať žiadny dar. Zbierky sa aktivujú až po zverejnení stránky.</span>
       <span style={{ fontSize: 15.5, lineHeight: 1.55, color: "var(--ink2)" }}>Ako bude vyzerať, uvidíte vo Verejnom profile vľavo hore. Keď sa vám bude páčiť, ťuknete hore na <b style={{ color: "var(--ink)" }}>Zverejniť stránku</b>. Až vtedy ju ľudia uvidia.</span>
       {farnost && <span style={{ fontSize: 15.5, fontWeight: 700, color: "var(--ink)" }}>Skúšobná doba sa začne až zverejnením stránky.</span>}
       <button type="button" onClick={() => zapisNastavenie("uvodNeverejna", true)} style={plne}>Rozumiem, beriem na vedomie</button>
