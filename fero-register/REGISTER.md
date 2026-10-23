@@ -340,3 +340,15 @@ Patrí k tomu aj (z rozhodnutí 22.–23. 10.): výmaz podľa kódov test/pilot,
 
 ### Doplnok ku kontrole 23. 10. — zvyšok QR Katalógu (tabuľky sekcií 1–8)
 Nič nekoliduje s dnešným stavom — väčšina sú budúce use-casy na 5 mechanických skupinách („nové use-casy = nová konfigurácia, nie nový kód"). Potvrdené zhody: pohrebný split (osobný QR pozostalého + sken farárom + potvrdenie v appke + okno ~týždeň, iba farský feed) = presne dnešný tok · zbierka per omša auto z rozvrhu (zavrie o polnoci) · „QR nahrádza terminál = akvizičný hook". Nestratiť (do realizovateľné/zásobník): spomienková zbierka Memory (Kondolenzspende, mimo karmy, PRO/ENTERPRISE) · Identity QR preukaz + offline store-and-forward token (eko bez signálu) · odznak so shift-bindingom (zdravotníci) · odomknutie obsahu za prah daru · historický kostol vstup za milodar. Oba dokumenty uložené: zdroje/18-retaz-fronta-overflow-DEV.md, zdroje/19-qr-katalog-v2.md.
+
+## Rozhodnuté 23. 10. — cieľ zbierky a prekročenie (Martin + Paľo)
+- **Cieľ NIE JE strop, je spúšťač uzavretia.** Dar sa pripíše CELÝ zbierke, na ktorú smeroval, aj keď suma preskočí cieľ (2000 → 2100 OK). Server dar nikdy nedelí ani nepresmerováva.
+- **Prepínač v nastaveniach zbierky s cieľom: „Po naplnení cieľa zbierku automaticky uzavrieť" — default ZAPNUTÝ.** Vypnutý = beží, kým správca neukončí ručne.
+- Automatické uzavretie = to isté ako ručné „Ukončiť · Cieľ je splnený": zavrie dary („Zbierka je naplnená"), spustí lehotu dokladovania. Poďakovanie píše správca sám, server pošle len oznam o naplnení.
+- Centrálna, sektorové a zbierky bez cieľa sa neuzatvárajú (bez prepínača).
+- Reťaz tvorcu (retaz_posun) sa posúva pri sume ≥ cieľ VŽDY, nezávisle od prepínača.
+- Ostrá brána: platba vzniknutá pred uzavretím sa pripíše celá.
+- Paľo pripraví ako jednu zmenu — novú migráciu pre Sama.
+
+### Pasca (do prekonaných)
+- Júlový overflow model (Fronta/Overflow DEV §4.2: dar sa dorovná presne na cieľ a zvyšok tečie ďalšej zbierke; jeden dar zavrie dve) = **PREKONANÝ 23. 10.** — darca určil komu, dar sa nedelí.
