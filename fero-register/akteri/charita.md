@@ -44,3 +44,32 @@
 - Zlatá UDALOSŤ vs. zlatá dorovnania vo feede (posledný kus farebnej mapy).
 
 *Upozornenia z tohto súboru dávam Martinovi vždy, keď sa charita posúva — nie až keď horí.*
+
+## D · DOPLNENÉ 23. 10. z rešerše a handoverov (zdroje/15 + 16 + jún v3.1/Handover)
+
+**Ďalšie dohodnuté podstatné:**
+- **Účel zbierky rozhoduje, nie príjemca:** Charita nefinancuje propagáciu presvedčení (politika, evanjelizácia); príjemcom pomoci ktokoľvek. Cirkevná charita na bezdomovcov áno, na rozvoj náboženstva nie.
+- **Beneficient:** vzťah a súhlas rieši charita so svojím klientom; pri odoslaní odklikne „beneficient súhlasí" a RUČÍ (GDPR poistka). Hraničné situácie (smrť/vyliečenie/prebytok): rozhoduje charita transparentne, v medziach zákona 162/2014 — u Dagmar.
+- **Dokladovanie (engine):** lehota podľa účelu pri vytvorení, nemenná (materiálna 30 · operácia 60 od zákroku · stavba mesačne · krízová 60 od vyplatenia…); pásma podľa VYZBIERANEJ sumy (150/500/1500/5000); centrálna+sektorové spúšťa 3 000 €, nie čas; po lehote výzva 3 dni → tabuľa faktov → 3 strikes = pozastavenie; predĺženie LEHOTY zadarmo so zdôvodnením; po doložení správa všetkým darcom s poďakovaním.
+- **Sekcie = číselník zo 14. 9.** (zdroje/16): 6 existujúcich + Záchrana, Ľudia v núdzi, Humanitárna, Naše okolie, Nadácie a fondy; zaradenie podľa stanov, zbierka podľa účelu zbierky.
+- **Dobrovoľníctvo:** symetrické hodnotenie 6 hviezd (5 prednastavené, ≤3 povinný dôvod), agregované a slepé; záujem = prepínač v profile; organizovať smie až platený program.
+- **Feed:** hyperlokálny multiplikátor ×1,4 za doložiteľný dopad; koeficient zaplnenia okruhu (rozširovanie štvrť→mesto→kraj). Topovanie 7 dní mesto 5/kraj 15/krajina 40 € — NEMÝLIŤ s predĺžením zbierky (tiež 5/15/40).
+- **Badge dôvery** (embed na web charity, klik → DEED profil) — náhrada kupovaných pečatí, akvizícia.
+- **Platby:** 3 % ALL-IN veta; SEPA tip 3 € dobrovoľný bez predvolenia; mikrodary ≤0,50 € v DeeD bez poplatku; opakovaný dar je ~31 % online príjmu charít — preto pravidelná podpora.
+- **Pre Challenge/tvorcu:** každá žiadosť musí mať strojovo čitateľný stav (číslo + cieľ + suma + splnené) — napojiteľný bod.
+
+**B-doplnky — NEŽIJE, strážiť:**
+
+| Čo | Stav | Vážnosť |
+|---|---|---|
+| **Sekcie v registrácii: v kóde natvrdo 4** („Sociálne, Deti, Zdravie, Seniori" — CharitaB) vs. číselník zo 14. 9. | zabudnuté | **vysoká — číselník sekcií ako config (ako cirkvi)** |
+| Beneficient „súhlasí" checkbox + ručenie | nikde | vysoká |
+| Dokladovací engine (lehoty podľa účelu, pásma, 3 000 € trigger, 3 strikes, správa darcom) | len texty, logika nie | vysoká — jadro odlíšenia |
+| Dobrovoľnícke hodnotenie 6★ + prepínač záujmu | nie je | stredná |
+| Badge dôvery embed | položka „embed od P1" existuje — overiť obsah | stredná |
+| Vecné dary — plný tok (zberné miesto, QR, potvrdenie) | vecná zbierka od P1 je typ; tok Fáza 2–3 | vedome |
+| VTO, dve čísla pre firmu | → akteri/firma.md | — |
+
+**C-doplnky — otvorené:** advokácia a právna pomoc (vlastná vypínateľná sekcia vs. von) · vekové obmedzenia z jún v3.1 (Kids do 15, 15–18 obmedzené) — platí ešte? · oceňovanie vecných darov · DEED Match len cez DPIA/„cez charitu".
+
+*Partneri: zoznam 61 organizácií na oslovenie (xlsx u Martina, hárok so stavom oslovenia) — biznis pipeline, do repa nejde.*

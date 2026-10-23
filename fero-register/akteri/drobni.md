@@ -23,3 +23,8 @@
 
 - Ceny a miesto v lište pre klub/súbor/školu; štíty klubu a spolku (OTAZKY-*.md u Soni).
 - Obce: či vôbec a kedy.
+
+## D · DOPLNENÉ 23. 10.
+
+- **Sponzoring s protiplnením patrí SEM** (kluby/spolky), nie charitám — dve oddelené cesty (dar + faktúra), pomer volí firma.
+- **Spolky majú vlastný adresár** (zdroje/16): Rybári · Poľovníci · Záhradkári · Hasiči · Turisti · Chovatelia a včelári · Folklór a dychovky · Kluby seniorov · Motoristi a veteráni · Iné. Spolok ako organizácia nikdy medzi charitami; jeho zbierka sa podľa ÚČELU môže objaviť v sekcii charity (DHZ → Záchrana).

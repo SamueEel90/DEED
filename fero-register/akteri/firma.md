@@ -26,3 +26,10 @@
 - B2B charakter návrhu — Martin si premyslí (b2b-plan 19. 10. + zdroj 11).
 - Viac firiem pri dorovnaní jednej zbierky (A/B alternatívy).
 - Strop na jeden dar v dorovnaní: 300 € v prototype = tvrdý strop platformy či predvoľba? (nesúlad so „strop je voľba firmy").
+
+## D · DOPLNENÉ 23. 10. z rešerše (zdroje/15)
+
+- **Dve čísla pre firmu (protigreenwashing):** váha auditovateľnosti per typ daru (anonym 0 % → verejná kampaň 100 %) → komunitný súčet (PR) + audit-grade podmnožina (CSRD). TOTO je dátový produkt DEED — dôkazy o daroch. NEŽIJE — Fáza B2B, nestratiť.
+- **VTO — platené dobrovoľnícke hodiny:** firma dá X hodín/rok, povolené sektory/charity, presné meranie hodín, zamestnanec vidí zostatok; paušál podľa veľkosti firmy, modul samostatne/v balíku. NEŽIJE — nový B2B modul, nestratiť.
+- **Sponzoring s protiplnením: ROZHODNUTÉ — nie plošne pre charity** (daňová pasca), len pre kluby/spolky; jediné čisté = dve oddelené cesty (dar na transparentný účet + faktúra mimo zbierky), pomer volí firma.
+- Dobrovoľnícke hodiny do účtovníctva nejdú, do ESG/impact reportu ÁNO — náš QR proof-of-presence je tvrdší dôkaz než self-report.
