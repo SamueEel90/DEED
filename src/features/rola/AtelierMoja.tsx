@@ -104,7 +104,7 @@ export function AtelierObrazovka({ strankaId, meno, profil, koncept, naostro, us
       </span>
       <button type="button" onClick={() => { void otvorZverejnit(); }} aria-disabled={!zmeny.length}
         style={{ flex: "none", whiteSpace: "nowrap", minHeight: 50, padding: "0 22px", borderRadius: 14, border: `1.5px solid ${zmeny.length ? "#4A743B" : "var(--cardBd)"}`, background: zmeny.length ? "#355A2B" : "transparent", color: zmeny.length ? "#fff" : "var(--ink3)", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: zmeny.length ? "pointer" : "default" }}
-        >Zverejniť ›</button>
+        >Zverejniť vzhľad ›</button>
     </header>
     {ul === "chyba" && <div role="alert" style={{ flex: "none", display: "flex", alignItems: "center", gap: 12, padding: "10px 24px", background: "var(--goldBg)", borderBottom: "1.5px solid #C9A24A" }}>
       <img src="/svetlusik.png" alt="" width={34} height={34} style={{ flex: "none" }} />
@@ -148,7 +148,7 @@ export function AtelierObrazovka({ strankaId, meno, profil, koncept, naostro, us
           <b style={{ flex: 1, fontSize: 19 }}>Poradie blokov</b>
           <button type="button" onClick={() => setPor(false)} style={{ ...tl, minHeight: 40, fontSize: 14, background: "var(--btn)" }}>Zavrieť</button>
         </span>
-        <span style={{ fontSize: 13.5, lineHeight: 1.45, color: "var(--ink3)" }}>Šípkami zmeníte poradie, prepínačom blok skryjete. Platí pre všetky vzhľady. Stránka vedľa sa mení hneď, ľudia to uvidia až po Zverejniť.</span>
+        <span style={{ fontSize: 13.5, lineHeight: 1.45, color: "var(--ink3)" }}>Šípkami zmeníte poradie, prepínačom blok skryjete. Platí pre všetky vzhľady. Stránka vedľa sa mení hneď, ľudia to uvidia až po Zverejniť vzhľad.</span>
         <ZoznamBlokov u={u} zmen={setU} vz={vz} mobil={false} spodok={
           <button type="button" onClick={() => setU({ ...POVODNE, poradie: [...POVODNE.poradie] })} style={{ ...tl, alignSelf: "flex-start", marginTop: 4 }}>Obnoviť pôvodné</button>} />
       </aside>}

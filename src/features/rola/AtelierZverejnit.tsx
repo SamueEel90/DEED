@@ -44,9 +44,9 @@ export function AtelierZverejnit({ strankaId, koncept, naostro, uspNaostro, onSp
 
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 20, background: "rgba(20,17,11,.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-      <div role="dialog" aria-modal="true" aria-label="Zverejniť zmeny" style={{ width: "min(560px, 100%)", maxHeight: "100%", overflowY: "auto", boxSizing: "border-box", borderRadius: 24, background: "var(--bg)", border: "1px solid var(--cardBd)", padding: 24, display: "flex", flexDirection: "column", gap: 16, boxShadow: "0 20px 60px rgba(0,0,0,.35)" }}>
+      <div role="dialog" aria-modal="true" aria-label="Zverejniť vzhľad" style={{ width: "min(560px, 100%)", maxHeight: "100%", overflowY: "auto", boxSizing: "border-box", borderRadius: 24, background: "var(--bg)", border: "1px solid var(--cardBd)", padding: 24, display: "flex", flexDirection: "column", gap: 16, boxShadow: "0 20px 60px rgba(0,0,0,.35)" }}>
         {stav === "vyber" && koncept && <>
-          <b style={{ fontSize: 24 }}>Zverejniť zmeny?</b>
+          <b style={{ fontSize: 24 }}>Zverejniť vzhľad?</b>
           <ul style={{ margin: 0, padding: "12px 16px 12px 34px", borderRadius: 14, background: "var(--card)", border: "1px solid var(--cardBd)", display: "flex", flexDirection: "column", gap: 6, fontSize: 15.5, lineHeight: 1.45 }}>
             {zmeny.map((z) => <li key={z}>{z}</li>)}
           </ul>

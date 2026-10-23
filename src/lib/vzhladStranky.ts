@@ -11,7 +11,7 @@ export type Vzhlad = "kronika" | "vyklad" | "pirat";
 export const VZHLADY: { k: Vzhlad; t: string; s: string; bg: string }[] = [
   { k: "kronika", t: "Kronika", s: "roky a príbehy", bg: "linear-gradient(160deg,#2F5E3A,#14110B)" },
   { k: "vyklad", t: "Výklad", s: "veľká titulka", bg: "linear-gradient(160deg,#876712,#14110B)" },
-  { k: "pirat", t: "Pirát", s: "celé obrazovky", bg: "linear-gradient(160deg,#3D6B8E,#14110B)" },
+  { k: "pirat", t: "Moderné" /* 510: kód ostáva pirat */, s: "celé obrazovky", bg: "linear-gradient(160deg,#3D6B8E,#14110B)" },
 ];
 /** KARTA 56D §4: farnosť — Kronika · Nástenka · Moderné (Moderné nahrádza Pirát), tie isté tri podania */
 export const VZHLADY_FARNOST: typeof VZHLADY = [

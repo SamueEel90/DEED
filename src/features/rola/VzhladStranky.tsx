@@ -74,7 +74,7 @@ function RozlozenieFarnosti({ strankaId, onPozriet, onAtelier }: { strankaId: st
     {onAtelier && <section aria-label="Ateliér stránky" style={{ flex: "none", borderRadius: 18, background: "#2A2214", border: "2px solid #C9A24A", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10, color: "#F3EBDD" }}>
       <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><b style={{ fontSize: 17 }}>Ateliér stránky</b>
         <span style={{ padding: "3px 8px", borderRadius: 8, border: "1px solid #C9A24A", color: "#E6C878", fontSize: 11.5, fontWeight: 800, letterSpacing: ".04em" }}>SKÚŠOBNÝ REŽIM</span></span>
-      <span style={{ fontSize: 14, lineHeight: 1.5, color: "#D9D2C4" }}>Tu si v pokoji vyskúšate iný vzhľad aj poradie blokov na svojej stránke. Nikto to nevidí, kým nepodržíte Zverejniť.</span>
+      <span style={{ fontSize: 14, lineHeight: 1.5, color: "#D9D2C4" }}>Tu si v pokoji vyskúšate iný vzhľad aj poradie blokov na svojej stránke. Nikto to nevidí, kým nepodržíte Zverejniť vzhľad.</span>
       {koncept && <span style={{ fontSize: 13.5, fontWeight: 700, color: "#E6C878" }}>Rozpracované: {nazovVzhladu(koncept.rozlozenie)} · uložené, nikto to nevidí</span>}
       <button type="button" onClick={onAtelier} style={{ alignSelf: "flex-start", minHeight: 52, padding: "0 22px", borderRadius: 14, border: "none", background: "#C9A24A", color: "#2A2214", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" }}>{koncept ? "Pokračovať v rozpracovanom ›" : "Otvoriť ateliér ›"}</button>
     </section>}
