@@ -352,3 +352,9 @@ Nič nekoliduje s dnešným stavom — väčšina sú budúce use-casy na 5 mech
 
 ### Pasca (do prekonaných)
 - Júlový overflow model (Fronta/Overflow DEV §4.2: dar sa dorovná presne na cieľ a zvyšok tečie ďalšej zbierke; jeden dar zavrie dve) = **PREKONANÝ 23. 10.** — darca určil komu, dar sa nedelí.
+
+## Uzavretie kontroly júlových špec — Martin 23. 10.
+1. Júlový systémový fallback / community pool pri prázdnej fronte = **PREKONANÝ** — platí „Potom ty 100 %" (Pasca).
+2. ForwardBlock (vrátenie peňazí kontroverzného tvorcu) — **odložené**: riešiť, až keby také problémy reálne nastali. Nie je v dohodách, ostáva v zdroji 18.
+3. 0 % = QR sa nevygeneruje — Martin preverí s Paľom (malo by platiť).
+4. Pravidlo 3 výstupov pri QR — bez akcie, existujúci stav stačí.
