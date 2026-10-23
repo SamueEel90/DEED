@@ -274,3 +274,12 @@
 - 510: Ateliér stránky aj v charite, 1:1 z farnosti (balíky 32–34), Vzorová charita s fotkami.
 - 509: Martin zajtra porovná „Pozrieť na: Tablet" so skutočnou stránkou na iPade.
 - Ateliér na snímke už rieši otvorený bod zo zdroja 14 sekcia 11: „Uložené ✓ · nikto to nevidí" + štart na Vzorovej — po Paľovom „hotové" bod uzavrieť.
+
+## Balík 47 (511–512 + Svetlúšik sprievodca) — prijaté 23. 10.
+
+- 511 Zverejniť stránku: Paľov návrh + Ferove dodatky zapracované (trial od zverejnenia, v teste vypnutý prepínačom; ateliérové tlačidlo „Zverejniť vzhľad" cez balík 46). Stráži server, migrácia pre Sama; QR plagát až po zverejnení; stavy 1–5 podľa prototypu. Uzatvára otvorený bod zo zdroja 14 sekcia 11.
+- 512: slovo „feed" preč zo všetkých textov pre ľudí — vynucuje starú dohodu „nikdy feed v UI".
+- Svetlúšik sprievodca: Martinove zásady (nič nerobí za farára, žiadne predvyplnené texty, karta v Prehľade), zatiaľ NAPEVNO katolícky — zástupky a číselník neskôr; charita bez Svetlúšika. Poradie po 1–3 bodoch.
+- ODPOVEĎ na otázku z balíka („existuje číselník cirkví?"): ÁNO — DB tabuľka `cirkev` (migrácia 0078): titul, titul_2p, jednotka_2p, oslovenie, dozorca (+ poďakovanie), appka číta cez slovaCirkvi/useSlovaFarnosti so zálohou. CHÝBAJÚ polia {bohosluzba} a {miesto} (omša/bohoslužba, kostol/chrám/synagóga) — až sa pôjde na zástupky, doplniť novou migráciou, nie novou tabuľkou.
+- Pozn. Fero: štítok „OSTRÁ VERZIA" na karte po zverejnení sa pletie s „ostrou verziou appky" (ostrý štart) — pri pilotoch v teste bude stránka „ostrá", ale appka v teste. Zvážiť slovo „VEREJNÁ" — rozhodne Martin.
+- Pripomienka v balíku: Samo má spustiť migrácie 0156–0160.
