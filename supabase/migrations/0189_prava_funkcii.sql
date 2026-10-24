@@ -20,6 +20,8 @@ begin;
 
 -- ---------- 1 · predvolené práva pre nové funkcie ----------
 alter default privileges in schema public revoke execute on functions from public, anon, authenticated;
+-- EXECUTE pre PUBLIC dáva Postgres globálne (nie na schému) — odobrať treba na tej istej úrovni
+alter default privileges revoke execute on functions from public;
 
 -- ---------- 2 · zoznam funkcií pre appku ----------
 create table if not exists public.api_funkcie (
@@ -237,6 +239,8 @@ insert into public.api_funkcie (funkcia, anon, authenticated) values
   ('zvoncek_uzavreta', true, true),
   ('zvoncek_zavri_test', false, true)
 on conflict (funkcia) do nothing;
+-- mená, ktoré už v DB nie sú (staré verzie funkcií zrušené neskoršími migráciami), zo zoznamu preč
+delete from public.api_funkcie a where not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = a.funkcia);
 
 -- ---------- 3 · funkcie, ktoré beží sama DB v mene volajúceho (politiky RLS, predvolené hodnoty, obmedzenia,
 --                spúšťače bez security definer, pohľady security_invoker, indexy) — tie musia ostať volateľné ----------

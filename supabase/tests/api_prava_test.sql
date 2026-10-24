@@ -23,10 +23,11 @@ insert into t select 'PUBLIC nema execute', not exists (
    where n.nspname = 'public' and a.grantee = 0 and a.privilege_type = 'EXECUTE');
 
 -- 2 · všetko zo zoznamu je naozaj volateľné (grant nechýba)
-insert into t select 'vsetko zo zoznamu je volatelne', not exists (
-  select 1 from public.api_funkcie a
+create temp table chyba as
+  select a.funkcia from public.api_funkcie a
    where (a.authenticated and not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = a.funkcia and has_function_privilege('authenticated', p.oid, 'execute')))
-      or (a.anon and not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = a.funkcia and has_function_privilege('anon', p.oid, 'execute'))));
+      or (a.anon and not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = a.funkcia and has_function_privilege('anon', p.oid, 'execute')));
+insert into t select 'vsetko zo zoznamu je volatelne' || coalesce(' — CHYBA: ' || (select string_agg(funkcia, ', ') from (select funkcia from chyba limit 8) x), ''), not exists (select 1 from chyba);
 insert into t select 'zoznam neobsahuje neexistujuce funkcie', not exists (
   select 1 from public.api_funkcie a where not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = a.funkcia));
 
