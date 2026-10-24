@@ -468,3 +468,22 @@ Audit sedí s registrom, žiadny rozpor s dohodami. Kľúčové:
 - N11 vypustené (Martin: placebo).
 - Pravidlá práce v audite (vetva per oprava, nič bez Martina, jedna zmena naraz, pushnutá migrácia sa nemení) = zhodné s našimi.
 Uložené: zdroje/23-kontrola-24-10.md.
+
+## Zdroj 25 — správa špecialistu po opravách 1–13 (24. 10., prelustrované Ferom)
+Fero krížovo overil na Macu: 13 vetiev oprava-1…13 existuje; 0176 sedí so správou (v_hned = deed/testovacia pokladňa inline; limit 30 pending/hod/IP). **Zabraté migrácie 0176–0188, nový kóder začína od 0189.** Nič nepushnuté — nasadzuje sa po jednej vetve: push → zelené CI → Martinov test → ďalšia.
+
+### Nové rozhodnutia Martina 24. 10. (platia ako dohoda)
+- **Anonym môže LEN darovať.** Kto zakladá zbierku/skutok do feedu, nemôže byť anonymný; príspevok bez mena sa nezaloží. „Cez charitu" (anonymný núdzny pod záštitou charity) = nová funkcia, zatiaľ neexistuje.
+- Limit neprihlásených: 30 nepotvrdených platieb/hod z jednej IP (nie na príjemcu).
+- SMS platby sa nepoužívajú.
+- Štartovací kredit 1 240 DeeD: len overený aktívny účet, raz, a LEN do ostrej verzie — potom žiadny.
+- **Dorovnanie — dva režimy úhrady:** karta cez nás = beží hneď + oznam charite; SEPA = čaká na potvrdenie príjmu charitou. 48 h automat ZRUŠENÝ (dorovnania_obnov prázdna, cron odhlásený). Úhradu určí server z kanála.
+- **Zbierka s termínom skončí sama** (krátkodobá 30 dní, dlhodobá 3/6/12 mes., cron); bez termínu, hlavná/sektorová a farnosť ručne. Reťaz sa pri skončení posunie.
+- **Tvorca musí vedieť reťaz UKONČIŤ kedykoľvek** — tlačidlo „Ukončiť reťaz" (dnes len „Vytvoriť novú"). TODO pre nového kódera. Spresnenie dohody: publikovaná reťaz sa nedá MENIŤ, ale dá sa ukončiť.
+- Kurz DeeD/€ na serveri (server_konfig, oprava 2).
+
+### Otvorené zo správy (hlásené, mimo zadania)
+- escrow_create a dorovnanie_financuj vznikajú v EUR hneď bez rúry — naostro napojiť ako dary (0176).
+- Stránka tvorcu len základ; „Cez charitu" len mock.
+- R4 (PIN server), R6 (balík), localStorage→DB, R8 (čistenie repa) — stále čakajú na rozhodnutie.
+Uložené: zdroje/25-sprava-specialistu-24-10.md.
