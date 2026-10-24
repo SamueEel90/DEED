@@ -18,6 +18,7 @@ insert into public.nastavenia_stranky (stranka, data) values ('t167-ch', ('{"lud
 create temp table t(c text, ok boolean);
 grant all on t to public;
 create function pg_temp.skus(p_sql text) returns text language plpgsql as $$ declare r text; begin execute p_sql into r; return coalesce(r, 'ok'); exception when others then return sqlerrm; end $$;
+grant execute on function pg_temp.skus(text) to public;   -- 0189: nové funkcie už nie sú automaticky volateľné, test ju volá aj pod rolou appky
 -- tokeny počíta test ako server (postgres)
 create temp table tok as select public.pozvanka_token('abc123', floor(extract(epoch from now()) / 15)::bigint) teraz,
   public.pozvanka_token('abc123', floor(extract(epoch from now()) / 15)::bigint - 1) pred,

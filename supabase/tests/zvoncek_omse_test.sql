@@ -28,6 +28,7 @@ insert into public.naboz_stav (oblast, id, data) values ('kalendar', 't91-far', 
 
 create function pg_temp.ok(p_cas text, p_kostol text, p_ref text) returns boolean language sql as $$
   select public.zvoncek_okno('t91-far', p_kostol, (p_cas || ' Europe/Bratislava')::timestamptz)->>'ref' = 't91-far-zv-' || p_kostol || '-' || p_ref $$;
+grant execute on function pg_temp.ok(text, text, text) to public;   -- 0189: nové funkcie už nie sú automaticky volateľné, test ju volá aj pod rolou appky
 
 insert into t select 'Št 20:00 = Št 18:00', pg_temp.ok('2026-10-15 20:00', '0', '2026-10-15-1800');
 insert into t select 'Št 23:59 = Št 18:00', pg_temp.ok('2026-10-15 23:59', '0', '2026-10-15-1800');
