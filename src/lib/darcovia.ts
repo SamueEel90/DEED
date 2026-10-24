@@ -231,6 +231,16 @@ export function pridajDar(vstup: {
     ...(vstup.cezTvorcu ? { cezTvorcu: vstup.cezTvorcu } : {}),
     ...(zdrojDaru(vstup.refId) ? { zdroj: zdrojDaru(vstup.refId) } : {}),
   };
+  const ukazDorovnanie = () => {
+    const d = supabase ? dorovnanieNaDar(vstup.refId, vstup.cezTvorcu) : null;
+    if (!d) return;
+    void zapisDorovnanie(vstup.refId, vstup.suma, vstup.cezTvorcu, riadok.id).then((r) => {
+      if (r.dorovnane <= 0) return;
+      pridajDar({ refId: vstup.refId, suma: r.dorovnane, kanal: vstup.kanal, registrovany: true,
+        volba: { verzia: 4, zobrazSumu: true }, firma: r.firma ?? d.firma, cezTvorcu: vstup.cezTvorcu });
+      pridajPodporu(r.firmaUcet ?? d.firmaUcet, vstup.refId, r.dorovnane, r.firma ?? d.firma);
+    });
+  };
   if (lid?.startsWith("prispevok:")) {
     // dar na skutok zapisuje platba_create (zaznamenajPodporu → pridajPodporuDB); zoznam sa obnoví z ledgera, keď tam je
     window.setTimeout(() => obnovZLedgera(vstup.refId, lid), 2500);
@@ -238,7 +248,7 @@ export function pridajDar(vstup: {
   } else if (lid && !vstup.firma) {
     // 0066/0067: dar sa ukáže až keď vznikne v ledgeri
     void zapisDarZbierky(vstup.refId, vstup.suma, vstup.kanal, vstup.objekt, reg && volba.verzia !== 4 ? vstup.menoDarcu : undefined, jeRetaz(vstup.cezTvorcu) ? vstup.cezTvorcu : undefined)
-      .then(() => obnovZLedgera(vstup.refId, lid))
+      .then(() => { obnovZLedgera(vstup.refId, lid); ukazDorovnanie(); })
       .catch((e: { message?: string }) => toast(`Dar sa nezapísal${e?.message ? ` · ${e.message}` : ""}`));
   } else {
     sklad.set(vstup.refId, [riadok, ...realneDary(vstup.refId)]);
@@ -257,18 +267,14 @@ export function pridajDar(vstup: {
   //    Zadanie 3 · 3.3: koľko a či vôbec, rozhodne server (rpc dorovnanie_dar) a presunie peniaze
   //    z viazaného účtu; tu je len náhľad do textu „firma pridala". Riadok firmy sa zapíše
   //    so sumou, ktorú vrátil server. Bez databázy sa nedorovnáva nič.
+  //    0177: dorovnanie zapíše server sám pri potvrdení platby; appka sa ho po zápise daru len opýta, koľko pridal.
   let dorovnane = 0;
   let dorovnalaFirma: string | undefined;
   const dv = supabase ? dorovnanieNaDar(vstup.refId, vstup.cezTvorcu) : null;
   if (dv) {
     dorovnane = dorovnanieKDaru(dv, vstup.suma, Date.now(), vstup.cezTvorcu);
     if (dorovnane > 0) dorovnalaFirma = dv.firma;
-    void zapisDorovnanie(vstup.refId, vstup.suma, vstup.cezTvorcu, riadok.id).then((r) => {
-      if (r.dorovnane <= 0) return;
-      pridajDar({ refId: vstup.refId, suma: r.dorovnane, kanal: vstup.kanal, registrovany: true,
-        volba: { verzia: 4, zobrazSumu: true }, firma: r.firma ?? dv.firma, cezTvorcu: vstup.cezTvorcu });
-      pridajPodporu(r.firmaUcet ?? dv.firmaUcet, vstup.refId, r.dorovnane, r.firma ?? dv.firma);
-    });
+    if (!lid) ukazDorovnanie();   // bez ledgera (dar len v pamäti) ako doteraz
   }
   // 2) daruje firma → zbierka jej naskočí na podstránku („dar = pripnutie")
   const firmaDarca = firmaAkoDarca();
