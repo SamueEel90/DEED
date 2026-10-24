@@ -66,6 +66,11 @@ insert into t select '4.3 A necita telefon B', not exists (select 1 from public.
 insert into t select '4.3 A necita GPS ani IBAN B', not exists (select 1 from public.lokalita) and not exists (select 1 from public.organizacia);
 insert into t select '4.3 A nevidi platby B', not exists (select 1 from public.platba where odosielatel <> '7e570000-0000-0000-0000-0000000000e1');
 update public.prispevok set titul = 'Ukradnuté' where id = '20000000-0000-0000-0000-0000000000e1';
+-- 0180: kredit (pre 4.2) potreboval overenie; tu má byť A neoverený → server mu overenie odoberie (appka nemôže, 0179)
+reset role;
+update public.ucet set telefon_overeny = false where id = '7e570000-0000-0000-0000-0000000000e1';
+set role authenticated;
+select set_config('request.jwt.claim.sub', '7e57a000-0000-0000-0000-0000000000e1', false);
 do $$ begin perform public.zaloz_stranku('moja-nova', 'charita', 'Nová');
   insert into t values ('4.3 neovereny ucet nezalozi stranku', false);
 exception when sqlstate '42501' then insert into t values ('4.3 neovereny ucet nezalozi stranku', true); end $$;
