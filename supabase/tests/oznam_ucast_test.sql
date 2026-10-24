@@ -19,8 +19,10 @@ create temp table t(c text, ok boolean);
 grant all on t to public;
 
 create function pg_temp.ako(p uuid) returns void language sql as $$ select set_config('request.jwt.claim.sub', p::text, true) $$;
+grant execute on function pg_temp.ako(uuid) to public;   -- 0189: nové funkcie už nie sú automaticky volateľné, test ju volá aj pod rolou appky
 create function pg_temp.chyba(p_id text) returns text language plpgsql as $$
 begin perform public.oznam_ucast_prihlas(p_id); return null; exception when others then return sqlerrm; end $$;
+grant execute on function pg_temp.chyba(text) to public;   -- 0189: nové funkcie už nie sú automaticky volateľné, test ju volá aj pod rolou appky
 
 set local role authenticated;
 select pg_temp.ako('7e57c000-0000-0000-0000-000000136b01');

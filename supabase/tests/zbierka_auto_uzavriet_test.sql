@@ -19,6 +19,7 @@ insert into public.zbierka_sprava (zbierka, data) values ('t168-a', '{"stav":"ak
 create temp table t(c text, ok boolean);
 grant all on t to public;
 create function pg_temp.skus(p_sql text) returns text language plpgsql as $$ begin execute p_sql; return 'ok'; exception when others then return sqlerrm; end $$;
+grant execute on function pg_temp.skus(text) to public;   -- 0189: nové funkcie už nie sú automaticky volateľné, test ju volá aj pod rolou appky
 insert into t select 'prepínač z nastavenia pri založení', (select not auto_uzavriet from public.zbierka where id = 't168-b') and (select auto_uzavriet from public.zbierka where id = 't168-a');
 
 set role authenticated;

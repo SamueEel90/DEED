@@ -18,6 +18,7 @@ create temp table t(c text, ok boolean);
 grant all on t to public;
 create or replace function pg_temp.pohybov(k text) returns bigint language sql as $$
   select count(*) from public.pohyb po join public.platba pl on pl.id = po.platba_id where pl.idem_kluc = k $$;
+grant execute on function pg_temp.pohybov(text) to public;   -- 0189: nové funkcie už nie sú automaticky volateľné, test ju volá aj pod rolou appky
 
 -- ---- 1 · pokladňa zapnutá (testovacia verzia): dar kartou je hneď potvrdený, pohyby hneď, testovací ----
 set role authenticated;
