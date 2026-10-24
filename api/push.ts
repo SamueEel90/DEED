@@ -3,16 +3,27 @@
 // ------------------------------------------------------------
 //   GET  → { kluc } verejný VAPID kľúč pre prihlásenie zariadenia na push (appka ho použije v pushManager.subscribe)
 //   POST → pošle čakajúce push (notifikacia.push a push_odoslane null, nie staršie ako deň).
-//          Volá ho pg_cron cez pg_net raz za minútu, len keď niečo čaká. Nepotrebuje telo ani heslo:
-//          pošle len to, čo už v DB čaká, a každú notifikáciu najviac raz (push_odoslane sa nastaví pred odoslaním).
-// Env: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (mailto:…), SUPABASE_SERVICE_ROLE_KEY.
+//          Volá ho pg_cron cez pg_net raz za minútu, len keď niečo čaká. Pošle len to, čo už v DB čaká,
+//          a každú notifikáciu najviac raz (push_odoslane sa nastaví pred odoslaním).
+//          Kontrola 24. 10. · R7: POST len s hlavičkou x-cron-token = PUSH_CRON_TOKEN (migrácia 0185: cron ho berie
+//          z Vault tajomstva push_cron_token). Bez tokenu 401 — ktokoľvek z internetu už nemôže míňať kvótu v slučke.
+// Env: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (mailto:…), SUPABASE_SERVICE_ROLE_KEY, PUSH_CRON_TOKEN.
 // ============================================================
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import webpush from "web-push";
+import { timingSafeEqual } from "node:crypto";
 import { EMAIL_PODPORA } from "../src/lib/kontakty.js";
 import { dbSluzba } from "./_lib/server.js";
 
 const DAVKA = 300;
+
+const hlavicka = (req: VercelRequest, k: string) => { const v = req.headers[k]; return (Array.isArray(v) ? v[0] : v) ?? ""; };
+function tokenSedi(req: VercelRequest): boolean {
+  const ocakavany = process.env.PUSH_CRON_TOKEN || "";
+  const dostal = hlavicka(req, "x-cron-token");
+  if (!ocakavany || !dostal || ocakavany.length !== dostal.length) return false;
+  return timingSafeEqual(Buffer.from(ocakavany), Buffer.from(dostal));
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const pub = process.env.VAPID_PUBLIC_KEY, priv = process.env.VAPID_PRIVATE_KEY;
@@ -22,6 +33,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
   if (req.method !== "POST") { res.status(405).json({ chyba: "zla_metoda" }); return; }
+  res.setHeader("Cache-Control", "no-store");
+  if (!process.env.PUSH_CRON_TOKEN) { res.status(503).json({ chyba: "push_vypnuty", sprava: "PUSH_CRON_TOKEN nie je nastavený." }); return; }
+  if (!tokenSedi(req)) { res.status(401).json({ chyba: "zly_token" }); return; }
   const db = dbSluzba();
   if (!pub || !priv || !db) { res.status(503).json({ chyba: "push_vypnuty", sprava: "Chýba VAPID alebo service role kľúč." }); return; }
   webpush.setVapidDetails(process.env.VAPID_SUBJECT || `mailto:${EMAIL_PODPORA}`, pub, priv);
