@@ -506,3 +506,6 @@ PALI (nový kóder) diery našiel aj protioveril (čistá DB: 155 funkcií appky
 Poradie: oprava 15 ide ako ďalšia vetva V RADE za opravami 1–13, nie mimo poradia.
 **TRVALÉ PRAVIDLO: každá nová DB funkcia pre appku potrebuje výslovné povolenie (grant); automatické práva sú vypnuté. Platí pre všetkých kóderov.**
 Pozn.: prvý beh CI na oprave 1 bol červený (chyba v teste IP hlavičky), opravené druhým commitom na tej istej vetve — obsah opravy nezmenený.
+
+## Zdroj 26 + fronta rizík (24. 10. večer)
+Paliho overené riziká uložené (zdroje/26) a zlúčené s Ferovým výpisom spiacich funkcií do **rizika-fronta.md** — poradová fronta na odstraňovanie, keď kóder nemá inú prácu. TOP 5: E3 (zmenená nasadená 0180 — nesmie sa spojiť!), A2 (IBAN sektora), B1 (Samo overí Confirm email), C1 (odkaz na video), oprava 16 (spiace funkcie vrátane escrow). A1+B2 rieši bežiaca oprava 15. Martin: limity Fable/MAX sa míňajú — riziká sa odstraňujú postupne, po jednom.
