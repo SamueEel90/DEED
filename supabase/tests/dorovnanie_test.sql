@@ -7,6 +7,9 @@ begin;
 insert into auth.users (id) values ('7e57a000-0000-0000-0000-0000000000d1');
 insert into public.ucet (id, auth_id, typ, stav_registracie) values
  ('7e570000-0000-0000-0000-0000000000d1','7e57a000-0000-0000-0000-0000000000d1','aktivny','hotovo');
+-- 0177: dorovnanie vzniká len k potvrdenej platbe → cieľ je skutočná zbierka testovacej stránky „svetlo"
+insert into public.zbierka (id, nazov, modul, typ, stav, stranka, ucet_id, zapecatena, ciel) values
+ ('test-ciel','Testovací cieľ','charity','zbierka','aktivna','svetlo', public.ucet_stranky('svetlo'), now(), 100000);
 \pset tuples_only on
 create temp table t(c text, ok boolean);
 grant all on t to public;
@@ -34,7 +37,7 @@ do $$ begin
 exception when others then insert into t values ('zly pomer odmietnuty', sqlerrm like 'Neplatný pomer%');
 end $$;
 
--- A · úhrada cez DEED: hneď na viazanom účte, po 48 h samo aktívne
+-- A · karta cez nás: hneď na viazanom účte a hneď aktívne (0186)
 insert into v select 'a', public.dorovnanie_zapecat(jsonb_build_object('firmaUcet', (select cislo from fc where id='f1000000-0000-4000-8000-000000000001'),
   'ciel', 'test-ciel', 'pomer', 1, 'strop', 100, 'stropDaru', 30, 'uhrada', 'deed', 'kanal', 'karta', 'do', extract(epoch from now() + interval '10 days') * 1000));
 -- B · úhrada mimo DEED: bez pohybov, čaká na potvrdenie charity
@@ -42,7 +45,7 @@ insert into v select 'b', public.dorovnanie_zapecat(jsonb_build_object('firmaUce
   'ciel', 'test-ciel', 'pomer', 2, 'strop', 50, 'uhrada', 'mimo', 'kanal', 'sepa', 'do', extract(epoch from now() + interval '10 days') * 1000));
 reset role;
 
-insert into t select 'A: financovane, escrow = strop', d.financovane and public.escrow_zostatok(d.escrow_id) = 100 and d.stav = 'zapecatene'
+insert into t select 'A: financovane, escrow = strop, hned aktivne (0186)', d.financovane and public.escrow_zostatok(d.escrow_id) = 100 and d.stav = 'aktivne' and d.zaplatene is not null
   from dorovnanie d where id = (select j->>'id' from v where k='a');
 insert into t select 'A: pohyby pokladna->firma->viazane', (select count(*) from pohyb p join dorovnanie d on p.escrow_id = d.escrow_id where d.id = (select j->>'id' from v where k='a')) = 2;
 insert into t select 'B: bez pohybov, doklad existuje', not d.financovane and d.escrow_id is null and d.doklad is not null and d.stav = 'zapecatene'
@@ -60,20 +63,25 @@ do $$ begin
 exception when others then insert into t values ('pecat: nemaze sa', sqlerrm like 'Dorovnanie sa nemaže%');
 end $$;
 
--- 48 h tichý súhlas: posuň oznámenie (simulácia času; trigger pečate oznamene nestráži)
+-- 0186: žiadny 48 h automat — SEPA čaká na charitu aj po 49 h
 update dorovnanie set oznamene = now() - interval '49 hours' where id in (select j->>'id' from v);
 set role authenticated;
 select set_config('request.jwt.claim.sub','7e57a000-0000-0000-0000-0000000000d1', false);
 select public.dorovnania_nacitaj() is not null;
 reset role;
-insert into t select 'A: po 48 h aktivne automaticky', stav = 'aktivne' and automaticky from dorovnanie where id = (select j->>'id' from v where k='a');
-insert into t select 'B: mimo DEED po 48 h samo nie', stav = 'zapecatene' from dorovnanie where id = (select j->>'id' from v where k='b');
+insert into t select 'B: SEPA po 49 h stale caka na charitu (0186)', stav = 'zapecatene' and not financovane from dorovnanie where id = (select j->>'id' from v where k='b');
+insert into t select 'oznamy charite: karta = zacala dorovnavat, sepa = potvrdte prijem (0186)',
+  (select count(*) from notifikacia n join dorovnanie d on n.ucet_id = d.prijemca_ucet where d.id = (select j->>'id' from v where k='a') and n.titul like 'Vašu zbierku začala dorovnávať%') = 1
+  and (select count(*) from notifikacia n join dorovnanie d on n.ucet_id = d.prijemca_ucet where d.id = (select j->>'id' from v where k='b') and n.titul like 'Potvrďte príjem platby%') = 1;
 
 -- dar: dorovnanie = min(dar × pomer, strop daru, zostatok); presun viazané → stránka
 set role authenticated;
 select set_config('request.jwt.claim.sub','7e57a000-0000-0000-0000-0000000000d1', false);
+select public.zbierka_dar_volba('test-ciel', 'idem-1', 20, 'EUR', 'fiat', 'Test D.', 'svetlo', 'Testovací cieľ', null, false);
 insert into v select 'd1', public.dorovnanie_dar('test-ciel', 20, null, 'idem-1', 'Test D.');
+select public.zbierka_dar_volba('test-ciel', 'idem-1', 20, 'EUR', 'fiat', 'Test D.', 'svetlo', 'Testovací cieľ', null, false);   -- rovnaký idem = tá istá platba
 insert into v select 'd1b', public.dorovnanie_dar('test-ciel', 20, null, 'idem-1', 'Test D.');
+select public.zbierka_dar_volba('test-ciel', 'idem-2', 50, 'EUR', 'fiat', null, 'svetlo', 'Testovací cieľ', null, false);
 insert into v select 'd2', public.dorovnanie_dar('test-ciel', 50, null, 'idem-2', null);
 reset role;
 insert into t select 'dar 20 -> 20', (select (j->>'dorovnane')::numeric from v where k='d1') = 20;
@@ -83,18 +91,26 @@ insert into t select 'dar 50 -> strop daru 30', (select (j->>'dorovnane')::numer
 insert into t select 'escrow A = 100 - 50', public.escrow_zostatok(escrow_id) = 50 from dorovnanie where id = (select j->>'id' from v where k='a');
 insert into t select 'zaznam ma pohyb do uctu stranky', bool_and(p.ucet_kredit = public.ucet_stranky('svetlo') and p.typ = 'dorovnanie')
   from dorovnanie_zaznam z join pohyb p on p.id = z.pohyb_id where z.dorovnanie_id = (select j->>'id' from v where k='a');
+-- 0177: zaznam je viazaný na platbu (idem = platba.id); volanie bez platby nič nepresunie
+insert into t select '0177: zaznam viazany na platbu', bool_and(exists (select 1 from platba pl where pl.id::text = z.idem and pl.stav = 'settled'))
+  from dorovnanie_zaznam z where z.dorovnanie_id = (select j->>'id' from v where k='a');
+set role authenticated;
+select set_config('request.jwt.claim.sub','7e57a000-0000-0000-0000-0000000000d1', false);
+create temp table bezplatby as select public.dorovnanie_dar('test-ciel', 500, null, 'idem-x', null) j;
+reset role;
+insert into t select '0177: dorovnanie_dar bez platby = 0, nic nepresunul', (select (j->>'dorovnane')::numeric = 0 from bezplatby)
+  and public.escrow_zostatok((select escrow_id from dorovnanie where id = (select j->>'id' from v where k='a'))) = 50;
 
--- B: charita potvrdí platbu mimo DEED → pohyby so sepa, potvrdene → spusti → aktivne
+-- B: charita potvrdí príjem SEPA → pohyby so sepa a hneď aktívne (0186)
 set role authenticated;
 select set_config('request.jwt.claim.sub','7e57a000-0000-0000-0000-0000000000d1', false);
 select public.dorovnanie_krok((select j->>'id' from v where k='b'), 'potvrd_platbu') is not null;
 reset role;
-insert into t select 'B: po potvrdeni financovane sepa', d.financovane and d.stav = 'potvrdene'
+insert into t select 'B: po potvrdeni financovane sepa a aktivne (0186)', d.financovane and d.stav = 'aktivne'
   and (select bool_and(kanal = 'sepa') from pohyb where escrow_id = d.escrow_id)
   from dorovnanie d where id = (select j->>'id' from v where k='b');
 set role authenticated;
 select set_config('request.jwt.claim.sub','7e57a000-0000-0000-0000-0000000000d1', false);
-select public.dorovnanie_krok((select j->>'id' from v where k='b'), 'spusti') is not null;
 -- predčasné ukončenie A → pozastavené + vrátenie zvyšku, potom vrátenie cez DEED
 select public.dorovnanie_krok((select j->>'id' from v where k='a'), 'ukonci_dorovnanie') is not null;
 select public.dorovnanie_krok((select j->>'id' from v where k='a'), 'vrat_zvysok', '{"cez":"deed"}') is not null;
@@ -106,6 +122,7 @@ insert into t select 'A: ukoncene, escrow 0, vratenie s VS', d.stav = 'ukoncene'
 -- teraz beží len B (pomer 2, strop 50)
 set role authenticated;
 select set_config('request.jwt.claim.sub','7e57a000-0000-0000-0000-0000000000d1', false);
+select public.zbierka_dar_volba('test-ciel', 'idem-3', 40, 'EUR', 'fiat', null, 'svetlo', 'Testovací cieľ', null, false);
 insert into v select 'd3', public.dorovnanie_dar('test-ciel', 40, null, 'idem-3', null);
 reset role;
 insert into t select 'B: dar 40 x 2 -> zostatok 50, vycerpane', (select (j->>'dorovnane')::numeric from v where k='d3') = 50

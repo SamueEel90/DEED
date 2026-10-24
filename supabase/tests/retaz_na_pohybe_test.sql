@@ -57,6 +57,11 @@ set role authenticated;
 select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-000000157d01', false);
 select public.retaz_dar('rt-157', 'r157-2', 20, 'EUR', 'fiat', null, false);
 reset role;
+-- 0176: pokladňa vypnutá → dar kartou čaká na rúru (pending, bez pohybov); potvrdí ho server
+insert into t select 'vypnutá: dar čaká na rúru bez pohybov', (select stav = 'pending' from public.platba where idem_kluc = 'r157-2')
+  and not exists (select 1 from public.pohyb po join public.platba pl on pl.id = po.platba_id where pl.idem_kluc = 'r157-2');
+select public.platba_potvrd(pl.id, 'rura') from public.platba pl where pl.idem_kluc = 'r157-2';
+insert into t select 'vypnutá: po potvrdení reťaz na pohyboch', (select count(*) = 2 from public.pohyb po join public.platba pl on pl.id = po.platba_id where pl.idem_kluc = 'r157-2' and po.retaz = 'rt-157');
 insert into public.vecny_dar (stranka, zbierka, ucet_id, meno) values ('t157-a', 'v157', '7e57c100-0000-0000-0000-000000157d01', 'Ostrý');
 insert into public.notifikacia (ucet_id, kat, titul, text) values ('7e57c100-0000-0000-0000-000000157d01', 'penazenka', 'T157 ostrá', 'x');
 insert into t select 'vypnutá: pohyby ostré', (select not bool_or(po.testovaci) from public.pohyb po join public.platba pl on pl.id = po.platba_id where pl.idem_kluc = 'r157-2');

@@ -14,6 +14,7 @@ insert into public.ucet (id, auth_id, typ, stav_registracie) values
  ('7e57c100-0000-0000-0000-00000000000a', '7e57c000-0000-0000-0000-00000000000a', 'aktivny', 'hotovo'),
  ('7e57c100-0000-0000-0000-00000000000b', '7e57c000-0000-0000-0000-00000000000b', 'aktivny', 'hotovo'),
  ('7e57c100-0000-0000-0000-00000000000c', '7e57c000-0000-0000-0000-00000000000c', 'aktivny', 'hotovo');
+update public.ucet set telefon_overeny = true where id in ('7e57c100-0000-0000-0000-00000000000a','7e57c100-0000-0000-0000-00000000000b','7e57c100-0000-0000-0000-00000000000c');   -- 0180: sken len overený
 
 -- ---------- 2 · anon akciu nezaloží ----------
 set role anon;

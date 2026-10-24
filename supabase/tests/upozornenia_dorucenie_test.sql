@@ -94,5 +94,5 @@ insert into t select 'pripomienka: text', exists (select 1 from public.notifikac
 insert into t select 'pripomienka: len raz', public.pripomienky_udalosti_tick() = 0;
 
 \pset tuples_only off
-select c, ok from t order by c;
+select ok, c from t order by ok, c;
 rollback;

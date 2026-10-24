@@ -51,7 +51,7 @@ export type KanalDorovnania = "karta" | "krypto" | "sepa";
 export const AUTOMAT_MS = 48 * 3600 * 1000;
 
 export type StavDorovnania =
-  | "zapecatene"      // uhradené a zapečatené, čaká na potvrdenie charity (cez DEED najviac 48 h, mimo DEED kým nepotvrdí)
+  | "zapecatene"      // SEPA mimo nás: čaká, kým charita potvrdí príjem (0186: karta cez nás je hneď "aktivne", žiadny 48 h automat)
   | "potvrdene"       // KARTA 49: charita potvrdila, že peniaze prišli — čaká, kým dorovnanie spustí
   | "aktivne"         // peniaze sú u charity, dorovnanie beží
   | "pozastavene"     // zbierka aj dary stoja; čaká sa na vysporiadanie zvyšku
@@ -306,7 +306,7 @@ export async function zapecat(n: Omit<Dorovnanie, "id" | "stav" | "zapecatene" |
 /** tvorca povie áno / nie */
 export const prijmiTvorcom = (_entita: string, id: string) => krok(id, "prijmi_tvorcom");
 export const odmietniTvorcom = (_entita: string, id: string) => krok(id, "odmietni_tvorcom");
-/** charita potvrdila, že peniaze prišli → čaká na „Spustiť dorovnanie" */
+/** charita potvrdila, že peniaze prišli → beží hneď (0186) */
 export const potvrdPlatbu = (_entita: string, id: string) => krok(id, "potvrd_platbu");
 /** KARTA 49: Spustiť dorovnanie — beží hneď */
 export const spustiDorovnanie = (_entita: string, id: string) => krok(id, "spusti");
