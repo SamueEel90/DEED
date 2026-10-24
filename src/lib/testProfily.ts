@@ -399,7 +399,6 @@ const CHARITA: TestProfil = {
 // ============================================================
 // 2 · FIRMA — Pekáreň Dobrota s.r.o. (sídlo Bratislava, pomáha v TN, PO, BA)
 // ============================================================
-const DOROVNA = "Pekáreň Dobrota dorovnáva 1 : 1";
 const FIRMA: TestProfil = {
   k: "pekaren", typ: "firma", meno: "Pekáreň Dobrota s.r.o.", iniciala: "PD",
   b2b: {

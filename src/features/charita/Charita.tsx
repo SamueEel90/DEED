@@ -4,7 +4,7 @@ import { useLokalita } from "@/lib/lokalita";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { UDALOST_ZALOZ_CHARITU } from "@/lib/aktivnaCharita";
 import { SIRKA, C, SPACE, RADIUS } from "@/theme";
-import { ModulHlavicka, HladanieModal, OblubeneHviezda, toast, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, DoplnokDorovnanie, obalSiroky, OkruhVyber, tint, Lupa, IkonaPlay, IkonaDoska, IkonaKriz, IkonaInstitucia, Overene, FeedSkeleton, SkeletonRiadky, ErrorState, ScreenSwitch, SwipeBack } from "@/shared";
+import { ModulHlavicka, HladanieModal, OblubeneHviezda, toast, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, DoplnokDorovnanie, obalSiroky, OkruhVyber, tint, Lupa, IkonaPlay, IkonaDoska, IkonaKriz, IkonaInstitucia, FeedSkeleton, SkeletonRiadky, ErrorState, ScreenSwitch, SwipeBack } from "@/shared";
 import { FEED_CFG } from "@/lib/feed";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import type { CharitaFeedItem, Oblubeny } from "@/types";

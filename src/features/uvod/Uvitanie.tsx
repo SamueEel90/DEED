@@ -23,6 +23,7 @@ export function Uvitanie({ onHotovo }: { onHotovo: () => void }) {
   const zrus = () => { t.current.forEach(clearTimeout); t.current = []; };
   const seq1 = () => { zrus(); setPh(0); [350, 1650, 2950, 4250, 5700].forEach((ms, k) => t.current.push(window.setTimeout(() => setPh(k + 1), ms))); };
   const seq3 = () => { zrus(); setSh(0); [1, 2, 3, 4].forEach((k) => t.current.push(window.setTimeout(() => setSh(k), 1500 * k + 300))); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- sekvencie animácie sa spúšťajú len pri zmene kroku i (zámer)
   useEffect(() => { if (i === 0) seq1(); if (i === 2) seq3(); return zrus; }, [i]);
   const go = (n: number) => { if (n < 0 || n > 2 || koniec) return; vibruj(5); setI(n); };
   const hotovo = () => { vibruj([8, 40, 12]); setKoniec(true); window.setTimeout(onHotovo, 900); };

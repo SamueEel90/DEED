@@ -70,6 +70,7 @@ export function PodakovaniePoDare(p: PodProps) {
       if (p.registrovany && p.karmaPridane) t.push(window.setTimeout(() => { setKrok(3); pocitadlo(karma, p.karmaSpolu || 0, 700, (v) => setKarma(Math.round(v))); }, land + 300));
     }, 350));
     return () => t.forEach(clearTimeout);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- animácia beží raz po otvorení so vstupnými hodnotami
   }, []);
   const fade = (vidno: boolean) => ({ opacity: vidno ? 1 : 0, transform: vidno ? 'none' : 'translateY(8px)', transition: 'opacity .4s ease, transform .5s cubic-bezier(.2,.8,.2,1)' });
   return (

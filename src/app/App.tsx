@@ -305,7 +305,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
       }, (e: unknown) => toast("Charitu sa nepodarilo založiť · " + ((e as { message?: string })?.message ?? "skúste znova")));
     };
     window.addEventListener(UDALOST_ZALOZ_CHARITU, f); return () => window.removeEventListener(UDALOST_ZALOZ_CHARITU, f);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
   useVrstva(!!badgeSheet, () => setBadgeSheet(null));
   useVrstva(!!splitSheet, () => setSplitSheet(null));
   useVrstva(!!chainSheet, () => setChainSheet(null));

@@ -85,6 +85,7 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
     const ulozene = nacitajStav<Partial<ProfilView>>("profil", farnost.id, {});
     setView({ ...def, ...ulozene, farar: { ...def.farar, ...ulozene.farar } });
     setViditSum(nacitajStav<ViditSum>("viditelnost", farnost.id, "zobrazit"));
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- beží len po synchronizácii, farnost je v rámci stránky nemenná
   }, [syncVerzia]);
   const obsah = obsahFarnosti(farnost.id);
   const stat = farnostStat(farnost.id);

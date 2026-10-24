@@ -6,7 +6,7 @@ import { StityRad, type StitLevel as StitLv } from "@/components/stit";
 import { stityOblastiSubjektu } from "@/lib/stityOblasti";
 const naStitLevelOpt = (k: string): StitLv | null => ((["Bronze", "Silver", "Gold", "Platinum", "Legend"] as string[]).includes(k) ? (k as StitLv) : null);
 import { useState, useMemo, useEffect, memo } from "react";
-import { FormatovanyText, RichTextInput, RozbalitelnyText } from "@/shared";
+import { RichTextInput, RozbalitelnyText } from "@/shared";
 import { ModulHlavicka, Hlavicka, PlatobnyModul, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, TypBadge, BackChip, SwipeBack, obalSiroky, OkruhVyber, Lupa, IkonaMoznosti, Zdielanie, IkonaPlay, IkonaDoska, IkonaPin, IkonaObalka, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, EntityHero, BtnAkcia, Overene, KontextMenu, IkonaOdkaz, IkonaVlajka, FotoProfiluSheet } from "@/shared";
 import { FOTO_TEST_REZIM, klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { SIRKA, C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
