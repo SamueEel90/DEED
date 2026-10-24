@@ -32,6 +32,7 @@ import { nazovFarnosti } from "@/lib/mojeFarnosti";
 import { otvorSpravuNa } from "@/lib/mojeStranky";
 import { otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
 import { otvorPozvanku } from "@/lib/pozvankaSpravy";
+import { otvorSpravuPoUkonceni, SpravaPoUkonceniVrstva } from "./SpravaPoUkonceni";
 
 export { NOTIFY } from "./mock";
 
@@ -128,12 +129,13 @@ export function Zvoncek({ color = "var(--c-textSec)", toast }: { color?: string;
   const [um, setUm] = useState<{ stranka: string; id: string; text: string } | null>(null);
   const umX = um ? odFarnikov(um.stranka).find((x) => x.id === um.id && x.k === "umysel") : undefined;
   const naOdkaz = (n: Notifikacia) => {
-    const m = /^(odv|prisp|nezv|vz|ovp|str|um|poz|pzs):([^:]+):(.+)$/.exec(n.odkaz ?? "");
+    const m = /^(odv|prisp|nezv|vz|ovp|str|um|poz|pzs|kon):([^:]+):(.+)$/.exec(n.odkaz ?? "");
     oznac(n); setOtvor(false);
     if (!m) return;
     const [, druh, stranka, pid] = m;
     if (druh === "odv") otvorSpravuNa({ stranka, sub: "veriaci", zvyrazni: pid });
     else if (druh === "prisp") otvorVerejnyProfil(stranka, { doOznamu: pid });
+    else if (druh === "kon") otvorSpravuPoUkonceni(stranka); // OPRAVY 537: správa po ukončení súkromnej zbierky (kon:<druh>:<zbierka>)
     else if (druh === "ovp") otvorOverenie(pid); // OPRAVY 338: kód od farára → overenie príjemcu (napíše kód, potvrdí rozdelenie)
     else if (druh === "vz") otvorVerejnyProfil(stranka, { doVecnej: pid }); // OPRAVY 320: poďakovanie darcom vecnej zbierky → detail zbierky
     else if (druh === "str") otvorVerejnyProfil(stranka); // OPRAVY 349: poďakovanie od farnosti → stránka farnosti
@@ -155,6 +157,7 @@ export function Zvoncek({ color = "var(--c-textSec)", toast }: { color?: string;
         onPrecitaj={() => { const x = [...new Set([...prec, ...vsetky.map(klucOznamu)])]; setPrec(x); ulozZoznam(KLUC_PREC, x); oznacVsetkyPrecitane(); }}
         onOznamDarcovi={(n) => { oznac(n); const o = oznamy[-n.id - 1]; if (!o) return; oznacPrecitany(o.id); zavri(); setDetail(o); }}
         onClose={zavri} toast={toast} />}
+      <SpravaPoUkonceniVrstva onSpat={() => setOtvor(true)} />
       {nezv && createPortal(<div className="deed-platba" role="dialog" aria-modal="true" aria-label="Farár príspevok nezverejnil" style={{ position: "fixed", inset: 0, zIndex: 1200, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
         <div onClick={() => setNezv(null)} style={{ position: "absolute", inset: 0, background: "rgba(10,9,6,.55)" }} />
         <div style={{ position: "relative", width: "min(560px, 100%)", boxSizing: "border-box", padding: "20px 18px max(20px, env(safe-area-inset-bottom))", borderRadius: "24px 24px 0 0", background: "var(--bg)", display: "flex", flexDirection: "column", gap: 12, color: "var(--ink)" }}>
