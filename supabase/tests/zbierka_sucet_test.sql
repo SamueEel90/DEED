@@ -16,7 +16,9 @@ grant all on t to public;
 -- 1 · nový prípad bez pohybov = žiadny riadok (ako doteraz)
 insert into t select 'bez pohybov ziadny riadok', not exists (select 1 from public.v_vyzbierane where case_id = '18400000-0000-0000-0000-000000000001');
 
--- 2 · dar 10 € kartou (procesor → charita) + dar 25 DEED
+-- 2 · dar 10 € kartou (procesor → charita) + dar 25 DEED (darca ho dostane z testovacej pokladne — pohyb_kryty)
+insert into public.pohyb (doklad, poradie, typ, ucet_debet, ucet_kredit, suma, mena, kanal, testovaci) values
+ ('1840000000', 1, 'dobitie', public.ucet_systemu('testovacia_pokladna'), '7e57c100-0000-0000-0000-000000184d01', 25, 'DEED', 'deed', true);
 insert into public.pohyb (doklad, poradie, typ, ucet_debet, ucet_kredit, suma, mena, kanal, case_id, pre_zbierku, testovaci) values
  ('1840000001', 1, 'dar', public.ucet_systemu('procesor'), '7e57c100-0000-0000-0000-000000184c01', 10, 'EUR', 'fiat', '18400000-0000-0000-0000-000000000001', true, false),
  ('1840000002', 1, 'dar', '7e57c100-0000-0000-0000-000000184d01', '7e57c100-0000-0000-0000-000000184c01', 25, 'DEED', 'deed', '18400000-0000-0000-0000-000000000001', true, true);
