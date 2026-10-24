@@ -452,3 +452,9 @@ Soňa dodala návrh, Fero schválil: svetlúšik hore, „ZBIERKA JE UKONČENÁ"
 ### Checklist pred ostrou — doplnené
 - Reálne overenie účtu sektorovej zbierky (teraz len tvar IBAN).
 - Počítadlo pravidelných darcov pri centrálnej: počítať alebo skryť (teraz napevno 0).
+
+### Doplnok 24. 10. — model účtov charity POTVRDENÝ v kóde
+Paľo overil (OPRAVY 536, commit 9a244ee, smoke test prešiel): farnosť = jeden účet (všetko na hlavnú zbierku); charita = centrálna má centrálny účet, KAŽDÁ ďalšia zbierka (bežná aj sektorová) má vlastný transparentný účet od tvorby, nič sa nezlieva. Migrácia 0174 sa týka LEN zbierky „<stránka>:hlavna" centrálnej — zavrie pri ukončení, otvorí pri novej. Ferova výhrada vyriešená.
+
+### Výmena kóderského chatu
+Starý Paľo 2 dni chystá odovzdávkové MD; **nový Paľo štartuje 25. 10. ráno** (Martin). Fero pred štartom prelustruje odovzdávkové MD proti registru (staré verzie pravidiel, chýbajúce rozhodnutia).
