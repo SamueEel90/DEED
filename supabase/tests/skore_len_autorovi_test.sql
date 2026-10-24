@@ -30,7 +30,7 @@ insert into t select 'moj beh: skore 7,5, overene, karma 75', (select skore = 7.
 insert into t select 'cudzi beh: 0, neoverene, bez behu', (select skore = 0 and not overene and karma is null and score_run_id is null from public.prispevok where id = '18300000-0000-0000-0000-000000000002');
 insert into t select 'stary beh: 0, bez behu', (select skore = 0 and score_run_id is null from public.prispevok where id = '18300000-0000-0000-0000-000000000003');
 insert into t select 'anonymny beh: 0, bez behu', (select skore = 0 and score_run_id is null from public.prispevok where id = '18300000-0000-0000-0000-000000000004');
-insert into t select 'klient hodnoty z appky nikdy nepresadi', not exists (select 1 from public.prispevok where id like '18300000-%' and (skore = 11 or karma = 999));
+insert into t select 'klient hodnoty z appky nikdy nepresadi', not exists (select 1 from public.prispevok where id::text like '18300000-%' and (skore = 11 or karma = 999));
 
 select ok, c from t order by ok, c;
 rollback;
