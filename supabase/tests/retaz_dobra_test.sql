@@ -104,6 +104,12 @@ insert into t select 'nikto Ste na rade druhy raz', (select count(*) = 1 from pu
 insert into t select 'podporuju zbierku 2: Martin Konal bezi 10 %, poslane 1', (select jsonb_array_length(j) = 1 and (j->0->>'bezi')::boolean and (j->0->>'pct')::int = 10
   and (j->0->>'poslane')::numeric = 1 and j->0->>'meno' = 'Martin Konaľ' from (select public.retaz_podporuju('t93-z2') j) x);
 insert into t select 'podporuju zbierku 1: naplnena, poslane 22,50, nebezi', (select not (j->0->>'bezi')::boolean and (j->0->>'poslane')::numeric = 22.50 from (select public.retaz_podporuju('t93-z1') j) x);
+-- 0188: Prehľad stránky — reťaze na zbierkach stránky (A má z1 naplnenú s 22,50; B má z2 bežiacu s 1)
+insert into t select '0188 stranka A: z1 v zozname, poslane 22,50, Martin', (select bool_or(e->>'zbierka' = 't93-z1' and (e->>'poslane')::numeric = 22.50 and e->>'meno' = 'Martin Konaľ' and e->>'zbierkaNazov' = 'Strecha')
+  from jsonb_array_elements(public.retaz_na_stranke('t93-a')) e);
+insert into t select '0188 stranka B: z2 bezi, poslane 1', (select bool_or(e->>'zbierka' = 't93-z2' and (e->>'bezi')::boolean and (e->>'poslane')::numeric = 1)
+  from jsonb_array_elements(public.retaz_na_stranke('t93-b')) e);
+insert into t select '0188 cudzia stranka: prazdne', public.retaz_na_stranke('t93-nikde') = '[]'::jsonb;
 insert into t select 'darcovia cez QR pri zbierke 1: 2 dary, Jana 10 €', (select (j->>'pocet')::int = 2 and j->'dary' @> '[{"meno":"Jana","suma":10}]'::jsonb
   from (select public.retaz_darcovia('rt-t93', 't93-z1') j) x);
 set role authenticated;
