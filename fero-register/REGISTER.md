@@ -512,3 +512,9 @@ Paliho overené riziká uložené (zdroje/26) a zlúčené s Ferovým výpisom s
 
 ### E3 vyriešené (24. 10. večer) — špecialista uznal porušenie pravidla
 PR #77 (zmena nasadenej 0180) zavretý, nebude sa spájať. Rovnaká zmena = NOVÁ migrácia 0190 (PR #80; na čistej DB nič, na živej už spustená ručne). Samo zmaže vetvy oprava-5-n3 a ci-kontrola-vsetko na GitHube. **Zabraté čísla: 0189 = oprava 15 (PR #79, CI beží), 0190 = PR #80. Nový kóder od 0191.**
+
+## Oprava 15 — odovzdanie (24. 10. večer)
+Migrácia 0189 (PR #79): nové funkcie už nie sú automaticky volateľné; tabuľka api_funkcie = jediný zoznam, čo appka smie volať; service_role bez zmeny; CI test api_prava_test.sql. Postup: Pali krížovo kontroluje PR #79 → Samo merge #79+#80+#78, nasadí 0189, spustí overovací dotaz (tri nuly → Martinovi), zmaže vetvy oprava-5-n3 a ci-kontrola-vsetko → Martin prekliká appku (permission denied = hláška špecialistovi).
+**FEROVA VÝHRADA (odoslaná):** zoznam 205 funkcií preberá aj spiace diery s grantami (escrow_create aj pre anon, penazenka_dobit, plne_prava, retaz_test, badge_create, cron funkcie) — Pali ich pri kontrole #79 vyhodí zo zoznamu podľa rizika-fronta.md bod 5 → oprava 16 sa tým vybaví v rámci 0189.
+**TRVALÉ PRAVIDLO (spresnenie):** každá nová funkcia pre appku = riadok v public.api_funkcie + grant execute anon/authenticated; bez toho permission denied a CI spadne. Interné funkcie nepotrebujú nič — zamknuté automaticky.
+Zabraté: 0189, 0190. Nový kóder od 0191.
