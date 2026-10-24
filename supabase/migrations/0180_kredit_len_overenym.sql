@@ -18,6 +18,7 @@ begin;
 alter table public.ucet add column if not exists start_kredit timestamptz;
 
 -- overený účet človeka (clovek_overeny — ucet_overeny(uuid, boolean) z 0065 je overenie príjemcu KYC/KYB) = aktivny + telefón alebo e-mail overený (ucet_strazca_identity 0179: overenie píše len server)
+drop function if exists public.ucet_overeny(uuid);   -- skorší názov z tejto migrácie (kolízia s ucet_overeny(uuid, boolean) z 0065)
 create or replace function public.clovek_overeny(p_ucet uuid) returns boolean
   language sql stable security definer set search_path = public as $$
   select exists (select 1 from public.ucet u where u.id = p_ucet and u.typ = 'aktivny' and (u.telefon_overeny or u.email_overeny))
