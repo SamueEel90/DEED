@@ -257,7 +257,7 @@ begin
     v_text := v_text || ' ' || coalesce((select string_agg(p.prosrc, ' ') from pg_proc p join pg_namespace n on n.oid = p.pronamespace
       where n.nspname = 'public' and not p.prosecdef and v_text ~ ('\m' || p.proname || '\s*\(')), '');
   end loop;
-  return query select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+  return query select p.proname::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'public' and v_text ~ ('\m' || p.proname || '\s*\(');
 end $$;
 revoke all on function public.api_funkcie_z_definicii() from public, anon, authenticated;
