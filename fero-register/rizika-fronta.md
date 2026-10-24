@@ -2,7 +2,7 @@
 Zlúčené: zdroj 26 (Paliho overené riziká) + vypis-rizik-spiace-funkcie.md (Ferove spiace funkcie) + zdroj 23/25 (audit). Odstraňuje sa postupne, jedna zmena naraz, keď kóder nemá inú prácu. Po každej oprave odškrtnúť s dátumom.
 
 ## TOP — hneď po oprave 15 (poradie)
-1. **E3 · zmenená nasadená migrácia 0180** (commit 7f49dc3 na vetve oprava-5-n3) — NESMIE sa spojiť; zmena ak treba = nová migrácia. Vybaviť so špecialistom okamžite, je to porušenie základného pravidla.
+1. ~~E3 · zmenená nasadená migrácia 0180~~ VYRIEŠENÉ 24. 10.: PR #77 zavretý, zmena ide ako nová migrácia 0190 (PR #80); vetvu oprava-5-n3 + ci-kontrola-vsetko zmaže Samo na GitHube.
 2. **A2 · pomocník stránky zmení IBAN sektora** (overené; oprava 15 nerieši) — politika spravca_all pustí aj pomocníka, iban_overeny zapisuje appka. IBAN + iban_overeny len rola s penazenka_vyplaty / server.
 3. **B1 · plné práva podľa nepotvrdeného e-mailu** — ÚLOHA PRE SAMA: overiť v Supabase, že „Confirm email" je ZAPNUTÉ. Potom doplniť kontrolu email_confirmed_at aj do uroven_stranky()/smie_v_stranke() (obrana v hĺbke).
 4. **C1 · škodlivý kód v odkaze na video farnosti** (overené vykreslenie) — pri zobrazení kontrolovať http(s) ako pri textoch (NastenkaFarnosti ~1459, VypocujSi).

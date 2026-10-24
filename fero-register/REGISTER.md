@@ -509,3 +509,6 @@ Pozn.: prvý beh CI na oprave 1 bol červený (chyba v teste IP hlavičky), opra
 
 ## Zdroj 26 + fronta rizík (24. 10. večer)
 Paliho overené riziká uložené (zdroje/26) a zlúčené s Ferovým výpisom spiacich funkcií do **rizika-fronta.md** — poradová fronta na odstraňovanie, keď kóder nemá inú prácu. TOP 5: E3 (zmenená nasadená 0180 — nesmie sa spojiť!), A2 (IBAN sektora), B1 (Samo overí Confirm email), C1 (odkaz na video), oprava 16 (spiace funkcie vrátane escrow). A1+B2 rieši bežiaca oprava 15. Martin: limity Fable/MAX sa míňajú — riziká sa odstraňujú postupne, po jednom.
+
+### E3 vyriešené (24. 10. večer) — špecialista uznal porušenie pravidla
+PR #77 (zmena nasadenej 0180) zavretý, nebude sa spájať. Rovnaká zmena = NOVÁ migrácia 0190 (PR #80; na čistej DB nič, na živej už spustená ručne). Samo zmaže vetvy oprava-5-n3 a ci-kontrola-vsetko na GitHube. **Zabraté čísla: 0189 = oprava 15 (PR #79, CI beží), 0190 = PR #80. Nový kóder od 0191.**
