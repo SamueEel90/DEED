@@ -79,4 +79,4 @@ jobs:
         # chyba DB testu sa ukáže aj v anotáciách behu (posledné riadky výpisu) — netreba sťahovať log
         run: |
           set -o pipefail
-          bash scripts/db-z-migracii.sh 2>&1 | tee db-ci.log || { tail -n 30 db-ci.log | while IFS= read -r l; do echo "::error::$l"; done; exit 1; }
+          bash scripts/db-z-migracii.sh 2>&1 | tee db-ci.log || { { grep '^→' db-ci.log | tail -n 1; grep -v '^→' db-ci.log | grep -v '^\s*$' | tail -n 8; } | while IFS= read -r l; do echo "::error::$l"; done; exit 1; }
