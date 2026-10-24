@@ -458,3 +458,13 @@ Paľo overil (OPRAVY 536, commit 9a244ee, smoke test prešiel): farnosť = jeden
 
 ### Výmena kóderského chatu
 Starý Paľo 2 dni chystá odovzdávkové MD; **nový Paľo štartuje 25. 10. ráno** (Martin). Fero pred štartom prelustruje odovzdávkové MD proti registru (staré verzie pravidiel, chýbajúce rozhodnutia).
+
+## Zdroj 23 — Kontrola kódu 24. 10. (audit, prelustrované Ferom)
+Audit sedí s registrom, žiadny rozpor s dohodami. Kľúčové:
+- **R1+N9 = najvážnejšie:** anon fiat dar vzniká ako settled bez rúry — po ostrej by hocikto nafúkol zbierku. Návrh pending/settled (peniaze až po potvrdení rúrou; testovacia pokladňa potvrdí hneď s testovaci=true) DRŽÍ pravidlá ledgera aj test — Fero schvaľuje návrh aj poradie opráv 1–10.
+- R2+R3 → funkcia ostry_start() + test všetkých poistiek = ide do CHECKLISTU PRED OSTROU (dopĺňa vypnúť pokladňu → zmaz_testovacie → trial).
+- R5: mazanie pohybov len cez jednu funkciu, nie disable trigger v migráciách — súhlas, drží vzor 0135.
+- R4 (PIN len v appke), R6 (balík +49 %), localStorage→DB, R8 (čistenie repa vrátane 3 MB scanov v histórii) — čakajú na rozhodnutie Martina/Sama.
+- N11 vypustené (Martin: placebo).
+- Pravidlá práce v audite (vetva per oprava, nič bez Martina, jedna zmena naraz, pushnutá migrácia sa nemení) = zhodné s našimi.
+Uložené: zdroje/23-kontrola-24-10.md.
