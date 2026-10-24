@@ -19,7 +19,9 @@ grant all on t to public;
 set role authenticated;
 select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-000000181d01', false);
 insert into t select 'pred: tester je testovaci spravca', public.testovaci_spravca('t181-a');
+reset role;   -- 0189: konam_za_firmu je interná (volá ju server), tester sa overí cez moj_ucet() zo session
 insert into t select 'pred: ktokolvek kona za testovaciu firmu', public.konam_za_firmu('7e57c100-0000-0000-0000-000000181f01');
+set role authenticated;
 do $$ begin perform public.ostry_start(); insert into t values ('appka ostry_start nespusti', false);
 exception when others then insert into t values ('appka ostry_start nespusti', true); end $$;
 reset role;
@@ -43,7 +45,9 @@ select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-000000181d01
 insert into t select 'tester uz nie je spravca stranky', not public.spravujem_stranku('t181-a');
 do $$ begin perform public.testovaci_spravca('t181-a'); insert into t values ('testovaci_spravca odmietne', false);
 exception when others then insert into t values ('testovaci_spravca odmietne', sqlerrm like '%nie_spravca%'); end $$;
+reset role;
 insert into t select 'za byvalu testovaciu firmu nekona ktokolvek', not public.konam_za_firmu('7e57c100-0000-0000-0000-000000181f01');
+set role authenticated;
 insert into t select 'otp: kod sa nevracia', (public.otp_posli('+421901234567')->>'demo') = 'false' and public.otp_posli('+421901234567') ? 'kod' = false;
 do $$ begin perform public.kyc_spusti(); insert into t values ('kyc bez vendora = chyba', false);
 exception when others then insert into t values ('kyc bez vendora = chyba', sqlerrm like '%vendor%'); end $$;
