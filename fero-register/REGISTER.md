@@ -487,3 +487,11 @@ Fero krížovo overil na Macu: 13 vetiev oprava-1…13 existuje; 0176 sedí so s
 - Stránka tvorcu len základ; „Cez charitu" len mock.
 - R4 (PIN server), R6 (balík), localStorage→DB, R8 (čistenie repa) — stále čakajú na rozhodnutie.
 Uložené: zdroje/25-sprava-specialistu-24-10.md.
+
+## Zdroj 26 — nasadenie opráv 1–13 + Odkazy 67 + čistý stôl (24. 10. večer, Samuel)
+- **Odchýlka (Samuel):** opravy 2–13 nasadené NARAZ, Martin ich pretestuje dodatočne. Migrácie 0177–0188 z `fa30e32` (s Martinovými CI opravami 0177/0180).
+- DEED2 má **0001–0188**; testovacia pokladňa zapnutá, `ostry_start()` nevolané. Ďalšia migrácia od **0189**.
+- Čistý stôl hotový (0 | 0 | 0). Ben v Martinovej reťazi nikdy nebol (reťaz mala len Sodo).
+- `zmaz_testovacie` najprv odmietlo (účet `23df6ff3…` by mal −1 150 DeeD: 6 darov bez príznaku z testovacieho dobitia) → tých 6 platieb označených `testovaci` → zmazané (187 pohybov, 87 platieb).
+- GitHub: #63–#75 zlúčené do master, master zlúčený do platby-modul. Vercel: PLATBA_WEBHOOK_SECRET + PUSH_CRON_TOKEN; Vault `push_cron_token` ešte chýba.
+Uložené: zdroje/26-nasadenie-opravy-1-13-24-10.md.
