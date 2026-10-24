@@ -529,7 +529,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "", nazov: 
   // Obsah → Skutky: zoznam skutkov charity + Pridať skutok (ten istý ako v Nástrojoch)
   else if (sub === "skutky" && typPovoli("skutky", typ) && maPovolenie("skutky", tier)) obsah = <SkutkyCharity strankaId={strankaId} mobil={!desktop} onPridat={() => otvor("pridatSkutok")} />;
   // KARTA 49: Dorovnanie daru (pohľad charity)
-  else if (sub === "dorovnanie" && typPovoli("dorovnanie", typ) && maPovolenie("dorovnanie", tier)) obsah = <SpravaDorovnania nadpis={false} entita={poz} hlavnyUcet={nacitajIbanOrg(poz)} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onOznamy={() => otvor("oznamy")}
+  else if (sub === "dorovnanie" && typPovoli("dorovnanie", typ) && maPovolenie("dorovnanie", tier)) obsah = <SpravaDorovnania nadpis={false} entita={poz} strankaId={strankaId} hlavnyUcet={nacitajIbanOrg(poz)} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onOznamy={() => otvor("oznamy")}
     testCiele={{ strecha: naSpravu(ZB_LIST[0]).id, vozik: naSpravu(ZB_LIST[1]).id, ovocie: naSpravu(ZB_LIST[2]).id, skolske: naSpravu(ZB_LIST[3]).id, seniori: `${strankaId}-sek-seniori`, deti: `${strankaId}-sek-deti` }} />;
   // KARTA 39 · bod 3: centrálna zbierka (od P1)
   // OPRAVY 405: charita · Darcovia a sumy + Sledujúci (ako Viera), Zadarmo
@@ -1534,7 +1534,7 @@ const nadpisZb: React.CSSProperties = { fontSize: 12, fontWeight: 800, letterSpa
 function ObrZbierky(s: Spolocne) {
   const { otvor, menu, nova, vlastne, rozpisana, spravuj, tier, strankaId, entita, zbal, prepniZbal } = s;
   const neverejna = useNeverejna(strankaId); // OPRAVY 511: zbierka sa spustí až po zverejnení stránky
-  const dor = useDorovnania(entita);
+  const dor = useDorovnania(entita).filter((d) => d.stranka === strankaId); // 0186: len dorovnania tejto stránky
   const stavyDor = dor.map(stavCharity);
   const dorCaka = stavyDor.filter((x) => x === "cakaMimo" || x === "cakaDeed" || x === "potvrdene" || x === "vratit").length;
   const dorBezi = stavyDor.filter((x) => x === "bezi").length;
