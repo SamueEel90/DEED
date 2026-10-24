@@ -75,7 +75,7 @@ insert into t select 'potvrdené: zbierka vidí 10 030', coalesce((select vyzbie
 insert into t select 'potvrdené: zoznam darcov 3', (public.zbierka_dary('t176-z1')->>'pocet')::int = 3;
 insert into t select 'potvrdené: druhé potvrdenie nič nepridá', (select public.platba_potvrd(id, 'rura') is not null from public.platba where idem_kluc = 'p176-3')
   and pg_temp.pohybov('p176-3') = (select count(*) from public.pohyb po join public.platba pl on pl.id = po.platba_id where pl.idem_kluc = 'p176-3');
-insert into t select 'potvrdené: podvojnosť (súčet zostatkov 0)', (select coalesce(sum(case when ucet_kredit = u.id then suma else -suma end), 0) = 0
+insert into t select 'potvrdené: podvojnosť (súčet zostatkov 0)', (select coalesce(sum(case when po.ucet_kredit = u.id then po.suma else -po.suma end), 0) = 0
   from public.pohyb po join public.ucet u on u.id in (po.ucet_debet, po.ucet_kredit) join public.platba pl on pl.id = po.platba_id where pl.idem_kluc = 'p176-3');
 
 -- ---- 3 · darca s účtom, SEPA: pending, vo výpise „čaká", po potvrdení príchod cez procesor + dar ----
