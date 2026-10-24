@@ -31,6 +31,8 @@ export const FLAGS = {
 export const KONFIG = {
   /** limit súbežných zbierok charity podľa tieru (T1/T2 = placeholder) */
   limitZbierok: { 0: 1, 1: 5, 2: 10, 3: 9999, 4: 9999 } as Record<Tier, number>, // cenník charity: 1 · 5 · 10 · bez limitu (OPRAVY 87, mimo centrálnej)
+  /** balík 48 · 518 (Martin 23. 10.): charita — súčet všetkých zbierok naraz (centrálna + sektorové + bežné); server 0172 */
+  limitZbierokCharity: { 0: 1, 1: 4, 2: 11, 3: 9999, 4: 9999 } as Record<Tier, number>,
   /** lehota dokladovania po ukončení zbierky (placeholder X dní, §1.4) */
   lehotaDokladovaniaDni: 30,
   /** počet delegovaných správcov B2B podľa tieru (§3.1) */
@@ -222,7 +224,10 @@ export const POVOLENIA_CHARITY: Record<PolozkaSpravy, { od: Program }> = {
 /** má charita s týmto tierom položku? (program) */
 export const maPovolenie = (id: PolozkaSpravy, tier: Tier): boolean => tier >= PROGRAM_TIER[POVOLENIA_CHARITY[id].od];
 /** OPRAVY 118: ukazuje sa len svoj program + 2 vyššie (Zadarmo nevidí P3 ani P4) — všade: menu, dlaždice, skupiny, pripnuté */
-export const vidno = (od: Program, tier: Tier): boolean => PROGRAM_TIER[od] <= tier + 2;
+// balík 50 · 1: pri „Pozrieť ako“ (znížený program na zariadení) ostáva viditeľné so zámkom všetko zo skutočného programu
+let vidnoAspon = -1;
+export const nastavVidnoAspon = (t: number) => { vidnoAspon = t; };
+export const vidno = (od: Program, tier: Tier): boolean => PROGRAM_TIER[od] <= Math.max(tier + 2, vidnoAspon);
 export const vidnoPolozku = (id: PolozkaSpravy, tier: Tier): boolean => vidno(POVOLENIA_CHARITY[id].od, tier);
 
 // ============================================================

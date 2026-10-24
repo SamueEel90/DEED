@@ -111,6 +111,8 @@ export function DetailUkoncenej({ pc, profil, p, onBack }: { pc: boolean; profil
     <Obal pc={pc} onBack={onBack}>
       <Foto src={z.foto} />
       <span style={{ alignSelf: "flex-start", height: 28, padding: "0 12px", borderRadius: 14, background: "var(--btn)", color: "var(--ink2)", fontSize: 11.5, fontWeight: 800, letterSpacing: ".06em", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>ZBIERKA SKONČILA{kedy ? ` · ${kedy.toLocaleUpperCase("sk-SK")}` : ""}</span>
+      {/* balík 50 · 2: naplnená zbierka — stav, nie poďakovanie (vďaku píše správca sám) */}
+      {p.zbierka && z.ciel != null && z.ciel > 0 && z.vyzbierane >= z.ciel && <span role="status" style={{ fontSize: 16, fontWeight: 800, color: "var(--green)" }}>Zbierka je naplnená ✓</span>}
       <b style={{ fontSize: pc ? 30 : 24, lineHeight: 1.15 }}>{z.nazov}</b>
       {z.popis && <RozbalitelnyText text={z.popisHtml ?? z.popis} style={{ fontSize: 15.5, lineHeight: 1.6, color: "var(--ink2)" }} />}
       {!p.zbierka && <span style={{ fontSize: 15, color: "var(--ink2)", fontVariantNumeric: "tabular-nums" }}>{p.s}</span>}

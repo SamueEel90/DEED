@@ -417,3 +417,54 @@ Uložené verbatim v zdroje/22-dohody-23-10.md. Sedí s registrom (programy, cie
 - „Pozrieť ako" (balík 50): pás „Pozeráte ako … · Vrátiť ›", zámky nad limit.
 - Komit k cieľu v balíku opravený: cbb2f07 (nie efcd8a2 — to je môj register-komit programov).
 - Otvorené u Soni: Míľnik vzhľad, poradie blokov, tablet v Ateliéri (509, Martin overí iPad), pekná adresa reťaze pred ostrou.
+
+## Rozhodnuté 23. 10. — správa po ukončení súkromnej zbierky (dobrovoľný príspevok DEED+)
+Userovi (vlastníkovi zbierky) príde po ukončení pohrebnej/jubilejnej zbierky JEDNA správa so žiadosťou o dobrovoľný príspevok. **Čas: deň po ukončení zbierky, doobeda cca o 11:00** (pohrebná beží ešte ~7 dní po pohrebe, takže pohreb je už preč — netreba ďalší odstup). Raz, bez pripomínania.
+
+Pohrebná:
+„Zbierka je ukončená. Ďakujeme, že ste ju zverili DEED+ — snažili sme sa, aby vám v ťažkých dňoch aspoň s týmto ubudlo starostí.
+Podporiť nás môžete dobrovoľným príspevkom nižšie, aby takáto pomoc ostala dostupná aj ďalším.
+[Podporiť DEED+]"
+
+Jubilejná:
+„Zbierka je ukončená — dúfame, že urobila radosť.
+Podporiť nás môžete dobrovoľným príspevkom nižšie, aby sme to isté mohli spraviť pre ďalších.
+[Podporiť DEED+]"
+
+### Obrazovka príspevku po ukončení — schválená (23. 10. večer)
+Soňa dodala návrh, Fero schválil: svetlúšik hore, „ZBIERKA JE UKONČENÁ", schválené texty, predvoľby 3/5/10 € + Vlastná suma, „Podržte a podporte DEED+" (vzor podržania), dole „Dobrovoľné. Bez príspevku sa nič nestane." Farby = dva režimy témy (svetlý/tmavý), nie rozlíšenie typu zbierky — pohrebná bordová/zlatá, jubilejná zelená, v oboch režimoch.
+
+## Rozhodnuté 24. 10. ráno — Paľov blok odchýlok (Martin)
+- **ZÁSADA (do FERO/dizajn pravidiel): čo je dohodnuté a overené, berie sa 1:1 — žiadne improvizácie**, pokiaľ zadanie nepovie inak (vzor: overená centrálna zbierka fary).
+- 1+3: ručné „Ukončiť" zbierky charity AJ centrálnej zastaví dary aj na serveri (diera — pri charite sa zapisoval len stav pre Správu). QR ukončenej → hláška „Zbierka skončila". Oprava jednou migráciou 0174 (Paľo pre Sama). SCHVÁLENÉ.
+- **Model účtov charity ≠ farnosť: charita má centrálny účet, ale každá ďalšia zbierka MÔŽE mať vlastný transparentný účet** — nie je viazaná na jeden. Paľovi napísať samostatne, nech nestavia na farskom vzore „všetko na jeden účet".
+- 2: zbierky už nad cieľom sa po 0168 uzavrú pri najbližšom dare — nechať, Samo nič neprepína.
+- 4: advokácia JE v číselníku, podskupiny schválené: ľudské práva, právna pomoc, transparentnosť a protikorupcia. Varovanie na politiku + ban 10 rokov platí.
+- 5: v teste stačí tvar IBAN; reálne overenie účtu sektora → checklist pred ostrou.
+- 6: rozpracovaná sektorová len v otvorenej appke — OK pre teraz.
+- 7: samoukladanie názvu sektora — OTVORENÉ, rozoberie sa.
+- 8: „Pozrieť ako" len v appke, server podľa skutočného programu — potvrdené.
+- 10: počítadlo „0 ľudí dáva mesačne" napevno → checklist pred ostrou (počítať alebo skryť).
+- „+ Pridať sektor" v centrálnej zbierke je ZLE — sektor je sektorová zbierka, v centrálnej nemá čo hľadať (Martin dal aj Soni do oprav).
+- **Výber oblastí (podskupiny zo stanov) patrí do REGISTRÁCIE, nie do Správy.** UI: rolovacie sekcie — klik na hlavnú sekciu (napr. Zdravie a pacienti) → podpoložky sa rozbalia na boku na zakliknutie → ďalšia sekcia. Žiadny chaos všetkého naraz. Pri sektorových zbierkach pre testerov zatiaľ len hlavné kmeňové sektory.
+- PRIORITA: zbierky charity nefungujú od utorka — najprv sfunkčniť a dať Martinovi testovať, žiadne vymýšľanie navyše.
+
+### Checklist pred ostrou — doplnené
+- Reálne overenie účtu sektorovej zbierky (teraz len tvar IBAN).
+- Počítadlo pravidelných darcov pri centrálnej: počítať alebo skryť (teraz napevno 0).
+
+### Doplnok 24. 10. — model účtov charity POTVRDENÝ v kóde
+Paľo overil (OPRAVY 536, commit 9a244ee, smoke test prešiel): farnosť = jeden účet (všetko na hlavnú zbierku); charita = centrálna má centrálny účet, KAŽDÁ ďalšia zbierka (bežná aj sektorová) má vlastný transparentný účet od tvorby, nič sa nezlieva. Migrácia 0174 sa týka LEN zbierky „<stránka>:hlavna" centrálnej — zavrie pri ukončení, otvorí pri novej. Ferova výhrada vyriešená.
+
+### Výmena kóderského chatu
+Starý Paľo 2 dni chystá odovzdávkové MD; **nový Paľo štartuje 25. 10. ráno** (Martin). Fero pred štartom prelustruje odovzdávkové MD proti registru (staré verzie pravidiel, chýbajúce rozhodnutia).
+
+## Zdroj 23 — Kontrola kódu 24. 10. (audit, prelustrované Ferom)
+Audit sedí s registrom, žiadny rozpor s dohodami. Kľúčové:
+- **R1+N9 = najvážnejšie:** anon fiat dar vzniká ako settled bez rúry — po ostrej by hocikto nafúkol zbierku. Návrh pending/settled (peniaze až po potvrdení rúrou; testovacia pokladňa potvrdí hneď s testovaci=true) DRŽÍ pravidlá ledgera aj test — Fero schvaľuje návrh aj poradie opráv 1–10.
+- R2+R3 → funkcia ostry_start() + test všetkých poistiek = ide do CHECKLISTU PRED OSTROU (dopĺňa vypnúť pokladňu → zmaz_testovacie → trial).
+- R5: mazanie pohybov len cez jednu funkciu, nie disable trigger v migráciách — súhlas, drží vzor 0135.
+- R4 (PIN len v appke), R6 (balík +49 %), localStorage→DB, R8 (čistenie repa vrátane 3 MB scanov v histórii) — čakajú na rozhodnutie Martina/Sama.
+- N11 vypustené (Martin: placebo).
+- Pravidlá práce v audite (vetva per oprava, nič bez Martina, jedna zmena naraz, pushnutá migrácia sa nemení) = zhodné s našimi.
+Uložené: zdroje/23-kontrola-24-10.md.

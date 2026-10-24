@@ -47,7 +47,13 @@ insert into t select 'verejný pohľad: spustený je, bez účtu', exists (selec
 set role authenticated;
 select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-000000169a01', false);
 insert into t select 'ukončenie sektora prejde', public.t169_chyba($$update public.sektor_stranky set ukonceny = now() where id = 'sek-t169a'$$) = 'ok';
-insert into t select 'ukončený sa neotvorí', public.t169_chyba($$update public.sektor_stranky set ukonceny = null where id = 'sek-t169a'$$) = 'sektor_ukonceny';
+insert into t select '0171: do 15 minút sa ukončený vráti', public.t169_chyba($$update public.sektor_stranky set ukonceny = null where id = 'sek-t169a'$$) = 'ok';
+reset role;
+insert into t select '0171: vrátením je zbierka znova aktívna', (select stav from public.zbierka where id = 't169-p:sek-t169a') = 'aktivna';
+update public.sektor_stranky set ukonceny = now() - interval '16 minutes' where id = 'sek-t169a';
+set role authenticated;
+select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-000000169a01', false);
+insert into t select 'po 15 minútach sa ukončený neotvorí', public.t169_chyba($$update public.sektor_stranky set ukonceny = null where id = 'sek-t169a'$$) = 'sektor_ukonceny';
 insert into t select 'po ukončení nový sektor na tú istú oblasť prejde', public.t169_chyba($$insert into public.sektor_stranky (id, stranka, oblast, nazov) values ('sek-t169c','t169-p','osamelí seniori','Seniori')$$) = 'ok';
 insert into t select 'koncept bez darov sa dá zmazať', public.t169_chyba($$delete from public.sektor_stranky where id = 'sek-t169c'$$) = 'ok' ;
 reset role;

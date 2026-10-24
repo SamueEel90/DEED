@@ -161,6 +161,8 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, ko
           </span>
         </div>
         <Pruh podiel={suma / ciel!} vyska={10} koniec={koniecPruhu} useky={usekyPruhu(kto.riadky, ciel!)} />
+        {/* balík 50 · 2: cieľ nie je strop — bežiaca zbierka nad cieľom (prepínač auto-uzavretia vypnutý) zbiera ďalej */}
+        {suma >= ciel! && <div role="status" style={{ marginTop: 10, fontSize: 14.5, fontWeight: 800, color: "var(--green)" }}>Cieľ splnený ✓ · zbierame ďalej</div>}
         <LegendaPruhu riadky={kto.riadky} ludia={ludia > 0} />
         <RiadkyKtoPrispel riadky={kto.riadky} />
         <TempoDarov refId={refId} rezim={tempo} />

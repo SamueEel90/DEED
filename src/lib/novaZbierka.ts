@@ -313,3 +313,14 @@ export async function ukonciZbierku(stranka: string, id: string): Promise<void> 
   spustene.set(stranka, zbierkyStrankyZPamate(stranka).map((x) => (x.id === id ? { ...x, stav: "ukoncena" as const, koniec: x.koniec ?? new Date().toISOString() } : x))); zmena();
   if (supabase) void nacitajZbierkyStranky(stranka);
 }
+/** Martin 24. 10. · 0174: „Vrátiť späť“ do 15 minút po ručnom ukončení — server zbierku znova otvorí (dary idú ďalej) */
+export async function obnovZbierku(stranka: string, id: string): Promise<void> {
+  if (supabase) {
+    const r = await supabase.rpc("obnov_zbierku", { p_id: id });
+    if (r.error) throw new Error(/vratit_neskoro/.test(r.error.message ?? "") ? "Vrátiť sa dá len do 15 minút od ukončenia."
+      : /limit_zbierok/.test(r.error.message ?? "") ? "Máte plný počet zbierok vo vašom programe. Najprv niektorú ukončite."
+      : r.error.code === "42501" ? "Túto zbierku nespravujete." : "Zbierku sa nepodarilo vrátiť na serveri. Skúste to znova.");
+  }
+  spustene.set(stranka, zbierkyStrankyZPamate(stranka).map((x) => (x.id === id ? { ...x, stav: "aktivna" as const, koniec: undefined } : x))); zmena();
+  if (supabase) void nacitajZbierkyStranky(stranka);
+}

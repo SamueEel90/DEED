@@ -511,15 +511,12 @@ function ProgramRola({ mobil, rola, tier, onTier }: { mobil: boolean; rola: "b2b
     </div>
   </>);
 }
-function ProgramCharita({ mobil, tier, onTier, otvor }: { mobil: boolean; tier: Tier; onTier: (t: Tier) => void; otvor: (s: string) => void }) {
+function ProgramCharita({ mobil, tier, otvor }: { mobil: boolean; tier: Tier; onTier: (t: Tier) => void; otvor: (s: string) => void }) {
   const cur = Math.min(3, tier);
   const [roc, setRoc] = usePamat<boolean>("pr.roc", false);
-  const [ch, setCh] = useState<number | null>(null);
   const [por, setPor] = useState(false);
   const stav = cur === 0 ? "Neplatíte nič." : `${f2(roc ? PROG[cur][3] : PROG[cur][2])} bez DPH ${roc ? "ročne" : "mesačne"}`; // OPRAVY 442 doplnok 3: bez vymysleného dátumu platby
-  const poznT = ch != null && ch !== cur
-    ? (ch > cur ? "Vyšší program platí hneď. Doplatíte len rozdiel za zvyšok obdobia." : "Nižší program začne platiť od ďalšieho obdobia. Dovtedy máte všetko, za čo ste zaplatili. Zbierky nad limit dobehnú, nové otvoríte až v limite.")
-    : (roc ? "Na rok zaplatíte jednou platbou a máte 15 % zľavu. " : "Mesačne platíte každý mesiac, kedykoľvek zrušíte. ") + "Ceny sú bez DPH. Program môžete zmeniť kedykoľvek.";
+  const poznT = (roc ? "Na rok zaplatíte jednou platbou a máte 15 % zľavu. " : "Mesačne platíte každý mesiac, kedykoľvek zrušíte. ") + "Ceny sú bez DPH. Program môžete zmeniť kedykoľvek.";
   const VZDY = ["SEPA prevod je zadarmo. Celá suma príde na váš účet do 1 pracovného dňa. Výnimka: dar rozdelený cez Reťaz dobra, tam si poplatok účtuje poskytovateľ platobných služieb a strhne sa z daru. Nie je to poplatok DEED+.", "Pri platbe kartou platí poplatok darca navrch. Vy dostanete celý dar.", "Topovanie zbierky si môžete kúpiť zvlášť v každom programe.", "Karma sa nedá kúpiť. Program mení len to, čo máte zapnuté."];
   const fa = vsetkyFaktury(useFakturyOrg(), cur);
   const PLATBA: [string, string, string][] = [["Spôsob platby", cur ? "faktúra prevodom" : "zatiaľ nič neplatíte", "x:Spôsob platby"], ["Faktúry", fa.length ? `${fa.length} ${fa.length === 1 ? "faktúra" : fa.length < 5 ? "faktúry" : "faktúr"} · posledná ${denFa(fa[0].datum)}` : "zatiaľ žiadne", "n:faktury"], ["Fakturačné údaje", "IČO, DIČ, adresa, e-mail na faktúry", "n:udaje"]];
@@ -528,14 +525,12 @@ function ProgramCharita({ mobil, tier, onTier, otvor }: { mobil: boolean; tier: 
       <div style={{ ...krt, flex: 1, minWidth: mobil ? 0 : 260, padding: "14px 18px", display: "flex", flexDirection: "column", gap: 2 }}>
         <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Váš program</span><b style={{ fontSize: 20 }}>{PROG[cur][0]} · {PROG[cur][1]}</b><span style={{ fontSize: 13, color: "var(--ink2)" }}>{stav}</span>
       </div>
-      <div style={{ flex: mobil ? "1 1 100%" : "none" }}><Segment volby={[[0, "Mesačne"], [1, "Na rok · −15 %"]]} hodnota={roc ? 1 : 0} onZmena={(v) => { setRoc(v === 1); setCh(null); }} tien /></div>
+      <div style={{ flex: mobil ? "1 1 100%" : "none" }}><Segment volby={[[0, "Mesačne"], [1, "Na rok · −15 %"]]} hodnota={roc ? 1 : 0} onZmena={(v) => setRoc(v === 1)} tien /></div>
     </div>
     <div style={{ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : "repeat(4,minmax(0,1fr))", gap: 12, alignItems: "stretch" }}>
       {PROG.map(([n, k, m, r, f], i) => {
-        const on = i === cur, pot = ch === i, cena = roc ? r : m;
+        const on = i === cur, cena = roc ? r : m;
         const dph = cena ? `bez DPH · s DPH ${f2(Math.round(cena * 1.23 * 100) / 100)}${roc ? ` · ušetríte ${f2(Math.round((m * 12 - r) * 100) / 100)}` : ""}` : "navždy";
-        const btT = on ? "Váš program" : pot ? (i > cur ? "Potvrdiť zmenu" : "Potvrdiť prechod") : `Prejsť na ${n}`;
-        const tap = on ? undefined : pot ? () => { onTier(i as Tier); setCh(null); toast(i > cur ? `Program ${n} platí od dnes.` : `Program ${n} začne platiť od ďalšieho obdobia.`); } : () => setCh(i);
         return (
           <div key={n} style={{ minWidth: 0, borderRadius: 18, background: on ? "var(--accSoft)" : "var(--card)", border: on ? "1.5px solid var(--cuBd)" : "1px solid var(--cardBd)", padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}><b style={{ flex: 1, fontSize: 17 }}>{n}</b><span style={{ height: 22, padding: "0 8px", borderRadius: 11, background: "var(--btn)", display: "flex", alignItems: "center", fontSize: 11.5, fontWeight: 800, color: "var(--ink3)" }}>{k}</span></div>
@@ -543,9 +538,14 @@ function ProgramCharita({ mobil, tier, onTier, otvor }: { mobil: boolean; tier: 
             <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 7, paddingTop: 10, borderTop: "1px solid var(--cardBd)" }}>
               {f.map((x) => <span key={x} style={{ display: "flex", gap: 8, fontSize: 13.5, lineHeight: 1.35, color: "var(--ink2)" }}>{FAJKA()}{x}</span>)}
             </div>
-            <button onClick={tap} aria-disabled={on || undefined} style={{ height: 46, borderRadius: 13, border: on ? "1.5px solid var(--cuBd)" : (pot || i > cur) ? "none" : "1.5px solid var(--cardBd)", background: on ? "transparent" : pot ? ZELENA : i > cur ? "var(--green)" : "transparent", cursor: on ? "default" : "pointer", fontSize: 14.5, fontWeight: 800, color: on ? "var(--acc)" : (pot || i > cur) ? "#fff" : "var(--ink)" }}>{btT}</button>
+            {/* balík 50 · 1: „Prejsť na P…“ preč — program mení DEED+ (pod kartami „Napísať nám ›“) */}
+            {on && <span style={{ height: 46, borderRadius: 13, border: "1.5px solid var(--cuBd)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14.5, fontWeight: 800, color: "var(--acc)" }}>Váš program</span>}
           </div>);
       })}
+    </div>
+    <div style={{ ...krt, padding: "14px 18px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+      <span style={{ flex: "1 1 220px", fontSize: 14.5, color: "var(--ink2)" }}>Program vám zmení DEED+.</span>
+      <button onClick={() => otvor("n:podpora")} style={{ flex: "none", minHeight: 44, padding: "0 4px", border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--green)" }}>Napísať nám ›</button>
     </div>
     <span style={pozn}>{poznT}</span>
     <button onClick={() => setPor((x) => !x)} aria-expanded={por} style={{ alignSelf: "center", height: 46, padding: "0 20px", borderRadius: 13, border: "1.5px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontSize: 14.5, fontWeight: 800, color: "var(--ink)", display: "flex", alignItems: "center", gap: 8 }}>

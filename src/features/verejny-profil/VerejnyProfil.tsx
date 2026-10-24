@@ -52,6 +52,7 @@ import { skutkyOrg, useZmenySkutkov, type MojSkutok } from "@/lib/mojeSkutky";
 import { ucast, nacitajUcasti, pocetText, useZmenyUcasti } from "@/lib/oznamUcast";
 import { OznamDetail } from "@/features/rola/OznamDetail";
 import { useProgramStranky } from "@/lib/programStranky";
+import { usePozrietAko } from "@/lib/pozrietAko";
 import { nacitajOznamyStranky, oznamyStranky, bezi as oznamBezi, useZmenyOznamovCharity, type OznamCharity } from "@/lib/oznamyNove";
 import { nacitajZbierkyStranky, zbierkyStrankyZPamate, useZmenyZbierok, cielCislo, doplneniaHtml, type SpustenaZbierka } from "@/lib/novaZbierka";
 import { PomozCharita } from "./PomozCharita";
@@ -132,13 +133,13 @@ function sUdajmiCharity(p: TestProfil, prof: ProfilStranky | null, tier = 0): Te
   const c = centralnaZPamate(p.k), foto = c?.media.find((m) => m.typ === "foto")?.src;
   const centralna0 = c?.spustena ? { ...p.centralna, popis: cistyText(c.popis) || undefined, popisHtml: [c.popis, c.popis2].filter((x) => x && cistyText(x)).join("") || undefined, foto: foto ?? p.centralna.foto, galeria: c.media.map((m) => ({ typ: m.typ, src: m.src, popis: m.popis })) } : p.centralna;
   // balík 48 · 522: dlaždice „Podporte nás“ = spustená centrálna + spustené sektory zo servera (0169); suma tento mesiac z ledgera
-  const zMesiaca = (refId: string, hlavna: boolean, nazov: string) => {
+  const zMesiaca = (refId: string, hlavna: boolean, nazov: string, od = 0) => {
     naviazObjekt(refId, { stranka: p.k, hlavna, nazov });
     const z = new Date(); z.setDate(1); z.setHours(0, 0, 0, 0);
-    const r = darcoviaPre(refId);
+    const r = darcoviaPre(refId).filter((x) => x.cas >= od); // centrálna od spustenia (nová po ukončení začína od nuly)
     return { mesiac: r.filter((x) => x.cas >= z.getTime()).reduce((a, x) => a + x.suma, 0), vyzbierane: r.reduce((a, x) => a + x.suma, 0), darcovia: r.length };
   };
-  const centralna = c?.spustena ? { ...centralna0, ...zMesiaca(centralna0.id, true, centralna0.nazov) } : centralna0;
+  const centralna = c?.spustena ? { ...centralna0, ...zMesiaca(centralna0.id, true, centralna0.nazov, Date.parse(c.spustena) || 0) } : centralna0;
   const sektory: TestSektor[] = sektoryVerejneZPamate(p.k).map((s) => {
     const fotky = s.obsah.media.filter((m) => m.typ === "foto");
     return { id: s.id, nazov: s.nazov, druh: "sektor", foto: fotky[0]?.src ?? centralna0.foto, galeria: s.obsah.media.map((m) => ({ typ: m.typ, src: m.src, popis: m.popis })),
@@ -163,6 +164,7 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad, vzhladAtelier }: { klu
   const profil0 = profilKluca(kl0);
   const [detail, setDetail] = useState<TestZbierka | null>(null);
   const [detailZQr, setDetailZQr] = useState(false); // OPRAVY 483: z QR rovno modul s platbou (nie príbeh)
+  const [zbSkoncila, setZbSkoncila] = useState(false); // Martin 24. 10.: QR ukončenej zbierky = „Zbierka skončila · ďakujeme“ (1 : 1 ako farnosť, OPRAVY 347)
   const [oznamId, setOznamId] = useState<string | null>(null); // OPRAVY 431: ťuk na oznam / výzvu = detail
   // KARTA 57C §1: farnosť = živá nástenka z uloženého (nie testovací profil)
   const [stream, setStream] = useState<string | null>(null);
@@ -194,7 +196,9 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad, vzhladAtelier }: { klu
   const [tiery] = useState(nacitajTiery);
   const typP = profil0?.typ;
   // OPRAVY 432 + 529: charita — program vždy zo servera (program_stranky, 0137)
-  const programCh = useProgramStranky(typP === "charita" ? profil0?.k : null);
+  const programCh0 = useProgramStranky(typP === "charita" ? profil0?.k : null);
+  // balík 50 · 1: „Pozrieť ako“ správcu na tomto zariadení (nižší program) platí aj pre náhľad profilu
+  const programCh = usePozrietAko(profil0?.k ?? "", typP === "charita" ? programCh0 : 99).tier;
   const tierStranky = typP === "charita" ? programCh : TESTOVACIA && ts.program !== null ? ts.program : typP === "firma" ? tiery.b2b : tiery.tvorca;
   const regV = useRegistra(profil0?.k ?? kluc); // OPRAVY 400: názov charity z registra
   const vzhlad = useVzhlad(profil0?.k ?? kluc, typP !== "farnost" && tierStranky === 0); // farnosť: jeden platený program, výber má vždy
@@ -230,6 +234,7 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad, vzhladAtelier }: { klu
     const z = zbierkyStrankyZPamate(kCh).find((x) => x.id === id);
     if (!z) return;
     zrusZbierkuZQr();
+    if ((z.stav ?? "aktivna") !== "aktivna") { setZbSkoncila(true); return; }
     setDetailZQr(true);
     setDetail(zbierkaProfilu(z, profil0));
   });
@@ -303,7 +308,13 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad, vzhladAtelier }: { klu
     <div style={{ position: "relative", height: "100%" }}>
       <div aria-hidden={vrstva ? true : undefined} style={vrstva ? { position: "absolute", inset: 0, visibility: "hidden", pointerEvents: "none" } : { height: "100%" }}>{zakladStranka()}</div>
       {vrstva && <div style={{ position: "absolute", inset: 0, overflowY: (detail && !pribeh) || oznamD ? "auto" : undefined }}>{vrstva}</div>}
-
+      {zbSkoncila && createPortal(<div role="dialog" aria-modal="true" aria-label="Zbierka skončila" onClick={() => setZbSkoncila(false)} style={{ position: "fixed", inset: 0, zIndex: 1300, background: "rgba(14,12,8,.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+        <div onClick={(e) => e.stopPropagation()} style={{ width: "min(100%, 420px)", borderRadius: 22, background: "var(--card, #F4EFE6)", color: "var(--ink, #1D211B)", padding: "24px 22px", display: "flex", flexDirection: "column", gap: 10, boxSizing: "border-box" }}>
+          <b style={{ fontSize: 22, lineHeight: 1.25 }}>Zbierka skončila · ďakujeme</b>
+          <span style={{ fontSize: 16, lineHeight: 1.5, color: "var(--ink2, #4A4C43)" }}>Ďakujeme všetkým, ktorí prispeli. Na stránke charity sú bežiace zbierky.</span>
+          <button type="button" autoFocus onClick={() => setZbSkoncila(false)} style={{ marginTop: 6, minHeight: 52, border: "none", borderRadius: 14, background: "#4B7A35", color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800 }}>Pozrieť stránku charity</button>
+        </div>
+      </div>, document.body)}
     </div>);
 }
 
