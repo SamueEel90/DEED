@@ -518,3 +518,9 @@ Migrácia 0189 (PR #79): nové funkcie už nie sú automaticky volateľné; tabu
 **FEROVA VÝHRADA (odoslaná):** zoznam 205 funkcií preberá aj spiace diery s grantami (escrow_create aj pre anon, penazenka_dobit, plne_prava, retaz_test, badge_create, cron funkcie) — Pali ich pri kontrole #79 vyhodí zo zoznamu podľa rizika-fronta.md bod 5 → oprava 16 sa tým vybaví v rámci 0189.
 **TRVALÉ PRAVIDLO (spresnenie):** každá nová funkcia pre appku = riadok v public.api_funkcie + grant execute anon/authenticated; bez toho permission denied a CI spadne. Interné funkcie nepotrebujú nič — zamknuté automaticky.
 Zabraté: 0189, 0190. Nový kóder od 0191.
+
+## 24. 10. večer — špecialista KONČÍ, opravy preberá Pali
+Pali schválil PR #79 (všetko spojil, DB od nuly, 0|0|0, obe diery zavreté, 155 funkcií appky drží). Tím odteraz: Martin · Fero (register) · Pali (kód) · Samo (nasadenie) · Soňa (dizajn).
+- Samo: merge #79+#80+#78, nasadiť 0189+0190, overovací dotaz (tri nuly), zmazať vetvy, overiť v Supabase ZAPNUTÉ anonymné prihlásenie (bez neho nejde dar cez QR bez prihlásenia — 113 funkcií) aj Confirm email (B1). → Ulohy_Samo.md
+- Pali: od 0191 opravy podľa rizika-fronta: 1. oprava 16 (zamknúť escrow a spiace funkcie — oprava 15 ich NECHALA otvorené), 2. A2 IBAN, 3. C1 odkaz, 4. D1 ostry_start, ďalej D2/E1/E2/C2 + nový nález (zostatok účtu podľa čísla vidí hocikto — platilo aj pred 15) + TODO Ukončiť reťaz. → Ulohy_Pali.md
+- Martin po nasadení: preklik appky + v súkromnom okne QR akcie a dar cez rozdelený QR (tam sa anonymné prihlásenie prejaví hneď).
