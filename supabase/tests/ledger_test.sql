@@ -22,9 +22,17 @@ update public.ucet set v_rebricku = true where id = '7e570000-0000-0000-0000-000
 set role authenticated;
 select set_config('request.jwt.claim.sub','7e57a000-0000-0000-0000-00000000000a', false);
 -- 3 · split 100 € kartou: 50 % autor (vlastník, nepočíta sa) + 50 % zbierka 2
-select (public.platba_create('s1', 100, 'EUR', 'fiat', '20000000-0000-0000-0000-000000000001', 'Jozef A', null, null, false, 0, '{"zobrazenie":1}',
-  '[{"prijemca_ucet":"7e570000-0000-0000-0000-00000000000b","podiel":0.5,"fixny":false},{"case_id":"20000000-0000-0000-0000-000000000002","podiel":0.5,"fixny":true}]')).id is not null;
+-- 0178: split s prípadom zadáva len server (QR split / reťaz cez platba_zapis); z appky je to chyba
+do $$ begin perform public.platba_create('s1', 100, 'EUR', 'fiat', '20000000-0000-0000-0000-000000000001', 'Jozef A', null, null, false, 0, '{"zobrazenie":1}',
+  '[{"prijemca_ucet":"7e570000-0000-0000-0000-00000000000b","podiel":0.5,"fixny":false},{"case_id":"20000000-0000-0000-0000-000000000002","podiel":0.5,"fixny":true}]');
+  insert into t values ('0178: split s pripadom z appky odmietnuty', false);
+exception when others then insert into t values ('0178: split s pripadom z appky odmietnuty', sqlerrm like '%autor%'); end $$;
+do $$ begin perform public.platba_create('s1x', 10, 'EUR', 'fiat', '20000000-0000-0000-0000-000000000001', 'Jozef A', '7e570000-0000-0000-0000-00000000000b');
+  insert into t values ('0178: cudzi prijemca s pripadom z appky odmietnuty', false);
+exception when others then insert into t values ('0178: cudzi prijemca s pripadom z appky odmietnuty', sqlerrm like '%autor%'); end $$;
 reset role;
+select (public.platba_zapis('s1', 100, 'EUR', 'fiat', '20000000-0000-0000-0000-000000000001', '7e570000-0000-0000-0000-00000000000a', 'Jozef A', null, null, false, 0, '{"zobrazenie":1}',
+  '[{"prijemca_ucet":"7e570000-0000-0000-0000-00000000000b","podiel":0.5,"fixny":false},{"case_id":"20000000-0000-0000-0000-000000000002","podiel":0.5,"fixny":true}]')).id is not null;
 insert into t select 'split: podiely = cista suma',
   (select sum(suma) from pohyb where platba_id = pl.id and typ='dar') = pl.cista_suma
   and (select sum(suma) from platba_split where platba_id = pl.id) = pl.cista_suma
