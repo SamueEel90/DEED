@@ -63,8 +63,9 @@ export async function ktoVola(authHeader: string | undefined, ip: string): Promi
     const { data } = await s.auth.getUser(token);
     const authId = data?.user?.id;
     if (authId) {
-      const { data: u } = await s.from("ucet").select("id").eq("auth_id", authId).maybeSingle();
-      if (u?.id) return { kluc: String(u.id), prihlaseny: true };
+      // 0180 (N3): limit „prihlásený" má len overený účet človeka; anonymný / neoverený účet ráta ako bez prihlásenia
+      const { data: u } = await s.from("ucet").select("id, typ, telefon_overeny, email_overeny").eq("auth_id", authId).maybeSingle();
+      if (u?.id && u.typ === "aktivny" && (u.telefon_overeny || u.email_overeny)) return { kluc: String(u.id), prihlaseny: true };
     }
   }
   const { createHash } = await import("node:crypto");

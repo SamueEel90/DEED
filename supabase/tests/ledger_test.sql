@@ -10,6 +10,7 @@ insert into public.ucet (id, auth_id, typ, stav_registracie) values
  ('7e570000-0000-0000-0000-00000000000a','7e57a000-0000-0000-0000-00000000000a','aktivny','hotovo'),
  ('7e570000-0000-0000-0000-00000000000b','7e57a000-0000-0000-0000-00000000000b','aktivny','hotovo');
 insert into public.ucet (id, typ, stav_registracie) values ('7e570000-0000-0000-0000-00000000000c','charita','hotovo');
+update public.ucet set telefon_overeny = true where id in ('7e570000-0000-0000-0000-00000000000a','7e570000-0000-0000-0000-00000000000b');   -- 0180: kredit len overenému
 \pset tuples_only on
 create temp table t(c text, ok boolean);
 grant all on t to public;
@@ -145,8 +146,15 @@ insert into auth.users(id) values ('7e57a000-0000-0000-0000-0000000000f1');
 set role authenticated;
 select set_config('request.jwt.claim.sub','7e57a000-0000-0000-0000-0000000000f1', false);
 select public.zaisti_ucet() is not null;
-insert into t select 'novy ucet ma 1240', (select zostatok_deed from v_zostatok) = 1240;
+insert into t select '0180: anonymny ucet bez kreditu', (select zostatok_deed from v_zostatok) = 0;
 insert into t select 'v_zostatok len moj', (select count(*) from v_zostatok) = 1;
+reset role;
+-- 0180: po dokončení registrácie (aktivny + overený telefón zapíše server) príde štartovací kredit — raz
+update public.ucet set typ = 'aktivny', telefon_overeny = true where auth_id = '7e57a000-0000-0000-0000-0000000000f1';
+update public.ucet set email_overeny = true where auth_id = '7e57a000-0000-0000-0000-0000000000f1';
+set role authenticated;
+select set_config('request.jwt.claim.sub','7e57a000-0000-0000-0000-0000000000f1', false);
+insert into t select 'novy overeny ucet ma 1240 (raz)', (select zostatok_deed from v_zostatok) = 1240;
 reset role;
 -- 1 · súčet = 0
 insert into t select 'sucet pohybov = 0 per mena', bool_and(s = 0) from (select mena, sum(z) s from (select mena, suma z from pohyb union all select mena, -suma from pohyb) x group by mena) y;
