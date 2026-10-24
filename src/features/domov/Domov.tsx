@@ -6,7 +6,7 @@ import { NahlasitSheet } from "@/components/nahlasit";
 import { useState, useEffect, useRef, memo } from "react";
 import { SIRKA, C, inp, btn, GRAD, SPACE, RADIUS } from "@/theme";
 import { HostPruh } from "./HostPruh";
-import { ModulHlavicka, Hlavicka, AvatarUroven, PlatobnyModul, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, Oslava, useScrollPamat, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, pocetTentoMesiac, MoniBar, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackChip, ProgresBox, SwipeBack, obalSiroky, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, SplitQrSheet, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, FormatovanyText, RozbalitelnyText, ZoznamDarcov } from "@/shared";
+import { ModulHlavicka, Hlavicka, AvatarUroven, PlatobnyModul, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, Oslava, useScrollPamat, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, pocetTentoMesiac, MoniBar, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackChip, ProgresBox, SwipeBack, obalSiroky, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, SplitQrSheet, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, RozbalitelnyText, ZoznamDarcov } from "@/shared";
 import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { pripravFeed, FEED_CFG, type FeedUser } from "@/lib/feed";
 import { tint, tagChip, jeHrdina, HRDINA_COL, rovnakeOkremFunkcii } from "@/lib/ui";

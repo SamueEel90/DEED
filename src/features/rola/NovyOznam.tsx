@@ -254,7 +254,7 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
   // OPRAVY 407: otvorené z Akcií a podujatí na úpravu — formulár sa naplní, keď sú oznamy načítané
   const upravene = useRef(false);
   const naUpravu = upravitId ? oznamyStranky(strankaId).find((o) => o.id === upravitId) : undefined;
-  useEffect(() => { if (naUpravu && !upravene.current) { upravene.current = true; upravit(naUpravu); } }, [naUpravu]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (naUpravu && !upravene.current) { upravene.current = true; upravit(naUpravu); } }, [naUpravu]);
 
   // ---- výrez fotky galérie ----
   const vyrezM = vyrezId != null ? f.media.find((m) => m.id === vyrezId) : null;

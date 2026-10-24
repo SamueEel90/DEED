@@ -64,7 +64,8 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   const [d, setD] = useState<NovaZbierkaData>(() => (oprava ? naOpravu(oprava) : konceptZbierkyZPamate(strankaId) ?? prazdnaZbierka()));
   const zmenene = useRef(false);
   const [nacitane, setNacitane] = useState(false);
-  useEffect(() => { if (oprava) return; let ziva = true; void nacitajKonceptZbierky(strankaId).then((k) => { if (ziva && k && !zmenene.current) setD(k); if (ziva) setNacitane(true); }); return () => { ziva = false; }; }, [strankaId]);
+  const jeOprava = !!oprava;   // stabilný príznak do závislostí efektov (objekt oprava sa môže meniť každým renderom)
+  useEffect(() => { if (jeOprava) return; let ziva = true; void nacitajKonceptZbierky(strankaId).then((k) => { if (ziva && k && !zmenene.current) setD(k); if (ziva) setNacitane(true); }); return () => { ziva = false; }; }, [strankaId, jeOprava]);
   const zmen = (z: Partial<NovaZbierkaData>) => { zmenene.current = true; setD((x) => ({ ...x, ...z })); };
   // KARTA 62: „Na ktoré miesto“ — nepovinný účel zbierky farnosti, len pri 2+ miestach
   const miestaF = useMiesta(strankaId);
@@ -75,10 +76,10 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   const upoz = upozV ?? predvUpoz("zbierka");
   // ROZPÍSANÉ SA UKLADÁ SAMO — 600 ms po poslednej zmene, do účtu stránky
   useEffect(() => {
-    if (!zmenene.current || !nacitane || oprava) return;
+    if (!zmenene.current || !nacitane || jeOprava) return;
     const t = window.setTimeout(() => { void ulozKonceptZbierky(strankaId, d); }, 600);
     return () => window.clearTimeout(t);
-  }, [d, strankaId, nacitane]);
+  }, [d, strankaId, nacitane, jeOprava]);
 
   const k = KROKY.includes(d.krok) ? d.krok : KROKY.find((n) => n > d.krok) ?? 6;
   const ki = KROKY.indexOf(k);
@@ -90,7 +91,7 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   const [pozriet, setPozriet] = useState(false);
   // karta 37 · bod 8: „Veríme vám" raz pred prvou zbierkou (rovnaké úložisko ako pri skutku za charitu)
   const [uvodOn, setUvodOn] = useState(() => !oprava && !uvodZPamate(strankaId, "zbierka") && !uvodZPamate(strankaId, "skutok"));
-  useEffect(() => { let ziva = true; void nacitajUvod(strankaId).then((u) => { if (ziva) setUvodOn(!oprava && !u.zbierka && !u.skutok); }); return () => { ziva = false; }; }, [strankaId]);
+  useEffect(() => { let ziva = true; void nacitajUvod(strankaId).then((u) => { if (ziva) setUvodOn(!jeOprava && !u.zbierka && !u.skutok); }); return () => { ziva = false; }; }, [strankaId, jeOprava]);
   const [pravidla, setPravidla] = useState(false);
   const hore = useRef<HTMLDivElement>(null);
   // pri zmene kroku hore na začiatok správy (hlavička ostane vidno), nie pri prvom otvorení

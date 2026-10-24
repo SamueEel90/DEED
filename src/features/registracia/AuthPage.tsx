@@ -363,10 +363,10 @@ function PrihlasenieMobilom({ onSpat, onPrihlasene }: { onSpat: () => void; onPr
     try { const x = await zalozQr(nazovZariadenia().nazov); if (ziva.current) setQ(x); }
     catch (e) { if (ziva.current) { setQ(null); setChyba((e as Error).message); } }
   };
-  useEffect(() => { ziva.current = true; void novy(); return () => { ziva.current = false; }; }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { ziva.current = true; void novy(); return () => { ziva.current = false; }; }, []);
   useEffect(() => { const t = window.setInterval(() => setTeraz(Date.now()), 1000); return () => window.clearInterval(t); }, []);
   // QR po 2 minútach sám vymení
-  useEffect(() => { if (q && !hotovo && teraz >= q.platiDo) void novy(); }, [teraz, q, hotovo]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (q && !hotovo && teraz >= q.platiDo) void novy(); }, [teraz, q, hotovo]);
   // počúva stav (každú 1,5 s)
   useEffect(() => {
     if (!q || hotovo) return;

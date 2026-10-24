@@ -2,7 +2,6 @@
 // Nahrádza „Môj DEED+ firemný" v module Charita. Horná lišta dostane v strede 2 tlačidlá (KonasAkoLista).
 import { useEffect, useRef, useState } from "react";
 import { kartaVolby, FajkaVolby } from "@/components/Volby";
-import { toast } from "@/components/toast";
 import { useLayout } from "@/components/context";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { UKAZKOVE_STRANKY, useMojeStranky, useStrankyUctu, nastavAko, prepniPrezentaciu, TESTOVACIA, strankaCharity, strankaFarnosti, pridatOrganizaciu, type Stranka } from "@/lib/mojeStranky";

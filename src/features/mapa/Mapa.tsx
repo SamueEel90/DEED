@@ -51,7 +51,7 @@ export default function ModulMapa({ wide }: { wide?: boolean }) {
   const { svetly } = useMotiv();
   const { data: body = [], isLoading, isError, refetch } = useMapaBody();
   const lok = useLokalita(); // stred mapy = aktívne mesto (prepínateľné)
-  const STRED = { lat: lok.lat, lng: lok.lng };
+  const STRED = useMemo(() => ({ lat: lok.lat, lng: lok.lng }), [lok.lat, lok.lng]);
   const [uroven, setUroven] = useState("stvrt");
   const [km, setKm] = useState(2);
   const [gps, setGps] = useState(false); // demo: GPS vypnuté → banner
@@ -69,7 +69,7 @@ export default function ModulMapa({ wide }: { wide?: boolean }) {
       if (b.druh === "udalost") u++; else s++;
     }
     return { skutky: s, udalosti: u };
-  }, [body, radiusKm, lok.lat, lok.lng]);
+  }, [body, radiusKm, STRED]);
 
   // ---- Leaflet refs ----
   const elRef = useRef<HTMLDivElement>(null);

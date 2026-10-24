@@ -171,7 +171,7 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad, vzhladAtelier }: { klu
   // doplnky 4. 10.: záznam z kroniky / rokov — skutok, akcia, ukončená zbierka (bez platby), Iskra = Iskry na tom videu
   const [zaznam, setZaznam] = useState<PolCh | null>(null);
   const [zaznamZFeedu, setZaznamZFeedu] = useState(false); // OPRAVY 485: skutok z hlavného feedu — Späť rovno na Domov
-  const [novyOdF, setNovyOdF] = useState<string | null>(null); // KARTA 56I: nová položka Od veriacich je zvýraznená
+  const [novyOdF] = useState<string | null>(null); // KARTA 56I: nová položka Od veriacich je zvýraznená
   const pc = usePc1200();
   const otvorZaznam = (p: PolCh) => {
     if (p.typ === "is") { const id = p.id.replace(/^k-/, ""); otvorIskry(iskryVsetky().some((v) => v.id === id) ? id : undefined); return; }
@@ -217,6 +217,7 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad, vzhladAtelier }: { klu
   const [profCh, setProfCh] = useState<ProfilStranky | null>(() => (kCh ? profilZPamate(kCh).ulozeny : null));
   useEffect(() => { if (!kCh) return; let ziva = true; void nacitajProfil(kCh).then((z) => { if (ziva) setProfCh(z.ulozeny); }); void nacitajZbierkyStranky(kCh); void nacitajCentralnuZbierku(kCh); void nacitajSektoryVerejne(kCh); void nacitajSkutkyStranky(kCh); void nacitajOznamyStranky(kCh); nacitajPrud(); return () => { ziva = false; }; }, [kCh]);
   // OPRAVY 490: z modulu zbierky „Pozri ›“ pri skutku → detail toho skutku hneď po načítaní skutkov stránky
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- jednorazový signál z iného modulu — kontroluje sa po každom renderi (zámer, OPRAVY 490)
   useEffect(() => {
     const id = cielSkutku();
     if (!id || !kCh || !profil0) return;
@@ -228,6 +229,7 @@ function VerejnyProfilObsah({ kluc, onBack, profilNahlad, vzhladAtelier }: { klu
     setZaznam({ id: t.id, typ: "sk", d: t.d ?? "", m: t.m ?? "", rok: t.rok ?? new Date().getFullYear(), nazov: t.nazov, s: t.popis, foto: t.foto });
   });
   // OPRAVY 483: QR / odkaz zbierky (/z/{id}) → rovno detail tej zbierky s platbou (ako vo Viere), nie stránka charity
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- jednorazový signál z QR / odkazu — kontroluje sa po každom renderi (zámer, OPRAVY 483)
   useEffect(() => {
     const id = zbierkaZQrCitaj();
     if (!id || !kCh || !profil0) return;
