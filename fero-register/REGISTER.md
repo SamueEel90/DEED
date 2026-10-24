@@ -495,3 +495,14 @@ Uložené: zdroje/25-sprava-specialistu-24-10.md.
 - `zmaz_testovacie` najprv odmietlo (účet `23df6ff3…` by mal −1 150 DeeD: 6 darov bez príznaku z testovacieho dobitia) → tých 6 platieb označených `testovaci` → zmazané (187 pohybov, 87 platieb).
 - GitHub: #63–#75 zlúčené do master, master zlúčený do platby-modul. Vercel: PLATBA_WEBHOOK_SECRET + PUSH_CRON_TOKEN; Vault `push_cron_token` ešte chýba.
 Uložené: zdroje/26-nasadenie-opravy-1-13-24-10.md.
+
+## Rozhodnuté 24. 10. večer — systémová diera práv DB funkcií (oprava 15)
+Nový kóder našiel, špecialista potvrdil a rozšíril: Supabase dáva každej novej DB funkcii automatické právo volania pre anon aj prihlásených; staré migrácie revokovali len `public`, takže ~170 z 385 funkcií je implicitne volateľných zvonku. Nebezpečné: dorovnanie_financuj/dorovnanie_presun (vznik a presun EUR bez platby), notifikuj_ucet/upozorni_farnost/vyplata_oznam a ďalšie upoz_* (správa+push komukoľvek).
+**Oprava 15 (schválená Ferom, čaká na Martinovo „choď"):**
+1. Jedna migrácia: vypnúť automatické práva pre nové funkcie + výslovne odobrať anon/authenticated všetkým interným (appka volá len funkcie s výslovným grantom — overené na čistej DB: 155 funkcií appky ostáva dostupných, obe diery zavreté).
+2. CI: doplniť skúšku „žiadna interná funkcia nie je volateľná zvonku" (testovacia DB už Supabase práva má — kontrolór overil; špecialistov predpoklad, že nemá, bol omyl).
+3. Po nasadení: Samo porovná skutočné práva na Supabase dotazom (vypnutie automatických práv platí len pre spúšťajúceho!) + Martin prekliká appku.
+4. Ručne prejsť aj ~156 výslovne povolených funkcií — podobná diera môže sedieť aj tam.
+Poradie: oprava 15 ide ako ďalšia vetva V RADE za opravami 1–13, nie mimo poradia.
+**TRVALÉ PRAVIDLO: každá nová DB funkcia pre appku potrebuje výslovné povolenie (grant); automatické práva sú vypnuté. Platí pre všetkých kóderov.**
+Pozn.: prvý beh CI na oprave 1 bol červený (chyba v teste IP hlavičky), opravené druhým commitom na tej istej vetve — obsah opravy nezmenený.
