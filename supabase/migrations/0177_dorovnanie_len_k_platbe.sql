@@ -108,7 +108,8 @@ begin
     join public.dorovnanie_zaznam z on z.idem = pl.id::text
     join public.dorovnanie d on d.id = z.dorovnanie_id
    where pl.odosielatel = v_ja and (pl.zbierka = p_ciel or d.ciel = p_ciel) and pl.cas > now() - interval '10 minutes'
-   order by pl.cas desc limit 1;
+     and (p_idem is null or pl.idem_kluc = p_idem)                 -- appka pošle idem daru → presne tá platba
+   order by pl.cas desc, pl.vytvorene desc limit 1;
   if not found then return jsonb_build_object('dorovnane', 0); end if;
   return jsonb_build_object('dorovnane', r.dorovnane, 'firma', r.firma_nazov, 'id', r.id);
 end $$;
