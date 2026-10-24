@@ -73,8 +73,9 @@ insert into t select 'potvrdené: pohyby ostré (nie testovacie)', pg_temp.pohyb
   and (select not bool_or(po.testovaci) from public.pohyb po join public.platba pl on pl.id = po.platba_id where pl.idem_kluc = 'p176-3');
 insert into t select 'potvrdené: zbierka vidí 10 030', coalesce((select vyzbierane from public.v_zbierka_vyzbierane where zbierka = 't176-z1' and mena = 'EUR'), 0) = 10030;
 insert into t select 'potvrdené: zoznam darcov 3', (public.zbierka_dary('t176-z1')->>'pocet')::int = 3;
-insert into t select 'potvrdené: druhé potvrdenie nič nepridá', (select public.platba_potvrd(id, 'rura') is not null from public.platba where idem_kluc = 'p176-3')
-  and pg_temp.pohybov('p176-3') = (select count(*) from public.pohyb po join public.platba pl on pl.id = po.platba_id where pl.idem_kluc = 'p176-3');
+create temp table pred3 as select pg_temp.pohybov('p176-3') n;
+insert into t select 'potvrdené: druhé potvrdenie nič nepridá', (select (public.platba_potvrd(id, 'rura')).stav = 'settled' from public.platba where idem_kluc = 'p176-3')
+  and pg_temp.pohybov('p176-3') = (select n from pred3);
 insert into t select 'potvrdené: podvojnosť (súčet zostatkov 0)', (select coalesce(sum(case when po.ucet_kredit = u.id then po.suma else -po.suma end), 0) = 0
   from public.pohyb po join public.ucet u on u.id in (po.ucet_debet, po.ucet_kredit) join public.platba pl on pl.id = po.platba_id where pl.idem_kluc = 'p176-3');
 
@@ -125,18 +126,18 @@ do $$ begin
   perform public.zbierka_dar_volba('t176-z1', 'p176-L31', 3, 'EUR', 'fiat', null, 't176-a', 'Strecha', null, false);
   insert into t values ('anonym: 31. pending z tej istej IP odmietne', false);
 exception when others then insert into t values ('anonym: 31. pending z tej istej IP odmietne', sqlerrm like '%nepotvrdených%'); end $$;
+reset role;   -- kontroly čítajú platby ako postgres (anon ich cez RLS nevidí)
 insert into t select 'ip sa uklada len k pending platbe', (select count(*) from public.platba where ip_darcu = '203.0.113.7' and stav = 'pending') = 30;
+set role anon;
 select set_config('request.headers', '{"x-forwarded-for":"198.51.100.9"}', false);
 select public.zbierka_dar_volba('t176-z1', 'p176-L32', 3, 'EUR', 'fiat', null, 't176-a', 'Strecha', null, false);
-insert into t select 'ina IP prejde', (select stav = 'pending' from public.platba where idem_kluc = 'p176-L32');
 select set_config('request.headers', '', false);
 select public.zbierka_dar_volba('t176-z1', 'p176-L33', 3, 'EUR', 'fiat', null, 't176-a', 'Strecha', null, false);
-insert into t select 'bez IP bez limitu', (select stav = 'pending' and ip_darcu is null from public.platba where idem_kluc = 'p176-L33');
 reset role;
+insert into t select 'ina IP prejde', (select stav = 'pending' from public.platba where idem_kluc = 'p176-L32');
+insert into t select 'bez IP bez limitu', (select stav = 'pending' and ip_darcu is null from public.platba where idem_kluc = 'p176-L33');
 select public.platba_potvrd((select id from public.platba where idem_kluc = 'p176-L32'), 'rura');
 insert into t select 'po potvrdeni sa IP zmaze', (select ip_darcu is null and stav = 'settled' from public.platba where idem_kluc = 'p176-L32');
-set role anon;
-reset role;
 -- prihlásený darca limit nemá
 set role authenticated;
 select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-000000176d01', false);
