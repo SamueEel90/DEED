@@ -9,6 +9,7 @@ insert into auth.users (id) values ('7e57c000-0000-0000-0000-000000176a01'), ('7
 insert into public.ucet (id, auth_id, typ, stav_registracie) values
  ('7e57c100-0000-0000-0000-000000176a01','7e57c000-0000-0000-0000-000000176a01','charita','hotovo'),
  ('7e57c100-0000-0000-0000-000000176d01','7e57c000-0000-0000-0000-000000176d01','aktivny','hotovo');
+update public.ucet set telefon_overeny = true where id = '7e57c100-0000-0000-0000-000000176d01';   -- 0180: kredit len overenému
 insert into public.stranka (id, ucet_id, typ, nazov, testovacia) values ('t176-a','7e57c100-0000-0000-0000-000000176a01','charita','Charita 176',true);
 insert into public.zbierka (id, nazov, modul, typ, stav, stranka, ucet_id, zapecatena, ciel) values
  ('t176-z1','Strecha','charity','zbierka','aktivna','t176-a','7e57c100-0000-0000-0000-000000176a01', now(), 100000);

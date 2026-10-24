@@ -7,6 +7,7 @@ insert into auth.users (id) values ('7e57a000-0000-0000-0000-0000000000e1'), ('7
 insert into public.ucet (id, auth_id, typ, stav_registracie) values
  ('7e570000-0000-0000-0000-0000000000e1','7e57a000-0000-0000-0000-0000000000e1','aktivny','hotovo'),
  ('7e570000-0000-0000-0000-0000000000e2','7e57a000-0000-0000-0000-0000000000e2','aktivny','hotovo');
+update public.ucet set telefon_overeny = true where id in ('7e570000-0000-0000-0000-0000000000e1','7e570000-0000-0000-0000-0000000000e2');   -- 0180: kredit a sken len overenému
 \pset tuples_only on
 create temp table t(c text, ok boolean);
 grant all on t to public;
@@ -121,6 +122,7 @@ insert into t select '4.4 pin je bcrypt', pin_hash like '$2%' from public.ucet w
 -- ---------- 4.5 · TOTP a odznaky ----------
 insert into auth.users (id) values ('7e57a000-0000-0000-0000-0000000000e3');
 insert into public.ucet (id, auth_id, typ, stav_registracie) values ('7e570000-0000-0000-0000-0000000000e3','7e57a000-0000-0000-0000-0000000000e3','aktivny','hotovo');
+update public.ucet set telefon_overeny = true where id = '7e570000-0000-0000-0000-0000000000e3';   -- 0180: sken len overený účet
 create temp table tok(k text primary key, v text);
 grant all on tok to public;
 -- organizátor e2 založí akciu a uloží polohu
