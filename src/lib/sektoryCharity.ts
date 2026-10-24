@@ -38,12 +38,13 @@ async function nacitajOblasti(stranka: string) {
   oblastiPamat.set(stranka, ((g.data ?? []) as { pod_segment: string | null }[]).map((r) => r.pod_segment).filter((p): p is string => !!p));
   zmena();
 }
-/** ponuka oblastí pre nový sektor po sekciách: vybrané podskupiny charity, inak celý číselník (charita bez nich, napr. registrovaná skôr) */
-export function useOblastiCharity(stranka: string): SekciaCharity[] {
+/** ponuka oblastí pre nový sektor po sekciách: vybrané podskupiny charity; null = charita podskupiny nemá (napr. tester,
+ *  registrovaná pred krokom Stanovy) — vtedy sa ponúkajú len hlavné sekcie (Martin 24. 10.) */
+export function useOblastiCharity(stranka: string): SekciaCharity[] | null {
   useZmenySektorov();
   useEffect(() => { if (stranka) void nacitajOblasti(stranka); }, [stranka]);
   const moje = oblastiPamat.get(stranka) ?? [];
-  if (!moje.length) return SEKCIE_CHARITY;
+  if (!moje.length) return null;
   const m = moje.map((x) => x.toLowerCase());
   return SEKCIE_CHARITY.map((s) => ({ nazov: s.nazov, podskupiny: s.podskupiny.filter((p) => m.includes(p.toLowerCase())) })).filter((s) => s.podskupiny.length > 0);
 }
@@ -157,15 +158,17 @@ export function zmazSektor(id: string): () => void {
   };
 }
 
-const casovace = new Map<string, number>();
-/** premenovanie — naživo v appke, na server o 600 ms po poslednom písmene */
-export function premenujSektor(id: string, nazov: string) {
+/** premenovanie sektora — len pri „Podržte a uložte“ (Martin 24. 10., 0b: nič sa neukladá samo); vráti chybu ako text */
+export async function premenujSektor(id: string, nazov: string): Promise<string | null> {
   const st = strankaSektora.get(id);
-  if (!st) return;
-  zoznam.set(st, (zoznam.get(st) ?? []).map((s) => (s.id === id ? { ...s, nazov, slug: slugZ(nazov) } : s))); zmena();
-  if (!supabase || !nazov.trim()) return;
-  window.clearTimeout(casovace.get(id));
-  casovace.set(id, window.setTimeout(() => { void supabase?.from("sektor_stranky").update({ nazov: nazov.trim().slice(0, 30) }).eq("id", id).then(() => {}, () => {}); }, 600));
+  const n = nazov.trim().slice(0, 30);
+  if (!st || !n) return null;
+  if (supabase) {
+    const { error } = await supabase.from("sektor_stranky").update({ nazov: n }).eq("id", id).then((x) => x, () => ({ error: { message: "" } }));
+    if (error) return chybaTextu(error.message ?? "");
+  }
+  zoznam.set(st, (zoznam.get(st) ?? []).map((s) => (s.id === id ? { ...s, nazov: n, slug: slugZ(n) } : s))); zmena();
+  return null;
 }
 
 /** žiadosť o zmenu účtu centrálnej / sektora — ide DEED+ na schválenie (do 2 pracovných dní) */

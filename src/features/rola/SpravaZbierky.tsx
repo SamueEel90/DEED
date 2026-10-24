@@ -39,7 +39,7 @@ import { OznamDarcoviSheet } from "@/features/notifikacie/OznamDarcovi";
 import type { OrgZbierka } from "./mock";
 import { TextovePolia, GaleriaEditor } from "./obsahZbierky";
 import { ZapecatenyText, ZapecateneFotky } from "./ZapecatenyObsah";
-import { nastavAutoUzavriet, type MediumZbierky } from "@/lib/novaZbierka";
+import { nastavAutoUzavriet, ukonciZbierku, obnovZbierku, type MediumZbierky } from "@/lib/novaZbierka";
 import { KartaAutoUzavriet } from "./AutoUzavriet";
 import type { FakturaOrg } from "@/lib/fakturyOrg";
 import { PlatbaOrganizacie, Zaplatene } from "./PlatbaOrganizacie";
@@ -517,9 +517,15 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
     pasVidel.current = false;
     zmen({ stav: "ukoncena", ukoncena: kedy, vratitDo: new Date(Date.now() + VRATIT_MIN * 60000).toISOString(), dovodUkoncenia: dovod, dovodIny: iny.trim() || undefined,
       podakovanieDarcom: cistyText(podakovanie).trim() ? podakovanie : undefined, vysledokPoslany: undefined }); setConf(false);
+    // Martin 24. 10.: ukončená = ukončená aj na serveri (dary sa zastavia), ako vo farnosti (ukonci_zbierku)
+    if (z.stranka && /^zb-/.test(z.id)) void ukonciZbierku(z.stranka, z.id).catch((e: unknown) => toast(e instanceof Error ? e.message : "Zbierku sa nepodarilo ukončiť na serveri."));
   };
   const pasVidel = useRef(false); // pás „Zbierka je ukončená" sa po ukončení raz posunie do obrazovky
-  const vratit = () => zmen({ stav: "aktivna", ukoncena: undefined, vratitDo: undefined, dovodUkoncenia: undefined, dovodIny: undefined, podakovanieDarcom: undefined });
+  const vratit = async () => {
+    // 0174: server zbierku znova otvorí (do 15 minút); keď to nejde, Správa ju neotvorí ani v appke
+    if (z.stranka && /^zb-/.test(z.id)) { try { await obnovZbierku(z.stranka, z.id); } catch (e) { toast(e instanceof Error ? e.message : "Zbierku sa nepodarilo vrátiť."); return; } }
+    zmen({ stav: "aktivna", ukoncena: undefined, vratitDo: undefined, dovodUkoncenia: undefined, dovodIny: undefined, podakovanieDarcom: undefined });
+  };
   // KARTA 38 · bod 4: výsledok darcom posiela systém sám (1. z 2 správ) — po uplynutí 15 minút na vrátenie
   const [, tik] = useState(0);
   useEffect(() => {
@@ -538,7 +544,7 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
           <b style={{ fontSize: 15.5 }}>Zbierka je ukončená</b>
           <span style={{ fontSize: 13, opacity: 0.8 }}>Výsledok pošleme {darcov} darcom o {VRATIT_MIN} minút ({hod}). Dovtedy to môžete vrátiť.</span>
         </span>
-        <button type="button" onClick={vratit} style={{ height: 46, padding: "0 18px", border: "none", borderRadius: 14, background: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "#1D211B" }}>Vrátiť späť</button>
+        <button type="button" onClick={() => void vratit()} style={{ height: 46, padding: "0 18px", border: "none", borderRadius: 14, background: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "#1D211B" }}>Vrátiť späť</button>
       </div>);
   })();
 

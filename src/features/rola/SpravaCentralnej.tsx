@@ -86,7 +86,8 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const prepni = (i: number) => { setTyp(i); nastavVyberCentralnej(i); setTab(0); }; // 519: pri prepnutí vždy Nastavenie
 
   // ---- obsah položky (text, galéria, sumy) — ukladá sa samo ----
-  const nacitaj0 = (): CentralnaZbierka => (sek ? obsahSektora(sek.id) : centralnaZPamate(strankaId)) ?? (farnost ? prazdnaHlavna() : { ...prazdnaCentralna(), popis: "" }); // OPRAVY 414: charita — nič predvyplnené
+  // Martin 24. 10. (0b): názov sektora je súčasť úprav — uloží sa len cez „Podržte a uložte“, nikdy sám
+  const nacitaj0 = (): CentralnaZbierka => (sek ? { ...(obsahSektora(sek.id) ?? { ...prazdnaCentralna(), popis: "" }), nazov: sek.nazov } : centralnaZPamate(strankaId)) ?? (farnost ? prazdnaHlavna() : { ...prazdnaCentralna(), popis: "" }); // OPRAVY 414: charita — nič predvyplnené
   // balík 48 · 517: charita — kým centrálna nebeží a nemá fotku, titulná fotka profilu je v galérii ako prvá („z profilu“, dá sa zmazať aj vymeniť)
   const nacitaj = (): CentralnaZbierka => {
     const x = nacitaj0(); const cover = profilZPamate(strankaId).ulozeny?.cover?.src;
@@ -108,7 +109,14 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const polia = useRef(new Set<string>());
   const dRef = useRef(d);
   useEffect(() => { dRef.current = d; }, [d]);
-  const zapis = (x: CentralnaZbierka): Promise<string | null> => { if (sek) return ulozObsahSektora(sek.id, x); return ulozCentralnuZbierku(strankaId, x); };
+  const zapis = async (x: CentralnaZbierka): Promise<string | null> => {
+    if (!sek) return ulozCentralnuZbierku(strankaId, x);
+    const { nazov: nz, ...obsahS } = x;
+    const e = await ulozObsahSektora(sek.id, obsahS);
+    if (e) return e;
+    const n = (nz ?? "").trim() || nazovZPodskupiny(sek.stanovy);
+    return n !== sek.nazov ? premenujSektor(sek.id, n) : null;
+  };
   useEffect(() => {
     if (!zmenene.current || ch) return;
     const t = window.setTimeout(() => { const pl = [...polia.current]; polia.current.clear(); u.sleduj(pl, zapis(d), () => zapis(dRef.current)); setUlozene(true); }, 600);
@@ -229,7 +237,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
     <section style={kartaK}>
       <span style={nadpisK}>Sektor</span>
       <span style={textK}>Téma: <b style={{ color: "var(--ink)" }}>{sek.stanovy}</b>. Názov sektora na profile zmeníte tu.</span>{/* OPRAVY 442 doplnok 3: stanovy appka nepozná, bez „overené pri registrácii“ */}
-      <input value={sek.nazov} maxLength={30} onChange={(e) => premenujSektor(sek.id, e.target.value)} onBlur={(e) => { if (!e.target.value.trim()) premenujSektor(sek.id, nazovZPodskupiny(sek.stanovy)); }} aria-label="Názov sektora"
+      <input value={d.nazov ?? ""} maxLength={30} onChange={(e) => zmen({ nazov: e.target.value }, "nazov")} aria-label="Názov sektora"
         style={{ height: 48, padding: "0 14px", borderRadius: 12, border: "1.5px solid var(--cardBd)", background: "var(--field)", fontFamily: "inherit", fontSize: 15, fontWeight: 700, color: "var(--ink)", outline: "none", width: "100%", boxSizing: "border-box" }} />
     </section>);
   // OPRAVY 162: farnosť — ten istý QR farnosti z registrácie (po spustení vedie rovno na hlavnú zbierku)

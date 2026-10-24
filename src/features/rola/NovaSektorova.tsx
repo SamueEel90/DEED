@@ -11,7 +11,7 @@ import type { MediumZbierky } from "@/lib/novaZbierka";
 import { prazdnaCentralna } from "@/lib/centralnaZbierka";
 import { profilZPamate } from "@/lib/profilStranky";
 import { useSektory, useOblastiCharity, spustiSektor } from "@/lib/sektoryCharity";
-import { nazovZPodskupiny } from "@/lib/sekcieCharity";
+import { nazovZPodskupiny, SEKCIE_CHARITY } from "@/lib/sekcieCharity";
 import { otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
 import { TextovePolia, GaleriaEditor } from "./obsahZbierky";
 import { overIban, formatujIban } from "./segmenty";
@@ -34,6 +34,7 @@ export function NovaSektorova({ strankaId, mobil, toast, onZbierky, plno = false
   const [k, setK0] = useState<Koncept>(() => koncepty.get(strankaId) ?? prazdny(cover));
   const setK = (f: (x: Koncept) => Koncept) => setK0((x) => { const n = f(x); koncepty.set(strankaId, n); return n; });
   const ponuka = useOblastiCharity(strankaId);
+  const [otv, setOtv] = useState<string | null>(null);
   const sektory = useSektory(strankaId);
   const bezi = (p: string) => sektory.some((s) => s.stanovy.toLowerCase() === p.toLowerCase());
   const [spusteny, setSpusteny] = useState<string | null>(null);
@@ -99,11 +100,19 @@ export function NovaSektorova({ strankaId, mobil, toast, onZbierky, plno = false
       <section style={kartaK}>
         <span style={nadpisK}>1. Oblasť</span>
         <span style={textK}>Vyberáte z oblastí, ktoré máte v stanovách.</span>
-        {ponuka.map((s) => (
-          <div key={s.nazov} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" }}>{s.nazov.toLocaleUpperCase("sk-SK")}</span>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{s.podskupiny.map(cip)}</div>
-          </div>))}
+        {/* Martin 24. 10.: bez podskupín zo stanov (tester) len hlavné sekcie; s podskupinami rozbaľovacie sekcie, nie všetko naraz */}
+        {!ponuka ? <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{SEKCIE_CHARITY.map((s) => cip(s.nazov))}</div>
+          : ponuka.map((s) => {
+            const o = otv === s.nazov || s.podskupiny.includes(k.oblast ?? "");
+            return (
+              <div key={s.nazov} style={{ borderRadius: 16, background: "var(--field)", border: `1px solid ${s.podskupiny.includes(k.oblast ?? "") ? "var(--green)" : "var(--cardBd)"}` }}>
+                <button type="button" aria-expanded={o} onClick={() => setOtv(o && otv === s.nazov ? null : s.nazov)} style={{ width: "100%", minHeight: 52, padding: "0 14px", border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" }}>
+                  <b style={{ flex: 1, fontSize: 15 }}>{s.nazov}</b>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true" style={{ flex: "none", transform: o ? "rotate(180deg)" : "none", transition: "transform .2s ease" }}><path d="M6 9l6 6 6-6" /></svg>
+                </button>
+                {o && <div style={{ padding: "0 12px 12px", display: "flex", gap: 6, flexWrap: "wrap" }}>{s.podskupiny.map(cip)}</div>}
+              </div>);
+          })}
         {k.oblast && <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", padding: "10px 14px", borderRadius: 14, background: "var(--gSoft)", border: "1px solid var(--gBd)" }}>
           <span style={{ flex: "1 1 240px", fontSize: 14, lineHeight: 1.45, color: "var(--gInk)" }}>Vybraté: <b>{nazovZPodskupiny(k.oblast)}</b>. Ukliklo sa? Ťuknite na inú oblasť, alebo výber zrušte.</span>
           <button type="button" onClick={zrusVyber} style={{ ...obrysK, minHeight: 44 }}>Zrušiť výber</button>
