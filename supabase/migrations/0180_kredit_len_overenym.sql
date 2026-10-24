@@ -17,13 +17,13 @@ begin;
 
 alter table public.ucet add column if not exists start_kredit timestamptz;
 
--- overený účet človeka = aktivny + telefón alebo e-mail overený (ucet_strazca_identity 0179: overenie píše len server)
-create or replace function public.ucet_overeny(p_ucet uuid) returns boolean
+-- overený účet človeka (clovek_overeny — ucet_overeny(uuid, boolean) z 0065 je overenie príjemcu KYC/KYB) = aktivny + telefón alebo e-mail overený (ucet_strazca_identity 0179: overenie píše len server)
+create or replace function public.clovek_overeny(p_ucet uuid) returns boolean
   language sql stable security definer set search_path = public as $$
   select exists (select 1 from public.ucet u where u.id = p_ucet and u.typ = 'aktivny' and (u.telefon_overeny or u.email_overeny))
 $$;
-revoke all on function public.ucet_overeny(uuid) from public;
-grant execute on function public.ucet_overeny(uuid) to anon, authenticated, service_role;
+revoke all on function public.clovek_overeny(uuid) from public;
+grant execute on function public.clovek_overeny(uuid) to anon, authenticated, service_role;
 
 -- ---------- 1 · štartovací kredit len overenému, raz ----------
 create or replace function public.ucet_start_kredit() returns trigger
@@ -54,7 +54,7 @@ create or replace function public.testovacie_dobitie(p_deed numeric) returns num
 declare v_ja uuid := public.moj_ucet();
 begin
   if v_ja is null then raise exception 'neprihlaseny' using errcode = '28000'; end if;
-  if not public.ucet_overeny(v_ja) then raise exception 'Dobiť si môže len overený účet.' using errcode = '42501', detail = 'neovereny'; end if;
+  if not public.clovek_overeny(v_ja) then raise exception 'Dobiť si môže len overený účet.' using errcode = '42501', detail = 'neovereny'; end if;
   if p_deed is null or p_deed <= 0 or p_deed > 100000 then raise exception 'neplatna_suma' using errcode = '22023'; end if;
   if not (select zapnute from public.ledger_prepinac where kluc = 'testovacia_pokladna') then
     raise exception 'Dobitie v testovacej verzii je vypnuté.' using errcode = '42501', detail = 'pokladna_vypnuta';
@@ -75,7 +75,7 @@ declare
   v_gps point := case when p_lat is not null and p_lng is not null then point(p_lng, p_lat) end;
 begin
   -- 0180: anonymný / neoverený účet neskenuje (nič sa nezapíše)
-  if not public.ucet_overeny(v_ja) then return jsonb_build_object('vysledok', 'neovereny'); end if;
+  if not public.clovek_overeny(v_ja) then return jsonb_build_object('vysledok', 'neovereny'); end if;
   -- limit pokusov: 20 za minútu na účet (0048)
   if (select count(*) from public.scan_log where user_id = v_ja and cas > now() - interval '1 minute') >= 20 then
     return jsonb_build_object('vysledok', 'limit');
