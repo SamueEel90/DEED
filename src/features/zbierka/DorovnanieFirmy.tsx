@@ -201,7 +201,7 @@ export function DorovnanieFirmyHarok({ zbierkaId, zbierkaNazov, firmaUcet, firma
               const on = kanal === k;
               const [t, d] = k === "karta"
                 ? ["Karta", `dorovnanie beží hneď po zapečatení · poplatok ${e2(poplatok)}`]
-                : ["SEPA prevod", "bez poplatku · beží, keď charita potvrdí príjem (najneskôr do 48 h)"];
+                : ["SEPA prevod", "bez poplatku · beží, keď charita potvrdí príjem prevodu"];
               return (
                 <button key={k} type="button" onClick={() => setKanal(k)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 16, background: on ? "var(--goldBg)" : "var(--card)", border: `1.5px solid ${on ? "var(--goldBd)" : "var(--cardBd)"}`, textAlign: "left", cursor: "pointer", color: "var(--ink)", fontFamily: "inherit" }}>
                   <span style={{ flex: 1, minWidth: 0 }}>
@@ -216,7 +216,7 @@ export function DorovnanieFirmyHarok({ zbierkaId, zbierkaNazov, firmaUcet, firma
         {uhradene && (
           <div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--gSoft)", border: "1px solid var(--gBd)" }}>
             <div style={{ fontSize: 14.5, fontWeight: 800, color: "var(--gInk)", fontVariantNumeric: "tabular-nums" }}>✓ Uhradené {e2(rozpocet)} · {datumSk(uhradene)}</div>
-            <div style={{ fontSize: 13, color: "var(--ink2)", marginTop: 2 }}>{sepa ? "SEPA: dorovnanie sa spustí, keď charita potvrdí príjem, najneskôr do 48 h." : "Karta: dorovnanie sa spustí hneď po zapečatení."}</div>
+            <div style={{ fontSize: 13, color: "var(--ink2)", marginTop: 2 }}>{sepa ? "SEPA: dorovnanie sa spustí, keď charita potvrdí príjem vášho prevodu." : "Karta: dorovnanie sa spustí hneď po zapečatení."}</div>
           </div>
         )}
         <HlavneTlacidlo key={uhradene ? "pecat" : "uhrada"} podrz={podrz} disabled={pecati}
@@ -235,7 +235,7 @@ export function DorovnanieFirmyHarok({ zbierkaId, zbierkaNazov, firmaUcet, firma
           <Pecat velka />
           <div style={{ fontSize: 20, fontWeight: 800, lineHeight: 1.3 }}>{sepa ? "Zapečatené. Čakáme na potvrdenie úhrady." : "Zapečatené. Dorovnanie beží."}</div>
           <div style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>
-            {sepa ? "Keď charita potvrdí príjem vášho prevodu (najneskôr do 48 h), dorovnanie sa spustí a dáme vám vedieť v appke aj e-mailom."
+            {sepa ? "Keď charita potvrdí príjem vášho prevodu, dorovnanie sa spustí a dáme vám vedieť v appke aj e-mailom."
               : `Od tejto chvíle pridáte k darom v zbierke ${zbierkaNazov} ${POMER_SLOVOM[pomer] ?? "svoj diel"}. Podmienky sa už nedajú zmeniť, ani vami, ani nami.`}
           </div>
         </div>

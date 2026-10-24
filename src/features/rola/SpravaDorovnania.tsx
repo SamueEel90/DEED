@@ -78,8 +78,8 @@ function statistika(d: Dorovnanie) {
   return { ludia, firma, stl, pred: `${sumaEur(Math.round(priem(pred)))}`, pocas: `${sumaEur(Math.round(priem(pocas.map((p) => p.l))))}` };
 }
 
-export function SpravaDorovnania({ entita, hlavnyUcet, mobil, toast, onZbierky, onOznamy, testCiele, nadpis = true }: {
-  entita: string; hlavnyUcet: string; mobil: boolean; toast: (m: string) => void; onZbierky: () => void; onOznamy?: () => void;
+export function SpravaDorovnania({ entita, strankaId, hlavnyUcet, mobil, toast, onZbierky, onOznamy, testCiele, nadpis = true }: {
+  entita: string; strankaId?: string; hlavnyUcet: string; mobil: boolean; toast: (m: string) => void; onZbierky: () => void; onOznamy?: () => void;
   /** v Správe stránky je nadpis „Dorovnanie daru" už v hlavičke */
   nadpis?: boolean;
   /** TESTOVACIE: id zbierok pre ukážkové dorovnania podľa prototypu */
@@ -88,7 +88,8 @@ export function SpravaDorovnania({ entita, hlavnyUcet, mobil, toast, onZbierky, 
   // OPRAVY 403 doplnok: ukážkové dorovnania (dv-t-…) zmazané — nové prepojenia vzniknú pri testovaní
   const ukazky = false;
   useEffect(() => { if (ukazky && testCiele) void naplnTestovacieDorovnania(entita, testCiele); }, [entita, ukazky]); // eslint-disable-line react-hooks/exhaustive-deps
-  const L = useDorovnania(entita).filter((d) => ukazky || !TESTOVACIA || !d.id.startsWith("dv-t-"));
+  // 0186: správa stránky vidí len dorovnania svojej stránky (entita je typ stránky, nie stránka)
+  const L = useDorovnania(entita).filter((d) => !strankaId || d.stranka === strankaId).filter((d) => ukazky || !TESTOVACIA || !d.id.startsWith("dv-t-"));
   const [sel, setSel] = useState<string | null>(null);
   const [selM, setSelM] = useState<string | null>(null);
   const prvy = SEKCIE.flatMap(([, sts], i) => L.filter((d) => sts.includes(stavCharity(d))).sort((a, b) => i === 0 ? (a.oznamene ?? a.zapecatene) - (b.oznamene ?? b.zapecatene) : 0))[0];
