@@ -32,11 +32,16 @@ create index if not exists platba_pending_ip_idx on public.platba (ip_darcu, cas
 
 -- IP volajúceho z hlavičky požiadavky (PostgREST); null mimo HTTP (cron, SQL editor, testy bez hlavičky)
 create or replace function public.ip_klienta() returns text
-  language sql stable as $$
-  select nullif(trim(split_part(coalesce(
-    current_setting('request.headers', true)::json->>'cf-connecting-ip',
-    current_setting('request.headers', true)::json->>'x-forwarded-for', ''), ',', 1)), '')
-$$;
+  language plpgsql stable as $$
+declare h jsonb;
+begin
+  begin
+    h := nullif(current_setting('request.headers', true), '')::jsonb;
+  exception when others then h := null;   -- hlavička chýba alebo nie je JSON (cron, SQL editor, testy)
+  end;
+  if h is null then return null; end if;
+  return nullif(trim(split_part(coalesce(h->>'cf-connecting-ip', h->>'x-forwarded-for', ''), ',', 1)), '');
+end $$;
 comment on column public.platba.pohyby_plan is 'Plán pohybov zapísaný pri vzniku platby (0176). platba_pohyby ho vykoná pri potvrdení 1 : 1.';
 create index if not exists platba_pending_idx on public.platba (cas) where stav = 'pending';
 
