@@ -256,6 +256,9 @@ begin
   v_text := v_text || ' ' || coalesce((select string_agg(pg_get_viewdef(c.oid), ' ') from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relkind = 'v' and coalesce(array_to_string(c.reloptions, ','), '') like '%security_invoker=true%'), '');
   -- spúšťače bez security definer bežia v mene volajúceho: ich funkcia aj to, čo volajú
   v_text := v_text || ' ' || coalesce((select string_agg(p.proname || '( ' || p.prosrc, ' ') from pg_trigger t join pg_proc p on p.oid = t.tgfoid where not t.tgisinternal and not p.prosecdef), '');
+  -- verejné RPC bez security definer (napr. feed_stranka, language sql) bežia v mene volajúceho → aj ich telá
+  v_text := v_text || ' ' || coalesce((select string_agg(p.prosrc, ' ') from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    join public.api_funkcie a on a.funkcia = p.proname where n.nspname = 'public' and not p.prosecdef), '');
   -- funkcie bez security definer, ktoré sú v tom texte, bežia tiež v mene volajúceho → pridaj ich telá (do ustálenia)
   for i in 1..5 loop
     v_text := v_text || ' ' || coalesce((select string_agg(p.prosrc, ' ') from pg_proc p join pg_namespace n on n.oid = p.pronamespace
