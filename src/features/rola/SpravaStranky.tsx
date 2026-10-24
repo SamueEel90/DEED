@@ -36,7 +36,8 @@ import { NovaSektorova } from "./NovaSektorova";
 import { usePozrietAko, nastavPozrietAko } from "@/lib/pozrietAko";
 import { cistyText } from "@/lib/richtext";
 import { cisloObjektu } from "@/lib/cisloObjektu";
-import { useDorovnania, stavCharity } from "@/lib/dorovnanie";
+import { useDorovnania, stavCharity, zostatok as zostatokDor } from "@/lib/dorovnanie";
+import { useRetazeNaStranke } from "@/lib/retaz";
 import { nacitajStav, pridajDni, SPRAVA_ZBIERKY_CFG } from "@/lib/zbierkaSprava";
 import { SUBJEKTY } from "./mock";
 import { upravZbierku, autoUzavrietZbierky, useZmenyZbierok, zbierkyStrankyZPamate, nacitajZbierkyStranky, konceptZbierkyZPamate, nacitajKonceptZbierky, cielCislo, jeIne, UCELY, KROKY_ZBIERKY, type SpustenaZbierka, type NovaZbierkaData } from "@/lib/novaZbierka";
@@ -292,7 +293,6 @@ const ZB_LIST: ZbRiadok[] = [
   { t: "Ovocie do výdajne", mesto: "Trenčín", v: 380, c: 400, darcovia: 31, bg: "url('https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&w=400&q=70') center/cover no-repeat var(--track)", s: "skončila 22. 9.", konc: true, skoncila: "2026-09-22T18:00:00.000Z" },
   { t: "Školské potreby", mesto: "Prešov", v: 450, c: 450, darcovia: 27, bg: "repeating-linear-gradient(135deg,var(--track) 0 12px,var(--btn) 12px 24px)", s: "skončila 25. 8.", konc: true, skoncila: "2026-08-25T18:00:00.000Z", overene: true },
 ];
-const RETAZ: [string, string, string, string][] = [["MK", "Martin K.", "pripojil sa k Strecha pre rodinu Horváthovú", "420 €"], ["ZŠ", "ZŠ Hodžova", "pripojila sa k Centrálnej zbierke", "160 €"], ["LS", "Lucia S.", "pripojila sa k Centrálnej zbierke", "60 €"]];
 const eur = (n: number) => sumaEur(n);
 const dnes = () => { const s = new Intl.DateTimeFormat("sk-SK", { weekday: "long", day: "numeric", month: "long" }).format(new Date()); return s.charAt(0).toUpperCase() + s.slice(1); };
 
@@ -1023,7 +1023,7 @@ function StitZoom({ stit, sada, onClose }: { stit: StitCharity; sada: StitSada; 
     </div>, document.body);
 }
 
-function Prehlad({ strankaId, tier, piny, prepniPin, otvorPolozku, otvor, nova, stit, sada, menu, mobil, tablet, zbal, prepniZbal, onZoom, uvod, krok1, pozvana, vlastne, hornaCast }: Spolocne & { onZoom: () => void; hornaCast?: React.ReactNode }) {
+function Prehlad({ strankaId, entita, tier, piny, prepniPin, otvorPolozku, otvor, nova, stit, sada, menu, mobil, tablet, zbal, prepniZbal, onZoom, uvod, krok1, pozvana, vlastne, hornaCast }: Spolocne & { onZoom: () => void; hornaCast?: React.ReactNode }) {
   const p3Do = usePozvanaDo(strankaId); // OPRAVY 398: dátum registrácie + 2 mesiace (nie napevno) — bez servera
   const pozvSrv = usePozvana(supabase ? strankaId : null); // balík 50 · 3
   const pozvText = pozvSrv ? `Program P3 máte zadarmo ${pozvSrv.mesiacov} ${pozvSrv.mesiacov === 1 ? "mesiac" : pozvSrv.mesiacov < 5 ? "mesiace" : "mesiacov"} od zverejnenia stránky${pozvSrv.do ? `, do ${new Date(pozvSrv.do).getDate()}. ${new Date(pozvSrv.do).getMonth() + 1}. ${new Date(pozvSrv.do).getFullYear()}` : ""}.` : `Ste medzi prvými 50. Program P3 máte zadarmo 2 mesiace od registrácie, do ${p3Do}.`;
@@ -1157,6 +1157,13 @@ function Prehlad({ strankaId, tier, piny, prepniPin, otvorPolozku, otvor, nova, 
     </div>);
   const uvodPc = uvod && !mobil; // na mobile/tablete sú Reťaz a Dorovnávané zbaliteľné sekcie (bod 95)
   const rOtv = !uvodPc || uR, dOtv = !uvodPc || uD;
+  // 0188 (Martin 24. 10.): Reťaz dobra a Dorovnávané zbierky čítajú skutočné dáta zo servera, nie ukážku z prototypu
+  const retazeR = useRetazeNaStranke(strankaId);
+  const retazSum = retazeR.reduce((a, r) => a + r.poslane, 0);
+  const dorR = useDorovnania(entita).filter((d) => d.stranka === strankaId && !["ukoncene", "odmietnute", "zrusene"].includes(d.stav));
+  const dorBeziN = dorR.filter((d) => d.stav === "aktivne").length;
+  const dorSuhrn = dorR.length ? `${dorBeziN} ${dorBeziN === 1 ? "beží" : "bežia"}` : "";
+  const inic = (m: string) => m.split(/\s+/).filter(Boolean).slice(0, 2).map((x) => x[0]?.toUpperCase() ?? "").join("") || "?";
 
   const treba = (<>
     <span ref={trebaRef} style={{ ...nadpisSekcie, scrollMarginTop: 80 }}>TREBA VYBAVIŤ</span>
@@ -1204,29 +1211,30 @@ function Prehlad({ strankaId, tier, piny, prepniPin, otvorPolozku, otvor, nova, 
 
   const retazEl = (
       <section style={{ ...karta, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
-        <div onClick={uvodPc ? () => setUR((o) => !o) : undefined} role={uvodPc ? "button" : undefined} aria-expanded={uvodPc ? rOtv : undefined} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: uvodPc ? 24 : undefined, cursor: uvodPc ? "pointer" : "default" }}><Ik d={IK.retaz} c="#4E7D37" w={2} /><b style={{ flex: 1, fontSize: 16 }}>Reťaz dobra</b><span style={{ fontSize: 13, fontWeight: 800, color: "var(--gInk)" }}>{nova ? "0 €" : "640 €"}</span>{uvodPc && sipka(rOtv)}</div>
+        <div onClick={uvodPc ? () => setUR((o) => !o) : undefined} role={uvodPc ? "button" : undefined} aria-expanded={uvodPc ? rOtv : undefined} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: uvodPc ? 24 : undefined, cursor: uvodPc ? "pointer" : "default" }}><Ik d={IK.retaz} c="#4E7D37" w={2} /><b style={{ flex: 1, fontSize: 16 }}>Reťaz dobra</b><span style={{ fontSize: 13, fontWeight: 800, color: "var(--gInk)" }}>{eur(retazSum)}</span>{uvodPc && sipka(rOtv)}</div>
         {rOtv && <span style={{ fontSize: 12.5, color: "var(--ink3)", marginTop: -4 }}>ľudia, ktorí sa pripojili k vašim zbierkam</span>}
-        {!rOtv ? null : nova
+        {!rOtv ? null : retazeR.length === 0
           ? <span style={{ paddingTop: 10, borderTop: "1px solid var(--cardBd)", fontSize: 13.5, lineHeight: 1.45, color: "var(--ink2)" }}>Zatiaľ sa nikto nepripojil. Keď niekto spustí zbierku pre vás, uvidíte ho tu.</span>
-          : RETAZ.map(([i, n, z, v]) => (
-            <div key={n} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48, borderTop: "1px solid var(--cardBd)" }}>
-              <span style={{ width: 32, height: 32, flex: "none", borderRadius: "50%", background: "var(--gSoft)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "var(--gInk)" }}>{i}</span>
-              <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><b style={{ fontSize: 14 }}>{n}</b><span style={{ fontSize: 12, color: "var(--ink3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{z}</span></span>
-              <b style={{ flex: "none", fontSize: 14 }}>{v}</b>
+          : retazeR.map((r) => (
+            <div key={`${r.retaz}:${r.zbierka}`} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48, borderTop: "1px solid var(--cardBd)" }}>
+              <span style={{ width: 32, height: 32, flex: "none", borderRadius: "50%", background: "var(--gSoft)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "var(--gInk)" }}>{inic(r.meno)}</span>
+              <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><b style={{ fontSize: 14 }}>{r.meno}</b><span style={{ fontSize: 12, color: "var(--ink3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.bezi ? "posiela" : "posielal"} {r.pct} % na {r.zbierkaNazov}{r.bezi ? "" : r.stav === "caka" ? " · čaká v rade" : " · skončilo"}</span></span>
+              <b style={{ flex: "none", fontSize: 14 }}>{eur(r.poslane)}</b>
             </div>))}
       </section>);
   const dorEl = (
       <section style={{ borderRadius: 22, background: "var(--goldBg)", border: "1px solid var(--goldBd)", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
-        <div onClick={uvodPc ? () => setUD((o) => !o) : undefined} role={uvodPc ? "button" : undefined} aria-expanded={uvodPc ? dOtv : undefined} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: uvodPc ? 24 : undefined, cursor: uvodPc ? "pointer" : "default" }}><Ik d={IK.budova} c="var(--gold)" w={2} /><b style={{ flex: 1, fontSize: 16 }}>Dorovnávané zbierky</b><span style={{ fontSize: 13, fontWeight: 800, color: "var(--gold)" }}>{nova ? "" : "1 beží"}</span>{uvodPc && sipka(dOtv, "var(--gold)")}</div>
+        <div onClick={uvodPc ? () => setUD((o) => !o) : undefined} role={uvodPc ? "button" : undefined} aria-expanded={uvodPc ? dOtv : undefined} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: uvodPc ? 24 : undefined, cursor: uvodPc ? "pointer" : "default" }}><Ik d={IK.budova} c="var(--gold)" w={2} /><b style={{ flex: 1, fontSize: 16 }}>Dorovnávané zbierky</b><span style={{ fontSize: 13, fontWeight: 800, color: "var(--gold)" }}>{dorSuhrn}</span>{uvodPc && sipka(dOtv, "var(--gold)")}</div>
         {dOtv && <span style={{ fontSize: 12.5, color: "var(--cuInk2)", marginTop: -4 }}>partneri, ktorí pridávajú k darom ľudí</span>}
-        {!dOtv ? null : nova
+        {!dOtv ? null : dorR.length === 0
           ? <span style={{ paddingTop: 10, borderTop: "1px solid rgba(135,103,18,.25)", fontSize: 13.5, lineHeight: 1.45, color: "var(--cuInk2)" }}>Zatiaľ žiadna firma nedorovnáva. Keď sa partner zapojí, uvidíte tu jeho rozpočet.</span>
-          : <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 10, borderTop: "1px solid rgba(135,103,18,.25)" }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}><b style={{ flex: 1, fontSize: 14 }}>Pekáreň Dobrota s.r.o.</b><span style={{ fontSize: 12, fontWeight: 800, color: "var(--gold)" }}>1 : 1</span></div>
-            <span style={{ fontSize: 12, color: "var(--cuInk2)" }}>Strecha pre rodinu Horváthovú · do 300 € na dar</span>
-            <Pruh sc={620 / 1000} h={6} bg="rgba(135,103,18,.2)" c="var(--gold)" />
-            <span style={{ fontSize: 12, color: "var(--cuInk2)" }}>dorovnané 620 € z 1 000 €</span>
-          </div>}
+          : dorR.map((d) => { const dorovnane = d.strop - zostatokDor(d); return (
+          <div key={d.id} style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 10, borderTop: "1px solid rgba(135,103,18,.25)" }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}><b style={{ flex: 1, fontSize: 14 }}>{d.firma}</b><span style={{ fontSize: 12, fontWeight: 800, color: "var(--gold)" }}>{d.pomer === 1 ? "1 : 1" : `${d.pomer} ×`}{d.stav === "aktivne" ? "" : d.stav === "zapecatene" ? " · čaká na potvrdenie" : d.stav === "pozastavene" ? " · pozastavené" : d.stav === "vycerpane" ? " · vyčerpané" : ""}</span></div>
+            <span style={{ fontSize: 12, color: "var(--cuInk2)" }}>{d.cielNazov}{d.stropDaru ? ` · do ${eur(d.stropDaru)} na dar` : ""}</span>
+            <Pruh sc={d.strop > 0 ? dorovnane / d.strop : 0} h={6} bg="rgba(135,103,18,.2)" c="var(--gold)" />
+            <span style={{ fontSize: 12, color: "var(--cuInk2)" }}>dorovnané {eur(dorovnane)} z {eur(d.strop)}</span>
+          </div>); })}
       </section>);
   const pravy = (
     <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: mobil ? 0 : 28 }}>{retazEl}{dorEl}</div>);
@@ -1236,8 +1244,8 @@ function Prehlad({ strankaId, tier, piny, prepniPin, otvorPolozku, otvor, nova, 
     // OPRAVY 95: zbaliteľné sekcie; Treba vybaviť vždy rozbalené. OPRAVY 96: tablet — Reťaz a Dorovnávané vedľa seba
     const obdTxt = ["dnes", "za 7 dní", "za 30 dní", "za rok"][obd];
     const vyz = realne ? realne[0][0] : nova ? N8[0] : D8[obd][0][0];
-    const retazS = <Sekcia id="retaz" nazov="Reťaz dobra" suhrn={nova ? undefined : "640 €"} zbal={zbal} prepni={prepniZbal}>{retazEl}</Sekcia>;
-    const dorS = <Sekcia id="dorovnanie" nazov="Dorovnávané zbierky" suhrn={nova ? undefined : "1 beží"} zbal={zbal} prepni={prepniZbal}>{dorEl}</Sekcia>;
+    const retazS = <Sekcia id="retaz" nazov="Reťaz dobra" suhrn={retazeR.length ? eur(retazSum) : undefined} zbal={zbal} prepni={prepniZbal}>{retazEl}</Sekcia>;
+    const dorS = <Sekcia id="dorovnanie" nazov="Dorovnávané zbierky" suhrn={dorSuhrn || undefined} zbal={zbal} prepni={prepniZbal}>{dorEl}</Sekcia>;
     // KARTA 42 · telefón: najprv konať, potom čísla
     if (ph) {
       if (uvod) return (<>{hornaCast}{uvodPanel}{krokyEl}{pinUvod}{treba}{retazS}{dorS}</>);

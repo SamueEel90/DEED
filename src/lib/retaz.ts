@@ -254,6 +254,25 @@ let obnova = 0;
 const obnovStranky = () => { obnova++; zmena(); };
 const useObnova = () => { useZmenyRetaze(); return obnova; };
 
+/** Prehľad stránky (0188): reťaze, ktoré majú v rade zbierku tejto stránky */
+export interface RetazNaStranke extends PodporaRetazou { zbierka: string; zbierkaNazov: string; stav: string }
+const naStranke = new Map<string, RetazNaStranke[]>();
+export function useRetazeNaStranke(stranka: string): RetazNaStranke[] {
+  const o = useObnova();
+  useEffect(() => {
+    if (!supabase || !stranka) return;
+    let zive = true;
+    void supabase.rpc("retaz_na_stranke", { p_stranka: stranka }).then(({ data, error }) => {
+      if (!zive || error || !Array.isArray(data)) return;
+      naStranke.set(stranka, (data as { retaz: string; meno: string; robi?: Strana | null; stranka?: string | null; zbierka: string; zbierkaNazov: string; pct: number; stav: string; bezi: boolean; poslane: number }[])
+        .map((x) => ({ retaz: x.retaz, meno: x.meno, robi: x.robi ?? undefined, stranka: x.stranka ?? undefined, zbierka: x.zbierka, zbierkaNazov: x.zbierkaNazov, pct: Number(x.pct), stav: x.stav, bezi: !!x.bezi, poslane: Number(x.poslane) || 0 })));
+      zmena();
+    }, () => undefined);
+    return () => { zive = false; };
+  }, [stranka, o]);
+  return naStranke.get(stranka) ?? [];
+}
+
 /** kto podporuje zbierku reťazou (bezi = blok „Podporujú reťazou“; poslane = podiel v páse) */
 export interface PodporaRetazou { retaz: string; meno: string; robi?: Strana; stranka?: string; pct: number; bezi: boolean; poslane: number }
 const podpora = new Map<string, PodporaRetazou[]>();
